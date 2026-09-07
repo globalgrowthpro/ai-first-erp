@@ -21,7 +21,7 @@ export const Route = createFileRoute("/ai")({
       },
     ],
   }),
-  component: AiWorkspace;
+  component: AiWorkspace,
 });
 
 const pipeline = [
