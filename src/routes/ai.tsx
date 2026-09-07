@@ -164,7 +164,7 @@ function AiWorkspace() {
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<"preview" | "running" | "done" | "cancelled">("preview");
 
-  const selected = actions.find((item) => item.id === active) ?? actions[0];
+  const selectedPrompt = actions.find((item) => item.id === active)?.prompt;
   const chooseAction = (id: ActionId) => {
     const action = actions.find((item) => item.id === id);
     setActive(id);
@@ -201,7 +201,9 @@ function AiWorkspace() {
               </div>
               <div className="flex flex-row-reverse gap-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-md border-2 border-ink bg-secondary"><User className="size-4" /></span>
-                <p className="rounded-md border-2 border-ink bg-ink p-3 text-sm text-ink-foreground">{input || pick(selected.prompt.ar, selected.prompt.en)}</p>
+                <p className="rounded-md border-2 border-ink bg-ink p-3 text-sm text-ink-foreground">
+                  {input || (selectedPrompt ? pick(selectedPrompt.ar, selectedPrompt.en) : "")}
+                </p>
               </div>
               <div className="flex gap-3">
                 <span className="gradient-brand grid size-9 shrink-0 place-items-center rounded-md border-2 border-ink text-primary-foreground"><Bot className="size-4" /></span>
