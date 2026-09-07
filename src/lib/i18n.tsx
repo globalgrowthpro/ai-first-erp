@@ -148,7 +148,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const toggle = useCallback(() => setLang((l) => (l === "ar" ? "en" : "ar")), []);
 
   const value = useMemo<Ctx>(() => {
-    const locale = lang === "ar" ? "ar-EG" : "en-US";
+    const locale = lang === "ar" ? "ar-EG-u-nu-latn" : "en-US";
     return {
       lang,
       dir: lang === "ar" ? "rtl" : "ltr",
