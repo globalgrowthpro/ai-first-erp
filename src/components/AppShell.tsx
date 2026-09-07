@@ -16,6 +16,7 @@ import {
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/ai-first-erp-logo.png.asset.json";
 
 const erpNav = [
   { to: "/", key: "nav_dashboard", icon: LayoutDashboard },
@@ -63,16 +64,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-secondary">
       <aside className="gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e-2 border-ink p-4 lg:flex">
-        <Link to="/" className="flex items-center gap-3 px-1">
-          <span className="gradient-brand grid size-10 place-items-center rounded-md border-2 border-ink-foreground/30 text-lg font-bold text-primary-foreground">
-            ح
-          </span>
-          <span>
-            <span className="block text-sm font-bold uppercase text-ink-foreground">
-              {t("appName")}
-            </span>
-            <span className="block text-[10px] text-ink-foreground/55">{t("appTag")}</span>
-          </span>
+        <Link to="/" className="block px-1" aria-label={t("appName")}>
+          <img
+            src={logoAsset.url}
+            alt={t("appName")}
+            className="h-auto w-full object-contain"
+          />
         </Link>
 
         <div className="mt-4 flex-1 overflow-y-auto">
@@ -88,10 +85,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b-2 border-ink bg-card px-4 py-3">
-          <Link to="/" className="lg:hidden">
-            <span className="gradient-brand grid size-9 place-items-center rounded-md border-2 border-ink text-sm font-bold text-primary-foreground">
-              ح
-            </span>
+          <Link to="/" className="w-32 shrink-0 lg:hidden" aria-label={t("appName")}>
+            <img
+              src={logoAsset.url}
+              alt={t("appName")}
+              className="h-9 w-full object-contain"
+            />
           </Link>
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border-2 border-ink bg-secondary px-3 py-1.5">
             <Search className="size-4 shrink-0 text-muted-foreground" />
