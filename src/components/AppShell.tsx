@@ -23,6 +23,7 @@ import {
   Check,
   PanelLeft,
   PanelLeftClose,
+  Factory,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -44,6 +45,7 @@ const erpNav = [
   { to: "/purchases", key: "nav_purchases", icon: ShoppingCart },
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
   { to: "/inventory", key: "nav_inventory", icon: Boxes },
+  { to: "/manufacturing", key: "nav_manufacturing", icon: Factory },
   { to: "/partners", key: "nav_partners", icon: Users },
 ] as const;
 

@@ -21,6 +21,7 @@ export const dict: Dict = {
   nav_purchases: { ar: "المشتريات", en: "Purchases" },
   nav_accounting: { ar: "الحسابات", en: "Accounting" },
   nav_inventory: { ar: "المخزون", en: "Inventory" },
+  nav_manufacturing: { ar: "التصنيع والتشغيل", en: "Manufacturing" },
   nav_partners: { ar: "العملاء والموردون", en: "Customers & Suppliers" },
   nav_reports: { ar: "التقارير", en: "Reports" },
   nav_audit: { ar: "سجل التدقيق", en: "Audit Log" },
