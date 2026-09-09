@@ -71,14 +71,14 @@ function Purchases() {
               "Upload a PDF or photo; the agent extracts the data and prepares a draft for review.",
             )}
           </p>
-          <div className="mt-4 rounded-md border-2 border-dashed border-ink-foreground/35 p-6 text-center text-sm text-ink-foreground/60">
+          <div className="mt-4 rounded-xl border-2 border-dashed border-border/80 bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
             invoice.pdf · receipt.jpg
           </div>
-          <div className="mt-4 rounded-md border border-ink-foreground/20 bg-ink-foreground/5 p-3 text-sm">
+          <div className="mt-4 rounded-xl border border-border/70 bg-card p-3 text-sm shadow-sm">
             <p className="font-bold">{pick("آخر استخراج", "Last extraction")}</p>
-            <p className="mt-1 text-ink-foreground/70">
+            <p className="mt-1 text-muted-foreground">
               {pick("فاتورة من مورد النيل بقيمة", "Invoice from Nile Supplies for")}{" "}
-              <span className="num font-bold">{money(25500)}</span>
+              <span className="num font-bold text-foreground">{money(25500)}</span>
             </p>
           </div>
         </Panel>

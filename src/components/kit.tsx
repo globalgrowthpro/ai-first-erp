@@ -12,10 +12,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-5">
+    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-4">
       <div>
-        <h1 className="text-3xl font-bold uppercase leading-none">{title}</h1>
-        {subtitle ? <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p> : null}
+        <h1 className="text-2xl lg:text-3xl font-bold uppercase leading-none tracking-tight">{title}</h1>
+        {subtitle ? <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -38,17 +38,17 @@ export function Panel({
   return (
     <section
       className={cn(
-        "surface-panel rounded-lg",
-        tone === "ink" && "gradient-ink border-ink text-ink-foreground",
-        tone === "brand" && "gradient-brand border-ink text-primary-foreground",
+        "surface-panel rounded-xl overflow-hidden",
+        tone === "ink" && "gradient-ink text-ink-foreground shadow-md",
+        tone === "brand" && "gradient-brand text-primary-foreground shadow-md",
         className,
       )}
     >
       {title ? (
         <header
           className={cn(
-            "flex items-center justify-between gap-3 border-b-2 px-5 py-3",
-            tone === "plain" ? "border-ink/15" : "border-ink-foreground/25",
+            "flex items-center justify-between gap-3 border-b px-5 py-3.5",
+            tone === "plain" ? "border-border/60 bg-card" : "border-ink-foreground/20",
           )}
         >
           <h2 className="text-sm font-bold uppercase tracking-wide">{title}</h2>
@@ -63,21 +63,27 @@ export function Panel({
 export function Btn({
   children,
   variant = "solid",
+  size = "md",
   className,
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "solid" | "outline" | "ghost" | "gold" | "ink";
+  variant?: "solid" | "outline" | "ghost" | "gold" | "ink" | "primary" | "danger";
+  size?: "sm" | "md" | "lg";
 }) {
   return (
     <button
       {...rest}
       className={cn(
-        "inline-flex items-center gap-2 rounded-md border-2 border-ink px-4 py-2 text-sm font-bold uppercase tracking-wide transition-transform active:translate-y-px",
-        variant === "solid" && "bg-primary text-primary-foreground shadow-[3px_3px_0_0_var(--ink)]",
-        variant === "gold" && "bg-gold text-gold-foreground shadow-[3px_3px_0_0_var(--ink)]",
-        variant === "ink" && "bg-ink text-ink-foreground",
-        variant === "outline" && "bg-card text-foreground hover:bg-secondary",
-        variant === "ghost" && "border-transparent bg-transparent hover:bg-secondary",
+        "inline-flex items-center gap-2 rounded-lg font-bold uppercase tracking-wide transition-all shadow-sm active:translate-y-px",
+        size === "sm" && "px-3 py-1.5 text-xs",
+        size === "md" && "px-4 py-2 text-sm",
+        size === "lg" && "px-5 py-2.5 text-base",
+        (variant === "solid" || variant === "primary") && "bg-primary text-primary-foreground hover:opacity-95 shadow-primary/20",
+        variant === "danger" && "bg-destructive text-destructive-foreground hover:opacity-95 shadow-destructive/20",
+        variant === "gold" && "bg-gold text-gold-foreground hover:opacity-95",
+        variant === "ink" && "bg-ink text-ink-foreground hover:opacity-95",
+        variant === "outline" && "bg-card text-foreground border border-border hover:bg-secondary",
+        variant === "ghost" && "bg-transparent hover:bg-secondary shadow-none",
         className,
       )}
     >
@@ -91,11 +97,11 @@ export function StatusPill({ status }: { status: "paid" | "partial" | "overdue" 
   return (
     <span
       className={cn(
-        "inline-block rounded-sm border border-ink px-2 py-0.5 text-[11px] font-bold uppercase",
-        status === "paid" && "bg-success text-success-foreground",
-        status === "partial" && "bg-gold text-gold-foreground",
-        status === "overdue" && "bg-destructive text-destructive-foreground",
-        status === "draft" && "bg-secondary text-secondary-foreground",
+        "inline-block rounded-md px-2.5 py-0.5 text-[11px] font-bold uppercase",
+        status === "paid" && "bg-success/15 text-success font-bold",
+        status === "partial" && "bg-gold/20 text-gold-foreground font-bold",
+        status === "overdue" && "bg-destructive/15 text-destructive font-bold",
+        status === "draft" && "bg-secondary text-muted-foreground font-semibold",
       )}
     >
       {t(status)}
@@ -116,7 +122,7 @@ export function KpiCard({
 }) {
   const { t } = useI18n();
   return (
-    <div className="surface-panel rounded-lg p-4">
+    <div className="surface-panel rounded-xl p-5">
       <div className="flex items-center gap-2">
         <span
           className={cn(
@@ -146,32 +152,41 @@ export function KpiCard({
 
 export function DataTable({
   head,
+  columns,
   children,
 }: {
-  head: string[];
+  head?: string[];
+  columns?: ({ header: string; className?: string } | { header: string })[];
   children: ReactNode;
 }) {
+  const headers = columns
+    ? columns.map((col) => ({ title: col.header, className: "className" in col ? col.className : undefined }))
+    : (head ?? []).map((h) => ({ title: h, className: undefined }));
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b-2 border-ink text-start">
-            {head.map((h) => (
+          <tr className="border-b border-border/80 text-start">
+            {headers.map((h, i) => (
               <th
-                key={h}
-                className="px-3 py-2 text-start text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
+                key={i}
+                className={cn(
+                  "px-3 py-2.5 text-start text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80",
+                  h.className
+                )}
               >
-                {h}
+                {h.title}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody className="divide-y divide-border/50">{children}</tbody>
       </table>
     </div>
   );
 }
 
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
-  return <td className={cn("border-b border-border px-3 py-2.5", className)}>{children}</td>;
+  return <td className={cn("px-3 py-3", className)}>{children}</td>;
 }

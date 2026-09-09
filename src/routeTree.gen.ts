@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as AiRouteImport } from './routes/ai'
+import { Route as AiModulesRouteImport } from './routes/ai-modules'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as PartnersRouteImport } from './routes/partners'
@@ -33,6 +34,11 @@ const AccountingRoute = AccountingRouteImport.update({
 const AiRoute = AiRouteImport.update({
   id: '/ai',
   path: '/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiModulesRoute = AiModulesRouteImport.update({
+  id: '/ai-modules',
+  path: '/ai-modules',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditRoute = AuditRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRoute
   '/ai': typeof AiRoute
+  '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
   '/inventory': typeof InventoryRoute
   '/partners': typeof PartnersRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRoute
   '/ai': typeof AiRoute
+  '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
   '/inventory': typeof InventoryRoute
   '/partners': typeof PartnersRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounting': typeof AccountingRoute
   '/ai': typeof AiRoute
+  '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
   '/inventory': typeof InventoryRoute
   '/partners': typeof PartnersRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/ai'
+    | '/ai-modules'
     | '/audit'
     | '/inventory'
     | '/partners'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/ai'
+    | '/ai-modules'
     | '/audit'
     | '/inventory'
     | '/partners'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounting'
     | '/ai'
+    | '/ai-modules'
     | '/audit'
     | '/inventory'
     | '/partners'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountingRoute: typeof AccountingRoute
   AiRoute: typeof AiRoute
+  AiModulesRoute: typeof AiModulesRoute
   AuditRoute: typeof AuditRoute
   InventoryRoute: typeof InventoryRoute
   PartnersRoute: typeof PartnersRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-modules': {
+      id: '/ai-modules'
+      path: '/ai-modules'
+      fullPath: '/ai-modules'
+      preLoaderRoute: typeof AiModulesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit': {
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountingRoute: AccountingRoute,
   AiRoute: AiRoute,
+  AiModulesRoute: AiModulesRoute,
   AuditRoute: AuditRoute,
   InventoryRoute: InventoryRoute,
   PartnersRoute: PartnersRoute,

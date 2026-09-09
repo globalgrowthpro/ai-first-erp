@@ -40,8 +40,8 @@ function Audit() {
                 <span
                   className={
                     row.ok
-                      ? "rounded-sm border border-ink bg-success px-2 py-0.5 text-[11px] font-bold uppercase text-success-foreground"
-                      : "rounded-sm border border-ink bg-destructive px-2 py-0.5 text-[11px] font-bold uppercase text-destructive-foreground"
+                      ? "rounded-md border border-success/30 bg-success/15 px-2 py-0.5 text-[11px] font-bold uppercase text-success"
+                      : "rounded-md border border-destructive/30 bg-destructive/15 px-2 py-0.5 text-[11px] font-bold uppercase text-destructive"
                   }
                 >
                   {row.ok ? "SUCCESS" : t("denied")}

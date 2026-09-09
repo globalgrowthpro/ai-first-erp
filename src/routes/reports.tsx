@@ -90,7 +90,7 @@ function Reports() {
         <Panel title={t("aiInsights")} tone="ink" aside={<Sparkles className="size-4" />}>
           <ul className="space-y-3 text-sm">
             {insights.map((i) => (
-              <li key={i.en} className="rounded-md border border-ink-foreground/20 bg-ink-foreground/5 p-3">
+              <li key={i.en} className="rounded-xl border border-border/70 bg-card p-3 shadow-sm text-sm">
                 {pick(i.ar, i.en)}
               </li>
             ))}

@@ -91,7 +91,7 @@ function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-3 border-t-2 border-ink/10 pt-4 text-center">
+          <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border/70 pt-4 text-center">
             <div>
               <p className="num text-xl font-bold">{n(kpis.invoices)}</p>
               <p className="text-[11px] uppercase text-muted-foreground">{t("recentInvoices")}</p>
@@ -111,12 +111,12 @@ function Dashboard() {
           <p className="text-xs text-ink-foreground/60">{t("aiInsightsSub")}</p>
           <ul className="mt-4 space-y-3">
             {insights.map((i) => (
-              <li key={i.en} className="rounded-md border border-ink-foreground/20 bg-ink-foreground/5 p-3 text-sm">
+              <li key={i.en} className="rounded-xl border border-border/70 bg-card p-3 text-sm shadow-sm">
                 {pick(i.ar, i.en)}
               </li>
             ))}
           </ul>
-          <div className="mt-4 rounded-md bg-gold p-3 text-sm font-bold text-gold-foreground">
+          <div className="mt-4 rounded-xl bg-gold/20 border border-gold/40 p-3 text-sm font-bold text-gold-foreground">
             {pick("3 أشياء تحتاج انتباهك اليوم.", "3 things need your attention today.")}
           </div>
         </Panel>

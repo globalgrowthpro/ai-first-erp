@@ -45,8 +45,8 @@ function Partners() {
                 <span
                   className={
                     p.type === "customer"
-                      ? "rounded-sm border border-ink bg-brand px-2 py-0.5 text-[11px] font-bold uppercase text-brand-foreground"
-                      : "rounded-sm border border-ink bg-gold px-2 py-0.5 text-[11px] font-bold uppercase text-gold-foreground"
+                      ? "rounded-md bg-brand/15 text-brand px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide"
+                      : "rounded-md bg-gold/25 text-gold-foreground px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide"
                   }
                 >
                   {p.type === "customer" ? t("customer") : t("supplier")}

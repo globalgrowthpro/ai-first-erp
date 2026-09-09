@@ -1,5 +1,4 @@
-@import "tailwindcss" source(none);
-@source "../src";
+@import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -106,9 +105,9 @@
 
   --gradient-brand: linear-gradient(120deg, var(--crimson), var(--primary) 55%, var(--gold));
   --gradient-ink: linear-gradient(150deg, var(--ink), oklch(0.24 0.06 300));
-  --shadow-hard: 6px 6px 0 0 var(--ink);
-  --shadow-hard-sm: 3px 3px 0 0 var(--ink);
-  --shadow-soft: 0 12px 32px -18px oklch(0.19 0.03 275 / 0.45);
+  --shadow-hard: 0 10px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+  --shadow-hard-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-soft: 0 12px 32px -18px oklch(0.19 0.03 275 / 0.25);
 }
 
 @layer base {
@@ -141,8 +140,8 @@
 
 @utility surface-panel {
   background-color: var(--color-card);
-  border: 2px solid var(--color-ink);
-  box-shadow: var(--shadow-hard-sm);
+  border: none;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.05);
 }
 
 @utility surface-flat {
