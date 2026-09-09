@@ -58,6 +58,7 @@ export function UsersManagement() {
     allowedPages: ["/", "/sales", "/inventory"],
     allowedActions: ["invoice.create"],
     status: "active" as "active" | "inactive",
+    sidebarVisible: true,
   });
 
   // New Department Form State
