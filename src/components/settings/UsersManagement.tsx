@@ -365,6 +365,7 @@ export function UsersManagement() {
                   <th className="p-3 text-start">{t("roles")}</th>
                   <th className="p-3 text-start">{t("allowedPages")}</th>
                   <th className="p-3 text-start">{t("allowedActions")}</th>
+                  <th className="p-3 text-start">{lang === "ar" ? "الشريط" : "Sidebar"}</th>
                   <th className="p-3 text-start">{t("active")}</th>
                   <th className="p-3 text-center">{lang === "ar" ? "التفاصيل" : "Details"}</th>
                 </tr>
