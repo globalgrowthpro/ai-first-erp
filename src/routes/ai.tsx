@@ -30,8 +30,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useCompanySettings } from "@/lib/settings-store";
 import { cn } from "@/lib/utils";
-import wazeerLogo from "@/assets/wazeer-logo.png.asset.json";
 
 export const Route = createFileRoute("/ai")({
   head: () => ({
@@ -131,9 +131,9 @@ const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
     taxPercent: 10,
     taxAmount: 170,
     total: 1870,
-    companyName: "Your Company",
-    companyTagline: "Professional Services",
-    companyWebsite: "www.yourcompany.com",
+    companyName: "شركة وزير الحلو للحلويات",
+    companyTagline: "حلويات ومواد غذائية وتوريدات فندقية",
+    companyWebsite: "www.wazeer-elhelw.com",
   },
   "ord-7780": {
     id: "ord-7780",
@@ -387,7 +387,10 @@ function QrCodeGraphic({ value, size = 64 }: { value: string; size?: number }) {
 // ==========================================
 
 function AiWorkspacePage() {
-  const { t, pick, dir } = useI18n();
+  const { t, pick, dir, lang } = useI18n();
+  const { settings } = useCompanySettings();
+  const companyLogo = settings.logoUrl || "/wazeer-logo.png";
+  const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
 
   // State
   const [selectedActivityId, setSelectedActivityId] = useState<string>("act-1");
@@ -735,18 +738,19 @@ function AiWorkspacePage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   {/* Wazeer Logo */}
-                  <img
-                    src={wazeerLogo.url}
-                    alt="Wazeer El-Helw"
-                    className="size-10 rounded-xl object-contain shadow-sm bg-white"
-                    loading="lazy"
-                  />
+                  <div className="size-12 rounded-xl bg-white p-1 shadow-sm border border-border/60 flex items-center justify-center shrink-0">
+                    <img
+                      src={companyLogo}
+                      alt={companyName}
+                      className="size-full object-contain"
+                    />
+                  </div>
                   <div>
                     <h2 className="font-extrabold text-base text-foreground leading-tight">
-                      {currentDoc.companyName}
+                      {companyName}
                     </h2>
                     <p className="text-[11px] text-muted-foreground font-medium">
-                      {currentDoc.companyTagline}
+                      {currentDoc.companyTagline || (lang === "ar" ? "حلويات ومواد غذائية وتوريدات" : "Confectionery & Food Industries")}
                     </p>
                   </div>
                 </div>
