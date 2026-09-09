@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Sparkles,
@@ -28,6 +28,7 @@ import {
   User,
   ChefHat,
   ExternalLink,
+  ShieldAlert,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -110,18 +111,23 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 function NavList({
   items,
   label,
+  allowedPages,
 }: {
   items: typeof erpNav | typeof controlNav;
   label: string;
+  allowedPages: string[];
 }) {
   const { t } = useI18n();
+  const visibleItems = items.filter((item) => allowedPages.includes(item.to));
+  if (visibleItems.length === 0) return null;
+
   return (
     <div className="mt-6 first:mt-0">
       <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-foreground/45">
         {label}
       </p>
       <nav className="mt-2 space-y-1">
-        {items.map(({ to, key, icon: Icon }) => (
+        {visibleItems.map(({ to, key, icon: Icon }) => (
           <Link
             key={to}
             to={to}
@@ -152,6 +158,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     logout,
     setAuthenticated,
   } = useAuthStore();
+
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const normalizedPath = currentPath === "/" ? "/" : currentPath.replace(/\/$/, "");
+  const isPageAllowed = currentUser.allowedPages.includes(normalizedPath);
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(
@@ -233,8 +244,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <div className="mt-4 flex-1 overflow-y-auto">
-          <NavList items={erpNav} label={t("group_erp")} />
-          <NavList items={controlNav} label={t("group_control")} />
+          <NavList items={erpNav} label={t("group_erp")} allowedPages={currentUser.allowedPages} />
+          <NavList items={controlNav} label={t("group_control")} allowedPages={currentUser.allowedPages} />
         </div>
 
         <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3 space-y-2">
@@ -533,7 +544,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Mobile Navigation */}
         <nav className="flex gap-1 overflow-x-auto border-b border-border/40 bg-ink px-2 py-2 lg:hidden">
-          {[...erpNav, ...controlNav].map(({ to, key }) => (
+          {[...erpNav, ...controlNav]
+            .filter((item) => currentUser.allowedPages.includes(item.to))
+            .map(({ to, key }) => (
             <Link
               key={to}
               to={to}
@@ -547,7 +560,68 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Page Main Content */}
         <main key={lang} className="flex-1 space-y-6 p-4 md:p-6">
-          {children}
+          {!isPageAllowed ? (
+            <div className="min-h-[60vh] flex items-center justify-center p-4">
+              <div className="max-w-lg w-full rounded-3xl border border-rose-500/20 bg-card p-6 sm:p-8 text-center shadow-xl space-y-5 animate-in fade-in zoom-in-95">
+                <div className="size-16 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center shadow-inner">
+                  <ShieldAlert className="size-8" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h2 className="text-lg font-bold text-foreground">
+                    {pick("غير مصرح بالوصول إلى هذه الصفحة", "Access Restricted For This Account")}
+                  </h2>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {pick(
+                      `حساب "${pick(currentUser.name.ar, currentUser.name.en)}" بصلاحية (${pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}) ليس لديه صلاحية لعرض هذا القسم (${normalizedPath}).`,
+                      `Account "${currentUser.name.en}" (${currentUser.roleLabel.en}) is not permitted to view this module (${normalizedPath}).`
+                    )}
+                  </p>
+                </div>
+
+                {/* Allowed modules for this account */}
+                <div className="p-4 rounded-2xl bg-secondary/50 border border-border/60 text-start space-y-2.5">
+                  <p className="text-xs font-bold text-foreground">
+                    {pick("الأقسام المصرح بها لحسابك الحالي:", "Permitted Modules For Your Account:")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...erpNav, ...controlNav]
+                      .filter((n) => currentUser.allowedPages.includes(n.to))
+                      .map(({ to, key, icon: Icon }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-medium text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-all shadow-sm"
+                        >
+                          <Icon className="size-3.5 text-primary" />
+                          <span>{t(key)}</span>
+                        </Link>
+                      ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <Link
+                    to="/"
+                    className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow hover:opacity-95 transition-opacity inline-flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="size-4" />
+                    <span>{pick("العودة للرئيسية", "Return to Home")}</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => loginAs("usr-admin")}
+                    className="px-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-xs font-semibold hover:bg-secondary transition-colors inline-flex items-center gap-2"
+                  >
+                    <ShieldCheck className="size-4 text-purple-600" />
+                    <span>{pick("التبديل لحساب الإدارة (Admin)", "Switch to Admin")}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
         </main>
 
         {/* Footer */}
