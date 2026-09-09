@@ -1144,6 +1144,54 @@ export function UsersManagement() {
                 </div>
               </div>
 
+              {/* Sidebar Visibility Toggle */}
+              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-9 h-9 rounded-lg border flex items-center justify-center ${
+                        selectedUserForDetail.sidebarVisible
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {selectedUserForDetail.sidebarVisible ? (
+                        <PanelLeft className="w-4 h-4" />
+                      ) : (
+                        <PanelLeftClose className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs uppercase">
+                        {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        {selectedUserForDetail.sidebarVisible
+                          ? lang === "ar" ? "القائمة الجانبية ظاهرة للمستخدم" : "Sidebar is shown for this user"
+                          : lang === "ar" ? "القائمة الجانبية مخفية للمستخدم" : "Sidebar is hidden for this user"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={toggleSelectedUserSidebar}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                      selectedUserForDetail.sidebarVisible
+                        ? "bg-primary border-primary"
+                        : "bg-muted border-border"
+                    }`}
+                    aria-pressed={selectedUserForDetail.sidebarVisible}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        selectedUserForDetail.sidebarVisible ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
               {/* Permitted Pages */}
               <div>
                 <h4 className="font-bold text-xs uppercase mb-2 flex items-center gap-1.5">
