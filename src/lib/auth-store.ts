@@ -5,7 +5,7 @@ export interface DemoUser {
   name: { ar: string; en: string };
   email: string;
   password: string;
-  role: "admin" | "cfo" | "kitchen" | "sales" | "warehouse";
+  role: "admin" | "cfo" | "kitchen" | "sales" | "warehouse" | "ai";
   roleLabel: { ar: string; en: string };
   department: { ar: string; en: string };
   position: { ar: string; en: string };
@@ -135,6 +135,22 @@ export const DEMO_ACCOUNTS: DemoUser[] = [
       "/partners",
       "/ai",
     ],
+  },
+  {
+    id: "usr-ai",
+    name: { ar: "د. سارة عادل", en: "Dr. Sarah Adel" },
+    email: "ai@wazeer-elhelw.com",
+    password: "ai123",
+    role: "ai",
+    roleLabel: { ar: "محلل الذكاء الاصطناعي (AI Workspace)", en: "AI Operating Analyst" },
+    department: { ar: "مركز الذكاء الاصطناعي والأتمتة", en: "AI & Automation Hub" },
+    position: { ar: "خبير الذكاء الاصطناعي", en: "AI Copilot Specialist" },
+    avatarBg: "from-fuchsia-600 to-pink-600",
+    description: {
+      ar: "حساب مخصص حصرياً لمساحة الذكاء الاصطناعي التشغيلي (AI Workspace)",
+      en: "Dedicated exclusively to the AI Workspace & Autonomous Copilot",
+    },
+    allowedPages: ["/ai"],
   },
 ];
 

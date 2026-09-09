@@ -167,9 +167,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isPageAllowed) {
-      navigate({ to: "/" });
+      const fallback = currentUser.allowedPages[0] || "/";
+      navigate({ to: fallback });
     }
-  }, [isPageAllowed, navigate]);
+  }, [isPageAllowed, currentUser.allowedPages, navigate]);
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(

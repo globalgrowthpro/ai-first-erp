@@ -212,6 +212,7 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                 if (account.role === "kitchen") RoleIcon = ChefHat;
                 if (account.role === "sales") RoleIcon = Building2;
                 if (account.role === "warehouse") RoleIcon = Boxes;
+                if (account.role === "ai") RoleIcon = Sparkles;
 
                 const isCurrent = email === account.email;
 

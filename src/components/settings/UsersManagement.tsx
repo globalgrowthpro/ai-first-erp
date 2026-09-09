@@ -794,8 +794,9 @@ export function UsersManagement() {
                   </div>
                   <button
                     type="button"
+                    dir="ltr"
                     onClick={() => setNewUser((prev) => ({ ...prev, sidebarVisible: !prev.sidebarVisible }))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
                       newUser.sidebarVisible ? "bg-primary border-primary" : "bg-muted border-border"
                     }`}
                     aria-pressed={newUser.sidebarVisible}
@@ -1219,8 +1220,9 @@ export function UsersManagement() {
 
                   <button
                     type="button"
+                    dir="ltr"
                     onClick={toggleSelectedUserSidebar}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
                       selectedUserForDetail.sidebarVisible
                         ? "bg-primary border-primary"
                         : "bg-muted border-border"
