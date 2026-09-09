@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   X,
   Check,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
