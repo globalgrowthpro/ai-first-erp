@@ -731,6 +731,7 @@ export interface UserItem {
   allowedActions: string[];
   status: "active" | "inactive";
   lastActive: string;
+  sidebarVisible: boolean;
 }
 
 export const users: UserItem[] = [
