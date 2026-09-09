@@ -447,6 +447,23 @@ export function UsersManagement() {
                         </div>
                       </td>
 
+                      {/* Sidebar Visibility */}
+                      <td className="p-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                            user.sidebarVisible
+                              ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                              : "bg-muted text-muted-foreground border-border/60"
+                          }`}
+                          title={user.sidebarVisible ? (lang === "ar" ? "الشريط الجانبي مرئي" : "Sidebar visible") : (lang === "ar" ? "الشريط الجانبي مخفي" : "Sidebar hidden")}
+                        >
+                          {user.sidebarVisible ? <PanelLeft className="w-3 h-3" /> : <PanelLeftClose className="w-3 h-3" />}
+                          {user.sidebarVisible
+                            ? lang === "ar" ? "مرئي" : "Visible"
+                            : lang === "ar" ? "مخفي" : "Hidden"}
+                        </span>
+                      </td>
+
                       {/* Status */}
                       <td className="p-3">
                         <span
