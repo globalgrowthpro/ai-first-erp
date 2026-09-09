@@ -132,6 +132,9 @@ function NavList({
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, pick, toggle, lang, dir } = useI18n();
   const [sidebarVisible, setSidebarVisible] = useSidebarVisible();
+  const { settings } = useCompanySettings();
+  const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
+  const companyLogo = settings.logoUrl || "/ai-first-erp-logo.png";
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(
