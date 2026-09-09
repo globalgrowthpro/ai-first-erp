@@ -320,7 +320,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
 
           {/* Search Bar */}
-          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
+          <label className="hidden sm:flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               placeholder={t("search")}
@@ -329,7 +329,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </label>
 
           {/* Notification Bell with Dropdown */}
-          <div className="relative" ref={notifDropdownRef}>
+          <div className="relative ms-auto sm:ms-0" ref={notifDropdownRef}>
             <button
               onClick={() => setIsNotifOpen((prev) => !prev)}
               title={t("notifications")}
@@ -425,10 +425,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Language Switcher */}
           <button
             onClick={toggle}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-bold uppercase hover:bg-secondary transition-colors"
+            title={t("lang")}
+            aria-label={t("lang")}
+            className="inline-flex size-9 sm:size-auto items-center justify-center gap-1.5 rounded-lg border border-border bg-card p-2 sm:px-3 sm:py-1.5 text-xs font-bold uppercase hover:bg-secondary transition-colors shrink-0"
           >
-            <Languages className="size-4" />
-            <span>{t("lang")}</span>
+            <Languages className="size-4 shrink-0" />
+            <span className="hidden sm:inline">{t("lang")}</span>
           </button>
 
           {/* Ask AI Button */}
