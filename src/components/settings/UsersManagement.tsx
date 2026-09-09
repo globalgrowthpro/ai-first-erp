@@ -192,6 +192,8 @@ export function UsersManagement() {
       prev.map((u) => (u.id === selectedUserForDetail.id ? { ...u, sidebarVisible: next } : u))
     );
     setSelectedUserForDetail((prev) => (prev ? { ...prev, sidebarVisible: next } : prev));
+    // The signed-in demo user drives the real sidebar in the app shell
+    if (selectedUserForDetail.id === CURRENT_USER_ID) setSidebarVisible(next);
   };
 
   return (
