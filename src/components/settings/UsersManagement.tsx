@@ -765,6 +765,47 @@ export function UsersManagement() {
                 </div>
               </div>
 
+              {/* Sidebar Visibility */}
+              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-8 h-8 rounded-lg border flex items-center justify-center ${
+                        newUser.sidebarVisible
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {newUser.sidebarVisible ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xs uppercase">
+                        {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {newUser.sidebarVisible
+                          ? lang === "ar" ? "القائمة الجانبية تظهر عند تسجيل الدخول" : "Sidebar is shown on login"
+                          : lang === "ar" ? "القائمة الجانبية مخفية عند تسجيل الدخول" : "Sidebar is hidden on login"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNewUser((prev) => ({ ...prev, sidebarVisible: !prev.sidebarVisible }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                      newUser.sidebarVisible ? "bg-primary border-primary" : "bg-muted border-border"
+                    }`}
+                    aria-pressed={newUser.sidebarVisible}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        newUser.sidebarVisible ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
               {/* Allowed Pages Section */}
               <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
                 <div className="flex items-center justify-between mb-3">
