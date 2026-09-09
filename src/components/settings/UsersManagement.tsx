@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
+import { CURRENT_USER_ID, setSidebarVisible } from "@/lib/ui-prefs";
 import {
   departments as initialDepartments,
   positions as initialPositions,
