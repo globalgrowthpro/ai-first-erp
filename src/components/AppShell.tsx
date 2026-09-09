@@ -27,6 +27,7 @@ import {
   ChevronDown,
   User,
   ChefHat,
+  ExternalLink,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -235,14 +236,28 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavList items={controlNav} label={t("group_control")} />
         </div>
 
-        <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3">
-          <p className="text-xs font-bold text-ink-foreground">{companyName}</p>
-          <p className="text-[11px] text-ink-foreground/85 font-semibold mt-0.5">
-            {pick(currentUser.name.ar, currentUser.name.en)}
-          </p>
-          <p className="text-[10px] text-ink-foreground/55">
-            {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
-          </p>
+        <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3 space-y-2">
+          <div>
+            <p className="text-xs font-bold text-ink-foreground">{companyName}</p>
+            <p className="text-[11px] text-ink-foreground/85 font-semibold mt-0.5">
+              {pick(currentUser.name.ar, currentUser.name.en)}
+            </p>
+            <p className="text-[10px] text-ink-foreground/55">
+              {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+            </p>
+          </div>
+          <div className="pt-2 border-t border-ink-foreground/15 text-[11px]">
+            <a
+              href="https://odooteams.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-ink-foreground/80 hover:text-ink-foreground font-medium transition-colors group underline-offset-4 hover:underline"
+              title="https://odooteams.com"
+            >
+              <span>Developer: Mr.Hafez Rahim</span>
+              <ExternalLink className="size-3 text-ink-foreground/60 group-hover:text-ink-foreground transition-colors shrink-0" />
+            </a>
+          </div>
         </div>
       </aside>
 
@@ -487,6 +502,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                       </button>
                     );
                   })}
+                </div>
+
+                <div className="pt-2 border-t border-border/50 text-[11px]">
+                  <a
+                    href="https://odooteams.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-between w-full p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <span>Developer: Mr.Hafez Rahim</span>
+                    <ExternalLink className="size-3 text-muted-foreground" />
+                  </a>
                 </div>
               </div>
             )}

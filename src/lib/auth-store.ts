@@ -143,47 +143,75 @@ const STORAGE_KEYS = {
   AUTH: "wazeer_erp_is_authenticated_v1",
 };
 
-export function useAuthStore() {
-  const [currentUser, setCurrentUser] = useState<DemoUser>(() => {
-    if (typeof window === "undefined") return DEMO_ACCOUNTS[0];
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to load user from storage", e);
-    }
-    return DEMO_ACCOUNTS[0];
-  });
+const AUTH_EVENT = "hafez_erp_auth_updated";
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
-      if (saved !== null) return JSON.parse(saved);
-    } catch {
-      return true;
+function getStoredUser(): DemoUser {
+  if (typeof window === "undefined") return DEMO_ACCOUNTS[0];
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const matched = DEMO_ACCOUNTS.find(
+        (a) => a.id === parsed.id || a.email.toLowerCase() === (parsed.email || "").toLowerCase()
+      );
+      if (matched) return matched;
     }
+  } catch (e) {
+    console.error("Failed to load user from storage", e);
+  }
+  return DEMO_ACCOUNTS[0];
+}
+
+function getStoredAuth(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
+    if (saved !== null) return JSON.parse(saved);
+  } catch {
     return true;
-  });
+  }
+  return true;
+}
+
+function notifyAuthChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EVENT));
+  }
+}
+
+export function useAuthStore() {
+  const [currentUser, setCurrentUserState] = useState<DemoUser>(() => getStoredUser());
+  const [isAuthenticated, setIsAuthenticatedState] = useState<boolean>(() => getStoredAuth());
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
-      localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(isAuthenticated));
-    } catch (e) {
-      console.error("Failed to save auth state", e);
-    }
-  }, [currentUser, isAuthenticated]);
+    const handleUpdate = () => {
+      setCurrentUserState(getStoredUser());
+      setIsAuthenticatedState(getStoredAuth());
+    };
+    window.addEventListener(AUTH_EVENT, handleUpdate);
+    return () => window.removeEventListener(AUTH_EVENT, handleUpdate);
+  }, []);
 
   const login = useCallback((email: string, pass: string): boolean => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
     const found = DEMO_ACCOUNTS.find(
       (u) =>
-        u.email.toLowerCase() === email.trim().toLowerCase() &&
-        u.password === pass.trim()
+        u.email.toLowerCase() === cleanEmail &&
+        u.password === cleanPass
     );
     if (found) {
-      setCurrentUser(found);
-      setIsAuthenticated(true);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(found));
+          localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(true));
+        } catch (e) {
+          console.error("Failed to persist auth", e);
+        }
+      }
+      setCurrentUserState(found);
+      setIsAuthenticatedState(true);
+      notifyAuthChange();
       return true;
     }
     return false;
@@ -192,13 +220,30 @@ export function useAuthStore() {
   const loginAs = useCallback((userId: string) => {
     const found = DEMO_ACCOUNTS.find((u) => u.id === userId);
     if (found) {
-      setCurrentUser(found);
-      setIsAuthenticated(true);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(found));
+          localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(true));
+        } catch (e) {
+          console.error("Failed to persist auth", e);
+        }
+      }
+      setCurrentUserState(found);
+      setIsAuthenticatedState(true);
+      notifyAuthChange();
     }
   }, []);
 
   const logout = useCallback(() => {
-    setIsAuthenticated(false);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(false));
+      } catch (e) {
+        console.error("Failed to persist logout", e);
+      }
+    }
+    setIsAuthenticatedState(false);
+    notifyAuthChange();
   }, []);
 
   return {

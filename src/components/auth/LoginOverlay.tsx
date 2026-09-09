@@ -13,6 +13,7 @@ import {
   Sparkles,
   KeyRound,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
@@ -53,6 +54,7 @@ export function LoginOverlay() {
   const handleQuickDemoLogin = (account: DemoUser) => {
     setEmail(account.email);
     setPassword(account.password);
+    setError("");
     loginAs(account.id);
   };
 
@@ -108,8 +110,18 @@ export function LoginOverlay() {
             </div>
           </div>
 
-          <div className="relative z-10 pt-8 border-t border-white/15 text-[11px] text-white/60">
-            <span>Hafez ERP · Wazeer El-Helw Edition</span>
+          <div className="relative z-10 pt-8 border-t border-white/15 text-[11px] text-white/80 flex items-center justify-between">
+            <a
+              href="https://odooteams.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-white transition-colors group underline-offset-4 hover:underline"
+              title="https://odooteams.com"
+            >
+              <span>Developer: Mr.Hafez Rahim</span>
+              <ExternalLink className="size-3 text-white/70 group-hover:text-white transition-colors shrink-0" />
+            </a>
+            <span className="text-white/40 text-[10px]">Hafez ERP</span>
           </div>
         </div>
 
