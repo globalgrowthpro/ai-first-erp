@@ -184,7 +184,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}
-      <aside className="gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border/20 p-4 lg:flex">
+      <aside
+        className={cn(
+          "gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border/20 p-4",
+          sidebarVisible && "lg:flex"
+        )}
+      >
         <Link to="/" className="block px-1" aria-label={t("appName")}>
           <div className="rounded-xl bg-white p-2 shadow-sm transition-transform hover:scale-[1.01]">
             <img
