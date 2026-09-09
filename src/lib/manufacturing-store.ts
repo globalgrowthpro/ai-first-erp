@@ -1,11 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  INITIAL_PRODUCTS,
-  INITIAL_BOMS,
-  INITIAL_WAREHOUSES,
-  type InventoryBom,
-  type InventoryProduct,
-} from "./inventory-store";
 
 export type ProductionStage =
   | "draft"

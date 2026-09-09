@@ -81,13 +81,13 @@ export function WorkOrderFormModal({
       setNotes(editingOrder.notes || "");
     } else {
       setCode(`MO-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`);
-      if (boms.length > 0 && !selectedBomId) {
+      if (boms.length > 0 && !selectedBomId && boms[0]) {
         setSelectedBomId(boms[0].id);
       }
     }
   }, [editingOrder, open, boms]);
 
-  const selectedBom = boms.find((b) => b.id === selectedBomId) || boms[0];
+  const selectedBom = boms.find((b) => b.id === selectedBomId) || (boms.length > 0 ? boms[0] : null);
   const finishedProduct = products.find(
     (p) => p.id === selectedBom?.finishedProductId
   );

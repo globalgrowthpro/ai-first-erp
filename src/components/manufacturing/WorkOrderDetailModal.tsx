@@ -69,8 +69,10 @@ export function WorkOrderDetailModal({
   const destWh = warehouses.find((w) => w.id === order.destWarehouseId);
 
   const handleNextStage = () => {
-    if (currentStageIndex >= STAGES.length - 1) return;
-    const next = STAGES[currentStageIndex + 1].key;
+    if (currentStageIndex < 0 || currentStageIndex >= STAGES.length - 1) return;
+    const nextStageObj = STAGES[currentStageIndex + 1];
+    if (!nextStageObj) return;
+    const next = nextStageObj.key;
 
     // If transitioning to completed, simulate stock movement
     if (next === "completed") {
@@ -86,10 +88,15 @@ export function WorkOrderDetailModal({
       }
     }
 
-    onTransitionStage(order.id, next, {
-      qcPassed: next === "completed" || next === "qc_check" ? true : undefined,
-      notes: qcNotes || order.notes,
-    });
+    const options: { qcPassed?: boolean; notes?: string } = {};
+    if (next === "completed" || next === "qc_check") {
+      options.qcPassed = true;
+    }
+    if (qcNotes || order.notes) {
+      options.notes = qcNotes || order.notes;
+    }
+
+    onTransitionStage(order.id, next, options);
 
     setIsSuccessToast(true);
     setTimeout(() => setIsSuccessToast(false), 3000);
@@ -369,10 +376,10 @@ export function WorkOrderDetailModal({
                   {pick("المرحلة التالية الموصى بها:", "Recommended Next Stage:")}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {currentStageIndex < STAGES.length - 1
+                  {currentStageIndex >= 0 && currentStageIndex < STAGES.length - 1 && STAGES[currentStageIndex + 1]
                     ? pick(
-                        `الانتقال إلى: ${STAGES[currentStageIndex + 1].labelAr}`,
-                        `Advance to: ${STAGES[currentStageIndex + 1].labelEn}`
+                        `الانتقال إلى: ${STAGES[currentStageIndex + 1]?.labelAr || ""}`,
+                        `Advance to: ${STAGES[currentStageIndex + 1]?.labelEn || ""}`
                       )
                     : ""}
                 </p>

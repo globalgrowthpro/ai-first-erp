@@ -214,6 +214,8 @@ const STORAGE_KEYS = {
   BOM: "hafez_erp_inv_bom_v1",
 };
 
+export const INITIAL_BOMS = INITIAL_BOM;
+
 export function useInventoryStore() {
   const [categories, setCategories] = useState<InventoryCategory[]>(() => {
     if (typeof window === "undefined") return INITIAL_CATEGORIES;
@@ -394,6 +396,14 @@ export function useInventoryStore() {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const adjustStock = useCallback((productId: string, deltaQty: number) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? { ...p, qty: Math.max(0, p.qty + deltaQty) } : p
+      )
+    );
+  }, []);
+
   // ==========================================
   // BOM Actions
   // ==========================================
@@ -451,6 +461,7 @@ export function useInventoryStore() {
     deleteUnit,
     addProduct,
     updateProduct,
+    adjustStock,
     deleteProduct,
     addBom,
     updateBom,
