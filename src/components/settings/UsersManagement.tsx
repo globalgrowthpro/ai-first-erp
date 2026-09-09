@@ -106,6 +106,7 @@ export function UsersManagement() {
       allowedActions: newUser.allowedActions,
       status: newUser.status,
       lastActive: lang === "ar" ? "تمت إضافته الآن" : "Just created",
+      sidebarVisible: newUser.sidebarVisible,
     };
 
     setUsersList((prev) => [user, ...prev]);
@@ -124,6 +125,7 @@ export function UsersManagement() {
       allowedPages: ["/", "/sales", "/inventory"],
       allowedActions: ["invoice.create"],
       status: "active",
+      sidebarVisible: true,
     });
   };
 
