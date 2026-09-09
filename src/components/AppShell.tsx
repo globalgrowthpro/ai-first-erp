@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useSidebarVisible } from "@/lib/ui-prefs";
 import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 import {
