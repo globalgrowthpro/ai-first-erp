@@ -221,11 +221,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link
             to="/"
             className="w-32 shrink-0 lg:hidden"
-            aria-label={t("appName")}
+            aria-label={companyName}
           >
             <img
-              src="/ai-first-erp-logo.png"
-              alt={t("appName")}
+              src={companyLogo}
+              alt={companyName}
               className="h-9 w-full object-contain"
             />
           </Link>
