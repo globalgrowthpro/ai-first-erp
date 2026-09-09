@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import wazeerLogo from "@/assets/wazeer-logo.png.asset.json";
 
 export const Route = createFileRoute("/ai")({
   head: () => ({
