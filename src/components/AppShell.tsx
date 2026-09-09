@@ -437,7 +437,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link
             to="/ai"
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold uppercase text-primary-foreground shadow-sm hover:opacity-95 transition-all"
+              "hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold uppercase text-primary-foreground shadow-sm hover:opacity-95 transition-all"
             )}
           >
             <Sparkles className="size-4" />
