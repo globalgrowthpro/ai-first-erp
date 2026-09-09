@@ -184,6 +184,16 @@ export function UsersManagement() {
     }));
   };
 
+  // Toggle sidebar visibility for existing user
+  const toggleSelectedUserSidebar = () => {
+    if (!selectedUserForDetail) return;
+    const next = !selectedUserForDetail.sidebarVisible;
+    setUsersList((prev) =>
+      prev.map((u) => (u.id === selectedUserForDetail.id ? { ...u, sidebarVisible: next } : u))
+    );
+    setSelectedUserForDetail((prev) => (prev ? { ...prev, sidebarVisible: next } : prev));
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Stat Cards */}
