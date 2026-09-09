@@ -75,22 +75,38 @@ interface InvoiceItemLine {
   total: number;
 }
 
+interface DocumentDetailField {
+  label: string;
+  value: string;
+  badge?: string;
+  badgeTone?: "emerald" | "amber" | "blue" | "purple" | "rose";
+}
+
 interface DocumentData {
   id: string;
+  category: string;
+  categoryLabel?: { ar: string; en: string };
   code: string;
   title: string;
   clientName: string;
   clientEmail: string;
   clientPhone: string;
   clientAddress: string;
+  partyLabel?: { ar: string; en: string };
   invoiceDate: string;
-  dueDate: string;
-  status: "Paid" | "Pending" | "Draft" | "Overdue";
-  items: InvoiceItemLine[];
-  subtotal: number;
-  taxPercent: number;
-  taxAmount: number;
-  total: number;
+  dueDate?: string;
+  dateLabel?: { ar: string; en: string };
+  dueDateLabel?: { ar: string; en: string };
+  status: string;
+  statusTone?: "emerald" | "amber" | "blue" | "purple" | "rose";
+  items?: InvoiceItemLine[];
+  subtotal?: number;
+  taxPercent?: number;
+  taxAmount?: number;
+  total?: number;
+  details?: DocumentDetailField[];
+  notes?: string;
+  notesTitle?: { ar: string; en: string };
   companyName: string;
   companyTagline: string;
   companyWebsite: string;
@@ -100,32 +116,39 @@ interface ChatMessage {
   id: string;
   sender: "client" | "agent";
   senderName: string;
-  avatarText?: string | undefined;
+  avatarText?: string;
   text: string;
   time: string;
-  status?: "sent" | "delivered" | "read" | undefined;
+  status?: "sent" | "delivered" | "read";
 }
 
 // ==========================================
-// Mock Data (matches exact reference image)
+// Mock Data for All 8 Activities
 // ==========================================
 
 const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
+  // Activity 1: Invoice #4521
   "inv-4521": {
     id: "inv-4521",
+    category: "INVOICE",
+    categoryLabel: { ar: "فاتورة مبيعات", en: "Sales Invoice" },
     code: "INVOICE #4521",
     title: "Invoice #4521",
-    clientName: "Ali",
+    clientName: "Ali Al-Mansoor",
     clientEmail: "ali@example.com",
     clientPhone: "+20 123 456 7890",
-    clientAddress: "Cairo, Egypt",
+    clientAddress: "Nasr City, Cairo, Egypt",
+    partyLabel: { ar: "فاتورة إلى:", en: "Bill To:" },
     invoiceDate: "08/09/2026",
     dueDate: "22/09/2026",
+    dateLabel: { ar: "تاريخ الفاتورة", en: "Invoice Date" },
+    dueDateLabel: { ar: "تاريخ الاستحقاق", en: "Due Date" },
     status: "Paid",
+    statusTone: "emerald",
     items: [
-      { num: 1, description: "Web Development", qty: 1, unitPrice: 1000, total: 1000 },
-      { num: 2, description: "Design & UI/UX", qty: 1, unitPrice: 500, total: 500 },
-      { num: 3, description: "Hosting (1 Year)", qty: 1, unitPrice: 200, total: 200 },
+      { num: 1, description: "Royal Sweet Koshary Party Trays (25 Units)", qty: 25, unitPrice: 40, total: 1000 },
+      { num: 2, description: "Assorted Egyptian Baklava & Cream Basbousa", qty: 20, unitPrice: 25, total: 500 },
+      { num: 3, description: "Express Cold-Chain Van Catering Delivery", qty: 1, unitPrice: 200, total: 200 },
     ],
     subtotal: 1700,
     taxPercent: 10,
@@ -135,43 +158,126 @@ const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
     companyTagline: "حلويات ومواد غذائية وتوريدات فندقية",
     companyWebsite: "www.wazeer-elhelw.com",
   },
+
+  // Activity 2: Sales Order #7780
   "ord-7780": {
     id: "ord-7780",
+    category: "SALES ORDER",
+    categoryLabel: { ar: "أمر بيع وتوريد", en: "Sales Order" },
     code: "ORDER #7780",
-    title: "Order #7780",
-    clientName: "Maha Trading",
+    title: "Sales Order #7780",
+    clientName: "Maha Trading Co.",
     clientEmail: "orders@mahatrading.com",
     clientPhone: "+20 111 884 9021",
-    clientAddress: "Giza, Egypt",
+    clientAddress: "Industrial Area 3, Giza, Egypt",
+    partyLabel: { ar: "جهة الشحن والتوريد:", en: "Ship & Bill To:" },
     invoiceDate: "08/09/2026",
     dueDate: "15/09/2026",
-    status: "Paid",
+    dateLabel: { ar: "تاريخ أمر البيع", en: "Order Date" },
+    dueDateLabel: { ar: "موعد الشحن والتسليم", en: "Shipment ETA" },
+    status: "Processing",
+    statusTone: "blue",
     items: [
-      { num: 1, description: "Bulk Packaging Materials", qty: 50, unitPrice: 35, total: 1750 },
-      { num: 2, description: "Express Delivery & Logistics", qty: 1, unitPrice: 250, total: 250 },
+      { num: 1, description: "Bulk Food Packaging Kraft Boxes (500 Pack)", qty: 35, unitPrice: 50, total: 1750 },
+      { num: 2, description: "Specialty Greaseproof Confectionery Liners", qty: 10, unitPrice: 25, total: 250 },
+      { num: 3, description: "Heavy Pallet Logistics & Transit Insurance", qty: 1, unitPrice: 280, total: 280 },
     ],
-    subtotal: 2000,
+    subtotal: 2280,
     taxPercent: 14,
-    taxAmount: 280,
-    total: 2280,
+    taxAmount: 319.2,
+    total: 2599.2,
     companyName: "Wazeer El-Helw Confectionery",
-    companyTagline: "Commercial Orders & Distribution",
+    companyTagline: "Commercial Distribution & Food Industries",
     companyWebsite: "www.wazeer-elhelw.com",
   },
+
+  // Activity 3: Support Ticket #309
+  "tkt-309": {
+    id: "tkt-309",
+    category: "SUPPORT TICKET",
+    categoryLabel: { ar: "تذكرة دعم فني", en: "Support Ticket" },
+    code: "TICKET #309",
+    title: "Support Ticket #309",
+    clientName: "Kareem Omar (Nasr City Branch)",
+    clientEmail: "kareem.omar@wazeer-elhelw.com",
+    clientPhone: "+20 102 984 5512",
+    clientAddress: "Branch #3 - Makram Ebeid, Cairo",
+    partyLabel: { ar: "مقدم البلاغ والفرع:", en: "Reported By / Branch:" },
+    invoiceDate: "08/09/2026 09:32 AM",
+    dueDate: "08/09/2026 12:00 PM",
+    dateLabel: { ar: "وقت فتح التذكرة", en: "Opened At" },
+    dueDateLabel: { ar: "الحد الأقصى للحل (SLA)", en: "Target SLA" },
+    status: "Open / High Priority",
+    statusTone: "rose",
+    details: [
+      { label: "Issue Category", value: "POS Terminal & Scanner Sync", badge: "Hardware/ERP", badgeTone: "purple" },
+      { label: "Assigned Specialist", value: "Hafez Rahim (Senior Systems Eng.)" },
+      { label: "Device Terminal", value: "POS-NC-04 (Sunmi T2 Touchscreen)" },
+      { label: "Impact Level", value: "Checkout Delays at Branch #3", badge: "High Impact", badgeTone: "rose" },
+      { label: "Diagnostic Status", value: "Cash drawer offline; barcode scanner buffer overflow." },
+      { label: "Operational Workaround", value: "Temporary manual SKU lookup enabled for branch cashiers." },
+    ],
+    notesTitle: { ar: "تقرير الفحص الذكي والإجراءات المتخذة", en: "Diagnostic Report & AI Agent Actions" },
+    notes: "AI remote agent inspected system logs, restarted the local sync daemon, and queued firmware patch v2.4.1 for terminal POS-NC-04. System reboot verified; awaiting final cashier physical barcode scan confirmation.",
+    companyName: "Wazeer El-Helw IT Operations",
+    companyTagline: "Enterprise POS & ERP Support Center",
+    companyWebsite: "www.wazeer-elhelw.com",
+  },
+
+  // Activity 4: Client Registration #902
+  "reg-902": {
+    id: "reg-902",
+    category: "CLIENT REGISTRATION",
+    categoryLabel: { ar: "تسجيل عميل ومورد جديد", en: "Client Onboarding" },
+    code: "REG #902",
+    title: "Client Registration #902",
+    clientName: "Ahmad Al-Saeed",
+    clientEmail: "a.alsaeed@fourseasons-catering.eg",
+    clientPhone: "+20 115 670 1934",
+    clientAddress: "Smart Village, Building B4, 6th of October",
+    partyLabel: { ar: "بيانات العميل / المفوض:", en: "Account Details:" },
+    invoiceDate: "08/09/2026",
+    dueDate: "Permanent / Active",
+    dateLabel: { ar: "تاريخ طلب التسجيل", en: "Registration Date" },
+    dueDateLabel: { ar: "حالة الحساب", en: "Account Status" },
+    status: "Verified & Approved",
+    statusTone: "emerald",
+    details: [
+      { label: "Company Legal Name", value: "Four Seasons Hospitality & Catering LLC" },
+      { label: "Commercial Register (س.ت)", value: "CR-1049281 (Cairo Chamber of Commerce)" },
+      { label: "Tax Identification (ب.ض)", value: "TAX-882-901-44" },
+      { label: "Partnership Tier", value: "Tier 1 Gold Corporate Partner", badge: "Gold Partner", badgeTone: "amber" },
+      { label: "Approved Credit Limit", value: "$15,000.00 (Net-30 Payment Terms)" },
+      { label: "Assigned Account Rep", value: "Dr. Sarah Adel (Corporate Relations)" },
+    ],
+    notesTitle: { ar: "اعتماد إدارة الائتمان والرقابة الداخلية", en: "Credit Approval & Compliance Verification" },
+    notes: "All tax documents, commercial registration certificates, and signature authorities have been verified via Egyptian e-Invoicing portal integration. Full B2B bulk ordering portal credentials issued.",
+    companyName: "Wazeer El-Helw Corporate B2B",
+    companyTagline: "Wholesale & Hospitality Partnership Network",
+    companyWebsite: "www.wazeer-elhelw.com",
+  },
+
+  // Activity 5: Invoice #4519
   "inv-4519": {
     id: "inv-4519",
+    category: "INVOICE",
+    categoryLabel: { ar: "فاتورة ضريبية", en: "Tax Invoice" },
     code: "INVOICE #4519",
     title: "Invoice #4519",
-    clientName: "Sara Co.",
+    clientName: "Sara Co. for Hospitality",
     clientEmail: "finance@saraco.net",
     clientPhone: "+20 100 933 2145",
-    clientAddress: "Alexandria, Egypt",
+    clientAddress: "Stanley Bay, Alexandria, Egypt",
+    partyLabel: { ar: "فاتورة إلى:", en: "Bill To:" },
     invoiceDate: "08/09/2026",
     dueDate: "18/09/2026",
+    dateLabel: { ar: "تاريخ الفاتورة", en: "Invoice Date" },
+    dueDateLabel: { ar: "تاريخ الاستحقاق", en: "Due Date" },
     status: "Pending",
+    statusTone: "amber",
     items: [
-      { num: 1, description: "Catering Luxury Sweets Buffet", qty: 120, unitPrice: 45, total: 5400 },
-      { num: 2, description: "Custom Event Branding & Setup", qty: 1, unitPrice: 1200, total: 1200 },
+      { num: 1, description: "Luxury VIP Sweets Buffet for Corporate Gala (120 Pax)", qty: 120, unitPrice: 45, total: 5400 },
+      { num: 2, description: "Custom Laser-Engraved Dessert Displays & Branding", qty: 1, unitPrice: 1200, total: 1200 },
     ],
     subtotal: 6600,
     taxPercent: 14,
@@ -181,27 +287,102 @@ const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
     companyTagline: "VIP Dessert Buffets & Receptions",
     companyWebsite: "www.wazeer-elhelw.com",
   },
-  "doc-1208": {
-    id: "doc-1208",
+
+  // Activity 6: Purchase Order #1208
+  "po-1208": {
+    id: "po-1208",
+    category: "PURCHASE ORDER",
+    categoryLabel: { ar: "أمر شراء وتوريد خامات", en: "Purchase Order" },
     code: "PO #1208",
     title: "Purchase Order #1208",
     clientName: "Nile Packaging Ltd.",
     clientEmail: "supply@nilepkg.com",
     clientPhone: "+20 122 443 8900",
-    clientAddress: "10th of Ramadan City",
+    clientAddress: "Industrial City 3, 10th of Ramadan",
+    partyLabel: { ar: "المورد المعتمد:", en: "Authorized Supplier:" },
     invoiceDate: "07/09/2026",
     dueDate: "14/09/2026",
-    status: "Paid",
+    dateLabel: { ar: "تاريخ أمر الشراء", en: "PO Date" },
+    dueDateLabel: { ar: "تاريخ الاستلام الفعلي", en: "Delivered To Warehouse" },
+    status: "Received & Checked",
+    statusTone: "emerald",
     items: [
-      { num: 1, description: "Sweet Koshary Plastic Bowls 500ml", qty: 2000, unitPrice: 2.2, total: 4400 },
-      { num: 2, description: "Golden Dessert Spoons & Seals", qty: 2000, unitPrice: 0.8, total: 1600 },
+      { num: 1, description: "Sweet Koshary Food-Grade Bowls 500ml (Embossed Logo)", qty: 2000, unitPrice: 2.2, total: 4400 },
+      { num: 2, description: "Golden Dessert Spoons & Hygienic Sealed Pouches", qty: 2000, unitPrice: 0.8, total: 1600 },
+      { num: 3, description: "Heavy Duty Corrugated Shipping Cartons (Size XL)", qty: 150, unitPrice: 5.6, total: 840 },
     ],
-    subtotal: 6000,
+    subtotal: 6840,
     taxPercent: 14,
-    taxAmount: 840,
-    total: 6840,
+    taxAmount: 957.6,
+    total: 7797.6,
     companyName: "Central Procurement Dept",
-    companyTagline: "Wazeer El-Helw Supply Chain",
+    companyTagline: "Wazeer El-Helw Supply Chain & Factory Procurement",
+    companyWebsite: "www.wazeer-elhelw.com",
+  },
+
+  // Activity 7: Customer Inquiry #104
+  "msg-104": {
+    id: "msg-104",
+    category: "CUSTOMER INQUIRY",
+    categoryLabel: { ar: "استفسار وطلب تسعير", en: "Customer Inquiry" },
+    code: "INQUIRY #104",
+    title: "Customer Inquiry #104",
+    clientName: "Fatima Hassan",
+    clientEmail: "fatima.hassan@gmail.com",
+    clientPhone: "+20 109 233 4481",
+    clientAddress: "Heliopolis, Cairo, Egypt",
+    partyLabel: { ar: "بيانات العميل المستفسر:", en: "Prospective Client:" },
+    invoiceDate: "08/09/2026 08:15 AM",
+    dueDate: "28/09/2026 (Event Date)",
+    dateLabel: { ar: "وقت ورود الاستفسار", en: "Received At" },
+    dueDateLabel: { ar: "موعد المناسبة المقترح", en: "Event Target Date" },
+    status: "Quotation Sent",
+    statusTone: "blue",
+    details: [
+      { label: "Occasion Type", value: "Wedding Dessert & Konafa Buffet (250 Guests)", badge: "VIP Private Event", badgeTone: "purple" },
+      { label: "Venue Location", value: "Heliopolis Palace Ballroom, Cairo" },
+      { label: "Requested Menu", value: "Signature Sweet Koshary, Mango Konafa Bowls, Pistachio Basbousa" },
+      { label: "Estimated Budget", value: "Approx. 120,000 EGP (~$3,800 USD)" },
+      { label: "Custom Request", value: "Golden ribbons with Bride & Groom names on individual mini bowls." },
+      { label: "Response Status", value: "Formal quotation #Q-512 emailed by Sales Desk." },
+    ],
+    notesTitle: { ar: "ملخص المحادثة ومتابعة فريق المبيعات", en: "Inquiry Brief & AI Follow-Up Recommendation" },
+    notes: "Customer loved the food tasting sample delivered to Heliopolis yesterday. Follow-up tasting session and contract signing arranged for Thursday at 4:00 PM.",
+    companyName: "Wazeer El-Helw Events & Weddings",
+    companyTagline: "Luxury Celebrations & Catering Experiences",
+    companyWebsite: "www.wazeer-elhelw.com",
+  },
+
+  // Activity 8: Meeting Brief #55
+  "mtg-55": {
+    id: "mtg-55",
+    category: "MEETING BRIEF",
+    categoryLabel: { ar: "محضر وموعد اجتماع", en: "Meeting Brief" },
+    code: "MEETING #55",
+    title: "Meeting Brief #55",
+    clientName: "Al-Ahram Packaging Group",
+    clientEmail: "procurement@ahram-pkg.eg",
+    clientPhone: "+20 120 771 9922",
+    clientAddress: "6th of October Industrial Zone 4",
+    partyLabel: { ar: "الطرف المشارك في الاجتماع:", en: "Meeting Partner:" },
+    invoiceDate: "09/09/2026 02:00 PM",
+    dueDate: "09/09/2026 03:30 PM",
+    dateLabel: { ar: "موعد بدء الاجتماع", en: "Meeting Time" },
+    dueDateLabel: { ar: "المدة المتوقعة", en: "Expected Duration" },
+    status: "Confirmed & Calendar Synced",
+    statusTone: "emerald",
+    details: [
+      { label: "Meeting Subject", value: "Q4 Bulk Packaging SLA & 8% Volume Rebate Agreement" },
+      { label: "Meeting Location", value: "Head Office Executive Boardroom & Zoom Hybrid", badge: "Hybrid", badgeTone: "blue" },
+      { label: "Host & Moderator", value: "Mr. Hafez Rahim (Executive Director)" },
+      { label: "Key Attendees", value: "Eng. Tamer (Supply Chain), Dr. Sarah Adel (AI Ops), Eng. Hany (Al-Ahram)" },
+      { label: "Main Agenda", value: "1. Review Q3 delivery lead times 2. Eco-friendly kraft boxes 3. Payment terms (60-day credit)" },
+      { label: "Preparation Status", value: "Annual volume reports and contract draft v2 attached." },
+    ],
+    notesTitle: { ar: "أهداف الاجتماع وتوصيات الذكاء الاصطناعي", en: "Strategic Meeting Objectives & Pre-Brief" },
+    notes: "AI purchasing agent predicts a 12% rise in raw paper pulp costs next quarter. Securing an 8-month fixed price agreement during this meeting will save approximately $18,400 in packaging overhead.",
+    companyName: "Wazeer El-Helw Executive Board",
+    companyTagline: "Strategic Partnerships & Vendor Operations",
     companyWebsite: "www.wazeer-elhelw.com",
   },
 };
@@ -211,7 +392,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: "act-1",
     type: "invoice",
     title: "Invoice #4521",
-    subtitle: "Client: Ali",
+    subtitle: "Client: Ali Al-Mansoor",
     time: "10:02 AM",
     iconBg: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     iconColor: "text-blue-600",
@@ -233,29 +414,29 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: "act-3",
     type: "ticket",
     title: "Support Ticket #309",
-    subtitle: "Issue with login",
+    subtitle: "POS Sync & Scanner Incident",
     time: "09:32 AM",
     iconBg: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
     iconColor: "text-purple-600",
     icon: MessageSquare,
-    documentId: "inv-4521",
+    documentId: "tkt-309",
   },
   {
     id: "act-4",
     type: "registration",
     title: "New Client Registration",
-    subtitle: "Ahmad Al-Saeed",
+    subtitle: "Ahmad Al-Saeed (Four Seasons)",
     time: "08:50 AM",
     iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
     iconColor: "text-amber-600",
     icon: User,
-    documentId: "inv-4519",
+    documentId: "reg-902",
   },
   {
     id: "act-5",
     type: "invoice",
     title: "Invoice #4519",
-    subtitle: "Client: Sara Co.",
+    subtitle: "Client: Sara Co. Hospitality",
     time: "08:20 AM",
     iconBg: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
     iconColor: "text-rose-600",
@@ -271,66 +452,196 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     iconBg: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
     iconColor: "text-cyan-600",
     icon: FileText,
-    documentId: "doc-1208",
+    documentId: "po-1208",
   },
   {
     id: "act-7",
     type: "message",
-    title: "New Message",
-    subtitle: "From: Fatima",
+    title: "New Customer Inquiry",
+    subtitle: "From: Fatima Hassan (Buffet)",
     time: "Yesterday",
     iconBg: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
     iconColor: "text-emerald-600",
     icon: MessageSquareText,
-    documentId: "inv-4521",
+    documentId: "msg-104",
   },
   {
     id: "act-8",
     type: "meeting",
     title: "Meeting Scheduled",
-    subtitle: "Project Discussion",
+    subtitle: "Al-Ahram Packaging SLA",
     time: "Yesterday",
     iconBg: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     iconColor: "text-indigo-600",
     icon: Calendar,
-    documentId: "ord-7780",
+    documentId: "mtg-55",
   },
 ];
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: "msg-1",
-    sender: "client",
-    senderName: "Ali",
-    avatarText: "A",
-    text: "Hello, I need an update on invoice #4521. Has it been paid already?",
-    time: "09:58 AM",
-  },
-  {
-    id: "msg-2",
-    sender: "agent",
-    senderName: "Hafez",
-    text: "Good morning Ali, Yes, the invoice is paid. Here is the details.",
-    time: "10:02 AM",
-    status: "read",
-  },
-  {
-    id: "msg-3",
-    sender: "client",
-    senderName: "Ali",
-    avatarText: "A",
-    text: "Great! Thank you for the quick response.",
-    time: "10:02 AM",
-  },
-  {
-    id: "msg-4",
-    sender: "agent",
-    senderName: "Hafez",
-    text: "You're welcome!",
-    time: "10:07 AM",
-    status: "read",
-  },
-];
+const ACTIVITY_CHATS: Record<string, ChatMessage[]> = {
+  "act-1": [
+    {
+      id: "msg-1-1",
+      sender: "client",
+      senderName: "Ali",
+      avatarText: "A",
+      text: "Hello, I need an update on invoice #4521. Has it been marked paid in your system?",
+      time: "09:58 AM",
+    },
+    {
+      id: "msg-1-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Good morning Ali! Yes, invoice #4521 for $1,870 is fully settled and cleared. Details are on the screen.",
+      time: "10:02 AM",
+      status: "read",
+    },
+    {
+      id: "msg-1-3",
+      sender: "client",
+      senderName: "Ali",
+      avatarText: "A",
+      text: "Great! Can I get the tax receipt stamped as well?",
+      time: "10:04 AM",
+    },
+    {
+      id: "msg-1-4",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Certainly! You can download the official PDF directly with the QR seal.",
+      time: "10:07 AM",
+      status: "read",
+    },
+  ],
+  "act-2": [
+    {
+      id: "msg-2-1",
+      sender: "client",
+      senderName: "Maha Trading",
+      avatarText: "M",
+      text: "Hello Hafez, we placed order #7780 for 35 packaging box packs. When will delivery depart?",
+      time: "09:40 AM",
+    },
+    {
+      id: "msg-2-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Hi Maha Trading! Your order is being packed in our central warehouse now. Expected dispatch is today by 2:00 PM.",
+      time: "09:45 AM",
+      status: "read",
+    },
+  ],
+  "act-3": [
+    {
+      id: "msg-3-1",
+      sender: "client",
+      senderName: "Kareem Omar",
+      avatarText: "K",
+      text: "Ticket #309: Makram Ebeid branch barcode scanner stopped responding on POS #4 during morning rush.",
+      time: "09:30 AM",
+    },
+    {
+      id: "msg-3-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Hello Kareem, I see the error in the logs. Restarting the sync service remotely now and deploying patch v2.4.1.",
+      time: "09:32 AM",
+      status: "read",
+    },
+  ],
+  "act-4": [
+    {
+      id: "msg-4-1",
+      sender: "client",
+      senderName: "Ahmad Al-Saeed",
+      avatarText: "A",
+      text: "Good morning, Four Seasons Catering registration documents and commercial register have been uploaded.",
+      time: "08:45 AM",
+    },
+    {
+      id: "msg-4-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Welcome Ahmad! Your corporate account #902 has been verified and approved with a $15,000 credit line.",
+      time: "08:50 AM",
+      status: "read",
+    },
+  ],
+  "act-5": [
+    {
+      id: "msg-5-1",
+      sender: "client",
+      senderName: "Sara Co.",
+      avatarText: "S",
+      text: "Hi, we received invoice #4519 for the Alexandria corporate sweets buffet. Can we get 5% prompt payment discount?",
+      time: "08:15 AM",
+    },
+    {
+      id: "msg-5-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Hello Sara, the invoice is currently pending review. Let me apply the standard 5% early settlement terms for you.",
+      time: "08:20 AM",
+      status: "read",
+    },
+  ],
+  "act-6": [
+    {
+      id: "msg-6-1",
+      sender: "client",
+      senderName: "Nile Packaging",
+      avatarText: "N",
+      text: "PO #1208 shipment of 2,000 Sweet Koshary bowls and dessert spoons has arrived at your warehouse dock #2.",
+      time: "Yesterday",
+    },
+    {
+      id: "msg-6-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Confirmed! Our quality control team verified all 2,000 units and signed the delivery receipt.",
+      time: "Yesterday",
+      status: "read",
+    },
+  ],
+  "act-7": [
+    {
+      id: "msg-7-1",
+      sender: "client",
+      senderName: "Fatima Hassan",
+      avatarText: "F",
+      text: "Peace be upon you! We are planning a wedding with 250 guests in Heliopolis. Do you offer custom branded dessert bowls?",
+      time: "Yesterday",
+    },
+    {
+      id: "msg-7-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Peace and congratulations! Yes, we create custom gold-ribbon Sweet Koshary & Konafa bowls. Quotation #Q-512 is sent!",
+      time: "Yesterday",
+      status: "read",
+    },
+  ],
+  "act-8": [
+    {
+      id: "msg-8-1",
+      sender: "client",
+      senderName: "Al-Ahram Group",
+      avatarText: "P",
+      text: "Confirming our board meeting tomorrow at 2:00 PM regarding Q4 packaging SLA and annual rebate terms.",
+      time: "Yesterday",
+    },
+    {
+      id: "msg-8-2",
+      sender: "agent",
+      senderName: "Hafez",
+      text: "Confirmed Eng. Hany! The meeting room is reserved and the AI contract review draft is attached to brief #55.",
+      time: "Yesterday",
+      status: "read",
+    },
+  ],
+};
+
+const INITIAL_MESSAGES: ChatMessage[] = ACTIVITY_CHATS["act-1"] || [];
 
 // ==========================================
 // SVG QR Code Component
@@ -417,6 +728,9 @@ function AiWorkspacePage() {
     if (activity.documentId && SAMPLE_DOCUMENTS[activity.documentId]) {
       setSelectedDocId(activity.documentId);
     }
+    if (ACTIVITY_CHATS[activity.id]) {
+      setMessages(ACTIVITY_CHATS[activity.id]!);
+    }
     // If mobile, switch to document view
     setActiveMobileTab("document");
   };
@@ -452,28 +766,35 @@ function AiWorkspacePage() {
       });
 
       const lower = userMsgText.toLowerCase();
-      if (lower.includes("invoice") || lower.includes("فاتورة")) {
+      if (lower.includes("invoice") || lower.includes("فاتورة") || lower.includes("order") || lower.includes("طلب")) {
+        const totalStr = currentDoc.total !== undefined ? ` بقيمة $${currentDoc.total.toLocaleString()}` : "";
+        const totalStrEn = currentDoc.total !== undefined ? ` totaling $${currentDoc.total.toLocaleString()}` : "";
         replyText = pick({
-          ar: `لقد تم عرض الفاتورة (${currentDoc.code}) للعميل ${currentDoc.clientName} بقيمة $${currentDoc.total.toLocaleString()} وحالتها (${currentDoc.status}).`,
-          en: `Displaying invoice ${currentDoc.code} for ${currentDoc.clientName} totaling $${currentDoc.total.toLocaleString()} (Status: ${currentDoc.status}).`,
+          ar: `لقد تم استعراض ${currentDoc.category} (${currentDoc.code}) للجهة ${currentDoc.clientName}${totalStr} وحالتها (${currentDoc.status}).`,
+          en: `Displaying ${currentDoc.category} ${currentDoc.code} for ${currentDoc.clientName}${totalStrEn} (Status: ${currentDoc.status}).`,
+        });
+      } else if (lower.includes("ticket") || lower.includes("تذكرة") || lower.includes("دعم") || lower.includes("pos")) {
+        replyText = pick({
+          ar: `التذكرة ${currentDoc.code} قيد المعالجة السريعة من فريق الدعم الفني وتم تفعيل بروتوكول الصيانة.`,
+          en: `Ticket ${currentDoc.code} is being actively handled by IT systems engineering team.`,
         });
       } else if (lower.includes("discount") || lower.includes("خصم")) {
         replyText = pick({
-          ar: "تم حساب نسبة الخصم وتحديث إجمالي الفاتورة المعتمدة.",
-          en: "Discount calculation applied and the approved total has been updated.",
+          ar: "تم حساب نسبة الخصم وتحديث تفاصيل المعاملة المعتمدة.",
+          en: "Discount calculation applied and approved transaction record updated.",
         });
-      } else if (lower.includes("receipt") || lower.includes("إيصال")) {
+      } else if (lower.includes("receipt") || lower.includes("إيصال") || lower.includes("pdf") || lower.includes("طباعة")) {
         replyText = pick({
-          ar: `تم إنشاء سند القبض ورابط الفاتورة #${currentDoc.code}. يمكنك تحميل نسخة PDF مباشرة.`,
-          en: `Payment receipt generated for ${currentDoc.code}. You can export or print the PDF directly.`,
+          ar: `تم تجهيز المستند المعتمد ورابط ${currentDoc.code}. يمكنك تحميل نسخة PDF أو طباعتها مباشرة.`,
+          en: `Verified record generated for ${currentDoc.code}. You can export or print the PDF directly.`,
         });
       }
 
       const botReply: ChatMessage = {
         id: `msg-reply-${Date.now()}`,
         sender: "client",
-        senderName: currentDoc.clientName || "Ali",
-        avatarText: currentDoc.clientName ? currentDoc.clientName[0] : "A",
+        senderName: currentDoc.clientName || "Client",
+        ...(currentDoc.clientName ? { avatarText: currentDoc.clientName[0] } : {}),
         text: replyText,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
@@ -588,7 +909,7 @@ function AiWorkspacePage() {
               : "text-muted-foreground hover:bg-muted/50"
           )}
         >
-          {pick({ ar: "معاينة الفاتورة", en: "Invoice Preview" })}
+          {pick({ ar: "معاينة المستند", en: "Document Preview" })}
         </button>
         <button
           onClick={() => setActiveMobileTab("chat")}
@@ -704,11 +1025,26 @@ function AiWorkspacePage() {
                 <ChevronLeft className="size-4" />
               </button>
               <div>
-                <h3 className="font-bold text-sm text-foreground leading-tight">
-                  {currentDoc.code}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-foreground leading-tight">
+                    {currentDoc.code}
+                  </h3>
+                  <span
+                    className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0",
+                      currentDoc.statusTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                      currentDoc.statusTone === "amber" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                      currentDoc.statusTone === "blue" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                      currentDoc.statusTone === "purple" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+                      currentDoc.statusTone === "rose" && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+                      !currentDoc.statusTone && "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {currentDoc.status}
+                  </span>
+                </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Client: {currentDoc.clientName}
+                  {currentDoc.partyLabel ? pick(currentDoc.partyLabel) : "Contact:"} {currentDoc.clientName}
                 </p>
               </div>
             </div>
@@ -732,7 +1068,7 @@ function AiWorkspacePage() {
 
           {/* Scrollable Document Canvas */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/20">
-            {/* The Actual White Document Sheet (matches exact visual in image) */}
+            {/* The Document Sheet */}
             <div className="bg-card text-card-foreground rounded-2xl p-6 sm:p-8 shadow-sm border border-border/60 space-y-6 max-w-xl mx-auto">
               {/* Sheet Header */}
               <div className="flex items-start justify-between gap-4">
@@ -750,27 +1086,32 @@ function AiWorkspacePage() {
                       {companyName}
                     </h2>
                     <p className="text-[11px] text-muted-foreground font-medium">
-                      {currentDoc.companyTagline || (lang === "ar" ? "حلويات ومواد غذائية وتوريدات" : "Confectionery & Food Industries")}
+                      {currentDoc.companyTagline || (lang === "ar" ? "حلويات ومواد غذائية وتوريدات فندقية" : "Confectionery & Food Industries")}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-end">
-                  <span className="font-black text-lg tracking-wider text-slate-900 dark:text-slate-100 uppercase block">
-                    INVOICE
+                  <span className="font-black text-sm sm:text-base tracking-wider text-slate-900 dark:text-slate-100 uppercase block">
+                    {currentDoc.category}
                   </span>
                   <span className="font-mono font-bold text-xs text-muted-foreground">
-                    #{currentDoc.code.replace(/[^0-9]/g, "") || "4521"}
+                    #{currentDoc.code.replace(/[^0-9A-Za-z-]/g, "") || "DOC"}
                   </span>
+                  {currentDoc.categoryLabel && (
+                    <span className="text-[10px] text-muted-foreground block font-medium">
+                      {pick(currentDoc.categoryLabel)}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Bill To & Invoice Info */}
+              {/* Bill To / Contact & Info */}
               <div className="grid grid-cols-2 gap-4 pt-2 text-xs">
-                {/* Left: Bill To */}
+                {/* Left: Contact Info */}
                 <div className="space-y-1">
                   <span className="font-bold text-foreground text-xs block mb-1">
-                    Bill To:
+                    {currentDoc.partyLabel ? pick(currentDoc.partyLabel) : (lang === "ar" ? "إلى:" : "Bill To:")}
                   </span>
                   <p className="font-semibold text-foreground">{currentDoc.clientName}</p>
                   <p className="text-muted-foreground text-[11px] flex items-center gap-1">
@@ -787,25 +1128,36 @@ function AiWorkspacePage() {
                 {/* Right: Dates & Status */}
                 <div className="space-y-1.5 text-end">
                   <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Invoice Date:</span>
+                    <span className="text-muted-foreground">
+                      {currentDoc.dateLabel ? pick(currentDoc.dateLabel) : (lang === "ar" ? "التاريخ:" : "Date:")}
+                    </span>
                     <span className="font-mono font-semibold text-foreground">
                       {currentDoc.invoiceDate}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="text-muted-foreground">Due Date:</span>
-                    <span className="font-mono font-semibold text-foreground">
-                      {currentDoc.dueDate}
-                    </span>
-                  </div>
+                  {currentDoc.dueDate && (
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-muted-foreground">
+                        {currentDoc.dueDateLabel ? pick(currentDoc.dueDateLabel) : (lang === "ar" ? "تاريخ الاستحقاق:" : "Due Date:")}
+                      </span>
+                      <span className="font-mono font-semibold text-foreground">
+                        {currentDoc.dueDate}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center pt-1">
-                    <span className="text-muted-foreground text-[11px]">Status:</span>
+                    <span className="text-muted-foreground text-[11px]">
+                      {lang === "ar" ? "الحالة:" : "Status:"}
+                    </span>
                     <span
                       className={cn(
                         "px-2.5 py-0.5 rounded-full text-[11px] font-bold",
-                        currentDoc.status === "Paid"
-                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                        currentDoc.statusTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                        currentDoc.statusTone === "amber" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                        currentDoc.statusTone === "blue" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                        currentDoc.statusTone === "purple" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+                        currentDoc.statusTone === "rose" && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+                        !currentDoc.statusTone && "bg-muted text-muted-foreground"
                       )}
                     >
                       {currentDoc.status}
@@ -814,74 +1166,138 @@ function AiWorkspacePage() {
                 </div>
               </div>
 
-              {/* Items Table */}
-              <div className="rounded-xl overflow-hidden border border-border/50">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/60 border-b border-border/50 text-muted-foreground">
-                    <tr>
-                      <th className="py-2 px-3 text-start font-semibold w-8">#</th>
-                      <th className="py-2 px-3 text-start font-semibold">Description</th>
-                      <th className="py-2 px-3 text-center font-semibold w-12">Qty</th>
-                      <th className="py-2 px-3 text-end font-semibold w-24">Unit Price</th>
-                      <th className="py-2 px-3 text-end font-semibold w-24">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40 font-mono">
-                    {currentDoc.items.map((item) => (
-                      <tr key={item.num} className="hover:bg-muted/20">
-                        <td className="py-2.5 px-3 text-start text-muted-foreground font-sans">
-                          {item.num}
-                        </td>
-                        <td className="py-2.5 px-3 text-start font-sans font-medium text-foreground">
-                          {item.description}
-                        </td>
-                        <td className="py-2.5 px-3 text-center text-foreground">
-                          {item.qty}
-                        </td>
-                        <td className="py-2.5 px-3 text-end text-muted-foreground">
-                          ${item.unitPrice.toFixed(2)}
-                        </td>
-                        <td className="py-2.5 px-3 text-end font-semibold text-foreground">
-                          ${item.total.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* Items Table (if financial / line items document) */}
+              {currentDoc.items && currentDoc.items.length > 0 && (
+                <>
+                  <div className="rounded-xl overflow-hidden border border-border/50">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/60 border-b border-border/50 text-muted-foreground">
+                        <tr>
+                          <th className="py-2 px-3 text-start font-semibold w-8">#</th>
+                          <th className="py-2 px-3 text-start font-semibold">{pick({ ar: "الوصف / البند", en: "Description" })}</th>
+                          <th className="py-2 px-3 text-center font-semibold w-12">{pick({ ar: "الكمية", en: "Qty" })}</th>
+                          <th className="py-2 px-3 text-end font-semibold w-24">{pick({ ar: "السعر", en: "Unit Price" })}</th>
+                          <th className="py-2 px-3 text-end font-semibold w-24">{pick({ ar: "الإجمالي", en: "Total" })}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40 font-mono">
+                        {currentDoc.items.map((item) => (
+                          <tr key={item.num} className="hover:bg-muted/20">
+                            <td className="py-2.5 px-3 text-start text-muted-foreground font-sans">
+                              {item.num}
+                            </td>
+                            <td className="py-2.5 px-3 text-start font-sans font-medium text-foreground">
+                              {item.description}
+                            </td>
+                            <td className="py-2.5 px-3 text-center text-foreground">
+                              {item.qty}
+                            </td>
+                            <td className="py-2.5 px-3 text-end text-muted-foreground">
+                              ${item.unitPrice.toFixed(2)}
+                            </td>
+                            <td className="py-2.5 px-3 text-end font-semibold text-foreground">
+                              ${item.total.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              {/* Financial Totals */}
-              <div className="flex justify-end pt-2">
-                <div className="w-56 space-y-1.5 text-xs">
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span className="font-mono font-medium text-foreground">
-                      ${currentDoc.subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>Tax ({currentDoc.taxPercent}%)</span>
-                    <span className="font-mono font-medium text-foreground">
-                      ${currentDoc.taxAmount.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-border/60 font-bold">
-                    <span className="text-foreground text-sm">Total</span>
-                    <span className="font-mono text-base text-primary">
-                      ${currentDoc.total.toFixed(2)}
-                    </span>
+                  {/* Financial Totals */}
+                  {currentDoc.total !== undefined && (
+                    <div className="flex justify-end pt-2">
+                      <div className="w-56 space-y-1.5 text-xs">
+                        {currentDoc.subtotal !== undefined && (
+                          <div className="flex justify-between items-center text-muted-foreground">
+                            <span>{pick({ ar: "المجموع الفرعي", en: "Subtotal" })}</span>
+                            <span className="font-mono font-medium text-foreground">
+                              ${currentDoc.subtotal.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {currentDoc.taxPercent !== undefined && currentDoc.taxAmount !== undefined && (
+                          <div className="flex justify-between items-center text-muted-foreground">
+                            <span>{pick({ ar: `ضريبة القيمة المضافة (${currentDoc.taxPercent}%)`, en: `Tax (${currentDoc.taxPercent}%)` })}</span>
+                            <span className="font-mono font-medium text-foreground">
+                              ${currentDoc.taxAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t border-border/60 font-bold">
+                          <span className="text-foreground text-sm">{pick({ ar: "الإجمالي النهائي", en: "Total" })}</span>
+                          <span className="font-mono text-base text-primary">
+                            ${currentDoc.total.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Structured Details Cards (for tickets, registrations, meetings, inquiries) */}
+              {currentDoc.details && currentDoc.details.length > 0 && (
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-2.5">
+                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <FileCheck className="size-3.5 text-primary" />
+                    <span>{pick({ ar: "تفاصيل وبيانات المعاملة المعتمدة", en: "Transaction Specifications & Records" })}</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {currentDoc.details.map((det, idx) => (
+                      <div key={idx} className="p-2.5 rounded-lg bg-card border border-border/50">
+                        <span className="text-[10px] text-muted-foreground font-medium block mb-0.5">
+                          {det.label}
+                        </span>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-semibold text-foreground text-xs">{det.value}</span>
+                          {det.badge && (
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0",
+                                det.badgeTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                                det.badgeTone === "rose" && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+                                det.badgeTone === "purple" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+                                det.badgeTone === "amber" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                                (!det.badgeTone || det.badgeTone === "blue") && "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                              )}
+                            >
+                              {det.badge}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* AI Copilot Intelligence Notes */}
+              {currentDoc.notes && (
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-primary font-bold">
+                    <Sparkles className="size-3.5" />
+                    <span>
+                      {currentDoc.notesTitle ? pick(currentDoc.notesTitle) : pick({ ar: "ملاحظات وتوجيهات الذكاء الاصطناعي", en: "AI Copilot Notes & Intelligence" })}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {currentDoc.notes}
+                  </p>
+                </div>
+              )}
 
               {/* Footer Note & QR Code */}
               <div className="pt-6 border-t border-border/40 flex items-end justify-between gap-4">
                 <div className="space-y-1 text-xs">
                   <p className="font-medium text-muted-foreground italic">
-                    Thank you for your business!
+                    {pick({
+                      ar: "وثيقة رسمية معتمدة من النظام السحابي لمجموعة وزير الحلو",
+                      en: "Official Certified Record — Wazeer El-Helw ERP Cloud",
+                    })}
                   </p>
                   <p className="font-bold text-foreground text-[11px]">
-                    {currentDoc.companyName}
+                    {companyName}
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     {currentDoc.companyWebsite}
@@ -889,7 +1305,7 @@ function AiWorkspacePage() {
                 </div>
 
                 <div>
-                  <QrCodeGraphic value={`${currentDoc.code}|${currentDoc.total}`} size={56} />
+                  <QrCodeGraphic value={`${currentDoc.code}|${currentDoc.status}|${currentDoc.total ?? currentDoc.clientName}`} size={56} />
                 </div>
               </div>
             </div>
@@ -990,39 +1406,166 @@ function AiWorkspacePage() {
 
           {/* Quick Prompts Bar */}
           <div className="px-3 py-2 border-t border-border/40 bg-card/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px]">
-            <button
-              onClick={() => {
-                setInputText(pick({
-                  ar: `أكد دفع الفاتورة ${currentDoc.code}`,
-                  en: `Confirm payment for ${currentDoc.code}`,
-                }));
-              }}
-              className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
-            >
-              📄 {pick({ ar: "تأكيد الدفع", en: "Confirm Payment" })}
-            </button>
-            <button
-              onClick={() => {
-                setInputText(pick({
-                  ar: "أرسل إيصال استلام رسمي للعميل",
-                  en: "Send official receipt to client",
-                }));
-              }}
-              className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
-            >
-              ✉ {pick({ ar: "إرسال إيصال", en: "Send Receipt" })}
-            </button>
-            <button
-              onClick={() => {
-                setInputText(pick({
-                  ar: "طبق خصم 5% على الفاتورة",
-                  en: "Apply 5% discount to invoice",
-                }));
-              }}
-              className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
-            >
-              ✨ {pick({ ar: "تطبيق خصم", en: "Apply Discount" })}
-            </button>
+            {currentDoc.category === "INVOICE" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: `أكد سداد الفاتورة ${currentDoc.code}`, en: `Confirm settlement for ${currentDoc.code}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📄 {pick({ ar: "تأكيد الدفع", en: "Confirm Payment" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: `أرسل إيصال استلام رسمي للعميل ${currentDoc.clientName}`, en: `Send tax receipt to ${currentDoc.clientName}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  ✉ {pick({ ar: "إرسال إيصال", en: "Send Receipt" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "طبق خصم 5% سداد مبكر على الفاتورة", en: "Apply 5% prompt payment discount" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  ✨ {pick({ ar: "تطبيق خصم 5%", en: "Apply 5% Discount" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "SALES ORDER" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: `ما هو موعد شحن وتوصيل الطلب ${currentDoc.code}؟`, en: `What is the delivery ETA for ${currentDoc.code}?` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  🚚 {pick({ ar: "تتبع الشحنة", en: "Track Shipment" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: `اطبع إذن صرف المستودع للطلب ${currentDoc.code}`, en: `Print warehouse dispatch note for ${currentDoc.code}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📄 {pick({ ar: "إذن الصرف", en: "Dispatch Note" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تأكيد فحص وتجهيز بضاعة الطلب", en: "Confirm warehouse packing completed" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📦 {pick({ ar: "اكتمال التجهيز", en: "Packing Done" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "SUPPORT TICKET" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: "شغل فحص الاتصال بالشبكة وأعد تشغيل خادم المزامنة", en: "Run remote network diagnostics and restart sync daemon" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  🔧 {pick({ ar: "فحص الاتصال", en: "Run Diagnostics" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "انشر التحديث السريع v2.4.1 لنقطة البيع", en: "Deploy quick patch v2.4.1 to POS terminal" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  ⚡ {pick({ ar: "إرسال التحديث", en: "Deploy Patch" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تم حل العطل وتأكيد عمل ماسح الباركود", en: "Issue resolved, scanner confirmed working" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  ✅ {pick({ ar: "إغلاق التذكرة", en: "Close Ticket" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "CLIENT REGISTRATION" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: `تم التحقق من السجل التجاري والبطاقة الضريبية لشركة ${currentDoc.clientName}`, en: `Verified tax card and commercial register for ${currentDoc.clientName}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  🛡️ {pick({ ar: "التحقق من البيانات", en: "Verify KYC" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "اعتمد تسهيل الائتمان $15,000 بحساب العميل", en: "Approve $15,000 credit limit on client account" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  💳 {pick({ ar: "اعتماد الائتمان", en: "Approve Credit" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "أرسل بيانات الدخول لبوابة الطلبات بالجملة", en: "Send wholesale B2B portal login credentials" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  ✉ {pick({ ar: "إرسال الترحيب", en: "Send Welcome" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "PURCHASE ORDER" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: `سجل استلام 2000 عبوة بالمخزن من المورد ${currentDoc.clientName}`, en: `Log warehouse intake of 2,000 units from ${currentDoc.clientName}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📥 {pick({ ar: "استلام المخزن", en: "Warehouse Intake" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "اعتماد مطابقة المواصفات القياسية وفحص الجودة", en: "Approve quality inspection & batch testing" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  🔬 {pick({ ar: "فحص الجودة", en: "Quality Check" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تحويل مستحقات المورد للحسابات للصرف", en: "Forward supplier payment to accounts payable" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  💵 {pick({ ar: "أمر الصرف", en: "Authorize Payout" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "CUSTOMER INQUIRY" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: `أرسل عرض أسعار بوفيه الأعراس الفاخر لـ ${currentDoc.clientName}`, en: `Send luxury wedding dessert quotation to ${currentDoc.clientName}` }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📋 {pick({ ar: "إرسال عرض الأسعار", en: "Send Quote" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تحديد موعد جلسة تذوق الأصناف يوم الخميس 4 عصراً", en: "Schedule dessert tasting session for Thursday at 4 PM" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  🍰 {pick({ ar: "موعد التذوق", en: "Schedule Tasting" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "حجز تاريخ المناسبة في جدول فعاليات قصر مصر الجديدة", en: "Reserve event date on Heliopolis ballroom schedule" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📅 {pick({ ar: "حجز التاريخ", en: "Reserve Date" })}
+                </button>
+              </>
+            )}
+
+            {currentDoc.category === "MEETING BRIEF" && (
+              <>
+                <button
+                  onClick={() => setInputText(pick({ ar: "إرسال رابط اجتماع Zoom ورسالة تذكير للأطراف المشاركة", en: "Send Zoom meeting link and reminder to all participants" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📅 {pick({ ar: "رابط الاجتماع", en: "Send Link" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تجهيز مسودة اتفاقية التوريد ونسبة الخصم 8% للاجتماع", en: "Prepare draft supply agreement and 8% rebate terms" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📑 {pick({ ar: "مسودة الاتفاقية", en: "Draft Agreement" })}
+                </button>
+                <button
+                  onClick={() => setInputText(pick({ ar: "تصدير ملخص محضر الاجتماع وتوصيات الذكاء الاصطناعي", en: "Export meeting brief summary and AI strategic insights" }))}
+                  className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
+                >
+                  📝 {pick({ ar: "تصدير المحضر", en: "Export Minutes" })}
+                </button>
+              </>
+            )}
           </div>
 
           {/* Chat Message Input Bar */}
