@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import wazeerLogo from "@/assets/wazeer-logo.png.asset.json";
 
 export const Route = createFileRoute("/ai")({
   head: () => ({
@@ -733,10 +734,13 @@ function AiWorkspacePage() {
               {/* Sheet Header */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  {/* Geometric Logo */}
-                  <div className="size-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-amber-500 p-0.5 shadow-sm flex items-center justify-center text-white font-extrabold text-base">
-                    ▲
-                  </div>
+                  {/* Wazeer Logo */}
+                  <img
+                    src={wazeerLogo.url}
+                    alt="Wazeer El-Helw"
+                    className="size-10 rounded-xl object-contain shadow-sm bg-white"
+                    loading="lazy"
+                  />
                   <div>
                     <h2 className="font-extrabold text-base text-foreground leading-tight">
                       {currentDoc.companyName}
