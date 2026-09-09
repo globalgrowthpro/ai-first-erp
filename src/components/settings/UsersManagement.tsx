@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
+import { CURRENT_USER_ID, setSidebarVisible } from "@/lib/ui-prefs";
 import {
   departments as initialDepartments,
   positions as initialPositions,
@@ -192,6 +193,8 @@ export function UsersManagement() {
       prev.map((u) => (u.id === selectedUserForDetail.id ? { ...u, sidebarVisible: next } : u))
     );
     setSelectedUserForDetail((prev) => (prev ? { ...prev, sidebarVisible: next } : prev));
+    // The signed-in demo user drives the real sidebar in the app shell
+    if (selectedUserForDetail.id === CURRENT_USER_ID) setSidebarVisible(next);
   };
 
   return (

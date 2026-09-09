@@ -21,9 +21,12 @@ import {
   CheckCircle2,
   X,
   Check,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useSidebarVisible } from "@/lib/ui-prefs";
 import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 import {
@@ -127,6 +130,7 @@ function NavList({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, pick, toggle, lang, dir } = useI18n();
+  const [sidebarVisible, setSidebarVisible] = useSidebarVisible();
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(
@@ -180,7 +184,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-secondary">
       {/* Sidebar */}
-      <aside className="gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border/20 p-4 lg:flex">
+      <aside
+        className={cn(
+          "gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border/20 p-4",
+          sidebarVisible && "lg:flex"
+        )}
+      >
         <Link to="/" className="block px-1" aria-label={t("appName")}>
           <div className="rounded-xl bg-white p-2 shadow-sm transition-transform hover:scale-[1.01]">
             <img
@@ -216,6 +225,29 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="h-9 w-full object-contain"
             />
           </Link>
+
+          {/* Sidebar toggle */}
+          <button
+            onClick={() => setSidebarVisible(!sidebarVisible)}
+            title={
+              sidebarVisible
+                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+            }
+            aria-label={
+              sidebarVisible
+                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+            }
+            aria-pressed={sidebarVisible}
+            className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            {sidebarVisible ? (
+              <PanelLeftClose className="size-4" />
+            ) : (
+              <PanelLeft className="size-4" />
+            )}
+          </button>
 
           {/* Search Bar */}
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
