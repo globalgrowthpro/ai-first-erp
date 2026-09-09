@@ -36,6 +36,7 @@ import { useSidebarVisible } from "@/lib/ui-prefs";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { LoginOverlay } from "@/components/auth/LoginOverlay";
+import { AccessDeniedView } from "./AccessDeniedView";
 import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 import {
@@ -208,7 +209,24 @@ export function AppShell({ children }: { children: ReactNode }) {
     }, 600);
   };
 
-  // Close notifications & user menu on outside click
+  // Search state & permission filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const allowedNavItems = [...erpNav, ...controlNav].filter((item) =>
+    currentUser.allowedPages.includes(item.to)
+  );
+
+  const searchResults = searchQuery.trim()
+    ? allowedNavItems.filter((item) => {
+        const title = t(item.key).toLowerCase();
+        const q = searchQuery.toLowerCase().trim();
+        return title.includes(q) || item.to.toLowerCase().includes(q);
+      })
+    : [];
+
+  // Close notifications, search & user menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -223,14 +241,20 @@ export function AppShell({ children }: { children: ReactNode }) {
       ) {
         setIsUserMenuOpen(false);
       }
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setIsSearchOpen(false);
+      }
     }
-    if (isNotifOpen || isUserMenuOpen) {
+    if (isNotifOpen || isUserMenuOpen || isSearchOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isNotifOpen, isUserMenuOpen]);
+  }, [isNotifOpen, isUserMenuOpen, isSearchOpen]);
 
   return (
     <div className="flex min-h-screen bg-secondary">
@@ -319,14 +343,71 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </button>
 
-          {/* Search Bar */}
-          <label className="hidden sm:flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
-            <input
-              placeholder={t("search")}
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </label>
+          {/* Protected Search Bar */}
+          <div className="relative hidden sm:flex min-w-0 flex-1" ref={searchRef}>
+            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
+              <Search className="size-4 shrink-0 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                placeholder={t("search")}
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </label>
+
+            {/* Protected Search Results Dropdown */}
+            {isSearchOpen && searchQuery.trim().length > 0 && (
+              <div
+                className={cn(
+                  "absolute top-full mt-2 w-full max-w-md rounded-xl border border-border/70 bg-card p-2 shadow-xl z-50 text-xs space-y-1",
+                  dir === "rtl" ? "right-0" : "left-0"
+                )}
+              >
+                <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                  {lang === "ar" ? "الصفحات المصرح بها" : "Authorized Modules"}
+                </div>
+                {searchResults.length === 0 ? (
+                  <div className="py-4 text-center text-muted-foreground text-xs">
+                    {lang === "ar" ? "لا توجد نتائج مصرح بها" : "No authorized matches"}
+                  </div>
+                ) : (
+                  searchResults.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          setSearchQuery("");
+                        }}
+                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-secondary transition-colors text-foreground font-medium"
+                      >
+                        <Icon className="size-4 text-primary shrink-0" />
+                        <span>{t(item.key)}</span>
+                        <span className="ms-auto font-mono text-[10px] text-muted-foreground">
+                          {item.to}
+                        </span>
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Notification Bell with Dropdown */}
           <div className="relative ms-auto sm:ms-0" ref={notifDropdownRef}>
@@ -433,16 +514,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="hidden sm:inline">{t("lang")}</span>
           </button>
 
-          {/* Ask AI Button */}
-          <Link
-            to="/ai"
-            className={cn(
-              "hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold uppercase text-primary-foreground shadow-sm hover:opacity-95 transition-all"
-            )}
-          >
-            <Sparkles className="size-4" />
-            <span>{t("askAi")}</span>
-          </Link>
+          {/* Ask AI Button (Only rendered if authorized) */}
+          {currentUser.allowedPages.includes("/ai") && (
+            <Link
+              to="/ai"
+              className={cn(
+                "hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold uppercase text-primary-foreground shadow-sm hover:opacity-95 transition-all"
+              )}
+            >
+              <Sparkles className="size-4" />
+              <span>{t("askAi")}</span>
+            </Link>
+          )}
 
           {/* Demo User Switcher & Profile Dropdown */}
           <div className="relative" ref={userMenuRef}>
@@ -570,7 +653,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         {/* Page Main Content */}
         <main key={lang} className="flex-1 space-y-6 p-4 md:p-6">
-          {isPageAllowed ? children : null}
+          {isPageAllowed ? (
+            children
+          ) : (
+            <AccessDeniedView
+              currentUser={currentUser}
+              targetPath={normalizedPath}
+              fallbackPath={currentUser.allowedPages[0] || "/"}
+              lang={lang}
+            />
+          )}
         </main>
 
         {/* Footer */}
