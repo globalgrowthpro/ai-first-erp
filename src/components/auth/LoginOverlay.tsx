@@ -69,18 +69,18 @@ export function LoginOverlay() {
           <div className="absolute -top-12 -start-12 size-48 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute -bottom-12 -end-12 size-48 rounded-full bg-amber-500/20 blur-3xl" />
 
-          <div className="relative z-10 space-y-6">
-            <div className="inline-block rounded-2xl bg-white p-3 shadow-lg max-w-[180px]">
+          <div className="relative z-10 space-y-6 flex flex-col items-center text-center">
+            <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-xl w-full max-w-[240px] flex items-center justify-center transition-transform hover:scale-105">
               <img
                 src={companyLogo}
                 alt={companyName}
-                className="h-12 w-auto object-contain"
+                className="h-20 sm:h-24 w-auto object-contain"
               />
             </div>
 
             <div>
               <h2 className="text-xl font-black tracking-tight">{companyName}</h2>
-              <p className="text-xs text-white/70 mt-1 leading-relaxed">
+              <p className="text-xs text-white/75 mt-1.5 leading-relaxed max-w-xs mx-auto">
                 {pick(
                   "نظام إدارة الموارد وتخطيط الإنتاج المدعوم بطبقة الذكاء الاصطناعي التشغيلي.",
                   "AI-First Enterprise Resource Planning & Confectionery Manufacturing."
@@ -88,7 +88,7 @@ export function LoginOverlay() {
               </p>
             </div>
 
-            <div className="space-y-2.5 pt-2 text-xs text-white/85">
+            <div className="w-full space-y-2.5 pt-2 text-xs text-white/85 text-start">
               <div className="flex items-center gap-2">
                 <div className="size-5 rounded-full bg-white/10 flex items-center justify-center text-amber-400">
                   <Sparkles className="size-3" />
