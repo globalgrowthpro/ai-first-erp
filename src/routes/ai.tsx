@@ -811,46 +811,47 @@ function AiWorkspacePage() {
   return (
     <div className="space-y-4 -mt-2">
       {/* ============================================================ */}
-      {/* Top Floating Subheader Bar (matches exact reference screenshot) */}
       {/* ============================================================ */}
-      <div className="surface-panel rounded-2xl p-3.5 sm:p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Top Floating Subheader Bar (Responsive across all screens) */}
+      {/* ============================================================ */}
+      <div className="surface-panel rounded-2xl p-3 sm:p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Left: ChatHub Branding */}
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-              <MessageSquareText className="size-5" />
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="size-9 sm:size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+              <MessageSquareText className="size-4 sm:size-5" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 font-extrabold text-base tracking-tight text-foreground">
+              <div className="flex items-center gap-1.5 font-extrabold text-sm sm:text-base tracking-tight text-foreground">
                 <span>ChatHub</span>
               </div>
-              <p className="text-[11px] text-muted-foreground font-medium">
+              <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium hidden xs:block">
                 Connect · Support · Grow
               </p>
             </div>
           </div>
 
-          {/* Center-Left: Greeting & User Profile */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-muted/40 border border-border/50">
+          {/* Center-Left: Greeting & User Profile (hidden on small mobile) */}
+          <div className="hidden sm:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-muted/40 border border-border/50">
             <div className="relative">
-              <div className="size-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="size-7 sm:size-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                 HR
               </div>
-              <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+              <span className="absolute bottom-0 right-0 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
             </div>
             <div className="text-xs">
-              <span className="text-[10px] text-muted-foreground block font-medium">
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground block font-medium">
                 {pick({ ar: "صباح الخير،", en: "Good morning," })}
               </span>
-              <span className="font-bold text-foreground flex items-center gap-1">
+              <span className="font-bold text-foreground flex items-center gap-1 text-[11px] sm:text-xs">
                 <span>Hafez</span>
                 <span>👋</span>
               </span>
             </div>
           </div>
 
-          {/* Center-Right: Date & Time Indicator */}
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-muted/40 border border-border/50 text-xs">
+          {/* Center-Right: Date & Time Indicator (hidden on mobile and small tablet) */}
+          <div className="hidden md:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-muted/40 border border-border/50 text-xs">
             <Calendar className="size-4 text-primary" />
             <div>
               <span className="text-[10px] font-bold text-primary block uppercase tracking-wider">
@@ -863,7 +864,7 @@ function AiWorkspacePage() {
           </div>
 
           {/* Far Right: Quick Tools */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <button
               className="size-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               title={pick({ ar: "بحث", en: "Search" })}
@@ -877,8 +878,13 @@ function AiWorkspacePage() {
               <Bell className="size-4" />
               <span className="absolute top-1 right-1 size-2 rounded-full bg-rose-500" />
             </button>
+            <div className="sm:hidden relative">
+              <div className="size-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
+                HR
+              </div>
+            </div>
             <button
-              className="size-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              className="size-8 rounded-lg hidden sm:flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               title={pick({ ar: "المزيد", en: "More options" })}
             >
               <ChevronDown className="size-4" />
@@ -887,59 +893,114 @@ function AiWorkspacePage() {
         </div>
       </div>
 
-      {/* Mobile Tab Switcher for 3 Columns */}
-      <div className="lg:hidden flex items-center gap-1 p-1 bg-card rounded-xl border border-border/60 text-xs font-semibold">
+      {/* Mobile Tab Switcher (< 768px screens) */}
+      <div className="md:hidden flex items-center gap-1 p-1 bg-card rounded-xl border border-border/60 text-xs font-semibold shadow-2xs">
         <button
           onClick={() => setActiveMobileTab("activities")}
           className={cn(
-            "flex-1 py-1.5 rounded-lg transition-colors text-center",
+            "flex-1 py-1.5 px-2 rounded-lg transition-colors text-center flex items-center justify-center gap-1.5",
             activeMobileTab === "activities"
               ? "bg-primary text-primary-foreground font-bold shadow-xs"
               : "text-muted-foreground hover:bg-muted/50"
           )}
         >
-          {pick({ ar: "الأنشطة الأخيرة", en: "Recent Activities" })}
+          <Clock className="size-3.5" />
+          <span>{pick({ ar: "الأنشطة", en: "Activities" })}</span>
+          <span
+            className={cn(
+              "px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+              activeMobileTab === "activities"
+                ? "bg-primary-foreground/20 text-primary-foreground"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            {INITIAL_ACTIVITIES.length}
+          </span>
         </button>
+
         <button
           onClick={() => setActiveMobileTab("document")}
           className={cn(
-            "flex-1 py-1.5 rounded-lg transition-colors text-center",
+            "flex-1 py-1.5 px-2 rounded-lg transition-colors text-center flex items-center justify-center gap-1.5 truncate",
             activeMobileTab === "document"
               ? "bg-primary text-primary-foreground font-bold shadow-xs"
               : "text-muted-foreground hover:bg-muted/50"
           )}
         >
-          {pick({ ar: "معاينة المستند", en: "Document Preview" })}
+          <FileText className="size-3.5" />
+          <span className="truncate">{pick({ ar: "المستند", en: "Document" })}</span>
         </button>
+
         <button
           onClick={() => setActiveMobileTab("chat")}
           className={cn(
-            "flex-1 py-1.5 rounded-lg transition-colors text-center",
+            "flex-1 py-1.5 px-2 rounded-lg transition-colors text-center flex items-center justify-center gap-1.5",
             activeMobileTab === "chat"
               ? "bg-primary text-primary-foreground font-bold shadow-xs"
               : "text-muted-foreground hover:bg-muted/50"
           )}
         >
-          {pick({ ar: "محادثة العميل", en: "Client Chat" })}
+          <MessageSquareText className="size-3.5" />
+          <span>{pick({ ar: "المحادثة", en: "Chat" })}</span>
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
         </button>
       </div>
 
+      {/* Tablet Mode Segmented Controller (768px - 1023px screens) */}
+      <div className="hidden md:flex lg:hidden items-center justify-between p-2.5 bg-card rounded-xl border border-border/60 text-xs shadow-2xs">
+        <div className="flex items-center gap-2 text-foreground font-bold">
+          <Layers className="size-4 text-primary" />
+          <span>{pick({ ar: "عرض التابلت التنفيذي", en: "Executive Tablet Mode" })}</span>
+          <span className="text-[11px] text-muted-foreground font-normal">
+            ({currentDoc.code})
+          </span>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
+          <button
+            onClick={() => setActiveMobileTab("document")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5",
+              activeMobileTab !== "chat"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <FileText className="size-3.5" />
+            <span>{pick({ ar: "معاينة المستند", en: "Document Preview" })}</span>
+          </button>
+          <button
+            onClick={() => setActiveMobileTab("chat")}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5",
+              activeMobileTab === "chat"
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <MessageSquareText className="size-3.5" />
+            <span>{pick({ ar: "محادثة العميل", en: "Client Chat" })}</span>
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+          </button>
+        </div>
+      </div>
+
       {/* ============================================================ */}
-      {/* 3-Column Executive Workspace Grid */}
+      {/* Responsive Workspace Grid: Mobile (1-col), Tablet (2-col), Desktop (3-col) */}
       {/* ============================================================ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* ---------------------------------------------------------- */}
-        {/* Column 1: Recent Activities (Col-3) */}
+        {/* Column 1: Recent Activities (Mobile: when active, Tablet: col-5, Desktop: col-3) */}
         {/* ---------------------------------------------------------- */}
         <div
           className={cn(
-            "surface-panel rounded-2xl shadow-sm overflow-hidden lg:col-span-3 flex flex-col h-[760px]",
-            activeMobileTab !== "activities" && "hidden lg:flex"
+            "surface-panel rounded-2xl shadow-sm overflow-hidden flex flex-col",
+            "h-[calc(100dvh-230px)] min-h-[520px] md:h-[720px] lg:h-[760px] xl:h-[800px]",
+            activeMobileTab !== "activities" ? "hidden md:flex md:col-span-5 lg:col-span-3" : "flex md:col-span-5 lg:col-span-3"
           )}
         >
           {/* Header */}
-          <div className="p-4 border-b border-border/50 flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-sm text-foreground">
+          <div className="p-3.5 sm:p-4 border-b border-border/50 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-foreground">
               <Clock className="size-4 text-muted-foreground" />
               <span>{pick({ ar: "الأنشطة الأخيرة", en: "Recent Activities" })}</span>
             </div>
@@ -1006,32 +1067,39 @@ function AiWorkspacePage() {
         </div>
 
         {/* ---------------------------------------------------------- */}
-        {/* Column 2: Live Document Sheet Preview (Col-5 / 6) */}
+        {/* Column 2: Live Document Sheet Preview (Mobile: when active, Tablet: col-7, Desktop: col-5) */}
         {/* ---------------------------------------------------------- */}
         <div
           className={cn(
-            "surface-panel rounded-2xl shadow-sm overflow-hidden lg:col-span-5 xl:col-span-5 flex flex-col h-[760px]",
-            activeMobileTab !== "document" && "hidden lg:flex"
+            "surface-panel rounded-2xl shadow-sm overflow-hidden flex flex-col",
+            "h-[calc(100dvh-230px)] min-h-[520px] md:h-[720px] lg:h-[760px] xl:h-[800px]",
+            "lg:flex lg:col-span-5 xl:col-span-5",
+            activeMobileTab === "document"
+              ? "flex md:col-span-7"
+              : activeMobileTab === "activities"
+                ? "hidden md:flex md:col-span-7"
+                : "hidden lg:flex"
           )}
         >
           {/* Top Bar above sheet */}
-          <div className="p-3.5 border-b border-border/50 flex items-center justify-between bg-card/60">
-            <div className="flex items-center gap-2.5">
+          <div className="p-3 sm:p-3.5 border-b border-border/50 flex items-center justify-between bg-card/60 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Mobile Back Button to Activities */}
               <button
                 onClick={() => setActiveMobileTab("activities")}
-                className="size-7 rounded-lg border border-border/60 bg-background flex items-center justify-center text-muted-foreground hover:text-foreground"
-                title={pick({ ar: "رجوع", en: "Back" })}
+                className="md:hidden size-7 rounded-lg border border-border/60 bg-background flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
+                title={pick({ ar: "الأنشطة الأخيرة", en: "Back to Activities" })}
               >
                 <ChevronLeft className="size-4" />
               </button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm text-foreground leading-tight">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h3 className="font-bold text-xs sm:text-sm text-foreground leading-tight truncate">
                     {currentDoc.code}
                   </h3>
                   <span
                     className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0",
+                      "px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold shrink-0",
                       currentDoc.statusTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
                       currentDoc.statusTone === "amber" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                       currentDoc.statusTone === "blue" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
@@ -1043,38 +1111,47 @@ function AiWorkspacePage() {
                     {currentDoc.status}
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">
                   {currentDoc.partyLabel ? pick(currentDoc.partyLabel) : "Contact:"} {currentDoc.clientName}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              {/* Quick Jump to Client Chat on Mobile / Tablet */}
               <button
-                onClick={handlePrint}
-                className="size-8 rounded-lg border border-border/70 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                title={pick({ ar: "تحميل / طباعة", en: "Download / Print" })}
+                onClick={() => setActiveMobileTab("chat")}
+                className="lg:hidden px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold flex items-center gap-1 transition-colors"
+                title={pick({ ar: "فتح محادثة العميل", en: "Open Client Chat" })}
               >
-                <Download className="size-4" />
+                <MessageSquareText className="size-3.5" />
+                <span className="hidden sm:inline">{pick({ ar: "محادثة", en: "Chat" })}</span>
               </button>
               <button
-                className="size-8 rounded-lg border border-border/70 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                onClick={handlePrint}
+                className="size-7 sm:size-8 rounded-lg border border-border/70 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                title={pick({ ar: "تحميل / طباعة", en: "Download / Print" })}
+              >
+                <Download className="size-3.5 sm:size-4" />
+              </button>
+              <button
+                className="size-7 sm:size-8 rounded-lg border border-border/70 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
                 title={pick({ ar: "المزيد من الخيارات", en: "More options" })}
               >
-                <MoreHorizontal className="size-4" />
+                <MoreHorizontal className="size-3.5 sm:size-4" />
               </button>
             </div>
           </div>
 
           {/* Scrollable Document Canvas */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/20">
+          <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 md:p-6 bg-muted/20">
             {/* The Document Sheet */}
-            <div className="bg-card text-card-foreground rounded-2xl p-6 sm:p-8 shadow-sm border border-border/60 space-y-6 max-w-xl mx-auto">
+            <div className="bg-card text-card-foreground rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm border border-border/60 space-y-4 sm:space-y-6 max-w-xl mx-auto">
               {/* Sheet Header */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b sm:border-b-0 border-border/40">
+                <div className="flex items-center gap-2.5 sm:gap-3">
                   {/* Wazeer Logo */}
-                  <div className="size-12 rounded-xl bg-white p-1 shadow-sm border border-border/60 flex items-center justify-center shrink-0">
+                  <div className="size-10 sm:size-12 rounded-xl bg-white p-1 shadow-sm border border-border/60 flex items-center justify-center shrink-0">
                     <img
                       src={companyLogo}
                       alt={companyName}
@@ -1082,24 +1159,24 @@ function AiWorkspacePage() {
                     />
                   </div>
                   <div>
-                    <h2 className="font-extrabold text-base text-foreground leading-tight">
+                    <h2 className="font-extrabold text-sm sm:text-base text-foreground leading-tight">
                       {companyName}
                     </h2>
-                    <p className="text-[11px] text-muted-foreground font-medium">
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">
                       {currentDoc.companyTagline || (lang === "ar" ? "حلويات ومواد غذائية وتوريدات فندقية" : "Confectionery & Food Industries")}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-end">
-                  <span className="font-black text-sm sm:text-base tracking-wider text-slate-900 dark:text-slate-100 uppercase block">
+                <div className="text-start sm:text-end w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end">
+                  <span className="font-black text-xs sm:text-base tracking-wider text-slate-900 dark:text-slate-100 uppercase block">
                     {currentDoc.category}
                   </span>
                   <span className="font-mono font-bold text-xs text-muted-foreground">
                     #{currentDoc.code.replace(/[^0-9A-Za-z-]/g, "") || "DOC"}
                   </span>
                   {currentDoc.categoryLabel && (
-                    <span className="text-[10px] text-muted-foreground block font-medium">
+                    <span className="text-[9px] sm:text-[10px] text-muted-foreground hidden sm:block font-medium">
                       {pick(currentDoc.categoryLabel)}
                     </span>
                   )}
@@ -1107,14 +1184,14 @@ function AiWorkspacePage() {
               </div>
 
               {/* Bill To / Contact & Info */}
-              <div className="grid grid-cols-2 gap-4 pt-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1 text-xs">
                 {/* Left: Contact Info */}
-                <div className="space-y-1">
+                <div className="space-y-1 p-2.5 sm:p-0 rounded-lg bg-muted/20 sm:bg-transparent">
                   <span className="font-bold text-foreground text-xs block mb-1">
                     {currentDoc.partyLabel ? pick(currentDoc.partyLabel) : (lang === "ar" ? "إلى:" : "Bill To:")}
                   </span>
-                  <p className="font-semibold text-foreground">{currentDoc.clientName}</p>
-                  <p className="text-muted-foreground text-[11px] flex items-center gap-1">
+                  <p className="font-semibold text-foreground text-xs">{currentDoc.clientName}</p>
+                  <p className="text-muted-foreground text-[11px] flex items-center gap-1 break-all">
                     ✉ {currentDoc.clientEmail}
                   </p>
                   <p className="text-muted-foreground text-[11px] font-mono">
@@ -1126,7 +1203,7 @@ function AiWorkspacePage() {
                 </div>
 
                 {/* Right: Dates & Status */}
-                <div className="space-y-1.5 text-end">
+                <div className="space-y-1.5 p-2.5 sm:p-0 rounded-lg bg-muted/20 sm:bg-transparent sm:text-end">
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="text-muted-foreground">
                       {currentDoc.dateLabel ? pick(currentDoc.dateLabel) : (lang === "ar" ? "التاريخ:" : "Date:")}
@@ -1151,7 +1228,7 @@ function AiWorkspacePage() {
                     </span>
                     <span
                       className={cn(
-                        "px-2.5 py-0.5 rounded-full text-[11px] font-bold",
+                        "px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold",
                         currentDoc.statusTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
                         currentDoc.statusTone === "amber" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                         currentDoc.statusTone === "blue" && "bg-blue-500/15 text-blue-600 dark:text-blue-400",
@@ -1169,33 +1246,33 @@ function AiWorkspacePage() {
               {/* Items Table (if financial / line items document) */}
               {currentDoc.items && currentDoc.items.length > 0 && (
                 <>
-                  <div className="rounded-xl overflow-hidden border border-border/50">
-                    <table className="w-full text-xs">
+                  <div className="rounded-xl overflow-x-auto border border-border/50">
+                    <table className="w-full text-xs min-w-[340px] sm:min-w-0">
                       <thead className="bg-muted/60 border-b border-border/50 text-muted-foreground">
                         <tr>
-                          <th className="py-2 px-3 text-start font-semibold w-8">#</th>
-                          <th className="py-2 px-3 text-start font-semibold">{pick({ ar: "الوصف / البند", en: "Description" })}</th>
-                          <th className="py-2 px-3 text-center font-semibold w-12">{pick({ ar: "الكمية", en: "Qty" })}</th>
-                          <th className="py-2 px-3 text-end font-semibold w-24">{pick({ ar: "السعر", en: "Unit Price" })}</th>
-                          <th className="py-2 px-3 text-end font-semibold w-24">{pick({ ar: "الإجمالي", en: "Total" })}</th>
+                          <th className="py-2 px-2.5 text-start font-semibold w-7">#</th>
+                          <th className="py-2 px-2.5 text-start font-semibold">{pick({ ar: "الوصف / البند", en: "Description" })}</th>
+                          <th className="py-2 px-2 text-center font-semibold w-10">{pick({ ar: "الكمية", en: "Qty" })}</th>
+                          <th className="py-2 px-2 text-end font-semibold w-16 sm:w-20">{pick({ ar: "السعر", en: "Price" })}</th>
+                          <th className="py-2 px-2.5 text-end font-semibold w-20">{pick({ ar: "الإجمالي", en: "Total" })}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border/40 font-mono">
                         {currentDoc.items.map((item) => (
                           <tr key={item.num} className="hover:bg-muted/20">
-                            <td className="py-2.5 px-3 text-start text-muted-foreground font-sans">
+                            <td className="py-2 px-2.5 text-start text-muted-foreground font-sans text-[11px]">
                               {item.num}
                             </td>
-                            <td className="py-2.5 px-3 text-start font-sans font-medium text-foreground">
+                            <td className="py-2 px-2.5 text-start font-sans font-medium text-foreground text-[11px] sm:text-xs">
                               {item.description}
                             </td>
-                            <td className="py-2.5 px-3 text-center text-foreground">
+                            <td className="py-2 px-2 text-center text-foreground text-[11px]">
                               {item.qty}
                             </td>
-                            <td className="py-2.5 px-3 text-end text-muted-foreground">
+                            <td className="py-2 px-2 text-end text-muted-foreground text-[11px]">
                               ${item.unitPrice.toFixed(2)}
                             </td>
-                            <td className="py-2.5 px-3 text-end font-semibold text-foreground">
+                            <td className="py-2 px-2.5 text-end font-semibold text-foreground text-[11px] sm:text-xs">
                               ${item.total.toFixed(2)}
                             </td>
                           </tr>
@@ -1206,8 +1283,8 @@ function AiWorkspacePage() {
 
                   {/* Financial Totals */}
                   {currentDoc.total !== undefined && (
-                    <div className="flex justify-end pt-2">
-                      <div className="w-56 space-y-1.5 text-xs">
+                    <div className="flex justify-end pt-1">
+                      <div className="w-full sm:w-56 space-y-1 text-xs">
                         {currentDoc.subtotal !== undefined && (
                           <div className="flex justify-between items-center text-muted-foreground">
                             <span>{pick({ ar: "المجموع الفرعي", en: "Subtotal" })}</span>
@@ -1224,9 +1301,9 @@ function AiWorkspacePage() {
                             </span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center pt-2 border-t border-border/60 font-bold">
-                          <span className="text-foreground text-sm">{pick({ ar: "الإجمالي النهائي", en: "Total" })}</span>
-                          <span className="font-mono text-base text-primary">
+                        <div className="flex justify-between items-center pt-1.5 border-t border-border/60 font-bold">
+                          <span className="text-foreground text-xs sm:text-sm">{pick({ ar: "الإجمالي النهائي", en: "Total" })}</span>
+                          <span className="font-mono text-sm sm:text-base text-primary">
                             ${currentDoc.total.toFixed(2)}
                           </span>
                         </div>
@@ -1238,23 +1315,23 @@ function AiWorkspacePage() {
 
               {/* Structured Details Cards (for tickets, registrations, meetings, inquiries) */}
               {currentDoc.details && currentDoc.details.length > 0 && (
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-2.5">
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-3 sm:p-3.5 space-y-2">
                   <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <FileCheck className="size-3.5 text-primary" />
                     <span>{pick({ ar: "تفاصيل وبيانات المعاملة المعتمدة", en: "Transaction Specifications & Records" })}</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {currentDoc.details.map((det, idx) => (
-                      <div key={idx} className="p-2.5 rounded-lg bg-card border border-border/50">
+                      <div key={idx} className="p-2 sm:p-2.5 rounded-lg bg-card border border-border/50">
                         <span className="text-[10px] text-muted-foreground font-medium block mb-0.5">
                           {det.label}
                         </span>
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-semibold text-foreground text-xs">{det.value}</span>
+                          <span className="font-semibold text-foreground text-[11px] sm:text-xs">{det.value}</span>
                           {det.badge && (
                             <span
                               className={cn(
-                                "px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0",
+                                "px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold shrink-0",
                                 det.badgeTone === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
                                 det.badgeTone === "rose" && "bg-rose-500/15 text-rose-600 dark:text-rose-400",
                                 det.badgeTone === "purple" && "bg-purple-500/15 text-purple-600 dark:text-purple-400",
@@ -1274,23 +1351,23 @@ function AiWorkspacePage() {
 
               {/* AI Copilot Intelligence Notes */}
               {currentDoc.notes && (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-1.5 text-xs">
-                  <div className="flex items-center gap-1.5 text-primary font-bold">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-3.5 space-y-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-primary font-bold text-xs">
                     <Sparkles className="size-3.5" />
                     <span>
                       {currentDoc.notesTitle ? pick(currentDoc.notesTitle) : pick({ ar: "ملاحظات وتوجيهات الذكاء الاصطناعي", en: "AI Copilot Notes & Intelligence" })}
                     </span>
                   </div>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground text-[11px] sm:text-xs leading-relaxed">
                     {currentDoc.notes}
                   </p>
                 </div>
               )}
 
               {/* Footer Note & QR Code */}
-              <div className="pt-6 border-t border-border/40 flex items-end justify-between gap-4">
-                <div className="space-y-1 text-xs">
-                  <p className="font-medium text-muted-foreground italic">
+              <div className="pt-4 sm:pt-6 border-t border-border/40 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-3 text-center sm:text-start">
+                <div className="space-y-0.5 text-xs">
+                  <p className="font-medium text-muted-foreground italic text-[11px]">
                     {pick({
                       ar: "وثيقة رسمية معتمدة من النظام السحابي لمجموعة وزير الحلو",
                       en: "Official Certified Record — Wazeer El-Helw ERP Cloud",
@@ -1304,8 +1381,8 @@ function AiWorkspacePage() {
                   </p>
                 </div>
 
-                <div>
-                  <QrCodeGraphic value={`${currentDoc.code}|${currentDoc.status}|${currentDoc.total ?? currentDoc.clientName}`} size={56} />
+                <div className="shrink-0">
+                  <QrCodeGraphic value={`${currentDoc.code}|${currentDoc.status}|${currentDoc.total ?? currentDoc.clientName}`} size={52} />
                 </div>
               </div>
             </div>
@@ -1313,22 +1390,32 @@ function AiWorkspacePage() {
         </div>
 
         {/* ---------------------------------------------------------- */}
-        {/* Column 3: Interactive Chat Assistant (Col-4) */}
+        {/* Column 3: Interactive Chat Assistant (Mobile: when active, Tablet: col-7, Desktop: col-4) */}
         {/* ---------------------------------------------------------- */}
         <div
           className={cn(
-            "surface-panel rounded-2xl shadow-sm overflow-hidden lg:col-span-4 xl:col-span-4 flex flex-col h-[760px]",
-            activeMobileTab !== "chat" && "hidden lg:flex"
+            "surface-panel rounded-2xl shadow-sm overflow-hidden flex flex-col",
+            "h-[calc(100dvh-230px)] min-h-[520px] md:h-[720px] lg:h-[760px] xl:h-[800px]",
+            "lg:flex lg:col-span-4 xl:col-span-4",
+            activeMobileTab === "chat" ? "flex md:col-span-7" : "hidden lg:flex"
           )}
         >
           {/* Header */}
-          <div className="p-3.5 border-b border-border/50 flex items-center justify-between bg-card/60">
-            <div className="flex items-center gap-2.5">
-              <div className="size-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+          <div className="p-3 sm:p-3.5 border-b border-border/50 flex items-center justify-between bg-card/60 gap-2">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              {/* Mobile Back Button to Activities */}
+              <button
+                onClick={() => setActiveMobileTab("activities")}
+                className="md:hidden size-7 rounded-lg border border-border/60 bg-background flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0"
+                title={pick({ ar: "الأنشطة الأخيرة", en: "Back to Activities" })}
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <div className="size-8 sm:size-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-xs shrink-0">
                 {currentDoc.clientName ? currentDoc.clientName[0] : "A"}
               </div>
-              <div>
-                <h4 className="font-bold text-xs text-foreground">
+              <div className="min-w-0">
+                <h4 className="font-bold text-xs text-foreground truncate">
                   {currentDoc.clientName || "Ali"}
                 </h4>
                 <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
@@ -1338,12 +1425,23 @@ function AiWorkspacePage() {
               </div>
             </div>
 
-            <button
-              className="size-8 rounded-lg border border-border/60 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center"
-              title={pick({ ar: "خيارات المحادثة", en: "Chat options" })}
-            >
-              <MoreHorizontal className="size-4" />
-            </button>
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              {/* Mobile / Tablet switch to Document Preview */}
+              <button
+                onClick={() => setActiveMobileTab("document")}
+                className="lg:hidden px-2 py-1 rounded-lg bg-secondary hover:bg-muted text-foreground border border-border/60 text-xs font-bold flex items-center gap-1 transition-colors"
+                title={pick({ ar: "عرض المستند", en: "View Document" })}
+              >
+                <FileText className="size-3.5" />
+                <span className="hidden sm:inline">{pick({ ar: "المستند", en: "Doc" })}</span>
+              </button>
+              <button
+                className="size-7 sm:size-8 rounded-lg border border-border/60 bg-background text-muted-foreground hover:text-foreground flex items-center justify-center"
+                title={pick({ ar: "خيارات المحادثة", en: "Chat options" })}
+              >
+                <MoreHorizontal className="size-3.5 sm:size-4" />
+              </button>
+            </div>
           </div>
 
           {/* Chat Thread Messages */}
