@@ -194,12 +194,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           sidebarVisible && "lg:flex"
         )}
       >
-        <Link to="/" className="block px-1" aria-label={t("appName")}>
+        <Link to="/" className="block px-1" aria-label={companyName}>
           <div className="rounded-xl bg-white p-2 shadow-sm transition-transform hover:scale-[1.01]">
             <img
-              src="/ai-first-erp-logo.png"
-              alt={t("appName")}
-              className="h-auto w-full object-contain"
+              src={companyLogo}
+              alt={companyName}
+              className="h-auto max-h-20 w-full object-contain"
             />
           </div>
         </Link>
@@ -210,7 +210,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3">
-          <p className="text-xs font-bold text-ink-foreground">{t("company")}</p>
+          <p className="text-xs font-bold text-ink-foreground">{companyName}</p>
           <p className="text-[11px] text-ink-foreground/55">{t("role_manager")}</p>
         </div>
       </aside>
