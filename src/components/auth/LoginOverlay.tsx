@@ -19,7 +19,11 @@ import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore, type DemoUser } from "@/lib/auth-store";
 
-export function LoginOverlay() {
+interface LoginOverlayProps {
+  onLoginSuccess?: () => void;
+}
+
+export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const { pick, dir, lang } = useI18n();
   const { settings } = useCompanySettings();
   const { demoAccounts, login, loginAs } = useAuthStore();
@@ -35,20 +39,17 @@ export function LoginOverlay() {
   const handleManualLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
-
-    setTimeout(() => {
-      const ok = login(email, password);
-      if (!ok) {
-        setError(
-          pick(
-            "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى استخدام أحد الحسابات التجريبية أدناه.",
-            "Invalid email or password. Please use one of the demo accounts below."
-          )
-        );
-      }
-      setLoading(false);
-    }, 400);
+    const ok = login(email, password);
+    if (ok) {
+      onLoginSuccess?.();
+    } else {
+      setError(
+        pick(
+          "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى اختيار أحد الحسابات بالأسفل.",
+          "Invalid email or password. Please choose one of the demo accounts below."
+        )
+      );
+    }
   };
 
   const handleQuickDemoLogin = (account: DemoUser) => {
@@ -56,6 +57,7 @@ export function LoginOverlay() {
     setPassword(account.password);
     setError("");
     loginAs(account.id);
+    onLoginSuccess?.();
   };
 
   return (
@@ -218,22 +220,27 @@ export function LoginOverlay() {
                     key={account.id}
                     type="button"
                     onClick={() => handleQuickDemoLogin(account)}
-                    className={`p-2.5 rounded-xl border text-start transition-all flex items-start gap-2.5 hover:shadow-md ${
+                    className={`group p-2.5 rounded-xl border text-start transition-all flex items-start gap-2.5 hover:shadow-md cursor-pointer ${
                       isCurrent
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                        : "border-border/70 bg-card hover:bg-secondary/50"
+                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border/70 bg-card hover:bg-secondary/70 hover:border-primary/50"
                     }`}
                   >
                     <div
-                      className={`size-8 rounded-lg bg-gradient-to-tr ${account.avatarBg} text-white flex items-center justify-center shrink-0 shadow-sm`}
+                      className={`size-8 rounded-lg bg-gradient-to-tr ${account.avatarBg} text-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105`}
                     >
                       <RoleIcon className="size-4" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-foreground truncate">
-                        {pick(account.name.ar, account.name.en)}
-                      </p>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-bold text-foreground truncate">
+                          {pick(account.name.ar, account.name.en)}
+                        </p>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+                          {pick("دخول", "Login")}
+                        </span>
+                      </div>
                       <p className="text-[10px] font-semibold text-primary truncate">
                         {pick(account.roleLabel.ar, account.roleLabel.en)}
                       </p>

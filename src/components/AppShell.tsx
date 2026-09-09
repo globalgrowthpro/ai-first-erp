@@ -150,6 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     demoAccounts,
     loginAs,
     logout,
+    setAuthenticated,
   } = useAuthStore();
 
   // Notification state
@@ -605,7 +606,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Dialog>
 
       {/* Login Screen Overlay with 1-Click Demo Accounts */}
-      {!isAuthenticated && <LoginOverlay />}
+      {!isAuthenticated && (
+        <LoginOverlay
+          onLoginSuccess={() => {
+            setAuthenticated(true);
+          }}
+        />
+      )}
     </div>
   );
 }
