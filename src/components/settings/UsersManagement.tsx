@@ -25,6 +25,8 @@ import {
   Sparkles,
   ChevronRight,
   ChevronLeft,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 
 export function UsersManagement() {
