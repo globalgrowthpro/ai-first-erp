@@ -92,8 +92,9 @@ export function WorkOrderDetailModal({
     if (next === "completed" || next === "qc_check") {
       options.qcPassed = true;
     }
-    if (qcNotes || order.notes) {
-      options.notes = qcNotes || order.notes;
+    const noteText = qcNotes || order.notes;
+    if (noteText) {
+      options.notes = noteText;
     }
 
     onTransitionStage(order.id, next, options);

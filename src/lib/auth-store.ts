@@ -143,8 +143,10 @@ const STORAGE_KEYS = {
   AUTH: "wazeer_erp_is_authenticated_v1",
 };
 
+const DEFAULT_USER: DemoUser = DEMO_ACCOUNTS[0]!;
+
 function getStoredUser(): DemoUser {
-  if (typeof window === "undefined") return DEMO_ACCOUNTS[0];
+  if (typeof window === "undefined") return DEFAULT_USER;
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.USER);
     if (saved) {
@@ -157,7 +159,7 @@ function getStoredUser(): DemoUser {
   } catch (e) {
     console.error("Failed to load user from storage", e);
   }
-  return DEMO_ACCOUNTS[0];
+  return DEFAULT_USER;
 }
 
 function getStoredAuth(): boolean {
@@ -165,7 +167,7 @@ function getStoredAuth(): boolean {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
     if (saved !== null) {
-      return saved === "true" || saved === true;
+      return saved === "true";
     }
   } catch {
     return true;
@@ -217,7 +219,7 @@ function getSnapshot(): AuthStoreState {
 
 function getServerSnapshot(): AuthStoreState {
   return {
-    currentUser: DEMO_ACCOUNTS[0],
+    currentUser: DEFAULT_USER,
     isAuthenticated: true,
   };
 }
