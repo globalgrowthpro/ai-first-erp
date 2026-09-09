@@ -24,11 +24,16 @@ import {
   PanelLeft,
   PanelLeftClose,
   Factory,
+  ChevronDown,
+  User,
+  ChefHat,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useSidebarVisible } from "@/lib/ui-prefs";
 import { useCompanySettings } from "@/lib/settings-store";
+import { useAuthStore } from "@/lib/auth-store";
+import { LoginOverlay } from "@/components/auth/LoginOverlay";
 import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 import {
@@ -138,12 +143,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
   const companyLogo = settings.logoUrl || "/ai-first-erp-logo.png";
 
+  const {
+    currentUser,
+    isAuthenticated,
+    demoAccounts,
+    loginAs,
+    logout,
+  } = useAuthStore();
+
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(
     INITIAL_NOTIFICATIONS
   );
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
+
+  // User switcher dropdown state
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Logout modal state
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -164,12 +181,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const handleLogoutConfirm = () => {
     setIsLoggedOutSuccess(true);
     setTimeout(() => {
+      logout();
       setIsLogoutOpen(false);
       setIsLoggedOutSuccess(false);
-    }, 1200);
+    }, 600);
   };
 
-  // Close notifications on outside click
+  // Close notifications & user menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -178,14 +196,20 @@ export function AppShell({ children }: { children: ReactNode }) {
       ) {
         setIsNotifOpen(false);
       }
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
     }
-    if (isNotifOpen) {
+    if (isNotifOpen || isUserMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isNotifOpen]);
+  }, [isNotifOpen, isUserMenuOpen]);
 
   return (
     <div className="flex min-h-screen bg-secondary">
@@ -213,7 +237,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3">
           <p className="text-xs font-bold text-ink-foreground">{companyName}</p>
-          <p className="text-[11px] text-ink-foreground/55">{t("role_manager")}</p>
+          <p className="text-[11px] text-ink-foreground/85 font-semibold mt-0.5">
+            {pick(currentUser.name.ar, currentUser.name.en)}
+          </p>
+          <p className="text-[10px] text-ink-foreground/55">
+            {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+          </p>
         </div>
       </aside>
 
@@ -378,6 +407,91 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span>{t("askAi")}</span>
           </Link>
 
+          {/* Demo User Switcher & Profile Dropdown */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary transition-colors"
+              title={pick("تبديل الحساب التجريبي", "Switch Demo Account")}
+            >
+              <div
+                className={`size-6 rounded-lg bg-gradient-to-tr ${currentUser.avatarBg} text-white flex items-center justify-center font-bold text-[10px] shadow-sm`}
+              >
+                {currentUser.name.ar[0]}
+              </div>
+              <div className="hidden md:block text-start leading-tight">
+                <p className="font-bold text-foreground text-[11px] truncate max-w-[105px]">
+                  {pick(currentUser.name.ar, currentUser.name.en)}
+                </p>
+                <p className="text-[9px] text-muted-foreground truncate max-w-[105px]">
+                  {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+                </p>
+              </div>
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isUserMenuOpen && (
+              <div
+                className={cn(
+                  "absolute top-full mt-2 w-72 rounded-2xl border border-border/70 bg-card p-3 shadow-2xl z-50 text-xs space-y-2",
+                  dir === "rtl" ? "left-0" : "right-0"
+                )}
+              >
+                <div className="pb-2 border-b border-border/50">
+                  <p className="font-bold text-foreground text-xs">
+                    {pick("تبديل الحساب التجريبي", "Switch Demo Account")}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {pick(
+                      "اختر أي دور لتجربة الصلاحيات وواجهة المستخدم المخصصة",
+                      "Select a role to test its specific view & permissions"
+                    )}
+                  </p>
+                </div>
+
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {demoAccounts.map((acc) => {
+                    const isSelected = currentUser.id === acc.id;
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => {
+                          loginAs(acc.id);
+                          setIsUserMenuOpen(false);
+                        }}
+                        className={cn(
+                          "w-full p-2 rounded-xl text-start flex items-center gap-2.5 transition-all",
+                          isSelected
+                            ? "bg-primary/10 border border-primary/30"
+                            : "hover:bg-secondary/70 border border-transparent"
+                        )}
+                      >
+                        <div
+                          className={`size-7 rounded-lg bg-gradient-to-tr ${acc.avatarBg} text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-sm`}
+                        >
+                          {acc.name.ar[0]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-foreground text-xs truncate">
+                            {pick(acc.name.ar, acc.name.en)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {pick(acc.roleLabel.ar, acc.roleLabel.en)}
+                          </p>
+                        </div>
+                        {isSelected && (
+                          <Check className="size-3.5 text-primary shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Logout Icon Button */}
           <button
             onClick={() => setIsLogoutOpen(true)}
@@ -462,6 +576,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Login Screen Overlay with 1-Click Demo Accounts */}
+      {!isAuthenticated && <LoginOverlay />}
     </div>
   );
 }

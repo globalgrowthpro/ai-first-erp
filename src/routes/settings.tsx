@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, X, ShieldAlert, Building2, ShieldCheck, Users } from "lucide-react";
+import { Check, X, ShieldAlert, Building2, ShieldCheck, Users, Radio } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, PageHeader, Panel, Td } from "@/components/kit";
 import { highRiskActions, permissionMatrix, roles } from "@/lib/demo-data";
 import { CompanyBrandingSettings } from "@/components/settings/CompanyBrandingSettings";
 import { UsersManagement } from "@/components/settings/UsersManagement";
+import { GatewaySettings } from "@/components/settings/GatewaySettings";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/settings")({
       { title: "Settings, Users & Branding — Hafez ERP" },
       {
         name: "description",
-        content: "Configure company info, color palette, invoice branding, users, departments, positions, roles and permissions.",
+        content: "Configure company info, color palette, invoice branding, users, departments, positions, roles, SMS and SMTP gateways.",
       },
       { property: "og:title", content: "Settings, Users & Branding — Hafez ERP" },
       { property: "og:description", content: "Company branding, invoice customization, users, departments, and permissions." },
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/settings")({
 
 function Settings() {
   const { t, pick, n } = useI18n();
-  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles">("branding");
+  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways">("branding");
 
   return (
     <div className="space-y-6">
@@ -62,6 +63,14 @@ function Settings() {
           <ShieldCheck className="size-4" />
           {t("rolesAndSecurity")}
         </Btn>
+        <Btn
+          variant={activeTab === "gateways" ? "solid" : "outline"}
+          onClick={() => setActiveTab("gateways")}
+          className="text-xs"
+        >
+          <Radio className="size-4" />
+          {pick("بوابات الرسائل والبريد (SMS & SMTP)", "Gateways & Notifications")}
+        </Btn>
       </div>
 
       {/* Tab 1: Company Profile & Document Branding */}
@@ -70,7 +79,10 @@ function Settings() {
       {/* Tab 2: Users, Departments, Positions, Allowed Pages & Actions */}
       {activeTab === "users" && <UsersManagement />}
 
-      {/* Tab 3: Roles & Security Matrix */}
+      {/* Tab 3: Gateways & SMS / SMTP Notifications */}
+      {activeTab === "gateways" && <GatewaySettings />}
+
+      {/* Tab 4: Roles & Security Matrix */}
       {activeTab === "roles" && (
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-3">
