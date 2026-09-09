@@ -25,6 +25,8 @@ import {
   Sparkles,
   ChevronRight,
   ChevronLeft,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 
 export function UsersManagement() {
@@ -56,6 +58,7 @@ export function UsersManagement() {
     allowedPages: ["/", "/sales", "/inventory"],
     allowedActions: ["invoice.create"],
     status: "active" as "active" | "inactive",
+    sidebarVisible: true,
   });
 
   // New Department Form State
@@ -103,6 +106,7 @@ export function UsersManagement() {
       allowedActions: newUser.allowedActions,
       status: newUser.status,
       lastActive: lang === "ar" ? "تمت إضافته الآن" : "Just created",
+      sidebarVisible: newUser.sidebarVisible,
     };
 
     setUsersList((prev) => [user, ...prev]);
@@ -121,6 +125,7 @@ export function UsersManagement() {
       allowedPages: ["/", "/sales", "/inventory"],
       allowedActions: ["invoice.create"],
       status: "active",
+      sidebarVisible: true,
     });
   };
 
@@ -177,6 +182,16 @@ export function UsersManagement() {
         ? prev.allowedActions.filter((a) => a !== actionId)
         : [...prev.allowedActions, actionId],
     }));
+  };
+
+  // Toggle sidebar visibility for existing user
+  const toggleSelectedUserSidebar = () => {
+    if (!selectedUserForDetail) return;
+    const next = !selectedUserForDetail.sidebarVisible;
+    setUsersList((prev) =>
+      prev.map((u) => (u.id === selectedUserForDetail.id ? { ...u, sidebarVisible: next } : u))
+    );
+    setSelectedUserForDetail((prev) => (prev ? { ...prev, sidebarVisible: next } : prev));
   };
 
   return (
@@ -360,6 +375,7 @@ export function UsersManagement() {
                   <th className="p-3 text-start">{t("roles")}</th>
                   <th className="p-3 text-start">{t("allowedPages")}</th>
                   <th className="p-3 text-start">{t("allowedActions")}</th>
+                  <th className="p-3 text-start">{lang === "ar" ? "الشريط" : "Sidebar"}</th>
                   <th className="p-3 text-start">{t("active")}</th>
                   <th className="p-3 text-center">{lang === "ar" ? "التفاصيل" : "Details"}</th>
                 </tr>
@@ -440,6 +456,23 @@ export function UsersManagement() {
                             {lang === "ar" ? "إجراء مصرح" : "actions"}
                           </span>
                         </div>
+                      </td>
+
+                      {/* Sidebar Visibility */}
+                      <td className="p-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                            user.sidebarVisible
+                              ? "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30"
+                              : "bg-muted text-muted-foreground border-border/60"
+                          }`}
+                          title={user.sidebarVisible ? (lang === "ar" ? "الشريط الجانبي مرئي" : "Sidebar visible") : (lang === "ar" ? "الشريط الجانبي مخفي" : "Sidebar hidden")}
+                        >
+                          {user.sidebarVisible ? <PanelLeft className="w-3 h-3" /> : <PanelLeftClose className="w-3 h-3" />}
+                          {user.sidebarVisible
+                            ? lang === "ar" ? "مرئي" : "Visible"
+                            : lang === "ar" ? "مخفي" : "Hidden"}
+                        </span>
                       </td>
 
                       {/* Status */}
@@ -729,6 +762,47 @@ export function UsersManagement() {
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Sidebar Visibility */}
+              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-8 h-8 rounded-lg border flex items-center justify-center ${
+                        newUser.sidebarVisible
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {newUser.sidebarVisible ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xs uppercase">
+                        {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {newUser.sidebarVisible
+                          ? lang === "ar" ? "القائمة الجانبية تظهر عند تسجيل الدخول" : "Sidebar is shown on login"
+                          : lang === "ar" ? "القائمة الجانبية مخفية عند تسجيل الدخول" : "Sidebar is hidden on login"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNewUser((prev) => ({ ...prev, sidebarVisible: !prev.sidebarVisible }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                      newUser.sidebarVisible ? "bg-primary border-primary" : "bg-muted border-border"
+                    }`}
+                    aria-pressed={newUser.sidebarVisible}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        newUser.sidebarVisible ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
@@ -1108,6 +1182,54 @@ export function UsersManagement() {
                 <div>
                   <span className="text-muted-foreground block mb-0.5">{lang === "ar" ? "آخر نشاط" : "Last Active"}</span>
                   <span className="font-bold">{selectedUserForDetail.lastActive}</span>
+                </div>
+              </div>
+
+              {/* Sidebar Visibility Toggle */}
+              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-9 h-9 rounded-lg border flex items-center justify-center ${
+                        selectedUserForDetail.sidebarVisible
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border"
+                      }`}
+                    >
+                      {selectedUserForDetail.sidebarVisible ? (
+                        <PanelLeft className="w-4 h-4" />
+                      ) : (
+                        <PanelLeftClose className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs uppercase">
+                        {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        {selectedUserForDetail.sidebarVisible
+                          ? lang === "ar" ? "القائمة الجانبية ظاهرة للمستخدم" : "Sidebar is shown for this user"
+                          : lang === "ar" ? "القائمة الجانبية مخفية للمستخدم" : "Sidebar is hidden for this user"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={toggleSelectedUserSidebar}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${
+                      selectedUserForDetail.sidebarVisible
+                        ? "bg-primary border-primary"
+                        : "bg-muted border-border"
+                    }`}
+                    aria-pressed={selectedUserForDetail.sidebarVisible}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                        selectedUserForDetail.sidebarVisible ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
