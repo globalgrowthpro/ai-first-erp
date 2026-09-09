@@ -130,6 +130,7 @@ function NavList({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, pick, toggle, lang, dir } = useI18n();
+  const [sidebarVisible, setSidebarVisible] = useSidebarVisible();
 
   // Notification state
   const [notifications, setNotifications] = useState<NotificationItem[]>(
