@@ -746,6 +746,7 @@ export const users: UserItem[] = [
     allowedActions: ["invoice.create", "invoice.delete", "purchase.create", "payment.approve", "accounting.edit", "stock.adjust", "stock.transfer", "reports.export", "users.manage", "ai.configure"],
     status: "active",
     lastActive: "الآن / Just now",
+    sidebarVisible: true,
   },
   {
     id: "usr-2",
@@ -758,6 +759,7 @@ export const users: UserItem[] = [
     allowedActions: ["invoice.create", "stock.transfer"],
     status: "active",
     lastActive: "منذ 15 دقيقة / 15m ago",
+    sidebarVisible: true,
   },
   {
     id: "usr-3",
@@ -770,6 +772,7 @@ export const users: UserItem[] = [
     allowedActions: ["invoice.create", "payment.approve", "accounting.edit", "reports.export"],
     status: "active",
     lastActive: "منذ 32 دقيقة / 32m ago",
+    sidebarVisible: true,
   },
   {
     id: "usr-4",
@@ -782,6 +785,7 @@ export const users: UserItem[] = [
     allowedActions: ["purchase.create", "stock.adjust", "stock.transfer"],
     status: "active",
     lastActive: "منذ ساعتين / 2h ago",
+    sidebarVisible: true,
   },
   {
     id: "usr-5",
@@ -794,6 +798,7 @@ export const users: UserItem[] = [
     allowedActions: ["reports.export"],
     status: "active",
     lastActive: "أمس / Yesterday",
+    sidebarVisible: false,
   },
 ];
 
