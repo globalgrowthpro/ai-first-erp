@@ -1,0 +1,87 @@
+# ==============================================================================
+# AI-First ERP - Apache & LiteSpeed Configuration (.htaccess)
+# Optimized for cPanel & Hostinger (hPanel) Deployments
+# Author: Mr. Hafez Rahim
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Enforce HTTPS in production
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # If a file or directory physically exists, serve it directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA Routing Fallback: Route all other requests to index.html
+  RewriteRule ^ index.html [L,QSA]
+</IfModule>
+
+# ==============================================================================
+# Security Headers
+# ==============================================================================
+<IfModule mod_headers.c>
+  # Prevent Clickjacking
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Prevent MIME Sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Privacy Referrer Policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # XSS Protection for legacy browsers
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Restrict sensitive browser APIs
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+  # Strict Transport Security (HSTS)
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+</IfModule>
+
+# ==============================================================================
+# Gzip & Deflate Compression (Speed Optimization)
+# ==============================================================================
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# ==============================================================================
+# Browser Caching
+# ==============================================================================
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 month"
+
+  # Cache hashed static assets for 1 year
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+
+  # Do not cache index.html to allow instant updates
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Prevent directory indexing
+Options -Indexes
