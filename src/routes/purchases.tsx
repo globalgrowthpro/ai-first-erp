@@ -74,7 +74,7 @@ function Purchases() {
           <div className="mt-4 rounded-xl border-2 border-dashed border-border/80 bg-secondary/30 p-6 text-center text-sm text-muted-foreground">
             invoice.pdf · receipt.jpg
           </div>
-          <div className="mt-4 rounded-xl border border-border/70 bg-card p-3 text-sm shadow-sm">
+          <div className="mt-4 rounded-xl border border-border/70 bg-card text-card-foreground p-3 text-sm shadow-sm">
             <p className="font-bold">{pick("آخر استخراج", "Last extraction")}</p>
             <p className="mt-1 text-muted-foreground">
               {pick("فاتورة من مورد النيل بقيمة", "Invoice from Nile Supplies for")}{" "}

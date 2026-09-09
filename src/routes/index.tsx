@@ -108,15 +108,18 @@ function Dashboard() {
         </Panel>
 
         <Panel title={t("aiInsights")} tone="ink" aside={<Sparkles className="size-4" />}>
-          <p className="text-xs text-ink-foreground/60">{t("aiInsightsSub")}</p>
+          <p className="text-xs text-ink-foreground/80">{t("aiInsightsSub")}</p>
           <ul className="mt-4 space-y-3">
             {insights.map((i) => (
-              <li key={i.en} className="rounded-xl border border-border/70 bg-card p-3 text-sm shadow-sm">
+              <li
+                key={i.en}
+                className="rounded-xl border border-border/80 bg-card p-3.5 text-sm font-semibold text-card-foreground shadow-sm leading-relaxed"
+              >
                 {pick(i.ar, i.en)}
               </li>
             ))}
           </ul>
-          <div className="mt-4 rounded-xl bg-gold/20 border border-gold/40 p-3 text-sm font-bold text-gold-foreground">
+          <div className="mt-4 rounded-xl bg-amber-500/20 border border-amber-400/40 p-3 text-sm font-bold text-amber-300">
             {pick("3 أشياء تحتاج انتباهك اليوم.", "3 things need your attention today.")}
           </div>
         </Panel>
