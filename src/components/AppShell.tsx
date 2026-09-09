@@ -226,6 +226,29 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </Link>
 
+          {/* Sidebar toggle */}
+          <button
+            onClick={() => setSidebarVisible(!sidebarVisible)}
+            title={
+              sidebarVisible
+                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+            }
+            aria-label={
+              sidebarVisible
+                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+            }
+            aria-pressed={sidebarVisible}
+            className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            {sidebarVisible ? (
+              <PanelLeftClose className="size-4" />
+            ) : (
+              <PanelLeft className="size-4" />
+            )}
+          </button>
+
           {/* Search Bar */}
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
             <Search className="size-4 shrink-0 text-muted-foreground" />
