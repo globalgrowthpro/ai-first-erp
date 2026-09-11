@@ -20,10 +20,20 @@ import {
   Code2,
   Copy,
   Check,
+  Edit2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/kit";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { aiModules as initialAiModules, type AiModuleItem } from "@/lib/demo-data";
+import { useAiModulesStore } from "@/lib/ai-modules-store";
 
 export const Route = createFileRoute("/ai-modules")({
   head: () => ({
@@ -83,8 +93,10 @@ const AGENT_ROLES = [
 function AiModulesPage() {
   const { lang, t, pick, n } = useI18n();
 
-  const [modules, setModules] = useState<AiModuleItem[]>(initialAiModules);
+  const { modules, addModule, updateModule, deleteModule } = useAiModulesStore();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<AiModuleItem | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
@@ -149,13 +161,47 @@ function AiModulesPage() {
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
-  // Add Module Submit
+  // Open modal in edit mode, pre-filled from an existing module
+  const openEditModal = (mod: AiModuleItem) => {
+    setEditingModuleId(mod.id);
+    setNewMod({
+      nameAr: mod.name.ar,
+      nameEn: mod.name.en,
+      provider: mod.provider,
+      model: mod.model,
+      apiKey: mod.apiKey,
+      agentRole: mod.agentRole,
+      roleLabelAr: mod.roleLabel.ar,
+      roleLabelEn: mod.roleLabel.en,
+      systemPrompt: mod.systemPrompt,
+      allowedTools: mod.allowedTools,
+      temperature: mod.temperature,
+    });
+    setShowAddModal(true);
+  };
+
+  // Toggle module status between active and idle
+  const toggleModuleStatus = (mod: AiModuleItem) => {
+    updateModule(mod.id, { status: mod.status === "active" ? "idle" : "active" });
+  };
+
+  // Confirm delete
+  const handleConfirmDeleteModule = () => {
+    if (!deleteCandidate) return;
+    deleteModule(deleteCandidate.id);
+    if (activeSandboxModule.id === deleteCandidate.id) {
+      const remaining = modules.filter((m) => m.id !== deleteCandidate.id);
+      if (remaining[0]) setActiveSandboxModule(remaining[0]);
+    }
+    setDeleteCandidate(null);
+  };
+
+  // Add / Update Module Submit
   const handleAddModule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMod.nameAr || !newMod.apiKey) return;
 
-    const created: AiModuleItem = {
-      id: `mod-${Date.now()}`,
+    const payload: Omit<AiModuleItem, "id"> = {
       name: { ar: newMod.nameAr, en: newMod.nameEn || newMod.nameAr },
       provider: newMod.provider,
       model: newMod.model,
@@ -165,12 +211,17 @@ function AiModulesPage() {
       systemPrompt: newMod.systemPrompt,
       allowedTools: newMod.allowedTools,
       temperature: newMod.temperature,
-      status: "active",
-      totalRuns: 0,
+      status: editingModuleId ? (modules.find((m) => m.id === editingModuleId)?.status ?? "active") : "active",
+      totalRuns: editingModuleId ? (modules.find((m) => m.id === editingModuleId)?.totalRuns ?? 0) : 0,
     };
 
-    setModules((prev) => [created, ...prev]);
+    if (editingModuleId) {
+      updateModule(editingModuleId, payload);
+    } else {
+      addModule(payload);
+    }
     setShowAddModal(false);
+    setEditingModuleId(null);
     setNewMod({
       nameAr: "",
       nameEn: "",
