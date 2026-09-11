@@ -9,15 +9,18 @@ import {
   ChevronsDownUp,
   SlidersHorizontal,
   X,
+  Edit2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, KpiCard, Panel } from "@/components/kit";
 import {
-  chartOfAccounts as initialAccounts,
   type AccountItem,
   type AccountType,
   type NormalBalance,
 } from "@/lib/demo-data";
+import { useAccountsStore } from "@/lib/accounting-store";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -28,12 +31,14 @@ import {
 
 export function ChartOfAccounts() {
   const { t, pick, money, dir } = useI18n();
-  const [accounts, setAccounts] = useState<AccountItem[]>(initialAccounts);
+  const { accounts, addAccount, updateAccount, deleteAccount } = useAccountsStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"all" | AccountType>("all");
   const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [parentForNewAccount, setParentForNewAccount] = useState<string>("");
+  const [editingAccount, setEditingAccount] = useState<AccountItem | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<AccountItem | null>(null);
 
   // New account form state
   const [newCode, setNewCode] = useState("");
@@ -121,6 +126,7 @@ export function ChartOfAccounts() {
   }, [accounts, searchQuery, selectedType, collapsedCodes]);
 
   const openAddModal = (parentId?: string) => {
+    setEditingAccount(null);
     if (parentId) {
       const parent = accounts.find((a) => a.code === parentId);
       if (parent) {
@@ -142,6 +148,42 @@ export function ChartOfAccounts() {
     setIsAddModalOpen(true);
   };
 
+  const openEditModal = (acc: AccountItem) => {
+    setEditingAccount(acc);
+    setParentForNewAccount(acc.parentId || "");
+    setNewCode(acc.code);
+    setNewNameAr(acc.name.ar);
+    setNewNameEn(acc.name.en);
+    setNewType(acc.type);
+    setNewNormalBalance(acc.normalBalance);
+    setNewBalance(acc.balance);
+    setIsAddModalOpen(true);
+  };
+
+  // Collect descendant codes for delete warning
+  const getDescendantCodes = (code: string): string[] => {
+    const result: string[] = [];
+    let changed = true;
+    const set = new Set<string>([code]);
+    while (changed) {
+      changed = false;
+      for (const a of accounts) {
+        if (a.parentId && set.has(a.parentId) && !set.has(a.code)) {
+          set.add(a.code);
+          result.push(a.code);
+          changed = true;
+        }
+      }
+    }
+    return result;
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteCandidate) return;
+    deleteAccount(deleteCandidate.code);
+    setDeleteCandidate(null);
+  };
+
   const handleSaveAccount = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode.trim() || (!newNameAr.trim() && !newNameEn.trim())) return;
@@ -150,32 +192,38 @@ export function ChartOfAccounts() {
       ? accounts.find((a) => a.code === parentForNewAccount)
       : undefined;
 
-    const newAccountItem: AccountItem = {
-      code: newCode.trim(),
-      name: {
-        ar: newNameAr.trim() || newNameEn.trim(),
-        en: newNameEn.trim() || newNameAr.trim(),
-      },
-      type: parent ? parent.type : newType,
-      normalBalance: parent ? parent.normalBalance : newNormalBalance,
-      balance: Number(newBalance) || 0,
-      parentId: parent ? parent.code : undefined,
-      level: parent ? parent.level + 1 : 1,
-      isParent: false,
-      status: "active",
-    };
-
-    setAccounts((prev) => {
-      // Mark parent as isParent if it wasn't
-      const updated = prev.map((a) =>
-        a.code === parentForNewAccount ? { ...a, isParent: true } : a,
-      );
-      return [...updated, newAccountItem].sort((a, b) =>
-        a.code.localeCompare(b.code, undefined, { numeric: true }),
-      );
-    });
+    if (editingAccount) {
+      updateAccount(editingAccount.code, {
+        name: {
+          ar: newNameAr.trim() || newNameEn.trim(),
+          en: newNameEn.trim() || newNameAr.trim(),
+        },
+        type: parent ? parent.type : newType,
+        normalBalance: parent ? parent.normalBalance : newNormalBalance,
+        balance: Number(newBalance) || 0,
+        parentId: parent ? parent.code : undefined,
+        level: parent ? parent.level + 1 : 1,
+      });
+    } else {
+      const newAccountItem: AccountItem = {
+        code: newCode.trim(),
+        name: {
+          ar: newNameAr.trim() || newNameEn.trim(),
+          en: newNameEn.trim() || newNameAr.trim(),
+        },
+        type: parent ? parent.type : newType,
+        normalBalance: parent ? parent.normalBalance : newNormalBalance,
+        balance: Number(newBalance) || 0,
+        parentId: parent ? parent.code : undefined,
+        level: parent ? parent.level + 1 : 1,
+        isParent: false,
+        status: "active",
+      };
+      addAccount(newAccountItem);
+    }
 
     setIsAddModalOpen(false);
+    setEditingAccount(null);
   };
 
   const getTypeBadge = (type: AccountType) => {
@@ -436,14 +484,32 @@ export function ChartOfAccounts() {
 
                       {/* Actions */}
                       <td className="px-3 py-2.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => openAddModal(acc.code)}
-                          title={t("addSubAccount")}
-                          className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                        >
-                          <Plus className="size-3.5" />
-                        </button>
+                        <div className="inline-flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openAddModal(acc.code)}
+                            title={t("addSubAccount")}
+                            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                          >
+                            <Plus className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(acc)}
+                            title={pick("تعديل", "Edit")}
+                            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                          >
+                            <Edit2 className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteCandidate(acc)}
+                            title={pick("حذف", "Delete")}
+                            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -459,7 +525,9 @@ export function ChartOfAccounts() {
         <DialogContent className="border border-border/80 shadow-2xl rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold uppercase">
-              {parentForNewAccount
+              {editingAccount
+                ? `${pick("تعديل حساب", "Edit Account")} (${editingAccount.code})`
+                : parentForNewAccount
                 ? `${t("addSubAccount")} (${parentForNewAccount})`
                 : t("newAccount")}
             </DialogTitle>
@@ -502,10 +570,11 @@ export function ChartOfAccounts() {
                 <input
                   type="text"
                   required
+                  disabled={Boolean(editingAccount)}
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
                   placeholder="e.g. 1114"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-mono font-bold disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
 
@@ -594,7 +663,10 @@ export function ChartOfAccounts() {
               <Btn
                 type="button"
                 variant="outline"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setEditingAccount(null);
+                }}
               >
                 {t("cancel")}
               </Btn>
@@ -603,6 +675,63 @@ export function ChartOfAccounts() {
               </Btn>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => !open && setDeleteCandidate(null)}
+      >
+        <DialogContent className="border border-border/80 shadow-2xl rounded-2xl sm:max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive text-base font-bold">
+              <AlertTriangle className="size-5 shrink-0" />
+              <span>{pick("تأكيد حذف الحساب", "Confirm Account Deletion")}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {deleteCandidate && (
+            <div className="space-y-3 py-2 text-sm">
+              <p className="text-muted-foreground">
+                {pick(
+                  `هل أنت متأكد من رغبتك في حذف الحساب "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}" (${deleteCandidate.code})؟`,
+                  `Are you sure you want to delete account "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}" (${deleteCandidate.code})?`,
+                )}
+              </p>
+
+              {deleteCandidate.isParent && getDescendantCodes(deleteCandidate.code).length > 0 && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  <p className="text-xs leading-relaxed">
+                    {pick(
+                      `تحذير: سيتم أيضًا حذف (${getDescendantCodes(deleteCandidate.code).length}) من الحسابات الفرعية التابعة لهذا الحساب.`,
+                      `Warning: (${getDescendantCodes(deleteCandidate.code).length}) sub-accounts under this account will also be deleted.`,
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+                <Btn
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteCandidate(null)}
+                >
+                  {t("cancel")}
+                </Btn>
+                <Btn
+                  type="button"
+                  variant="solid"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={handleConfirmDelete}
+                >
+                  <Trash2 className="size-3.5" />
+                  {pick("تأكيد الحذف", "Delete")}
+                </Btn>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
