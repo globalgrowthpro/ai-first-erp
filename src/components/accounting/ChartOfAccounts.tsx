@@ -525,7 +525,9 @@ export function ChartOfAccounts() {
         <DialogContent className="border border-border/80 shadow-2xl rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold uppercase">
-              {parentForNewAccount
+              {editingAccount
+                ? `${pick("تعديل حساب", "Edit Account")} (${editingAccount.code})`
+                : parentForNewAccount
                 ? `${t("addSubAccount")} (${parentForNewAccount})`
                 : t("newAccount")}
             </DialogTitle>
@@ -568,10 +570,11 @@ export function ChartOfAccounts() {
                 <input
                   type="text"
                   required
+                  disabled={Boolean(editingAccount)}
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
                   placeholder="e.g. 1114"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-mono font-bold disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                 />
               </div>
 
@@ -660,7 +663,10 @@ export function ChartOfAccounts() {
               <Btn
                 type="button"
                 variant="outline"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={() => {
+                  setIsAddModalOpen(false);
+                  setEditingAccount(null);
+                }}
               >
                 {t("cancel")}
               </Btn>
@@ -669,6 +675,63 @@ export function ChartOfAccounts() {
               </Btn>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        open={!!deleteCandidate}
+        onOpenChange={(open) => !open && setDeleteCandidate(null)}
+      >
+        <DialogContent className="border border-border/80 shadow-2xl rounded-2xl sm:max-w-md" dir={dir}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive text-base font-bold">
+              <AlertTriangle className="size-5 shrink-0" />
+              <span>{pick("تأكيد حذف الحساب", "Confirm Account Deletion")}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {deleteCandidate && (
+            <div className="space-y-3 py-2 text-sm">
+              <p className="text-muted-foreground">
+                {pick(
+                  `هل أنت متأكد من رغبتك في حذف الحساب "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}" (${deleteCandidate.code})؟`,
+                  `Are you sure you want to delete account "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}" (${deleteCandidate.code})?`,
+                )}
+              </p>
+
+              {deleteCandidate.isParent && getDescendantCodes(deleteCandidate.code).length > 0 && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  <p className="text-xs leading-relaxed">
+                    {pick(
+                      `تحذير: سيتم أيضًا حذف (${getDescendantCodes(deleteCandidate.code).length}) من الحسابات الفرعية التابعة لهذا الحساب.`,
+                      `Warning: (${getDescendantCodes(deleteCandidate.code).length}) sub-accounts under this account will also be deleted.`,
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/70">
+                <Btn
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteCandidate(null)}
+                >
+                  {t("cancel")}
+                </Btn>
+                <Btn
+                  type="button"
+                  variant="solid"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={handleConfirmDelete}
+                >
+                  <Trash2 className="size-3.5" />
+                  {pick("تأكيد الحذف", "Delete")}
+                </Btn>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
