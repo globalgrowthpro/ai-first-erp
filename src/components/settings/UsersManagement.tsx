@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import { CURRENT_USER_ID, setSidebarVisible } from "@/lib/ui-prefs";
+import { useOrgStore } from "@/lib/org-store";
+import { ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 import {
-  departments as initialDepartments,
-  positions as initialPositions,
   systemPages,
   systemActions,
-  users as initialUsers,
   type UserItem,
   type DepartmentItem,
   type PositionItem,
@@ -33,10 +32,24 @@ import {
 export function UsersManagement() {
   const { lang, t, pick } = useI18n();
 
-  // State
-  const [usersList, setUsersList] = useState<UserItem[]>(initialUsers);
-  const [deptList, setDeptList] = useState<DepartmentItem[]>(initialDepartments);
-  const [posList, setPosList] = useState<PositionItem[]>(initialPositions);
+  // Persistent org state
+  const {
+    users: usersList,
+    departments: deptList,
+    positions: posList,
+    addUser,
+    updateUser,
+    deleteUser,
+    addDepartment,
+    updateDepartment,
+    deleteDepartment,
+    addPosition,
+    deletePosition,
+  } = useOrgStore();
+
+  const [deleteTarget, setDeleteTarget] = useState<
+    { kind: "user" | "dept" | "pos"; id: string; label: string } | null
+  >(null);
 
   const [activeTab, setActiveTab] = useState<"users" | "departments" | "positions">("users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,11 +123,10 @@ export function UsersManagement() {
       sidebarVisible: newUser.sidebarVisible,
     };
 
-    setUsersList((prev) => [user, ...prev]);
+    addUser(user);
     // update dept headcount
-    setDeptList((prev) =>
-      prev.map((d) => (d.id === newUser.departmentId ? { ...d, headcount: d.headcount + 1 } : d))
-    );
+    const dept = deptList.find((d) => d.id === newUser.departmentId);
+    if (dept) updateDepartment(dept.id, { headcount: dept.headcount + 1 });
     setShowAddUserModal(false);
     setNewUser({
       nameAr: "",
@@ -143,7 +155,7 @@ export function UsersManagement() {
       headcount: 0,
     };
 
-    setDeptList((prev) => [...prev, dept]);
+    addDepartment(dept);
     setShowAddDeptModal(false);
     setNewDept({ nameAr: "", nameEn: "", code: "", managerAr: "", managerEn: "" });
   };
@@ -160,7 +172,7 @@ export function UsersManagement() {
       level: newPos.level,
     };
 
-    setPosList((prev) => [...prev, pos]);
+    addPosition(pos);
     setShowAddPosModal(false);
     setNewPos({ titleAr: "", titleEn: "", departmentId: "dept-retail", level: "specialist" });
   };
@@ -189,9 +201,7 @@ export function UsersManagement() {
   const toggleSelectedUserSidebar = () => {
     if (!selectedUserForDetail) return;
     const next = !selectedUserForDetail.sidebarVisible;
-    setUsersList((prev) =>
-      prev.map((u) => (u.id === selectedUserForDetail.id ? { ...u, sidebarVisible: next } : u))
-    );
+    updateUser(selectedUserForDetail.id, { sidebarVisible: next });
     setSelectedUserForDetail((prev) => (prev ? { ...prev, sidebarVisible: next } : prev));
     // The signed-in demo user drives the real sidebar in the app shell
     if (selectedUserForDetail.id === CURRENT_USER_ID) setSidebarVisible(next);
@@ -498,13 +508,41 @@ export function UsersManagement() {
 
                       {/* Details View Button */}
                       <td className="p-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedUserForDetail(user)}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all shadow-sm"
-                        >
-                          {lang === "ar" ? "عرض الصلاحيات" : "View Perms"}
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUserForDetail(user)}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-border bg-card hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all shadow-sm"
+                          >
+                            {lang === "ar" ? "عرض الصلاحيات" : "View Perms"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateUser(user.id, {
+                                status: user.status === "active" ? "inactive" : "active",
+                              })
+                            }
+                            title={lang === "ar" ? "تغيير الحالة" : "Toggle status"}
+                            className="p-1.5 rounded-md border border-border bg-card hover:bg-muted"
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeleteTarget({
+                                kind: "user",
+                                id: user.id,
+                                label: pick(user.name.ar, user.name.en),
+                              })
+                            }
+                            title={lang === "ar" ? "حذف" : "Delete"}
+                            className="p-1.5 rounded-md border border-border bg-card text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -582,7 +620,20 @@ export function UsersManagement() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">ID: {dept.id}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDeleteTarget({
+                        kind: "dept",
+                        id: dept.id,
+                        label: pick(dept.name.ar, dept.name.en),
+                      })
+                    }
+                    className="inline-flex items-center gap-1 font-bold text-destructive hover:underline"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {lang === "ar" ? "حذف" : "Delete"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -612,6 +663,7 @@ export function UsersManagement() {
                 <th className="p-3 text-start">{t("departments")}</th>
                 <th className="p-3 text-start">{t("level")}</th>
                 <th className="p-3 text-start">{lang === "ar" ? "الموظفون المعينون" : "Assigned Staff"}</th>
+                <th className="p-3 text-center">{lang === "ar" ? "إجراءات" : "Actions"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -645,6 +697,22 @@ export function UsersManagement() {
                       <span className="font-mono font-bold">
                         {assignedUsers.length} {lang === "ar" ? "موظف" : "employees"}
                       </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "pos",
+                            id: pos.id,
+                            label: pick(pos.title.ar, pos.title.en),
+                          })
+                        }
+                        title={lang === "ar" ? "حذف" : "Delete"}
+                        className="p-1.5 rounded-md border border-border bg-card text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -1303,6 +1371,25 @@ export function UsersManagement() {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title={lang === "ar" ? "تأكيد الحذف" : "Confirm delete"}
+        message={
+          lang === "ar"
+            ? `سيتم حذف «${deleteTarget?.label ?? ""}» نهائياً.`
+            : `"${deleteTarget?.label ?? ""}" will be permanently deleted.`
+        }
+        onConfirm={() => {
+          if (deleteTarget) {
+            if (deleteTarget.kind === "user") deleteUser(deleteTarget.id);
+            if (deleteTarget.kind === "dept") deleteDepartment(deleteTarget.id);
+            if (deleteTarget.kind === "pos") deletePosition(deleteTarget.id);
+          }
+          setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

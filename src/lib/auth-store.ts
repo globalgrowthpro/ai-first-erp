@@ -233,11 +233,13 @@ function getSnapshot(): AuthStoreState {
   return storeState;
 }
 
+const SERVER_SNAPSHOT: AuthStoreState = {
+  currentUser: DEFAULT_USER,
+  isAuthenticated: true,
+};
+
 function getServerSnapshot(): AuthStoreState {
-  return {
-    currentUser: DEFAULT_USER,
-    isAuthenticated: true,
-  };
+  return SERVER_SNAPSHOT;
 }
 
 export function useAuthStore() {

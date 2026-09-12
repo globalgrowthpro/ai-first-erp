@@ -64,6 +64,7 @@ export function DocumentFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!partyAr.trim() && !partyEn.trim()) return;
+    const trimmedNotes = notes.trim();
     onSave({
       id: code.trim(),
       party: {
@@ -74,7 +75,7 @@ export function DocumentFormModal({
       amount: Number(amount) || 0,
       balance: Number(balance) || 0,
       status,
-      notes: notes.trim() || undefined,
+      ...(trimmedNotes ? { notes: trimmedNotes } : {}),
     });
     onOpenChange(false);
   };
