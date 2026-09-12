@@ -29,6 +29,7 @@ import {
   ChefHat,
   ExternalLink,
   ShieldAlert,
+  UserCheck,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -55,6 +56,7 @@ const erpNav = [
   { to: "/inventory", key: "nav_inventory", icon: Boxes },
   { to: "/manufacturing", key: "nav_manufacturing", icon: Factory },
   { to: "/partners", key: "nav_partners", icon: Users },
+  { to: "/hr", key: "nav_hr", icon: UserCheck },
 ] as const;
 
 const controlNav = [

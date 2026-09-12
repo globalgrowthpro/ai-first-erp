@@ -10,7 +10,8 @@ export type AuditCategory =
   | "manufacturing"
   | "auth"
   | "security"
-  | "settings";
+  | "settings"
+  | "hr";
 
 export type AuditActorType = "human" | "ai_agent";
 

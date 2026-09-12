@@ -14,6 +14,7 @@ import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AiModulesRouteImport } from './routes/ai-modules'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as HrRouteImport } from './routes/hr'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as ManufacturingRouteImport } from './routes/manufacturing'
 import { Route as PartnersRouteImport } from './routes/partners'
@@ -45,6 +46,11 @@ const AiModulesRoute = AiModulesRouteImport.update({
 const AuditRoute = AuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HrRoute = HrRouteImport.update({
+  id: '/hr',
+  path: '/hr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InventoryRoute = InventoryRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/hr': typeof HrRoute
   '/inventory': typeof InventoryRoute
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/hr': typeof HrRoute
   '/inventory': typeof InventoryRoute
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/hr': typeof HrRoute
   '/inventory': typeof InventoryRoute
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/hr'
     | '/inventory'
     | '/manufacturing'
     | '/partners'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/hr'
     | '/inventory'
     | '/manufacturing'
     | '/partners'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/hr'
     | '/inventory'
     | '/manufacturing'
     | '/partners'
@@ -177,6 +189,7 @@ export interface RootRouteChildren {
   AiRoute: typeof AiRoute
   AiModulesRoute: typeof AiModulesRoute
   AuditRoute: typeof AuditRoute
+  HrRoute: typeof HrRoute
   InventoryRoute: typeof InventoryRoute
   ManufacturingRoute: typeof ManufacturingRoute
   PartnersRoute: typeof PartnersRoute
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hr': {
+      id: '/hr'
+      path: '/hr'
+      fullPath: '/hr'
+      preLoaderRoute: typeof HrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inventory': {
@@ -281,6 +301,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiRoute: AiRoute,
   AiModulesRoute: AiModulesRoute,
   AuditRoute: AuditRoute,
+  HrRoute: HrRoute,
   InventoryRoute: InventoryRoute,
   ManufacturingRoute: ManufacturingRoute,
   PartnersRoute: PartnersRoute,
