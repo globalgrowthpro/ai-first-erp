@@ -27,6 +27,9 @@ import {
   ChevronLeft,
   PanelLeft,
   PanelLeftClose,
+  Power,
+  Trash2,
+  Edit2,
 } from "lucide-react";
 
 export function UsersManagement() {
