@@ -263,7 +263,7 @@ function HrPage() {
         <KpiCard
           label={t("hr_presentToday")}
           value={`${presentTodayCount} / ${employees.length}`}
-          delta={lateTodayCount > 0 ? -lateTodayCount : undefined}
+          {...(lateTodayCount > 0 ? { delta: -lateTodayCount } : {})}
           accent={lateTodayCount > 0 ? "gold" : "primary"}
         />
         <KpiCard
