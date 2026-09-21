@@ -10,6 +10,7 @@ import {
   ArrowUpDown,
   Check,
   Package,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn } from "@/components/kit";
@@ -20,11 +21,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type {
-  InventoryProduct,
-  InventoryCategory,
-  InventoryWarehouse,
-  InventoryUnit,
+import {
+  type InventoryProduct,
+  type InventoryCategory,
+  type InventoryWarehouse,
+  type InventoryUnit,
+  getCategoryStyle,
 } from "@/lib/inventory-store";
 
 interface ProductsTabProps {
@@ -35,6 +37,7 @@ interface ProductsTabProps {
   onAddProduct: (prod: Omit<InventoryProduct, "id">) => void;
   onUpdateProduct: (id: string, updates: Partial<InventoryProduct>) => void;
   onDeleteProduct: (id: string) => void;
+  onOpenImport?: () => void;
 }
 
 export function ProductsTab({
@@ -45,6 +48,7 @@ export function ProductsTab({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
+  onOpenImport,
 }: ProductsTabProps) {
   const { t, pick, money, n, dir } = useI18n();
 
@@ -240,8 +244,24 @@ export function ProductsTab({
             </span>
           </button>
 
+          {/* Import from Template Button */}
+          {onOpenImport && (
+            <Btn
+              onClick={onOpenImport}
+              variant="outline"
+              className="ms-auto text-xs gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+            >
+              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+              <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+            </Btn>
+          )}
+
           {/* Add Product Button */}
-          <Btn onClick={openAddModal} variant="solid" className="ms-auto text-xs">
+          <Btn
+            onClick={openAddModal}
+            variant="solid"
+            className={cn("text-xs gap-1.5 shadow-xs", !onOpenImport && "ms-auto")}
+          >
             <Plus className="size-3.5" />
             {t("addProduct")}
           </Btn>
@@ -304,9 +324,26 @@ export function ProductsTab({
 
                   {/* Category */}
                   <Td>
-                    <span className="inline-block rounded-md bg-secondary/80 border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                      {cat ? pick(cat.name.ar, cat.name.en) : "—"}
-                    </span>
+                    {cat ? (
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold shadow-2xs whitespace-nowrap",
+                          getCategoryStyle(cat).className
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "size-1.5 rounded-full shrink-0",
+                            getCategoryStyle(cat).dot
+                          )}
+                        />
+                        <span>{pick(cat.name.ar, cat.name.en)}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-block rounded-md bg-secondary/80 border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        —
+                      </span>
+                    )}
                   </Td>
 
                   {/* Warehouse */}

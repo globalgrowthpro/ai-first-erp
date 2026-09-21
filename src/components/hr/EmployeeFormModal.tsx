@@ -22,7 +22,16 @@ import {
   BadgeCheck,
   FileCheck2,
 } from "lucide-react";
-import type { EmployeeRecord, EmploymentType, EmployeeStatus, HealthCertStatus } from "@/lib/hr-store";
+import { cn } from "@/lib/utils";
+import {
+  type EmployeeRecord,
+  type EmploymentType,
+  type EmployeeStatus,
+  type HealthCertStatus,
+  MALE_AVATARS,
+  FEMALE_AVATARS,
+  getDefaultAvatar,
+} from "@/lib/hr-store";
 
 interface EmployeeFormModalProps {
   open: boolean;
@@ -46,6 +55,7 @@ export function EmployeeFormModal({
   // Identification & Gender
   const [code, setCode] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   // Personal Info
   const [nameAr, setNameAr] = useState("");
@@ -127,9 +137,12 @@ export function EmployeeFormModal({
       setHealthCertNumber(editing.healthCert.number);
       setHealthCertExpiry(editing.healthCert.expiryDate);
       setHealthCertStatus(editing.healthCert.status);
+      setAvatarUrl(editing.avatarUrl || getDefaultAvatar(editing.gender, editing.code));
     } else {
-      setCode(suggestedCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`);
+      const newCode = suggestedCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
+      setCode(newCode);
       setGender("male");
+      setAvatarUrl(getDefaultAvatar("male", newCode));
       setNameAr("");
       setNameEn("");
       setNationalId("");
@@ -210,7 +223,7 @@ export function EmployeeFormModal({
         ar: branchNameAr.trim() || "مصنع العاشر من رمضان",
         en: branchNameEn.trim() || "10th of Ramadan Factory",
       },
-      directManager: directManager.trim() || "م. حافظ رحيم",
+      directManager: directManager.trim() || "م. وزير الحلو",
       hireDate: hireDate || new Date().toISOString().slice(0, 10),
       gender,
       contractType,
@@ -218,6 +231,7 @@ export function EmployeeFormModal({
       status,
       avatarBg,
       avatarInitials: initials,
+      avatarUrl: avatarUrl || getDefaultAvatar(gender, code),
       compensation: {
         basicSalary: Number(basicSalary) || 0,
         housingAllowance: Number(housingAllowance) || 0,
@@ -268,44 +282,40 @@ export function EmployeeFormModal({
           <button
             type="button"
             onClick={() => setActiveTab("personal")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              activeTab === "personal"
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "personal"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary"
-            }`}
+              }`}
           >
             {pick("البيانات الشخصية والتعريف", "Personal & ID")}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("job")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              activeTab === "job"
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "job"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary"
-            }`}
+              }`}
           >
             {pick("الوظيفة والعقد والفرع", "Job, Contract & Branch")}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("comp")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              activeTab === "comp"
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "comp"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary"
-            }`}
+              }`}
           >
             {pick("الراتب والبدلات والبنك", "Compensation & Bank")}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("compliance")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              activeTab === "compliance"
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "compliance"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-secondary"
-            }`}
+              }`}
           >
             {pick("السلامة والشهادة الصحية", "Health & Safety")}
           </button>
@@ -336,35 +346,82 @@ export function EmployeeFormModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-ink-foreground mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-bold text-foreground mb-1 flex items-center gap-1.5">
                     <User className="size-3.5 text-primary" />
                     {pick("النوع / الجنس (Gender) *", "Gender *")}
                   </label>
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     <button
                       type="button"
-                      onClick={() => setGender("male")}
-                      className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                        gender === "male"
+                      onClick={() => {
+                        setGender("male");
+                        setAvatarUrl((prev) =>
+                          FEMALE_AVATARS.includes(prev)
+                            ? getDefaultAvatar("male", code)
+                            : prev || getDefaultAvatar("male", code)
+                        );
+                      }}
+                      className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${gender === "male"
                           ? "bg-blue-600 text-white border-blue-600 shadow-xs"
                           : "bg-background border-input text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
-                      <span>👨</span>
                       <span>{pick("ذكر (Male)", "Male")}</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setGender("female")}
-                      className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                        gender === "female"
+                      onClick={() => {
+                        setGender("female");
+                        setAvatarUrl((prev) =>
+                          MALE_AVATARS.includes(prev)
+                            ? getDefaultAvatar("female", code)
+                            : prev || getDefaultAvatar("female", code)
+                        );
+                      }}
+                      className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${gender === "female"
                           ? "bg-rose-600 text-white border-rose-600 shadow-xs"
                           : "bg-background border-input text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
-                      <span>👩</span>
                       <span>{pick("أنثى (Female)", "Female")}</span>
                     </button>
+                  </div>
+
+                  {/* Avatar Picker for chosen Gender */}
+                  <div className="mt-2.5">
+                    <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+                      {pick("الصورة الرمزية المختارة:", "Selected Avatar:")}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {(gender === "female" ? FEMALE_AVATARS : MALE_AVATARS).map((imgUrl, idx) => {
+                        const isSelected = avatarUrl === imgUrl || (!avatarUrl && idx === 0);
+                        return (
+                          <button
+                            key={imgUrl}
+                            type="button"
+                            onClick={() => setAvatarUrl(imgUrl)}
+                            className={cn(
+                              "relative size-9 rounded-lg overflow-hidden border-2 transition-all p-0.5 bg-muted cursor-pointer",
+                              isSelected
+                                ? "border-primary ring-2 ring-primary/40 scale-105"
+                                : "border-border/60 opacity-60 hover:opacity-100 hover:border-primary/40"
+                            )}
+                            title={pick(`خيار الصورة ${idx + 1}`, `Avatar ${idx + 1}`)}
+                          >
+                            <img
+                              src={imgUrl}
+                              alt={`Avatar ${idx + 1}`}
+                              className="size-full object-cover rounded-md"
+                            />
+                            {isSelected && (
+                              <span className="absolute bottom-0.5 end-0.5 size-3 bg-primary rounded-full flex items-center justify-center text-[7px] text-white font-bold">
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

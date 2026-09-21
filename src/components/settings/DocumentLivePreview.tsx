@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Printer, QrCode, ShieldCheck, FileText, CheckCircle2 } from "lucide-react";
+import { Printer, ShieldCheck, FileText, CheckCircle2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { type CompanySettings } from "@/lib/settings-store";
+import { RealQrCode } from "@/components/ui/qr-code";
 import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 
@@ -235,9 +236,12 @@ export function DocumentLivePreview({ settings }: Props) {
           {/* QR Code & Verification Note */}
           <div className="flex items-center gap-3">
             {settings.showTaxQr && (
-              <div className="size-20 shrink-0 rounded-lg border border-border bg-white p-1 shadow-sm flex items-center justify-center">
-                <QrCode className="size-full text-foreground" />
-              </div>
+              <RealQrCode
+                value={`https://wazeer-elhelw.com/verify?inv=INV-2026-0091&tax=${settings.taxNumber}&total=${grandTotal}`}
+                size={70}
+                margin={1}
+                title="Electronic Tax Invoice QR Code"
+              />
             )}
             <div className="text-[11px] text-muted-foreground space-y-0.5">
               <p className="font-bold flex items-center gap-1 text-foreground">

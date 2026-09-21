@@ -8,6 +8,7 @@ import {
   Search,
   Check,
   Layers,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn } from "@/components/kit";
@@ -18,10 +19,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type {
-  InventoryCategory,
-  InventoryProduct,
-  CategoryType,
+import {
+  type InventoryCategory,
+  type InventoryProduct,
+  type CategoryType,
+  getCategoryStyle,
 } from "@/lib/inventory-store";
 
 interface CategoriesTabProps {
@@ -30,6 +32,7 @@ interface CategoriesTabProps {
   onAddCategory: (cat: Omit<InventoryCategory, "id">) => void;
   onUpdateCategory: (id: string, updates: Partial<InventoryCategory>) => void;
   onDeleteCategory: (id: string) => void;
+  onOpenImport?: () => void;
 }
 
 export function CategoriesTab({
@@ -38,6 +41,7 @@ export function CategoriesTab({
   onAddCategory,
   onUpdateCategory,
   onDeleteCategory,
+  onOpenImport,
 }: CategoriesTabProps) {
   const { t, pick, n, dir } = useI18n();
 
@@ -177,8 +181,24 @@ export function CategoriesTab({
             <option value="semi_finished">{t("semiFinished")}</option>
           </select>
 
+          {/* Import from Template Button */}
+          {onOpenImport && (
+            <Btn
+              onClick={onOpenImport}
+              variant="outline"
+              className="ms-auto text-xs gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+            >
+              <FileSpreadsheet className="size-3.5 text-emerald-600" />
+              <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+            </Btn>
+          )}
+
           {/* Add Category Button */}
-          <Btn onClick={openAddModal} variant="solid" className="ms-auto text-xs">
+          <Btn
+            onClick={openAddModal}
+            variant="solid"
+            className={cn("text-xs gap-1.5 shadow-xs", !onOpenImport && "ms-auto")}
+          >
             <Plus className="size-3.5" />
             {t("addCategory")}
           </Btn>
@@ -221,8 +241,15 @@ export function CategoriesTab({
 
                   <Td className="font-bold text-foreground">
                     <div className="flex items-center gap-2">
-                      <Tag className="size-4 text-primary shrink-0" />
-                      <span>{pick(c.name.ar, c.name.en)}</span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold shadow-2xs",
+                          getCategoryStyle(c).className
+                        )}
+                      >
+                        <Tag className="size-3.5 shrink-0" />
+                        <span>{pick(c.name.ar, c.name.en)}</span>
+                      </span>
                     </div>
                   </Td>
 

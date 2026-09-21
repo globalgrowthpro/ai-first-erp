@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   Info,
   TrendingUp,
+  Building2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn } from "@/components/kit";
@@ -31,6 +32,7 @@ import type {
   InventoryBom,
   InventoryProduct,
   InventoryUnit,
+  InventoryWarehouse,
   BomComponentItem,
   BomStatus,
 } from "@/lib/inventory-store";
@@ -39,23 +41,28 @@ interface BomTabProps {
   boms: InventoryBom[];
   products: InventoryProduct[];
   units: InventoryUnit[];
+  warehouses?: InventoryWarehouse[];
   onAddBom: (bom: Omit<InventoryBom, "id">) => void;
   onUpdateBom: (id: string, updates: Partial<InventoryBom>) => void;
   onDeleteBom: (id: string) => void;
+  onOpenImport?: () => void;
 }
 
 export function BomTab({
   boms,
   products,
   units,
+  warehouses = [],
   onAddBom,
   onUpdateBom,
   onDeleteBom,
+  onOpenImport,
 }: BomTabProps) {
   const { t, pick, n, dir } = useI18n();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
 
   // Modals
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -68,6 +75,7 @@ export function BomTab({
   const [nameAr, setNameAr] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [finishedProductId, setFinishedProductId] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [outputYield, setOutputYield] = useState<number>(10);
   const [outputUnitId, setOutputUnitId] = useState("");
   const [overheadCost, setOverheadCost] = useState<number>(50);
@@ -84,6 +92,7 @@ export function BomTab({
 
     const finished = products.find((p) => !p.isRawMaterial) || products[0];
     setFinishedProductId(finished ? finished.id : "");
+    setBranchId(warehouses?.[0]?.id || "");
     setOutputYield(10);
 
     const portionUnit =
@@ -120,6 +129,7 @@ export function BomTab({
     setNameAr(bom.name.ar);
     setNameEn(bom.name.en);
     setFinishedProductId(bom.finishedProductId);
+    setBranchId(bom.branchId || "");
     setOutputYield(bom.outputYield);
     setOutputUnitId(bom.outputUnitId);
     setOverheadCost(bom.overheadCost);
@@ -234,6 +244,7 @@ export function BomTab({
       code: code.trim().toUpperCase(),
       name: { ar: autoNameAr, en: autoNameEn },
       finishedProductId,
+      branchId: branchId || undefined,
       outputYield: Math.max(1, Number(outputYield) || 1),
       outputUnitId,
       overheadCost: Math.max(0, Number(overheadCost) || 0),
@@ -260,6 +271,7 @@ export function BomTab({
   const filteredBoms = useMemo(() => {
     return boms.filter((bom) => {
       if (statusFilter !== "all" && bom.status !== statusFilter) return false;
+      if (branchFilter !== "all" && bom.branchId !== branchFilter) return false;
       if (!searchQuery.trim()) return true;
 
       const q = searchQuery.toLowerCase();
@@ -273,7 +285,7 @@ export function BomTab({
             finished.name.en.toLowerCase().includes(q)))
       );
     });
-  }, [boms, statusFilter, searchQuery, products]);
+  }, [boms, statusFilter, branchFilter, searchQuery, products]);
 
   // Calculations for any BOM
   const calculateBomSummary = (bom: InventoryBom) => {
@@ -326,13 +338,25 @@ export function BomTab({
             />
           </div>
 
-          {/* Action button */}
+          {/* Action buttons */}
           <div className="flex items-center gap-2">
+            {onOpenImport && (
+              <Btn
+                variant="outline"
+                size="sm"
+                onClick={onOpenImport}
+                className="gap-1.5 shadow-xs text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+              </Btn>
+            )}
+
             <Btn
               variant="primary"
               size="sm"
               onClick={openAddModal}
-              className="gap-1.5 shadow-sm text-xs font-semibold"
+              className="gap-1.5 shadow-sm text-xs font-semibold cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>
@@ -342,46 +366,71 @@ export function BomTab({
           </div>
         </div>
 
-        {/* Status Filter */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40 text-xs">
-          <span className="text-muted-foreground font-medium me-1">
-            {pick({ ar: "حالة الوصفة:", en: "Recipe Status:" })}
-          </span>
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={cn(
-              "px-2.5 py-1 rounded-md transition-colors font-medium",
-              statusFilter === "all"
-                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
-            )}
-          >
-            {pick({ ar: "الكل", en: "All" })} ({boms.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter("active")}
-            className={cn(
-              "px-2.5 py-1 rounded-md transition-colors font-medium",
-              statusFilter === "active"
-                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
-            )}
-          >
-            {pick({ ar: "نشطة ومعتمدة", en: "Active" })} (
-            {boms.filter((b) => b.status === "active").length})
-          </button>
-          <button
-            onClick={() => setStatusFilter("draft")}
-            className={cn(
-              "px-2.5 py-1 rounded-md transition-colors font-medium",
-              statusFilter === "draft"
-                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                : "bg-muted/50 hover:bg-muted text-muted-foreground"
-            )}
-          >
-            {pick({ ar: "مسودة تجريبية", en: "Draft" })} (
-            {boms.filter((b) => b.status === "draft").length})
-          </button>
+        {/* Status & Branch Filter */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-muted-foreground font-medium me-1">
+              {pick({ ar: "حالة الوصفة:", en: "Recipe Status:" })}
+            </span>
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={cn(
+                "px-2.5 py-1 rounded-md transition-colors font-medium",
+                statusFilter === "all"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  : "bg-muted/50 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              {pick({ ar: "الكل", en: "All" })} ({boms.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("active")}
+              className={cn(
+                "px-2.5 py-1 rounded-md transition-colors font-medium",
+                statusFilter === "active"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  : "bg-muted/50 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              {pick({ ar: "نشطة ومعتمدة", en: "Active" })} (
+              {boms.filter((b) => b.status === "active").length})
+            </button>
+            <button
+              onClick={() => setStatusFilter("draft")}
+              className={cn(
+                "px-2.5 py-1 rounded-md transition-colors font-medium",
+                statusFilter === "draft"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                  : "bg-muted/50 hover:bg-muted text-muted-foreground"
+              )}
+            >
+              {pick({ ar: "مسودة تجريبية", en: "Draft" })} (
+              {boms.filter((b) => b.status === "draft").length})
+            </button>
+          </div>
+
+          {warehouses && warehouses.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-muted-foreground font-medium">
+                {pick({ ar: "الفرع:", en: "Branch:" })}
+              </span>
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="h-7 text-xs px-2 rounded-md border border-border/70 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">
+                  {pick({ ar: "جميع الفروع والمطابخ", en: "All Branches & Kitchens" })}
+                </option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.code} — {pick(w.name)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -465,12 +514,23 @@ export function BomTab({
                         ? pick(summary.finishedProd.name)
                         : pick(bom.name)}
                     </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                    <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1.5 mt-0.5">
                       <span className="font-mono">
                         {summary.finishedProd?.sku || "N/A"}
                       </span>
                       <span>•</span>
                       <span>{pick(bom.name)}</span>
+                      {bom.branchId && warehouses && warehouses.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary font-medium px-1.5 py-0.5 rounded">
+                            <Building2 className="w-2.5 h-2.5" />
+                            {warehouses.find((w) => w.id === bom.branchId)?.name
+                              ? pick(warehouses.find((w) => w.id === bom.branchId)!.name)
+                              : bom.branchId}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </Td>
 
@@ -627,7 +687,7 @@ export function BomTab({
               </div>
 
               {/* Finished Product */}
-              <div className="sm:col-span-2">
+              <div>
                 <label className="block font-medium mb-1 text-muted-foreground">
                   {pick({
                     ar: "المنتج النهائي المُصنّع",
@@ -658,6 +718,30 @@ export function BomTab({
                         {p.sku} — {pick(p.name)} ({n(p.sellingPrice)} ج.م)
                       </option>
                     ))}
+                </select>
+              </div>
+
+              {/* Branch / Production Facility */}
+              <div>
+                <label className="block font-medium mb-1 text-muted-foreground">
+                  {pick({ ar: "الفرع / منشأة التصنيع", en: "Branch / Production Facility" })}
+                </label>
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className="w-full h-8 px-2 text-xs rounded-lg border border-border/80 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">
+                    {pick({
+                      ar: "جميع الفروع / المطبخ المركزي العام",
+                      en: "All Branches / General Central Kitchen",
+                    })}
+                  </option>
+                  {warehouses?.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.code} — {pick(w.name)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1091,6 +1175,21 @@ export function BomTab({
                     <div className="text-[11px] text-muted-foreground font-mono">
                       SKU: {summary.finishedProd?.sku}
                     </div>
+                  </div>
+
+                  {/* Branch / Kitchen Facility */}
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {pick({ ar: "الفرع / منشأة الإنتاج", en: "Branch / Production Facility" })}
+                    </span>
+                    <span className="font-semibold text-xs text-foreground flex items-center gap-1.5 mt-0.5">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      {viewingBom.branchId && warehouses && warehouses.length > 0
+                        ? warehouses.find((w) => w.id === viewingBom.branchId)?.name
+                          ? pick(warehouses.find((w) => w.id === viewingBom.branchId)!.name)
+                          : viewingBom.branchId
+                        : pick({ ar: "جميع الفروع (مركزي)", en: "All Branches (Central)" })}
+                    </span>
                   </div>
 
                   <div className="text-end">

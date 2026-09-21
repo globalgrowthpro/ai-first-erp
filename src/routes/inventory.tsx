@@ -11,6 +11,7 @@ import {
   Sparkles,
   Layers,
   ArrowUpRight,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader, KpiCard, Btn } from "@/components/kit";
@@ -21,6 +22,10 @@ import { CategoriesTab } from "@/components/inventory/CategoriesTab";
 import { WarehousesTab } from "@/components/inventory/WarehousesTab";
 import { UnitsTab } from "@/components/inventory/UnitsTab";
 import { BomTab } from "@/components/inventory/BomTab";
+import {
+  InventoryImportModal,
+  type InventoryImportTarget,
+} from "@/components/inventory/InventoryImportModal";
 
 export const Route = createFileRoute("/inventory")({
   head: () => ({
@@ -60,20 +65,33 @@ function InventoryPage() {
     addProduct,
     updateProduct,
     deleteProduct,
+    importProducts,
     addCategory,
     updateCategory,
     deleteCategory,
+    importCategories,
     addWarehouse,
     updateWarehouse,
     deleteWarehouse,
+    importWarehouses,
     addUnit,
     updateUnit,
     deleteUnit,
+    importUnits,
     addBom,
     updateBom,
     deleteBom,
+    importBoms,
     resetToSeed,
   } = useInventoryStore();
+
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importTarget, setImportTarget] = useState<InventoryImportTarget>("products");
+
+  const handleOpenImport = (target: InventoryImportTarget) => {
+    setImportTarget(target);
+    setIsImportModalOpen(true);
+  };
 
   // Inventory KPI calculations
   const totalValuation = useMemo(() => {
@@ -147,6 +165,21 @@ function InventoryPage() {
         />
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenImport(activeTab)}
+            className="gap-1.5 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            <span>
+              {pick(
+                "استيراد من قالب جاهز / Excel",
+                "Import from Ready Template / Excel"
+              )}
+            </span>
+          </Btn>
+
           <Btn
             variant="outline"
             size="sm"
@@ -299,6 +332,7 @@ function InventoryPage() {
             onAddProduct={addProduct}
             onUpdateProduct={updateProduct}
             onDeleteProduct={deleteProduct}
+            onOpenImport={() => handleOpenImport("products")}
           />
         )}
 
@@ -309,6 +343,7 @@ function InventoryPage() {
             onAddCategory={addCategory}
             onUpdateCategory={updateCategory}
             onDeleteCategory={deleteCategory}
+            onOpenImport={() => handleOpenImport("categories")}
           />
         )}
 
@@ -319,6 +354,7 @@ function InventoryPage() {
             onAddWarehouse={addWarehouse}
             onUpdateWarehouse={updateWarehouse}
             onDeleteWarehouse={deleteWarehouse}
+            onOpenImport={() => handleOpenImport("warehouses")}
           />
         )}
 
@@ -329,6 +365,7 @@ function InventoryPage() {
             onAddUnit={addUnit}
             onUpdateUnit={updateUnit}
             onDeleteUnit={deleteUnit}
+            onOpenImport={() => handleOpenImport("units")}
           />
         )}
 
@@ -337,12 +374,30 @@ function InventoryPage() {
             boms={boms}
             products={products}
             units={units}
+            warehouses={warehouses}
             onAddBom={addBom}
             onUpdateBom={updateBom}
             onDeleteBom={deleteBom}
+            onOpenImport={() => handleOpenImport("bom")}
           />
         )}
       </div>
+
+      {/* Bulk Import from Ready-Made Templates / Excel Modal */}
+      <InventoryImportModal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        initialTarget={importTarget}
+        categories={categories}
+        warehouses={warehouses}
+        units={units}
+        products={products}
+        onImportProducts={importProducts}
+        onImportCategories={importCategories}
+        onImportWarehouses={importWarehouses}
+        onImportUnits={importUnits}
+        onImportBoms={importBoms}
+      />
     </div>
   );
 }

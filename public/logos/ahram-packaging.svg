@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="ahramBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#172554" />
+      <stop offset="100%" stop-color="#1e3a8a" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#ahramBg)" />
+  <!-- Isometric 3D Carton / Pyramid Box -->
+  <polygon points="60,24 88,40 60,56 32,40" fill="#60a5fa" stroke="#93c5fd" stroke-width="2" />
+  <polygon points="32,40 60,56 60,80 32,64" fill="#2563eb" stroke="#93c5fd" stroke-width="2" />
+  <polygon points="88,40 60,56 60,80 88,64" fill="#1d4ed8" stroke="#93c5fd" stroke-width="2" />
+  <text x="60" y="96" font-family="sans-serif" font-size="9.5" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">AL AHRAM</text>
+  <text x="60" y="107" font-family="sans-serif" font-size="7" font-weight="700" fill="#bfdbfe" text-anchor="middle">PACKAGING</text>
+</svg>

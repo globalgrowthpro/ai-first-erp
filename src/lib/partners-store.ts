@@ -13,6 +13,8 @@ export type PartnerGroup =
 
 export type PaymentTerms = "immediate" | "15_days" | "30_days" | "45_days" | "60_days";
 
+export type PaymentCategory = "invoice" | "advance" | "nulling";
+
 export interface PartnerTransaction {
   id: string;
   date: string;
@@ -21,6 +23,20 @@ export interface PartnerTransaction {
   description: { ar: string; en: string };
   amount: number;
   status: "paid" | "partial" | "pending";
+  paymentCategory?: PaymentCategory | undefined;
+  relatedDocRef?: string | undefined;
+  paymentMethod?: string | undefined;
+  proofImage?: string | undefined;
+}
+
+export interface RecordPaymentParams {
+  category: PaymentCategory;
+  amount: number;
+  date?: string | undefined;
+  relatedDocRef?: string | undefined;
+  paymentMethod?: string | undefined;
+  notes?: string | undefined;
+  proofImage?: string | undefined;
 }
 
 export interface Partner {
@@ -38,7 +54,8 @@ export interface Partner {
   balance: number;
   paymentTerms: PaymentTerms;
   status: "active" | "inactive";
-  notes?: string;
+  logo?: string | undefined;
+  notes?: string | undefined;
   createdAt: string;
   transactions: PartnerTransaction[];
 }
@@ -62,6 +79,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 24500,
     paymentTerms: "30_days",
     status: "active",
+    logo: "/logos/al-masa.svg",
     notes: "عميل VIP لتوريد حلويات بوفيهات الحفلات والمؤتمرات الرسمية",
     createdAt: "2026-01-15",
     transactions: [
@@ -100,6 +118,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 0,
     paymentTerms: "15_days",
     status: "active",
+    logo: "/logos/cesar.svg",
     notes: "سداد فوري ومنتظم، خصم تجاري معتمد 8%",
     createdAt: "2026-02-10",
     transactions: [
@@ -129,6 +148,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 61000,
     paymentTerms: "30_days",
     status: "active",
+    logo: "/logos/gezira.svg",
     notes: "توريدات ركن حلويات وزير الحلو بالحديقة الرئيسية بالنادي",
     createdAt: "2026-03-01",
     transactions: [
@@ -158,6 +178,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 19750,
     paymentTerms: "15_days",
     status: "active",
+    logo: "/logos/lusail.svg",
     notes: "فواتير موسمية معتمدة",
     createdAt: "2026-04-12",
     transactions: [
@@ -189,6 +210,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 45500,
     paymentTerms: "45_days",
     status: "active",
+    logo: "/logos/ferrero.svg",
     notes: "المورد الحصري لنوتيلا جردل 15 كجم إيطالي أصلي للمطبخ المركزي",
     createdAt: "2026-01-10",
     transactions: [
@@ -218,6 +240,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 18900,
     paymentTerms: "15_days",
     status: "active",
+    logo: "/logos/dina-farms.svg",
     notes: "توريد يومي فجر كل يوم للمطبخ المركزي بالعاشر من رمضان",
     createdAt: "2026-01-12",
     transactions: [
@@ -247,6 +270,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 0,
     paymentTerms: "30_days",
     status: "active",
+    logo: "/logos/delta-mills.svg",
     notes: "أرز مصري حبة قصيرة مخصص للأرز باللبن بنسبة كسر 0%",
     createdAt: "2026-02-05",
     transactions: [
@@ -276,6 +300,7 @@ export const INITIAL_PARTNERS: Partner[] = [
     balance: 0,
     paymentTerms: "30_days",
     status: "active",
+    logo: "/logos/ahram-packaging.svg",
     notes: "طباعة عبوات كشري الحلو وشاورما الوزير وصناديق الهدايا الفاخرة",
     createdAt: "2026-02-20",
     transactions: [
@@ -290,6 +315,66 @@ export const INITIAL_PARTNERS: Partner[] = [
       },
     ],
   },
+  {
+    id: "p-9",
+    code: "CUST-1046",
+    name: { ar: "شركة الشرق للمؤتمرات والمعارض", en: "Sharq Conferences & Exhibitions" },
+    type: "customer",
+    group: "catering",
+    taxNumber: "512-883-914",
+    phone: "+20 102 334 5566",
+    email: "events@sharq-expo.eg",
+    address: { ar: "قاعة المؤتمرات الكبرى، مدينة نصر، القاهرة", en: "Grand Conference Center, Nasr City, Cairo" },
+    contactPerson: "أ. ماجد فوزي",
+    creditLimit: 75000,
+    balance: 0,
+    paymentTerms: "15_days",
+    status: "active",
+    logo: "/logos/sharq.svg",
+    notes: "توريد ضيافة قاعات الـ VIP للمؤتمرات والمعارض الرسمية",
+    createdAt: "2026-05-10",
+    transactions: [
+      {
+        id: "tx-sharq-1",
+        date: "2026-09-06",
+        type: "invoice",
+        docRef: "INV-10449",
+        description: { ar: "توريد ضيافة مؤتمر الاستثمار العربي", en: "Arab Investment Forum VIP sweets" },
+        amount: 12400,
+        status: "paid",
+      },
+    ],
+  },
+  {
+    id: "p-10",
+    code: "CUST-1047",
+    name: { ar: "المهندس محمود عبد الله — حفل خاص", en: "Mahmoud Abdullah — Private Event" },
+    type: "customer",
+    group: "retail",
+    taxNumber: "620-119-445",
+    phone: "+20 114 778 9900",
+    email: "eng.mahmoud@gmail.com",
+    address: { ar: "فيلا 42، كمبوند الياسمين، التجمع الأول", en: "Villa 42, Yasmeen Compound, 1st Settlement" },
+    contactPerson: "م. محمود عبد الله",
+    creditLimit: 30000,
+    balance: 5600,
+    paymentTerms: "immediate",
+    status: "active",
+    logo: "/logos/client-vip.svg",
+    notes: "حفل عائلي خاص وضيافة حلويات كشري حلو وقشطوطة",
+    createdAt: "2026-06-01",
+    transactions: [
+      {
+        id: "tx-eng-1",
+        date: "2026-09-05",
+        type: "invoice",
+        docRef: "INV-10448",
+        description: { ar: "بوفيه ضيافة حفل تخرج خاص", en: "Private family graduation buffet" },
+        amount: 5600,
+        status: "pending",
+      },
+    ],
+  },
 ];
 
 export function usePartnersStore() {
@@ -297,7 +382,23 @@ export function usePartnersStore() {
     if (typeof window === "undefined") return INITIAL_PARTNERS;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partner[];
+        const existingIds = new Set(parsed.map((p) => p.id));
+        const merged = [...parsed];
+        for (const init of INITIAL_PARTNERS) {
+          if (!existingIds.has(init.id)) {
+            merged.push(init);
+          }
+        }
+        return merged.map((p) => {
+          const init = INITIAL_PARTNERS.find((item) => item.id === p.id);
+          if (init && !p.logo) {
+            return { ...p, logo: init.logo };
+          }
+          return p;
+        });
+      }
     } catch (e) {
       console.error("Failed to parse partners store", e);
     }
@@ -343,11 +444,101 @@ export function usePartnersStore() {
     );
   }, []);
 
+  const recordPayment = useCallback(
+    (partnerId: string, payment: RecordPaymentParams) => {
+      setPartners((prev) =>
+        prev.map((p) => {
+          if (p.id !== partnerId) return p;
+
+          const date = payment.date || new Date().toISOString().slice(0, 10);
+          const prefix = p.type === "customer" ? "REC" : "PAY";
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          const docRef = `${prefix}-${randomNum}`;
+
+          let descAr = "";
+          let descEn = "";
+
+          if (payment.category === "invoice") {
+            descAr = payment.relatedDocRef
+              ? `سداد مرتبط بالمستند (${payment.relatedDocRef})`
+              : p.type === "customer"
+              ? "تحصيل دفعة نقدية مرتبطة بفاتورة"
+              : "سداد دفعة للمورد مرتبطة بفاتورة";
+            descEn = payment.relatedDocRef
+              ? `Payment linked to doc (${payment.relatedDocRef})`
+              : "Invoice settlement payment";
+          } else if (payment.category === "advance") {
+            descAr =
+              p.type === "customer"
+                ? "دفعة مقدمة / عربون تحت الحساب"
+                : "دفعة مقدمة تحت الحساب للمورد";
+            descEn = "Advance deposit payment";
+          } else if (payment.category === "nulling") {
+            descAr =
+              p.type === "customer"
+                ? "تصفية وتسوية رصيد العميل (مقاصة / إعفاء)"
+                : "تصفية وتسوية حساب المورد (مقاصة)";
+            descEn = "Balance settlement & nullification";
+          }
+
+          if (payment.notes) {
+            descAr += ` — ${payment.notes}`;
+            descEn += ` — ${payment.notes}`;
+          }
+
+          const newTransaction: PartnerTransaction = {
+            id: `tx-${Date.now()}`,
+            date,
+            type: "payment",
+            docRef,
+            description: { ar: descAr, en: descEn },
+            amount: payment.amount,
+            status: "paid",
+            paymentCategory: payment.category,
+            relatedDocRef: payment.relatedDocRef,
+            paymentMethod: payment.paymentMethod,
+            proofImage: payment.proofImage,
+          };
+
+          // Calculate new balance
+          const newBalance = Math.max(0, p.balance - payment.amount);
+
+          // If linked to an invoice, optionally update that invoice's status in partner.transactions
+          const updatedTransactions = [
+            newTransaction,
+            ...p.transactions.map((tx) => {
+              if (
+                payment.category === "invoice" &&
+                payment.relatedDocRef &&
+                tx.docRef === payment.relatedDocRef
+              ) {
+                return {
+                  ...tx,
+                  status:
+                    payment.amount >= tx.amount ? ("paid" as const) : ("partial" as const),
+                };
+              }
+              return tx;
+            }),
+          ];
+
+          return {
+            ...p,
+            balance: newBalance,
+            transactions: updatedTransactions,
+          };
+        })
+      );
+    },
+    []
+  );
+
   return {
     partners,
     addPartner,
     updatePartner,
     deletePartner,
     toggleStatus,
+    recordPayment,
   };
 }

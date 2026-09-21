@@ -25,7 +25,7 @@ import {
   FileText,
   AlertTriangle,
 } from "lucide-react";
-import type { EmployeeRecord } from "@/lib/hr-store";
+import { type EmployeeRecord, getDefaultAvatar } from "@/lib/hr-store";
 
 interface EmployeeDetailModalProps {
   open: boolean;
@@ -77,14 +77,25 @@ export function EmployeeDetailModal({
         {/* Profile Header Banner */}
         <div className="rounded-xl border border-border/80 bg-linear-to-r from-card to-muted/40 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
+            <img
+              src={employee.avatarUrl || getDefaultAvatar(employee.gender, employee.code)}
+              alt={pick(employee.name.ar, employee.name.en)}
+              className="size-16 rounded-2xl object-cover border border-border shadow-md shrink-0 bg-muted"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const sibling = e.currentTarget.nextElementSibling as HTMLElement;
+                if (sibling) sibling.style.display = "flex";
+              }}
+            />
             <div
-              className={`size-16 rounded-2xl bg-linear-to-br ${employee.avatarBg} text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0`}
+              style={{ display: "none" }}
+              className={`size-16 rounded-2xl bg-linear-to-br ${employee.avatarBg} text-white items-center justify-center font-bold text-xl shadow-md shrink-0`}
             >
               {employee.avatarInitials}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-ink-foreground">
+                <h3 className="text-lg font-bold text-foreground">
                   {pick(employee.name.ar, employee.name.en)}
                 </h3>
                 <span

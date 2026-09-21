@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, FileUp, Edit2, Trash2, CheckCircle2 } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plus, FileUp, Edit2, Trash2, CheckCircle2, Users, ExternalLink, Eye } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td } from "@/components/kit";
 import { kpis } from "@/lib/demo-data";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/purchases")({
 
 function Purchases() {
   const { t, pick, money } = useI18n();
+  const navigate = useNavigate();
   const { documents, addDocument, updateDocument, deleteDocument, markPaid, nextCode } =
     usePurchasesStore();
 
@@ -31,7 +32,7 @@ function Purchases() {
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
 
-  const total = documents.reduce((s, d) => s + d.amount, 0);
+  const total = documents.reduce((s, i) => s + i.amount, 0);
 
   const openNew = () => {
     setEditing(null);
@@ -51,16 +52,16 @@ function Purchases() {
     <>
       <PageHeader
         title={t("nav_purchases")}
-        subtitle={pick("أوامر الشراء والموردون", "Purchase orders and suppliers")}
+        subtitle={pick("أوامر الشراء والتوريد", "Purchase orders and procurement")}
         actions={
           <>
-            <Btn variant="outline" onClick={openNew}>
+            <Btn variant="outline">
               <FileUp className="size-4" />
-              {pick("رفع مستند", "Upload document")}
+              {pick("استيراد فاتورة مورد", "Import Supplier Invoice")}
             </Btn>
             <Btn onClick={openNew}>
               <Plus className="size-4" />
-              {t("purchaseOrders")}
+              {t("newPurchaseOrder")}
             </Btn>
           </>
         }
@@ -85,9 +86,37 @@ function Purchases() {
             ]}
           >
             {documents.map((po) => (
-              <tr key={po.id} className="hover:bg-secondary">
-                <Td className="num font-bold">{po.id}</Td>
-                <Td>{pick(po.party.ar, po.party.en)}</Td>
+              <tr
+                key={po.id}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("button, a")) return;
+                  navigate({ to: "/purchases/$orderId", params: { orderId: po.id } });
+                }}
+                className="hover:bg-secondary/70 cursor-pointer transition-colors group"
+              >
+                <Td className="num font-bold">
+                  <Link
+                    to="/purchases/$orderId"
+                    params={{ orderId: po.id }}
+                    className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                    title={pick("عرض تفاصيل وبنود أمر الشراء", "View purchase order details & items")}
+                  >
+                    <span>{po.id}</span>
+                    <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                  </Link>
+                </Td>
+                <Td>
+                  <Link
+                    to="/purchases/$orderId"
+                    params={{ orderId: po.id }}
+                    className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                    title={pick("عرض تفاصيل أمر الشراء والمورد", "View purchase order & supplier")}
+                  >
+                    <Users className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <span>{pick(po.party.ar, po.party.en)}</span>
+                    <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </Link>
+                </Td>
                 <Td className="num text-muted-foreground">{po.date}</Td>
                 <Td className="num font-semibold">{money(po.amount)}</Td>
                 <Td>
@@ -95,6 +124,14 @@ function Purchases() {
                 </Td>
                 <Td>
                   <div className="flex items-center gap-1">
+                    <Link
+                      to="/purchases/$orderId"
+                      params={{ orderId: po.id }}
+                      title={pick("عرض تفاصيل وبنود أمر الشراء", "View order details & items")}
+                      className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Eye className="size-4" />
+                    </Link>
                     {po.status !== "paid" && (
                       <button
                         type="button"

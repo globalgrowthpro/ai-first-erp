@@ -69,6 +69,7 @@ export interface InventoryBom {
   code: string; // e.g. BOM-KSHR-LUX
   name: { ar: string; en: string };
   finishedProductId: string;
+  branchId?: string | undefined; // Facility / Branch / Kitchen
   outputYield: number; // e.g. 10 portions
   outputUnitId: string;
   overheadCost: number; // labor + energy per batch in EGP
@@ -92,6 +93,146 @@ export const INITIAL_CATEGORIES: InventoryCategory[] = [
   { id: "cat-8", code: "CAT-RAW", name: { ar: "خامات ومكونات خام أساسية", en: "Raw Materials & Ingredients" }, type: "raw", description: { ar: "الألبان، النوتيلا، القشطة، السكر، الأرز، والشوكولاتة الخام", en: "Dairy, spreads, nuts, flour, sugar, and cocoa" } },
   { id: "cat-9", code: "CAT-PKG", name: { ar: "عبوات ومواد التغليف", en: "Packaging & Containers" }, type: "packaging", description: { ar: "أطباق فويل، علب كرتون، أكياس، وملاعق التقديم", en: "Bowls, branded boxes, foil pans, and spoons" } },
 ];
+
+export interface CategoryStyle {
+  bg: string;
+  text: string;
+  border: string;
+  dot: string;
+  className: string;
+}
+
+export function getCategoryStyle(
+  category?: { id?: string; code?: string; name?: { ar?: string; en?: string } } | null
+): CategoryStyle {
+  if (!category) {
+    return {
+      bg: "bg-secondary",
+      text: "text-muted-foreground",
+      border: "border-border",
+      dot: "bg-muted-foreground",
+      className: "bg-secondary text-muted-foreground border-border",
+    };
+  }
+
+  const key = `${category.id || ""} ${category.code || ""} ${category.name?.en || ""} ${category.name?.ar || ""}`.toLowerCase();
+
+  // 1. كشري الحلو المبتكر (CAT-KSHR) - Deep Indigo / Violet
+  if (key.includes("kshr") || key.includes("كشري") || key.includes("koshary")) {
+    return {
+      bg: "bg-indigo-500/15",
+      text: "text-indigo-700 dark:text-indigo-300",
+      border: "border-indigo-500/35",
+      dot: "bg-indigo-500",
+      className: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/35",
+    };
+  }
+
+  // 2. قشطوطة الوزير (CAT-KSHT) - Pistachio / Mint Emerald
+  if (key.includes("ksht") || key.includes("قشطوطة") || key.includes("kashtouta")) {
+    return {
+      bg: "bg-emerald-500/15",
+      text: "text-emerald-700 dark:text-emerald-300",
+      border: "border-emerald-500/35",
+      dot: "bg-emerald-500",
+      className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/35",
+    };
+  }
+
+  // 3. عشاق الرز باللبن (CAT-RICE) - Sapphire / Sky Blue
+  if (key.includes("rice") || key.includes("أرز") || key.includes("رز")) {
+    return {
+      bg: "bg-sky-500/15",
+      text: "text-sky-700 dark:text-sky-300",
+      border: "border-sky-500/35",
+      dot: "bg-sky-500",
+      className: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/35",
+    };
+  }
+
+  // 4. فتة الحلويات (CAT-FATTA) - Plum / Royal Purple
+  if (key.includes("fatta") || key.includes("فتة")) {
+    return {
+      bg: "bg-purple-500/15",
+      text: "text-purple-700 dark:text-purple-300",
+      border: "border-purple-500/35",
+      dot: "bg-purple-500",
+      className: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/35",
+    };
+  }
+
+  // 5. دنيا الدلع والمدلعة (CAT-DALA) - Strawberry Rose / Pink
+  if (key.includes("dala") || key.includes("مدلعة") || key.includes("دلع")) {
+    return {
+      bg: "bg-pink-500/15",
+      text: "text-pink-700 dark:text-pink-300",
+      border: "border-pink-500/35",
+      dot: "bg-pink-500",
+      className: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/35",
+    };
+  }
+
+  // 6. طواجن الفرن الساخنة (CAT-TJ) - Warm Caramel Amber
+  if (key.includes("tj") || key.includes("طواجن") || key.includes("tajin")) {
+    return {
+      bg: "bg-amber-500/15",
+      text: "text-amber-700 dark:text-amber-300",
+      border: "border-amber-500/35",
+      dot: "bg-amber-500",
+      className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35",
+    };
+  }
+
+  // 7. شاورما الوزير الحلوة (CAT-SHW) - Tangerine Orange
+  if (key.includes("shw") || key.includes("شاورما") || key.includes("shawarma")) {
+    return {
+      bg: "bg-orange-500/15",
+      text: "text-orange-700 dark:text-orange-300",
+      border: "border-orange-500/35",
+      dot: "bg-orange-500",
+      className: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/35",
+    };
+  }
+
+  // 8. خامات ومكونات خام أساسية (CAT-RAW) - Slate / Zinc
+  if (key.includes("raw") || key.includes("خام") || key.includes("خامات")) {
+    return {
+      bg: "bg-slate-500/15",
+      text: "text-slate-700 dark:text-slate-300",
+      border: "border-slate-500/35",
+      dot: "bg-slate-500",
+      className: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/35",
+    };
+  }
+
+  // 9. عبوات ومواد التغليف (CAT-PKG) - Cyan / Oceanic Teal
+  if (key.includes("pkg") || key.includes("تغليف") || key.includes("عبوات")) {
+    return {
+      bg: "bg-teal-500/15",
+      text: "text-teal-700 dark:text-teal-300",
+      border: "border-teal-500/35",
+      dot: "bg-teal-500",
+      className: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/35",
+    };
+  }
+
+  // Deterministic fallback palettes for custom categories
+  const FALLBACK_PALETTES: CategoryStyle[] = [
+    { bg: "bg-blue-500/15", text: "text-blue-700 dark:text-blue-300", border: "border-blue-500/35", dot: "bg-blue-500", className: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/35" },
+    { bg: "bg-lime-500/15", text: "text-lime-700 dark:text-lime-300", border: "border-lime-500/35", dot: "bg-lime-500", className: "bg-lime-500/15 text-lime-700 dark:text-lime-300 border-lime-500/35" },
+    { bg: "bg-fuchsia-500/15", text: "text-fuchsia-700 dark:text-fuchsia-300", border: "border-fuchsia-500/35", dot: "bg-fuchsia-500", className: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/35" },
+    { bg: "bg-cyan-500/15", text: "text-cyan-700 dark:text-cyan-300", border: "border-cyan-500/35", dot: "bg-cyan-500", className: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/35" },
+    { bg: "bg-rose-500/15", text: "text-rose-700 dark:text-rose-300", border: "border-rose-500/35", dot: "bg-rose-500", className: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/35" },
+    { bg: "bg-violet-500/15", text: "text-violet-700 dark:text-violet-300", border: "border-violet-500/35", dot: "bg-violet-500", className: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/35" },
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  return FALLBACK_PALETTES[Math.abs(hash) % FALLBACK_PALETTES.length]!;
+}
 
 export const INITIAL_WAREHOUSES: InventoryWarehouse[] = [
   { id: "wh-1", code: "WH-CENTRAL", name: { ar: "المطبخ المركزي ومصنع العاشر", en: "Central Kitchen & Factory" }, type: "kitchen", address: { ar: "المنطقة الصناعية B3، العاشر من رمضان", en: "Industrial Zone B3, 10th of Ramadan" }, managerName: "م. إبراهيم فؤاد", phone: "+20 100 882 1900", capacityPercent: 78, status: "active" },
@@ -150,6 +291,7 @@ export const INITIAL_BOM: InventoryBom[] = [
     code: "BOM-KSHR-LUX-10",
     name: { ar: "وصفة كشري حلو سوبر لوكس (دفعة 10 أطباق)", en: "Sweet Koshary Super Luxe Batch (10 Portions)" },
     finishedProductId: "p-1",
+    branchId: "wh-1",
     outputYield: 10,
     outputUnitId: "u-1",
     overheadCost: 65, // Direct labor, gas, cold refrigeration per batch
@@ -170,6 +312,7 @@ export const INITIAL_BOM: InventoryBom[] = [
     code: "BOM-KSH-PST-10",
     name: { ar: "وصفة قشطوطة بستاشيو (دفعة 10 قطع)", en: "Kashtouta Pistachio Batch (10 Portions)" },
     finishedProductId: "p-5",
+    branchId: "wh-1",
     outputYield: 10,
     outputUnitId: "u-1",
     overheadCost: 55,
@@ -188,6 +331,7 @@ export const INITIAL_BOM: InventoryBom[] = [
     code: "BOM-TJ-ALI-10",
     name: { ar: "وصفة طاجن أم علي قشطة ومكسرات (10 طواجن)", en: "Om Ali Cream & Nuts Tajin Batch (10 Tajins)" },
     finishedProductId: "p-14",
+    branchId: "wh-2",
     outputYield: 10,
     outputUnitId: "u-1",
     overheadCost: 45,
@@ -426,6 +570,52 @@ export function useInventoryStore() {
     setBoms((prev) => prev.filter((b) => b.id !== id));
   }, []);
 
+  // Batch import helpers
+  const importProducts = useCallback((items: Omit<InventoryProduct, "id">[]) => {
+    const newItems: InventoryProduct[] = items.map((p, idx) => ({
+      ...p,
+      id: `p-${Date.now()}-${idx}`,
+    }));
+    setProducts((prev) => [...newItems, ...prev]);
+    return newItems.length;
+  }, []);
+
+  const importCategories = useCallback((items: Omit<InventoryCategory, "id">[]) => {
+    const newItems: InventoryCategory[] = items.map((c, idx) => ({
+      ...c,
+      id: `cat-${Date.now()}-${idx}`,
+    }));
+    setCategories((prev) => [...prev, ...newItems]);
+    return newItems.length;
+  }, []);
+
+  const importWarehouses = useCallback((items: Omit<InventoryWarehouse, "id">[]) => {
+    const newItems: InventoryWarehouse[] = items.map((w, idx) => ({
+      ...w,
+      id: `wh-${Date.now()}-${idx}`,
+    }));
+    setWarehouses((prev) => [...prev, ...newItems]);
+    return newItems.length;
+  }, []);
+
+  const importUnits = useCallback((items: Omit<InventoryUnit, "id">[]) => {
+    const newItems: InventoryUnit[] = items.map((u, idx) => ({
+      ...u,
+      id: `u-${Date.now()}-${idx}`,
+    }));
+    setUnits((prev) => [...prev, ...newItems]);
+    return newItems.length;
+  }, []);
+
+  const importBoms = useCallback((items: Omit<InventoryBom, "id">[]) => {
+    const newItems: InventoryBom[] = items.map((b, idx) => ({
+      ...b,
+      id: `bom-${Date.now()}-${idx}`,
+    }));
+    setBoms((prev) => [...newItems, ...prev]);
+    return newItems.length;
+  }, []);
+
   // Reset to seed data
   const resetToSeed = useCallback(() => {
     setCategories(INITIAL_CATEGORIES);
@@ -453,19 +643,24 @@ export function useInventoryStore() {
     addCategory,
     updateCategory,
     deleteCategory,
+    importCategories,
     addWarehouse,
     updateWarehouse,
     deleteWarehouse,
+    importWarehouses,
     addUnit,
     updateUnit,
     deleteUnit,
+    importUnits,
     addProduct,
     updateProduct,
     adjustStock,
     deleteProduct,
+    importProducts,
     addBom,
     updateBom,
     deleteBom,
+    importBoms,
     resetToSeed,
   };
 }

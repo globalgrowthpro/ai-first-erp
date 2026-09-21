@@ -5,6 +5,8 @@ export const kpis = {
   salesDelta: 12,
   purchases: 96200,
   purchasesDelta: -4,
+  netProfit: 162200,
+  netProfitDelta: 18,
   cash: 1148000,
   cashDelta: 3,
   receivables: 612500,
@@ -13,9 +15,25 @@ export const kpis = {
   payablesDelta: -6,
   stockValue: 2045000,
   stockDelta: 1,
+  operatingExpenses: 48500,
+  operatingExpensesDelta: -2,
   invoices: 87,
+  invoicesDelta: 9,
   customersServed: 63,
+  customersServedDelta: 14,
   avgInvoice: 2970,
+  avgInvoiceDelta: 5,
+  factoryOutput: 1850,
+  factoryOutputDelta: 7,
+  activeBranches: 12,
+  activeBranchesDelta: 0,
+  staffPresent: 142,
+  staffPresentTotal: 150,
+  staffPresentDelta: 4,
+  pendingApprovalsCount: 8,
+  pendingApprovalsDelta: -3,
+  satisfactionScore: 98,
+  satisfactionDelta: 2,
 };
 
 export const salesTrend = [
@@ -30,6 +48,7 @@ export const salesTrend = [
 
 export type InvoiceRow = {
   id: string;
+  partnerId?: string;
   party: Bi;
   date: string;
   amount: number;
@@ -38,19 +57,19 @@ export type InvoiceRow = {
 };
 
 export const invoices: InvoiceRow[] = [
-  { id: "INV-10452", party: { ar: "فندق الماسة — توريد حلويات حفلات", en: "Al-Masa Hotel — Catering Order" }, date: "2026-09-07", amount: 36000, balance: 0, status: "paid" },
-  { id: "INV-10451", party: { ar: "سلسلة مطاعم وكافيهات سيزار", en: "Cesar Restaurant & Cafe Chain" }, date: "2026-09-07", amount: 84500, balance: 24500, status: "partial" },
-  { id: "INV-10450", party: { ar: "مؤسسة لوسيل لتنظيم المناسبات", en: "Lusail Events & Catering" }, date: "2026-09-06", amount: 19750, balance: 19750, status: "overdue" },
-  { id: "INV-10449", party: { ar: "شركة الشرق للمؤتمرات والمعارض", en: "Sharq Conferences & Exhibitions" }, date: "2026-09-06", amount: 12400, balance: 0, status: "paid" },
-  { id: "INV-10448", party: { ar: "المهندس محمود عبد الله — حفل خاص", en: "Mahmoud Abdullah — Private Event" }, date: "2026-09-05", amount: 5600, balance: 5600, status: "draft" },
-  { id: "INV-10447", party: { ar: "نادي الجزيرة الرياضي — بوفيه حلويات", en: "Gezira Sporting Club — Desserts Buffet" }, date: "2026-09-05", amount: 141000, balance: 61000, status: "partial" },
+  { id: "INV-10452", partnerId: "p-1", party: { ar: "فندق الماسة — توريد حلويات حفلات", en: "Al-Masa Hotel — Catering Order" }, date: "2026-09-07", amount: 36000, balance: 0, status: "paid" },
+  { id: "INV-10451", partnerId: "p-2", party: { ar: "سلسلة مطاعم وكافيهات سيزار", en: "Cesar Restaurant & Cafe Chain" }, date: "2026-09-07", amount: 84500, balance: 24500, status: "partial" },
+  { id: "INV-10450", partnerId: "p-4", party: { ar: "مؤسسة لوسيل لتنظيم المناسبات", en: "Lusail Events & Catering" }, date: "2026-09-06", amount: 19750, balance: 19750, status: "overdue" },
+  { id: "INV-10449", partnerId: "p-9", party: { ar: "شركة الشرق للمؤتمرات والمعارض", en: "Sharq Conferences & Exhibitions" }, date: "2026-09-06", amount: 12400, balance: 0, status: "paid" },
+  { id: "INV-10448", partnerId: "p-10", party: { ar: "المهندس محمود عبد الله — حفل خاص", en: "Mahmoud Abdullah — Private Event" }, date: "2026-09-05", amount: 5600, balance: 5600, status: "draft" },
+  { id: "INV-10447", partnerId: "p-3", party: { ar: "نادي الجزيرة الرياضي — بوفيه حلويات", en: "Gezira Sporting Club — Desserts Buffet" }, date: "2026-09-05", amount: 141000, balance: 61000, status: "partial" },
 ];
 
 export const purchaseOrders: InvoiceRow[] = [
-  { id: "PO-2291", party: { ar: "شركة فيريرو مصر — توريد نوتيلا 15 كجم", en: "Ferrero Egypt — Nutella Tubs 15kg" }, date: "2026-09-07", amount: 45500, balance: 45500, status: "partial" },
-  { id: "PO-2290", party: { ar: "مطاحن ومضارب الدلتا — أرز وسكر نقي", en: "Delta Mills — Premium Rice & Sugar" }, date: "2026-09-06", amount: 25500, balance: 0, status: "paid" },
-  { id: "PO-2289", party: { ar: "مزارع دينا — حليب طازج وقشطة بلدي", en: "Dina Farms — Fresh Milk & Clotted Cream" }, date: "2026-09-05", amount: 18900, balance: 18900, status: "overdue" },
-  { id: "PO-2288", party: { ar: "شركة الأهرام للكرتون وعبوات التغليف", en: "Al-Ahram Packaging & Containers" }, date: "2026-09-04", amount: 6300, balance: 0, status: "paid" },
+  { id: "PO-2291", partnerId: "p-5", party: { ar: "شركة فيريرو مصر — توريد نوتيلا 15 كجم", en: "Ferrero Egypt — Nutella Tubs 15kg" }, date: "2026-09-07", amount: 45500, balance: 45500, status: "partial" },
+  { id: "PO-2290", partnerId: "p-7", party: { ar: "مطاحن ومضارب الدلتا — أرز وسكر نقي", en: "Delta Mills — Premium Rice & Sugar" }, date: "2026-09-06", amount: 25500, balance: 0, status: "paid" },
+  { id: "PO-2289", partnerId: "p-6", party: { ar: "مزارع دينا — حليب طازج وقشطة بلدي", en: "Dina Farms — Fresh Milk & Clotted Cream" }, date: "2026-09-05", amount: 18900, balance: 18900, status: "overdue" },
+  { id: "PO-2288", partnerId: "p-8", party: { ar: "شركة الأهرام للكرتون وعبوات التغليف", en: "Al-Ahram Packaging & Containers" }, date: "2026-09-04", amount: 6300, balance: 0, status: "paid" },
 ];
 
 export interface ProductItem {
@@ -653,7 +672,7 @@ export interface DepartmentItem {
 }
 
 export const departments: DepartmentItem[] = [
-  { id: "dept-exec", name: { ar: "الإدارة التنفيذية والعامة", en: "Executive Management" }, code: "EXEC", manager: { ar: "حافظ رحيم", en: "Hafez Rahim" }, headcount: 3 },
+  { id: "dept-exec", name: { ar: "الإدارة التنفيذية والعامة", en: "Executive Management" }, code: "EXEC", manager: { ar: "وزير الحلو", en: "Hafez Rahim" }, headcount: 3 },
   { id: "dept-retail", name: { ar: "المبيعات ونقاط البيع والفروع", en: "Sales, POS & Branches" }, code: "RETAIL", manager: { ar: "أحمد سالم", en: "Ahmed Salem" }, headcount: 14 },
   { id: "dept-kitchen", name: { ar: "المطبخ المركزي والتصنيع", en: "Central Kitchen & Production" }, code: "KITCHEN", manager: { ar: "الشيف علاء السعيد", en: "Chef Alaa El-Saeed" }, headcount: 22 },
   { id: "dept-supply", name: { ar: "سلاسل الإمداد والمخازن", en: "Supply Chain & Warehousing" }, code: "SUPPLY", manager: { ar: "طارق فؤاد", en: "Tarek Fouad" }, headcount: 8 },
@@ -737,7 +756,7 @@ export interface UserItem {
 export const users: UserItem[] = [
   {
     id: "usr-1",
-    name: { ar: "حافظ رحيم", en: "Hafez Rahim" },
+    name: { ar: "وزير الحلو", en: "Hafez Rahim" },
     email: "hafez@wazeer-elhelw.com",
     departmentId: "dept-exec",
     positionId: "pos-gm",

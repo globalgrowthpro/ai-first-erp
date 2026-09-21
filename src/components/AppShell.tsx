@@ -125,20 +125,20 @@ function NavList({
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="mt-6 first:mt-0">
-      <p className="px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-foreground/45">
+    <div className="mt-5 first:mt-0">
+      <p className="px-2.5 text-[9px] font-bold uppercase tracking-[0.16em] text-ink-foreground/45">
         {label}
       </p>
-      <nav className="mt-2 space-y-1">
+      <nav className="mt-1.5 space-y-0.5">
         {visibleItems.map(({ to, key, icon: Icon }) => (
           <Link
             key={to}
             to={to}
             activeOptions={{ exact: to === "/" }}
-            className="group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-ink-foreground/70 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+            className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-foreground/75 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
           >
             <Icon className="size-4 shrink-0" />
-            <span>{t(key)}</span>
+            <span className="truncate">{t(key)}</span>
           </Link>
         ))}
       </nav>
@@ -166,7 +166,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const normalizedPath = currentPath === "/" ? "/" : currentPath.replace(/\/$/, "");
-  const isPageAllowed = currentUser.allowedPages.includes(normalizedPath);
+  const isPageAllowed =
+    currentUser.allowedPages.includes(normalizedPath) ||
+    currentUser.allowedPages.some(
+      (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
+    );
+
+  // Check if current user only has permission for AI Workspace
+  const hasOnlyAiPermission =
+    currentUser.role === "ai" ||
+    (currentUser.allowedPages.length > 0 &&
+      currentUser.allowedPages.every((p) => p === "/ai"));
 
   useEffect(() => {
     if (!isPageAllowed) {
@@ -185,6 +195,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // User switcher dropdown state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
 
   // Logout modal state
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -260,56 +271,42 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-secondary">
-      {/* Sidebar */}
+      {/* Sidebar - Compact Width */}
       <aside
         className={cn(
-          "gradient-ink sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border/20 p-4",
+          "gradient-ink sticky top-0 hidden h-screen w-52 xl:w-56 shrink-0 flex-col border-e border-border/20 p-3",
           sidebarVisible && "lg:flex"
         )}
       >
-        <Link to="/" className="block px-1" aria-label={companyName}>
-          <div className="rounded-xl bg-white p-2 shadow-sm transition-transform hover:scale-[1.01]">
+        <Link to="/" className="block px-0.5" aria-label={companyName}>
+          <div className="rounded-xl bg-white p-2 shadow-xs transition-transform hover:scale-[1.01]">
             <img
               src={companyLogo}
               alt={companyName}
-              className="h-auto max-h-20 w-full object-contain"
+              className="h-auto max-h-16 w-full object-contain"
             />
           </div>
         </Link>
 
-        <div className="mt-4 flex-1 overflow-y-auto">
+        <div className="mt-3.5 flex-1 overflow-y-auto">
           <NavList items={erpNav} label={t("group_erp")} allowedPages={currentUser.allowedPages} />
           <NavList items={controlNav} label={t("group_control")} allowedPages={currentUser.allowedPages} />
         </div>
 
-        <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-3 space-y-2">
-          <div>
-            <p className="text-xs font-bold text-ink-foreground">{companyName}</p>
-            <p className="text-[11px] text-ink-foreground/85 font-semibold mt-0.5">
-              {pick(currentUser.name.ar, currentUser.name.en)}
-            </p>
-            <p className="text-[10px] text-ink-foreground/55">
-              {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
-            </p>
-          </div>
-          <div className="pt-2 border-t border-ink-foreground/15 text-[11px]">
-            <a
-              href="https://odooteams.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-ink-foreground/80 hover:text-ink-foreground font-medium transition-colors group underline-offset-4 hover:underline"
-              title="https://odooteams.com"
-            >
-              <span>Developer: Mr.Hafez Rahim</span>
-              <ExternalLink className="size-3 text-ink-foreground/60 group-hover:text-ink-foreground transition-colors shrink-0" />
-            </a>
-          </div>
+        <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-2.5 space-y-0.5">
+          <p className="text-xs font-bold text-ink-foreground truncate">
+            {pick(currentUser.name.ar, currentUser.name.en)}
+          </p>
+          <p className="text-[10px] text-ink-foreground/65 truncate">
+            {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+          </p>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header */}
-        <header className="sticky top-0 z-20 flex items-center gap-2.5 sm:gap-3 border-b border-border/70 bg-card/95 backdrop-blur px-4 py-3">
+        {!hasOnlyAiPermission && (
+          <header className="sticky top-0 z-20 flex items-center gap-2.5 sm:gap-3 border-b border-border/70 bg-card/95 backdrop-blur px-4 py-3">
           <Link
             to="/"
             className="w-32 shrink-0 lg:hidden"
@@ -636,22 +633,25 @@ export function AppShell({ children }: { children: ReactNode }) {
             <LogOut className="size-4" />
           </button>
         </header>
+        )}
 
         {/* Mobile Navigation */}
-        <nav className="flex gap-1 overflow-x-auto border-b border-border/40 bg-ink px-2 py-2 lg:hidden">
-          {[...erpNav, ...controlNav]
-            .filter((item) => currentUser.allowedPages.includes(item.to))
-            .map(({ to, key }) => (
-            <Link
-              key={to}
-              to={to}
-              activeOptions={{ exact: to === "/" }}
-              className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold text-ink-foreground/70 data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
-            >
-              {t(key)}
-            </Link>
-          ))}
-        </nav>
+        {!hasOnlyAiPermission && (
+          <nav className="flex gap-1 overflow-x-auto border-b border-border/40 bg-ink px-2 py-2 lg:hidden">
+            {[...erpNav, ...controlNav]
+              .filter((item) => currentUser.allowedPages.includes(item.to))
+              .map(({ to, key }) => (
+              <Link
+                key={to}
+                to={to}
+                activeOptions={{ exact: to === "/" }}
+                className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold text-ink-foreground/70 data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+              >
+                {t(key)}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {/* Page Main Content */}
         <main key={lang} className="flex-1 space-y-6 p-4 md:p-6">

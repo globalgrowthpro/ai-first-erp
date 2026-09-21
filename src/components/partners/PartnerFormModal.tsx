@@ -57,6 +57,7 @@ export function PartnerFormModal({
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerms>("30_days");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [notes, setNotes] = useState("");
+  const [logo, setLogo] = useState("");
 
   useEffect(() => {
     if (editingPartner) {
@@ -76,6 +77,7 @@ export function PartnerFormModal({
       setPaymentTerms(editingPartner.paymentTerms);
       setStatus(editingPartner.status);
       setNotes(editingPartner.notes || "");
+      setLogo(editingPartner.logo || "");
     } else {
       const prefix = type === "customer" ? "CUST" : "SUPP";
       setCode(`${prefix}-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -94,6 +96,7 @@ export function PartnerFormModal({
       setPaymentTerms("30_days");
       setStatus("active");
       setNotes("");
+      setLogo("");
     }
   }, [editingPartner, open, type]);
 
@@ -114,6 +117,7 @@ export function PartnerFormModal({
       paymentTerms,
       status,
       notes,
+      logo: logo.trim() || undefined,
     });
     onClose();
   };
@@ -246,10 +250,11 @@ export function PartnerFormModal({
               </label>
               <input
                 type="text"
+                dir="ltr"
                 value={taxNumber}
                 onChange={(e) => setTaxNumber(e.target.value)}
                 placeholder="xxx-xxx-xxx"
-                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono tabular-nums"
               />
             </div>
 
@@ -275,10 +280,11 @@ export function PartnerFormModal({
               </label>
               <input
                 type="text"
+                dir="ltr"
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono tabular-nums"
               />
             </div>
 
@@ -288,11 +294,34 @@ export function PartnerFormModal({
               </label>
               <input
                 type="email"
+                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="procurement@company.com"
                 className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono"
               />
+            </div>
+          </div>
+
+          {/* Logo URL */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
+              {pick("شعار العميل أو المورد (رابط الشعار أو ملف SVG)", "Client / Supplier Logo URL")}
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                dir="ltr"
+                value={logo}
+                onChange={(e) => setLogo(e.target.value)}
+                placeholder="/logos/al-masa.svg أو رابط خارجي..."
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-mono"
+              />
+              {logo && (
+                <div className="size-8 rounded-lg border border-border bg-card p-1 shrink-0 flex items-center justify-center overflow-hidden">
+                  <img src={logo} alt="Preview" className="size-full object-contain rounded" />
+                </div>
+              )}
             </div>
           </div>
 

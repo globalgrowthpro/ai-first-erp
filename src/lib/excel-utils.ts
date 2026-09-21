@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { EmployeeRecord, AttendanceRecord, PayslipItem } from "@/lib/hr-store";
+import { type EmployeeRecord, type AttendanceRecord, type PayslipItem, getDefaultAvatar } from "@/lib/hr-store";
 
 /**
  * Export employees array to an Excel (.xlsx) file
@@ -326,7 +326,7 @@ export async function parseEmployeesExcelFile(
             positionName: { ar: posName, en: posName },
             branchId: "br-tenth",
             branchName: { ar: branchName, en: branchName },
-            directManager: (row["المدير المباشر"] || "م. حافظ رحيم").toString().trim(),
+            directManager: (row["المدير المباشر"] || "م. وزير الحلو").toString().trim(),
             hireDate,
             gender,
             contractType,
@@ -334,6 +334,7 @@ export async function parseEmployeesExcelFile(
             status: "active",
             avatarBg,
             avatarInitials: initials,
+            avatarUrl: getDefaultAvatar(gender, code),
             compensation: {
               basicSalary,
               housingAllowance,

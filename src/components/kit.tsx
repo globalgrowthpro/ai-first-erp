@@ -109,41 +109,178 @@ export function StatusPill({ status }: { status: "paid" | "partial" | "overdue" 
   );
 }
 
+export type KpiColor =
+  | "rose"
+  | "blue"
+  | "amber"
+  | "emerald"
+  | "indigo"
+  | "purple"
+  | "cyan"
+  | "orange"
+  | "fuchsia"
+  | "teal"
+  | "lime"
+  | "violet"
+  | "sky"
+  | "yellow"
+  | "slate";
+
+const KPI_COLOR_MAP: Record<KpiColor, { bg: string; bar: string; label: string }> = {
+  rose: {
+    bg: "bg-gradient-to-r from-pink-500 via-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  blue: {
+    bg: "bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 text-white shadow-md shadow-blue-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  amber: {
+    bg: "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-md shadow-amber-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  emerald: {
+    bg: "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  indigo: {
+    bg: "bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 text-white shadow-md shadow-indigo-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  purple: {
+    bg: "bg-gradient-to-r from-purple-500 via-violet-600 to-purple-600 text-white shadow-md shadow-purple-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  cyan: {
+    bg: "bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-600 text-white shadow-md shadow-cyan-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  orange: {
+    bg: "bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  fuchsia: {
+    bg: "bg-gradient-to-r from-fuchsia-500 via-pink-600 to-rose-500 text-white shadow-md shadow-fuchsia-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  teal: {
+    bg: "bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-white shadow-md shadow-teal-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  lime: {
+    bg: "bg-gradient-to-r from-lime-500 via-green-500 to-emerald-600 text-white shadow-md shadow-lime-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  violet: {
+    bg: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md shadow-violet-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  sky: {
+    bg: "bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white shadow-md shadow-sky-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  yellow: {
+    bg: "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-white shadow-md shadow-amber-500/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+  slate: {
+    bg: "bg-gradient-to-r from-slate-600 via-slate-700 to-zinc-800 text-white shadow-md shadow-slate-700/25 border-transparent",
+    bar: "bg-white/80 shadow-xs shadow-white/50",
+    label: "text-white/90 font-semibold",
+  },
+};
+
 export function KpiCard({
   label,
   value,
   delta,
   accent = "brand",
+  color,
+  hideDelta = false,
+  className,
 }: {
   label: string;
   value: string;
   delta?: number;
   accent?: "brand" | "primary" | "gold" | "ink";
+  color?: KpiColor;
+  hideDelta?: boolean;
+  className?: string;
 }) {
   const { t } = useI18n();
+  const theme = color ? KPI_COLOR_MAP[color] : null;
+
   return (
-    <div className="surface-panel rounded-xl p-5">
+    <div
+      className={cn(
+        "rounded-2xl p-4 sm:p-5 border transition-all hover:scale-[1.01] hover:shadow-lg",
+        theme ? theme.bg : "surface-panel border-border/70",
+        className
+      )}
+    >
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "h-4 w-1.5 rounded-sm",
-            accent === "brand" && "bg-brand",
-            accent === "primary" && "bg-primary",
-            accent === "gold" && "bg-gold",
-            accent === "ink" && "bg-ink",
-          )}
-        />
-        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
-      </div>
-      <p className="num mt-3 text-2xl font-bold">{value}</p>
-      {typeof delta === "number" ? (
+        {!theme && (
+          <span
+            className={cn(
+              "h-4 w-1.5 rounded-full shrink-0",
+              accent === "brand" && "bg-brand",
+              accent === "primary" && "bg-primary",
+              accent === "gold" && "bg-gold",
+              accent === "ink" && "bg-ink"
+            )}
+          />
+        )}
         <p
           className={cn(
-            "mt-1 text-xs font-semibold",
-            delta >= 0 ? "text-success" : "text-destructive",
+            "text-[11px] font-bold uppercase tracking-wide truncate",
+            theme ? theme.label : "text-muted-foreground"
           )}
         >
-          {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}% · {t("vsYesterday")}
+          {label}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "num mt-2.5 sm:mt-3 text-xl sm:text-2xl font-black tracking-tight",
+          theme ? "text-white" : "text-foreground"
+        )}
+      >
+        {value}
+      </p>
+      {typeof delta === "number" && !hideDelta ? (
+        <p
+          className={cn(
+            "mt-1.5 text-xs font-semibold flex items-center gap-1.5",
+            theme ? "text-white/90" : delta >= 0 ? "text-emerald-500" : "text-rose-500"
+          )}
+        >
+          <span
+            className={cn(
+              "px-1.5 py-0.5 rounded-md text-[11px] font-bold",
+              theme
+                ? "bg-white/20 text-white"
+                : delta >= 0
+                ? "bg-emerald-500/10 text-emerald-600"
+                : "bg-rose-500/10 text-rose-600"
+            )}
+          >
+            {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)}%
+          </span>
+          <span className={theme ? "text-white/75" : "text-muted-foreground"}>· {t("vsYesterday")}</span>
         </p>
       ) : null}
     </div>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Sparkles, Building2, ExternalLink } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -61,13 +61,18 @@ function Dashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <KpiCard label={t("kpi_sales")} value={money(kpis.sales)} delta={kpis.salesDelta} accent="primary" />
-        <KpiCard label={t("kpi_purchases")} value={money(kpis.purchases)} delta={kpis.purchasesDelta} accent="brand" />
-        <KpiCard label={t("kpi_cash")} value={money(kpis.cash)} delta={kpis.cashDelta} accent="gold" />
-        <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} accent="primary" />
-        <KpiCard label={t("kpi_payables")} value={money(kpis.payables)} delta={kpis.payablesDelta} accent="ink" />
-        <KpiCard label={t("kpi_stockValue")} value={money(kpis.stockValue)} delta={kpis.stockDelta} accent="brand" />
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <KpiCard label={t("kpi_sales")} value={money(kpis.sales)} delta={kpis.salesDelta} color="rose" />
+        <KpiCard label={t("kpi_purchases")} value={money(kpis.purchases)} delta={kpis.purchasesDelta} color="blue" />
+        <KpiCard label={t("kpi_netProfit")} value={money(kpis.netProfit)} delta={kpis.netProfitDelta} color="amber" />
+        <KpiCard label={t("kpi_cash")} value={money(kpis.cash)} delta={kpis.cashDelta} color="emerald" />
+        <KpiCard label={t("kpi_operatingExpenses")} value={money(kpis.operatingExpenses)} delta={kpis.operatingExpensesDelta} color="orange" />
+
+        <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} color="indigo" />
+        <KpiCard label={t("kpi_payables")} value={money(kpis.payables)} delta={kpis.payablesDelta} color="purple" />
+        <KpiCard label={t("kpi_stockValue")} value={money(kpis.stockValue)} delta={kpis.stockDelta} color="cyan" />
+        <KpiCard label={t("kpi_orders")} value={`${n(kpis.invoices)} ${pick("فاتورة", "Orders")}`} delta={kpis.invoicesDelta} color="fuchsia" />
+        <KpiCard label={t("kpi_avgTicket")} value={money(kpis.avgInvoice)} delta={kpis.avgInvoiceDelta} color="teal" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -188,9 +193,33 @@ function Dashboard() {
       >
         <DataTable head={[t("invoice"), t("customer"), t("date"), t("amount"), t("status")]}>
           {invoices.slice(0, 5).map((inv) => (
-            <tr key={inv.id}>
-              <Td className="num font-bold">{inv.id}</Td>
-              <Td>{pick(inv.party.ar, inv.party.en)}</Td>
+            <tr
+              key={inv.id}
+              className="hover:bg-secondary/70 transition-colors group cursor-pointer"
+            >
+              <Td className="num font-bold">
+                <Link
+                  to="/sales/$invoiceId"
+                  params={{ invoiceId: inv.id }}
+                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                  title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
+                >
+                  <span>{inv.id}</span>
+                  <ExternalLink className="size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                </Link>
+              </Td>
+              <Td>
+                <Link
+                  to="/sales/$invoiceId"
+                  params={{ invoiceId: inv.id }}
+                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                  title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
+                >
+                  <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                  <span>{pick(inv.party.ar, inv.party.en)}</span>
+                  <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                </Link>
+              </Td>
               <Td className="num text-muted-foreground">{inv.date}</Td>
               <Td className="num font-semibold">{money(inv.amount)}</Td>
               <Td>

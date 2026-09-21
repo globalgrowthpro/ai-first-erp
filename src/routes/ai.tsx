@@ -28,9 +28,17 @@ import {
   ExternalLink,
   ShieldCheck,
   TrendingUp,
+  PanelLeft,
+  PanelLeftClose,
+  Languages,
+  LogOut,
+  Users,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
+import { useAuthStore } from "@/lib/auth-store";
+import { useSidebarVisible } from "@/lib/ui-prefs";
+import { RealQrCode } from "@/components/ui/qr-code";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ai")({
@@ -218,7 +226,7 @@ const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
       { label: "Operational Workaround", value: "Temporary manual SKU lookup enabled for branch cashiers." },
     ],
     notesTitle: { ar: "تقرير الفحص الذكي والإجراءات المتخذة", en: "Diagnostic Report & AI Agent Actions" },
-    notes: "AI remote agent inspected system logs, restarted the local sync daemon, and queued firmware patch v2.4.1 for terminal POS-NC-04. System reboot verified; awaiting final cashier physical barcode scan confirmation.",
+    notes: "AI remote agent inspected system logs, restarted the local sync daemon, and queued firmware patch v1.0.1 for terminal POS-NC-04. System reboot verified; awaiting final cashier physical barcode scan confirmation.",
     companyName: "Wazeer El-Helw IT Operations",
     companyTagline: "Enterprise POS & ERP Support Center",
     companyWebsite: "www.wazeer-elhelw.com",
@@ -544,7 +552,7 @@ const ACTIVITY_CHATS: Record<string, ChatMessage[]> = {
       id: "msg-3-2",
       sender: "agent",
       senderName: "Hafez",
-      text: "Hello Kareem, I see the error in the logs. Restarting the sync service remotely now and deploying patch v2.4.1.",
+      text: "Hello Kareem, I see the error in the logs. Restarting the sync service remotely now and deploying patch v1.0.1.",
       time: "09:32 AM",
       status: "read",
     },
@@ -644,53 +652,10 @@ const ACTIVITY_CHATS: Record<string, ChatMessage[]> = {
 const INITIAL_MESSAGES: ChatMessage[] = ACTIVITY_CHATS["act-1"] || [];
 
 // ==========================================
-// SVG QR Code Component
+// Real Standard Scannable QR Code Component
 // ==========================================
 function QrCodeGraphic({ value, size = 64 }: { value: string; size?: number }) {
-  return (
-    <div
-      className="p-1.5 bg-white rounded-lg border border-border/80 inline-block shadow-xs"
-      title={`Verify: ${value}`}
-    >
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Decorative realistic QR grid matrix */}
-        <rect width="24" height="24" fill="white" />
-        {/* Top Left Marker */}
-        <rect x="2" y="2" width="6" height="6" rx="1" fill="#1e293b" />
-        <rect x="3" y="3" width="4" height="4" fill="white" />
-        <rect x="4" y="4" width="2" height="2" fill="#1e293b" />
-        {/* Top Right Marker */}
-        <rect x="16" y="2" width="6" height="6" rx="1" fill="#1e293b" />
-        <rect x="17" y="3" width="4" height="4" fill="white" />
-        <rect x="18" y="4" width="2" height="2" fill="#1e293b" />
-        {/* Bottom Left Marker */}
-        <rect x="2" y="16" width="6" height="6" rx="1" fill="#1e293b" />
-        <rect x="3" y="17" width="4" height="4" fill="white" />
-        <rect x="4" y="18" width="2" height="2" fill="#1e293b" />
-        {/* Data bits */}
-        <rect x="10" y="2" width="2" height="2" fill="#1e293b" />
-        <rect x="13" y="3" width="1.5" height="1.5" fill="#1e293b" />
-        <rect x="10" y="6" width="2" height="2" fill="#1e293b" />
-        <rect x="9" y="9" width="3" height="3" rx="0.5" fill="#1e293b" />
-        <rect x="14" y="10" width="2" height="2" fill="#1e293b" />
-        <rect x="17" y="10" width="2" height="1.5" fill="#1e293b" />
-        <rect x="3" y="10" width="2" height="2" fill="#1e293b" />
-        <rect x="6" y="12" width="2" height="2" fill="#1e293b" />
-        <rect x="10" y="14" width="2" height="2" fill="#1e293b" />
-        <rect x="13" y="16" width="2" height="3" fill="#1e293b" />
-        <rect x="17" y="14" width="2" height="2" fill="#1e293b" />
-        <rect x="19" y="18" width="3" height="3" fill="#1e293b" />
-        <rect x="10" y="20" width="2" height="2" fill="#1e293b" />
-        <rect x="16" y="20" width="1.5" height="1.5" fill="#1e293b" />
-      </svg>
-    </div>
-  );
+  return <RealQrCode value={value} size={size} margin={1} />;
 }
 
 // ==========================================
@@ -698,10 +663,38 @@ function QrCodeGraphic({ value, size = 64 }: { value: string; size?: number }) {
 // ==========================================
 
 function AiWorkspacePage() {
-  const { t, pick, dir, lang } = useI18n();
+  const { t, pick, dir, lang, toggle } = useI18n();
   const { settings } = useCompanySettings();
   const companyLogo = settings.logoUrl || "/wazeer-logo.png";
   const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
+
+  const { currentUser, demoAccounts, loginAs, logout } = useAuthStore();
+  const [sidebarVisible, setSidebarVisible] = useSidebarVisible();
+  const hasOnlyAiPermission =
+    currentUser.role === "ai" ||
+    (currentUser.allowedPages.length > 0 &&
+      currentUser.allowedPages.every((p) => p === "/ai"));
+
+  const [isAiUserMenuOpen, setIsAiUserMenuOpen] = useState(false);
+  const aiUserMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close AI user menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        aiUserMenuRef.current &&
+        !aiUserMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsAiUserMenuOpen(false);
+      }
+    }
+    if (isAiUserMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isAiUserMenuOpen]);
 
   // State
   const [selectedActivityId, setSelectedActivityId] = useState<string>("act-1");
@@ -750,7 +743,7 @@ function AiWorkspacePage() {
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       sender: "agent",
-      senderName: "Hafez",
+      senderName: pick(currentUser.name.ar, currentUser.name.en),
       text: userMsgText,
       time: timeStr,
       status: "delivered",
@@ -818,6 +811,20 @@ function AiWorkspacePage() {
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Left: ChatHub Branding */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            {hasOnlyAiPermission && (
+              <button
+                type="button"
+                onClick={() => setSidebarVisible(!sidebarVisible)}
+                className="hidden lg:inline-flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                title={sidebarVisible ? (lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar") : (lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar")}
+              >
+                {sidebarVisible ? (
+                  <PanelLeftClose className="size-4" />
+                ) : (
+                  <PanelLeft className="size-4" />
+                )}
+              </button>
+            )}
             <div className="size-9 sm:size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
               <MessageSquareText className="size-4 sm:size-5" />
             </div>
@@ -834,8 +841,13 @@ function AiWorkspacePage() {
           {/* Center-Left: Greeting & User Profile (hidden on small mobile) */}
           <div className="hidden sm:flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-muted/40 border border-border/50">
             <div className="relative">
-              <div className="size-7 sm:size-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                HR
+              <div
+                className={cn(
+                  "size-7 sm:size-8 rounded-full bg-gradient-to-tr text-white flex items-center justify-center font-bold text-xs shadow-xs",
+                  currentUser.avatarBg
+                )}
+              >
+                {currentUser.name.ar[0]}
               </div>
               <span className="absolute bottom-0 right-0 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
             </div>
@@ -844,7 +856,7 @@ function AiWorkspacePage() {
                 {pick({ ar: "صباح الخير،", en: "Good morning," })}
               </span>
               <span className="font-bold text-foreground flex items-center gap-1 text-[11px] sm:text-xs">
-                <span>Hafez</span>
+                <span>{pick(currentUser.name.ar, currentUser.name.en)}</span>
                 <span>👋</span>
               </span>
             </div>
@@ -878,17 +890,131 @@ function AiWorkspacePage() {
               <Bell className="size-4" />
               <span className="absolute top-1 right-1 size-2 rounded-full bg-rose-500" />
             </button>
-            <div className="sm:hidden relative">
-              <div className="size-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-[10px] shadow-xs">
-                HR
-              </div>
-            </div>
-            <button
-              className="size-8 rounded-lg hidden sm:flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-              title={pick({ ar: "المزيد", en: "More options" })}
-            >
-              <ChevronDown className="size-4" />
-            </button>
+
+            {hasOnlyAiPermission && (
+              <>
+                {/* Language Switcher */}
+                <button
+                  onClick={toggle}
+                  className="size-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  title={t("lang")}
+                >
+                  <Languages className="size-4" />
+                </button>
+
+                {/* Account Switcher Dropdown */}
+                <div className="relative" ref={aiUserMenuRef}>
+                  <button
+                    onClick={() => setIsAiUserMenuOpen(!isAiUserMenuOpen)}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl border border-border/70 bg-card hover:bg-secondary text-xs transition-colors"
+                    title={pick("تبديل الحساب التجريبي", "Switch Demo Account")}
+                  >
+                    <div
+                      className={cn(
+                        "size-5 rounded-md bg-gradient-to-tr text-white flex items-center justify-center font-bold text-[9px] shadow-xs",
+                        currentUser.avatarBg
+                      )}
+                    >
+                      {currentUser.name.ar[0]}
+                    </div>
+                    <span className="hidden md:inline font-semibold text-[11px] max-w-[90px] truncate">
+                      {pick(currentUser.name.ar, currentUser.name.en)}
+                    </span>
+                    <ChevronDown className="size-3 text-muted-foreground" />
+                  </button>
+
+                  {isAiUserMenuOpen && (
+                    <div
+                      className={cn(
+                        "absolute top-full mt-2 w-72 rounded-2xl border border-border/70 bg-card p-3 shadow-2xl z-50 text-xs space-y-2",
+                        dir === "rtl" ? "left-0" : "right-0"
+                      )}
+                    >
+                      <div className="pb-2 border-b border-border/50">
+                        <p className="font-bold text-foreground text-xs">
+                          {pick("تبديل الحساب التجريبي", "Switch Demo Account")}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {pick(
+                            "اختر أي دور لتجربة الصلاحيات وواجهة المستخدم المخصصة",
+                            "Select a role to test its specific view & permissions"
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1 max-h-60 overflow-y-auto">
+                        {demoAccounts.map((acc) => {
+                          const isSelected = currentUser.id === acc.id;
+                          return (
+                            <button
+                              key={acc.id}
+                              type="button"
+                              onClick={() => {
+                                loginAs(acc.id);
+                                setIsAiUserMenuOpen(false);
+                              }}
+                              className={cn(
+                                "w-full p-2 rounded-xl text-start flex items-center gap-2.5 transition-all",
+                                isSelected
+                                  ? "bg-primary/10 border border-primary/30"
+                                  : "hover:bg-secondary/70 border border-transparent"
+                              )}
+                            >
+                              <div
+                                className={`size-7 rounded-lg bg-gradient-to-tr ${acc.avatarBg} text-white flex items-center justify-center font-bold text-[10px] shrink-0 shadow-sm`}
+                              >
+                                {acc.name.ar[0]}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-foreground text-xs truncate">
+                                  {pick(acc.name.ar, acc.name.en)}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground truncate">
+                                  {pick(acc.roleLabel.ar, acc.roleLabel.en)}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <Check className="size-3.5 text-primary shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => logout()}
+                  className="size-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                  title={t("logout")}
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </>
+            )}
+
+            {!hasOnlyAiPermission && (
+              <>
+                <div className="sm:hidden relative">
+                  <div
+                    className={cn(
+                      "size-7 rounded-full bg-gradient-to-tr text-white flex items-center justify-center font-bold text-[10px] shadow-xs",
+                      currentUser.avatarBg
+                    )}
+                  >
+                    {currentUser.name.ar[0]}
+                  </div>
+                </div>
+                <button
+                  className="size-8 rounded-lg hidden sm:flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  title={pick({ ar: "المزيد", en: "More options" })}
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1382,7 +1508,10 @@ function AiWorkspacePage() {
                 </div>
 
                 <div className="shrink-0">
-                  <QrCodeGraphic value={`${currentDoc.code}|${currentDoc.status}|${currentDoc.total ?? currentDoc.clientName}`} size={52} />
+                  <QrCodeGraphic
+                    value={`https://wazeer-elhelw.com/verify?doc=${currentDoc.code}&status=${encodeURIComponent(currentDoc.status)}&total=${currentDoc.total ?? 0}`}
+                    size={60}
+                  />
                 </div>
               </div>
             </div>
@@ -1559,7 +1688,7 @@ function AiWorkspacePage() {
                   🔧 {pick({ ar: "فحص الاتصال", en: "Run Diagnostics" })}
                 </button>
                 <button
-                  onClick={() => setInputText(pick({ ar: "انشر التحديث السريع v2.4.1 لنقطة البيع", en: "Deploy quick patch v2.4.1 to POS terminal" }))}
+                  onClick={() => setInputText(pick({ ar: "انشر التحديث السريع v1.0.1 لنقطة البيع", en: "Deploy quick patch v1.0.1 to POS terminal" }))}
                   className="px-2.5 py-1 rounded-full bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
                 >
                   ⚡ {pick({ ar: "إرسال التحديث", en: "Deploy Patch" })}

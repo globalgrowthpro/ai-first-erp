@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
   Users,
   UserPlus,
@@ -39,6 +39,7 @@ import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
 import {
   useHrStore,
+  getDefaultAvatar,
   type EmployeeRecord,
   type AttendanceRecord,
   type LeaveRequest,
@@ -79,6 +80,7 @@ export const Route = createFileRoute("/hr")({
 
 function HrPage() {
   const { t, pick, money, dir, lang } = useI18n();
+  const navigate = useNavigate();
 
   const {
     employees,
@@ -644,33 +646,52 @@ function HrPage() {
                   emp.compensation.kpiBonus;
 
                 return (
-                  <tr key={emp.id} className="hover:bg-secondary/50 transition-colors">
+                  <tr
+                    key={emp.id}
+                    className="hover:bg-secondary/50 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      // Don't navigate if clicking action buttons or links
+                      if (target.closest("button, a")) return;
+                      navigate({ to: "/hr/$employeeId", params: { employeeId: emp.id } });
+                    }}
+                  >
                     <Td className="font-mono font-bold text-xs">{emp.code}</Td>
                     <Td>
-                      <div className="flex items-center gap-2.5">
+                      <Link
+                        to="/hr/$employeeId"
+                        params={{ employeeId: emp.id }}
+                        className="flex items-center gap-2.5 hover:text-primary transition-colors group"
+                      >
+                        <img
+                          src={emp.avatarUrl || getDefaultAvatar(emp.gender, emp.code)}
+                          alt={pick(emp.name.ar, emp.name.en)}
+                          className="size-9 rounded-lg object-cover border border-border/80 shrink-0 shadow-xs bg-muted group-hover:ring-2 group-hover:ring-primary/40 transition-all"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const sibling = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (sibling) sibling.style.display = "flex";
+                          }}
+                        />
                         <div
-                          className={`size-8 rounded-lg bg-linear-to-br ${emp.avatarBg} text-white flex items-center justify-center font-bold text-xs shrink-0`}
+                          style={{ display: "none" }}
+                          className={`size-9 rounded-lg bg-linear-to-br ${emp.avatarBg} text-white items-center justify-center font-bold text-xs shrink-0`}
                         >
                           {emp.avatarInitials}
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="font-bold text-ink-foreground text-xs">
-                              {pick(emp.name.ar, emp.name.en)}
-                            </p>
-                            <span className="text-[11px]" title={emp.gender === "female" ? "Female" : "Male"}>
-                              {emp.gender === "female" ? "👩" : "👨"}
-                            </span>
-                          </div>
+                          <p className="font-bold text-foreground text-xs group-hover:text-primary transition-colors">
+                            {pick(emp.name.ar, emp.name.en)}
+                          </p>
                           <p className="text-[10px] text-muted-foreground">
                             {pick(emp.positionName.ar, emp.positionName.en)}
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     </Td>
                     <Td>
                       <div className="text-xs">
-                        <p className="font-medium text-ink-foreground">
+                        <p className="font-medium text-foreground">
                           {pick(emp.departmentName.ar, emp.departmentName.en)}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
@@ -678,22 +699,21 @@ function HrPage() {
                         </p>
                       </div>
                     </Td>
-                    <Td className="text-xs font-medium text-ink-foreground max-w-[140px]">
+                    <Td className="text-xs font-medium text-foreground max-w-[140px]">
                       <span className="block truncate" title={emp.contractType}>
                         {emp.contractType || pick("عقد دائم", "Permanent")}
                       </span>
                     </Td>
                     <Td>
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                          emp.healthCert.status === "valid"
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${emp.healthCert.status === "valid"
                             ? "bg-emerald-500/10 text-emerald-600"
                             : emp.healthCert.status === "expiring_soon"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : emp.healthCert.status === "expired"
-                            ? "bg-rose-500/10 text-rose-600"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+                              ? "bg-amber-500/10 text-amber-600"
+                              : emp.healthCert.status === "expired"
+                                ? "bg-rose-500/10 text-rose-600"
+                                : "bg-muted text-muted-foreground"
+                          }`}
                       >
                         {emp.healthCert.status === "valid" && <ShieldCheck className="size-3" />}
                         {emp.healthCert.status === "expiring_soon" && <Clock className="size-3" />}
@@ -701,40 +721,39 @@ function HrPage() {
                         {emp.healthCert.status === "valid"
                           ? pick("سارية", "Valid")
                           : emp.healthCert.status === "expiring_soon"
-                          ? pick("توشك على الانتهاء", "Expiring Soon")
-                          : emp.healthCert.status === "expired"
-                          ? pick("منتهية!", "Expired!")
-                          : pick("غير مطلوب", "N/A")}
+                            ? pick("توشك على الانتهاء", "Expiring Soon")
+                            : emp.healthCert.status === "expired"
+                              ? pick("منتهية!", "Expired!")
+                              : pick("غير مطلوب", "N/A")}
                       </span>
                     </Td>
                     <Td className="font-mono font-bold text-xs">{money(totalGross)}</Td>
                     <Td>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          emp.status === "active"
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${emp.status === "active"
                             ? "bg-emerald-500/10 text-emerald-600"
                             : emp.status === "on_leave"
-                            ? "bg-blue-500/10 text-blue-600"
-                            : "bg-amber-500/10 text-amber-600"
-                        }`}
+                              ? "bg-blue-500/10 text-blue-600"
+                              : "bg-amber-500/10 text-amber-600"
+                          }`}
                       >
                         {emp.status === "active"
                           ? pick("على رأس العمل", "Active")
                           : emp.status === "on_leave"
-                          ? pick("في إجازة", "On Leave")
-                          : pick("فترة اختبار", "Probation")}
+                            ? pick("في إجازة", "On Leave")
+                            : pick("فترة اختبار", "Probation")}
                       </span>
                     </Td>
                     <Td>
                       <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDetailEmployee(emp)}
+                        <Link
+                          to="/hr/$employeeId"
+                          params={{ employeeId: emp.id }}
                           title={pick("عرض الملف الوظيفي", "View Dossier")}
-                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground inline-flex items-center justify-center"
                         >
                           <Eye className="size-3.5" />
-                        </button>
+                        </Link>
                         <button
                           type="button"
                           onClick={() => {
@@ -870,23 +889,22 @@ function HrPage() {
                   </Td>
                   <Td>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        rec.status === "present"
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${rec.status === "present"
                           ? "bg-emerald-500/10 text-emerald-600"
                           : rec.status === "late"
-                          ? "bg-amber-500/10 text-amber-600"
-                          : rec.status === "on_leave"
-                          ? "bg-blue-500/10 text-blue-600"
-                          : "bg-rose-500/10 text-rose-600"
-                      }`}
+                            ? "bg-amber-500/10 text-amber-600"
+                            : rec.status === "on_leave"
+                              ? "bg-blue-500/10 text-blue-600"
+                              : "bg-rose-500/10 text-rose-600"
+                        }`}
                     >
                       {rec.status === "present"
                         ? pick("حاضر", "Present")
                         : rec.status === "late"
-                        ? pick(`متأخر (${rec.lateMinutes} د)`, `Late (${rec.lateMinutes}m)`)
-                        : rec.status === "on_leave"
-                        ? pick("إجازة", "On Leave")
-                        : pick("غائب", "Absent")}
+                          ? pick(`متأخر (${rec.lateMinutes} د)`, `Late (${rec.lateMinutes}m)`)
+                          : rec.status === "on_leave"
+                            ? pick("إجازة", "On Leave")
+                            : pick("غائب", "Absent")}
                     </span>
                   </Td>
                   <Td className="text-xs text-muted-foreground max-w-xs truncate">
@@ -937,8 +955,8 @@ function HrPage() {
                           {req.leaveType === "annual"
                             ? pick("إجازة سنوية", "Annual Leave")
                             : req.leaveType === "emergency"
-                            ? pick("إجازة عارضة", "Emergency")
-                            : pick("إجازة مرضية", "Sick")}
+                              ? pick("إجازة عارضة", "Emergency")
+                              : pick("إجازة مرضية", "Sick")}
                         </span>
                       </div>
 
@@ -959,7 +977,7 @@ function HrPage() {
                         <Btn
                           size="sm"
                           variant="outline"
-                          onClick={() => rejectLeaveRequest(req.id, "م. حافظ رحيم", "تعذر الموافقة لضغط العمل")}
+                          onClick={() => rejectLeaveRequest(req.id, "م. وزير الحلو", "تعذر الموافقة لضغط العمل")}
                           className="text-xs text-rose-600 hover:bg-rose-50"
                         >
                           <XCircle className="size-3.5" />
@@ -968,7 +986,7 @@ function HrPage() {
                         <Btn
                           size="sm"
                           variant="solid"
-                          onClick={() => approveLeaveRequest(req.id, "م. حافظ رحيم", "تم الاعتماد")}
+                          onClick={() => approveLeaveRequest(req.id, "م. وزير الحلو", "تم الاعتماد")}
                           className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                           <CheckCircle2 className="size-3.5" />
@@ -1003,27 +1021,26 @@ function HrPage() {
                     {l.leaveType === "annual"
                       ? pick("سنوية", "Annual")
                       : l.leaveType === "sick"
-                      ? pick("مرضية", "Sick")
-                      : pick("عارضة", "Emergency")}
+                        ? pick("مرضية", "Sick")
+                        : pick("عارضة", "Emergency")}
                   </Td>
                   <Td className="font-mono text-xs">{l.startDate}</Td>
                   <Td className="font-mono text-xs">{l.endDate}</Td>
                   <Td className="font-mono text-xs font-bold text-center">{l.daysCount}</Td>
                   <Td>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        l.status === "approved"
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${l.status === "approved"
                           ? "bg-emerald-500/10 text-emerald-600"
                           : l.status === "rejected"
-                          ? "bg-rose-500/10 text-rose-600"
-                          : "bg-amber-500/10 text-amber-600"
-                      }`}
+                            ? "bg-rose-500/10 text-rose-600"
+                            : "bg-amber-500/10 text-amber-600"
+                        }`}
                     >
                       {l.status === "approved"
                         ? pick("معتمدة", "Approved")
                         : l.status === "rejected"
-                        ? pick("مرفوضة", "Rejected")
-                        : pick("معلقة", "Pending")}
+                          ? pick("مرفوضة", "Rejected")
+                          : pick("معلقة", "Pending")}
                     </span>
                   </Td>
                   <Td className="text-xs text-muted-foreground">{l.reviewedBy || "—"}</Td>
@@ -1056,19 +1073,18 @@ function HrPage() {
                     </p>
                   </div>
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      run.status === "posted_to_gl"
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${run.status === "posted_to_gl"
                         ? "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30"
                         : run.status === "approved"
-                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
-                        : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30"
-                    }`}
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                          : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                      }`}
                   >
                     {run.status === "posted_to_gl"
                       ? pick("مرحل لدفتر اليومية (GL Posted)", "GL Posted")
                       : run.status === "approved"
-                      ? pick("معتمد (Approved)", "Approved")
-                      : pick("مسودة (Draft)", "Draft")}
+                        ? pick("معتمد (Approved)", "Approved")
+                        : pick("مسودة (Draft)", "Draft")}
                   </span>
                 </div>
 
@@ -1171,15 +1187,14 @@ function HrPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <div
-                      className={`size-8 rounded-lg flex items-center justify-center ${
-                        ins.type === "warning"
+                      className={`size-8 rounded-lg flex items-center justify-center ${ins.type === "warning"
                           ? "bg-rose-500/10 text-rose-600"
                           : ins.type === "action"
-                          ? "bg-amber-500/10 text-amber-600"
-                          : ins.type === "success"
-                          ? "bg-emerald-500/10 text-emerald-600"
-                          : "bg-blue-500/10 text-blue-600"
-                      }`}
+                            ? "bg-amber-500/10 text-amber-600"
+                            : ins.type === "success"
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : "bg-blue-500/10 text-blue-600"
+                        }`}
                     >
                       <Sparkles className="size-4" />
                     </div>

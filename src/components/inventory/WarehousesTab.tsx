@@ -17,6 +17,7 @@ import {
   Store,
   ChefHat,
   Warehouse,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn } from "@/components/kit";
@@ -39,6 +40,7 @@ interface WarehousesTabProps {
   onAddWarehouse: (wh: Omit<InventoryWarehouse, "id">) => void;
   onUpdateWarehouse: (id: string, updates: Partial<InventoryWarehouse>) => void;
   onDeleteWarehouse: (id: string) => void;
+  onOpenImport?: () => void;
 }
 
 export function WarehousesTab({
@@ -47,6 +49,7 @@ export function WarehousesTab({
   onAddWarehouse,
   onUpdateWarehouse,
   onDeleteWarehouse,
+  onOpenImport,
 }: WarehousesTabProps) {
   const { t, pick, n, dir } = useI18n();
 
@@ -214,11 +217,23 @@ export function WarehousesTab({
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
+            {onOpenImport && (
+              <Btn
+                variant="outline"
+                size="sm"
+                onClick={onOpenImport}
+                className="gap-1.5 shadow-xs text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+              </Btn>
+            )}
+
             <Btn
               variant="primary"
               size="sm"
               onClick={openAddModal}
-              className="gap-1.5 shadow-sm text-xs font-semibold"
+              className="gap-1.5 shadow-sm text-xs font-semibold cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>

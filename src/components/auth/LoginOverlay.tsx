@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Lock,
   Mail,
@@ -9,19 +9,98 @@ import {
   Boxes,
   Building2,
   Check,
-  ArrowRight,
   Sparkles,
   KeyRound,
   AlertCircle,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore, type DemoUser } from "@/lib/auth-store";
+import { cn } from "@/lib/utils";
 
 interface LoginOverlayProps {
   onLoginSuccess?: () => void;
 }
+
+const SLIDER_IMAGES = [
+  {
+    src: "/wazeer.png",
+    tag: { ar: "حلويات شرقية فاخرة", en: "Royal Confectionery" },
+    title: {
+      ar: "حلويات شرقية فاخرة وتراث مصري عريق",
+      en: "Authentic Luxury Oriental Sweets & Heritage",
+    },
+    subtitle: {
+      ar: "صناعة الحلويات الملكية بأجود خامات السمن البلدي والفستق الحلبي بإشراف كبار الشيفات.",
+      en: "Crafting royal confectionery using pure baladi ghee and the finest pistachios under master chef supervision.",
+    },
+  },
+  {
+    src: "/wazeer1.png",
+    tag: { ar: "تشكيلات الهدايا", en: "Gift Collections" },
+    title: {
+      ar: "علب المناسبات وضيافة الفنادق الراقية",
+      en: "Luxury Event Boxes & Hotel Hospitality",
+    },
+    subtitle: {
+      ar: "تغليف استثنائي وتشكيلات فاخرة تلبي كبرى المؤتمرات وحفلات الاستقبال في الجمهورية.",
+      en: "Exquisite gift packaging and royal platters catering to prestigious hotels, banquets, and summits.",
+    },
+  },
+  {
+    src: "/wazeer2.png",
+    tag: { ar: "المطبخ المركزي", en: "Central Factory" },
+    title: {
+      ar: "مطبخ مركزي ذكي بخطوط إنتاج مؤتمتة",
+      en: "Automated Central Kitchen & Batch Precision",
+    },
+    subtitle: {
+      ar: "تخطيط دقيق لجميع مراحل التصنيع (BOM) والتحكم الرقمي في درجات الخبز وأوزان العبوات.",
+      en: "Real-time production recipes (BOM), automated ingredient distribution, and hygienic batch control.",
+    },
+  },
+  {
+    src: "/wazeer3.png",
+    tag: { ar: "سلاسل الإمداد", en: "Cold Chain Supply" },
+    title: {
+      ar: "سلاسل إمداد مبردة ومستودعات مركزية",
+      en: "Integrated Cold Hubs & Supply Chain Network",
+    },
+    subtitle: {
+      ar: "مراقبة درجات الحرارة والأرصدة لحظة بلحظة مع تدوير المخزون (FIFO) بين المستودعات والفروع.",
+      en: "Continuous cold-hub telemetry, FIFO stock rotation, and real-time automated branch replenishment.",
+    },
+  },
+  {
+    src: "/wazeer4.png",
+    tag: { ar: "ذكاء تشغيلي", en: "AI Operating Layer" },
+    title: {
+      ar: "منظومة تخطيط الموارد المدعومة بالذكاء الاصطناعي",
+      en: "AI-First Enterprise Resource Planning",
+    },
+    subtitle: {
+      ar: "وكلاء تشغيليون متخصصون للمبيعات والمشتريات والمخازن لتحليل الطلب وأتمتة القرارات.",
+      en: "Autonomous AI sentinels across sales, finance, and logistics providing predictive insights and decision support.",
+    },
+  },
+  {
+    src: "/wazeer5.png",
+    tag: { ar: "انتشار الفروع", en: "Nationwide Reach" },
+    title: {
+      ar: "شبكة فروع واسعة وخدمة توريد متكاملة",
+      en: "Extensive Branch Network & Daily Logistics",
+    },
+    subtitle: {
+      ar: "ربط رقمي لحظي بين فروع الكوربة والمعادي والتجمع والساحل لتحديث المبيعات فورا.",
+      en: "Instant point-of-sale synchronization across Korba, Maadi, New Cairo, and North Coast outlets.",
+    },
+  },
+];
 
 export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const { pick, dir, lang } = useI18n();
@@ -33,8 +112,29 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
+  // Slider state
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-slide every 5 seconds unless paused
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % SLIDER_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
+  const handleNext = () => {
+    setActiveSlide((prev) => (prev + 1) % SLIDER_IMAGES.length);
+  };
+
+  const handlePrev = () => {
+    setActiveSlide((prev) => (prev - 1 + SLIDER_IMAGES.length) % SLIDER_IMAGES.length);
+  };
+
   const companyLogo = settings.logoUrl || "/wazeer-logo.png";
+  const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
 
   const handleManualLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,151 +160,245 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
     onLoginSuccess?.();
   };
 
+  const currentSlide = SLIDER_IMAGES[activeSlide] ?? SLIDER_IMAGES[0]!;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-md p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/85 backdrop-blur-md p-3 sm:p-4 overflow-hidden select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       dir={dir}
     >
-      <div className="w-full max-w-4xl my-auto grid lg:grid-cols-12 rounded-3xl border border-border/40 bg-card shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Left Side (Desktop): Branding & Graphic */}
-        <div className="lg:col-span-5 gradient-ink p-8 flex flex-col justify-between text-white relative overflow-hidden">
-          <div className="absolute -top-12 -start-12 size-48 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute -bottom-12 -end-12 size-48 rounded-full bg-amber-500/20 blur-3xl" />
+      {/* Expanded wide container (max-w-6xl on desktop, max-w-7xl on XL) - No scrollbar */}
+      <div className="w-full max-w-6xl xl:max-w-7xl my-auto grid lg:grid-cols-12 rounded-3xl border border-border/50 bg-card shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* ============================================================ */}
+        {/* Left Side (Desktop): Extended Image Slider Showcase (8 cols) */}
+        {/* ============================================================ */}
+        <div
+          className="lg:col-span-7 xl:col-span-8 relative flex flex-col justify-between p-5 sm:p-7 text-white min-h-[300px] lg:min-h-[580px] overflow-hidden select-none bg-zinc-950"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          {/* Background Images Slider with object-contain */}
+          {SLIDER_IMAGES.map((item, idx) => {
+            const isActive = idx === activeSlide;
+            return (
+              <div
+                key={item.src}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-1000 ease-in-out flex items-center justify-center",
+                  isActive ? "opacity-100 z-0" : "opacity-0 -z-10 pointer-events-none"
+                )}
+              >
+                {/* Subtle ambient blur of the same image */}
+                <img
+                  src={item.src}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110"
+                />
 
-          <div className="relative z-10 space-y-6 flex flex-col items-center text-center">
-            <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-xl w-full max-w-[240px] flex items-center justify-center transition-transform hover:scale-105">
-              <img
-                src={companyLogo}
-                alt={companyName}
-                className="h-20 sm:h-24 w-auto object-contain"
-              />
+                {/* Primary full image in contain format - uncropped */}
+                <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-10 lg:p-12 pb-24 sm:pb-28">
+                  <img
+                    src={item.src}
+                    alt={pick(item.title.ar, item.title.en)}
+                    className={cn(
+                      "w-full h-full object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)] transition-all duration-700 ease-out",
+                      isActive ? "scale-100 opacity-100" : "scale-95 opacity-0"
+                    )}
+                  />
+                </div>
+
+                {/* Dark Gradient Overlay for Maximum Readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/40 pointer-events-none" />
+              </div>
+            );
+          })}
+
+          {/* Top Bar: Slider Counter & Play/Pause */}
+          <div className="relative z-10 flex items-center justify-end">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 px-2.5 py-1 text-xs text-white shadow-lg">
+              <span className="font-mono text-xs font-bold text-amber-400">0{activeSlide + 1}</span>
+              <span className="text-white/40">/</span>
+              <span className="font-mono text-xs text-white/60">0{SLIDER_IMAGES.length}</span>
+              <button
+                type="button"
+                onClick={() => setIsPaused((prev) => !prev)}
+                className="ms-1 p-0.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+                title={isPaused ? pick("تشغيل العرض التلقائي", "Resume Autoplay") : pick("إيقاف مؤقت", "Pause Autoplay")}
+              >
+                {isPaused ? <Play className="size-3 fill-current" /> : <Pause className="size-3 fill-current" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Middle/Bottom: Active Slide Caption & Navigation */}
+          <div className="relative z-10 space-y-3 pt-6 sm:pt-12">
+            {/* Tag Badge */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-300 text-[11px] font-bold">
+              <Sparkles className="size-2.5" />
+              <span>{pick(currentSlide.tag.ar, currentSlide.tag.en)}</span>
             </div>
 
-            <div>
-              <h2 className="text-xl font-black tracking-tight">{companyName}</h2>
-              <p className="text-xs text-white/75 mt-1.5 leading-relaxed max-w-xs mx-auto">
+            {/* Slide Title & Subtitle */}
+            <div className="space-y-1.5">
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-snug drop-shadow-md">
+                {pick(currentSlide.title.ar, currentSlide.title.en)}
+              </h3>
+              <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-xl drop-shadow line-clamp-2 sm:line-clamp-none">
+                {pick(currentSlide.subtitle.ar, currentSlide.subtitle.en)}
+              </p>
+            </div>
+
+            {/* Navigation Dots & Arrow Buttons */}
+            <div className="flex items-center justify-between pt-1">
+              {/* Dots Indicator */}
+              <div className="flex items-center gap-1.5">
+                {SLIDER_IMAGES.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveSlide(idx)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                      idx === activeSlide
+                        ? "w-7 bg-amber-400 shadow-sm"
+                        : "w-2 bg-white/40 hover:bg-white/70"
+                    )}
+                    title={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* Prev / Next Arrows */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  className="size-8 rounded-full bg-black/50 hover:bg-white/20 border border-white/25 text-white flex items-center justify-center backdrop-blur-md transition-colors shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+                  title={pick("السابق", "Previous")}
+                >
+                  {dir === "rtl" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="size-8 rounded-full bg-black/50 hover:bg-white/20 border border-white/25 text-white flex items-center justify-center backdrop-blur-md transition-colors shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+                  title={pick("التالي", "Next")}
+                >
+                  {dir === "rtl" ? <ChevronLeft className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Developer Credit Footer */}
+            <div className="pt-2.5 border-t border-white/15 flex items-center justify-between text-[10px] text-white/75">
+              <a
+                href="https://odooteams.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-white transition-colors group underline-offset-4 hover:underline"
+                title="https://odooteams.com"
+              >
+                <span>Developer: Mr.Hafez Rahim</span>
+                <ExternalLink className="size-2.5 text-white/70 group-hover:text-white transition-colors shrink-0" />
+              </a>
+              <span className="text-white/50 font-mono">Wazeer El-Helw ERP v1.0</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================ */}
+        {/* Right Side: Login Form & 1-Click Demo Accounts (Compact 4 cols) */}
+        {/* ============================================================ */}
+        <div className="lg:col-span-5 xl:col-span-4 p-4 sm:p-5 space-y-2.5 bg-card flex flex-col justify-between">
+          <div>
+            {/* Form Header - Centered with Logo */}
+            <div className="flex flex-col items-center text-center pb-1">
+              <div className="mb-2 p-1.5 px-3 rounded-2xl bg-white shadow-xs border border-border/50 inline-flex items-center justify-center">
+                <img
+                  src={companyLogo}
+                  alt={companyName}
+                  className="h-9 sm:h-10 w-auto max-w-[130px] object-contain"
+                />
+              </div>
+              <h1 className="text-lg font-black text-foreground tracking-tight">
+                {pick("تسجيل الدخول للنظام", "Sign In to ERP Workspace")}
+              </h1>
+              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
                 {pick(
-                  "نظام إدارة الموارد وتخطيط الإنتاج المدعوم بطبقة الذكاء الاصطناعي التشغيلي.",
-                  "AI-First Enterprise Resource Planning & Confectionery Manufacturing."
+                  "أدخل بياناتك أو اختر أحد الحسابات التجريبية للدخول الفوري",
+                  "Enter credentials or select a 1-click demo role below"
                 )}
               </p>
             </div>
 
-            <div className="w-full space-y-2.5 pt-2 text-xs text-white/85 text-start">
-              <div className="flex items-center gap-2">
-                <div className="size-5 rounded-full bg-white/10 flex items-center justify-center text-amber-400">
-                  <Sparkles className="size-3" />
-                </div>
-                <span>{pick("وكلاء ذكاء للمبيعات، المخزون، والرقابة", "Dedicated AI Operating Sentinels")}</span>
+            {error && (
+              <div className="mt-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="size-3.5 shrink-0" />
+                <span>{error}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="size-5 rounded-full bg-white/10 flex items-center justify-center text-emerald-400">
-                  <Check className="size-3" />
+            )}
+
+            {/* Manual Form */}
+            <form onSubmit={handleManualLogin} className="space-y-2.5 mt-3">
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground mb-0.5">
+                  {pick("البريد الإلكتروني", "Email Address")}
+                </label>
+                <div className="relative">
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
+                  />
                 </div>
-                <span>{pick("مسار تشغيل 5 مراحل للمطبخ المركزي", "5-Stage Central Kitchen Manufacturing")}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="size-5 rounded-full bg-white/10 flex items-center justify-center text-blue-400">
-                  <ShieldCheck className="size-3" />
+
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground mb-0.5">
+                  {pick("كلمة المرور", "Password")}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
+                  />
                 </div>
-                <span>{pick("سجل تدقيق كامل مشفر ومصفحات أمنية", "Immutable Security & AI Audit Trail")}</span>
               </div>
-            </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-1"
+              >
+                <KeyRound className="size-3.5" />
+                <span>{loading ? pick("جاري التحقق...", "Signing in...") : pick("تسجيل الدخول", "Sign In")}</span>
+              </button>
+            </form>
           </div>
 
-          <div className="relative z-10 pt-8 border-t border-white/15 text-[11px] text-white/80 flex items-center justify-between">
-            <a
-              href="https://odooteams.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 hover:text-white transition-colors group underline-offset-4 hover:underline"
-              title="https://odooteams.com"
-            >
-              <span>Developer: Mr.Hafez Rahim</span>
-              <ExternalLink className="size-3 text-white/70 group-hover:text-white transition-colors shrink-0" />
-            </a>
-            <span className="text-white/40 text-[10px]">Hafez ERP</span>
-          </div>
-        </div>
-
-        {/* Right Side: Login Form & 1-Click Demo Accounts */}
-        <div className="lg:col-span-7 p-6 sm:p-8 space-y-6 bg-card">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">
-              {pick("تسجيل الدخول للنظام", "Sign In to ERP Workspace")}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {pick(
-                "أدخل بيانات حسابك أو اختر أحد الحسابات التجريبية الجاهزة بالأسفل",
-                "Enter your credentials or pick a demo account below"
-              )}
-            </p>
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleManualLogin} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-bold text-muted-foreground mb-1">
-                {pick("البريد الإلكتروني", "Email Address")}
-              </label>
-              <div className="relative">
-                <Mail className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-3 py-2 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-muted-foreground mb-1">
-                {pick("كلمة المرور", "Password")}
-              </label>
-              <div className="relative">
-                <Lock className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-3 py-2 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 transition-opacity flex items-center justify-center gap-2"
-            >
-              <KeyRound className="size-4" />
-              <span>{loading ? pick("جاري التحقق...", "Signing in...") : pick("دخول", "Sign In")}</span>
-            </button>
-          </form>
-
-          {/* Quick Demo Accounts List */}
-          <div className="space-y-2.5 pt-4 border-t border-border/60">
+          {/* Quick Demo Accounts List - Sized to fit all 6 cards with ZERO scrollbar */}
+          <div className="space-y-2 pt-3 border-t border-border/60">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <User className="size-3.5 text-primary" />
-                <span>{pick("الحسابات التجريبية الجاهزة (1-Click Demo Accounts)", "Ready Demo Accounts")}</span>
+                <span>{pick("الحسابات التجريبية (1-Click Login)", "Ready Demo Accounts")}</span>
               </span>
               <span className="text-[10px] text-muted-foreground">
-                {pick("انقر على أي حساب للدخول الفوري", "Click any card to sign in")}
+                {pick("دخول فوري بنقرة واحدة", "1-click instant login")}
               </span>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 max-h-56 overflow-y-auto pr-1">
+            {/* Complete 6-card 2-column grid without any scrollbar */}
+            <div className="grid gap-1.5 sm:grid-cols-2">
               {demoAccounts.map((account) => {
                 let RoleIcon = User;
                 if (account.role === "admin") RoleIcon = ShieldCheck;
@@ -221,32 +415,30 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                     key={account.id}
                     type="button"
                     onClick={() => handleQuickDemoLogin(account)}
-                    className={`group p-2.5 rounded-xl border text-start transition-all flex items-start gap-2.5 hover:shadow-md cursor-pointer ${
+                    className={cn(
+                      "group p-2 rounded-xl border text-start transition-all flex items-center gap-2 hover:shadow-xs cursor-pointer",
                       isCurrent
-                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
                         : "border-border/70 bg-card hover:bg-secondary/70 hover:border-primary/50"
-                    }`}
+                    )}
                   >
                     <div
-                      className={`size-8 rounded-lg bg-gradient-to-tr ${account.avatarBg} text-white flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-105`}
+                      className={`size-7 rounded-lg bg-gradient-to-tr ${account.avatarBg} text-white flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-105`}
                     >
-                      <RoleIcon className="size-4" />
+                      <RoleIcon className="size-3.5" />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-bold text-foreground truncate">
+                        <p className="text-[11px] font-bold text-foreground truncate">
                           {pick(account.name.ar, account.name.en)}
                         </p>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+                        <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
                           {pick("دخول", "Login")}
                         </span>
                       </div>
-                      <p className="text-[10px] font-semibold text-primary truncate">
+                      <p className="text-[9px] font-semibold text-primary truncate leading-tight">
                         {pick(account.roleLabel.ar, account.roleLabel.en)}
-                      </p>
-                      <p className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
-                        {account.email}
                       </p>
                     </div>
                   </button>

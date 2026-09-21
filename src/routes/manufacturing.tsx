@@ -368,6 +368,7 @@ function ManufacturingPage() {
           boms={boms}
           products={products}
           units={units}
+          warehouses={warehouses}
           onAddBom={addBom}
           onUpdateBom={updateBom}
           onDeleteBom={deleteBom}

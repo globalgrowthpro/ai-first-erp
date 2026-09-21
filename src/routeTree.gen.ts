@@ -22,6 +22,9 @@ import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SalesRouteImport } from './routes/sales'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as HrEmployeeIdRouteImport } from './routes/hr_.$employeeId'
+import { Route as PurchasesOrderIdRouteImport } from './routes/purchases_.$orderId'
+import { Route as SalesInvoiceIdRouteImport } from './routes/sales_.$invoiceId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +91,21 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HrEmployeeIdRoute = HrEmployeeIdRouteImport.update({
+  id: '/hr_/$employeeId',
+  path: '/hr/$employeeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PurchasesOrderIdRoute = PurchasesOrderIdRouteImport.update({
+  id: '/purchases_/$orderId',
+  path: '/purchases/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SalesInvoiceIdRoute = SalesInvoiceIdRouteImport.update({
+  id: '/sales_/$invoiceId',
+  path: '/sales/$invoiceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +121,9 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/hr/$employeeId': typeof HrEmployeeIdRoute
+  '/purchases/$orderId': typeof PurchasesOrderIdRoute
+  '/sales/$invoiceId': typeof SalesInvoiceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +139,9 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/hr/$employeeId': typeof HrEmployeeIdRoute
+  '/purchases/$orderId': typeof PurchasesOrderIdRoute
+  '/sales/$invoiceId': typeof SalesInvoiceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +158,9 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/hr_/$employeeId': typeof HrEmployeeIdRoute
+  '/purchases_/$orderId': typeof PurchasesOrderIdRoute
+  '/sales_/$invoiceId': typeof SalesInvoiceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +178,9 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/hr/$employeeId'
+    | '/purchases/$orderId'
+    | '/sales/$invoiceId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +196,9 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/hr/$employeeId'
+    | '/purchases/$orderId'
+    | '/sales/$invoiceId'
   id:
     | '__root__'
     | '/'
@@ -181,6 +214,9 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/hr_/$employeeId'
+    | '/purchases_/$orderId'
+    | '/sales_/$invoiceId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +233,9 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRoute
+  HrEmployeeIdRoute: typeof HrEmployeeIdRoute
+  PurchasesOrderIdRoute: typeof PurchasesOrderIdRoute
+  SalesInvoiceIdRoute: typeof SalesInvoiceIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +331,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hr_/$employeeId': {
+      id: '/hr_/$employeeId'
+      path: '/hr/$employeeId'
+      fullPath: '/hr/$employeeId'
+      preLoaderRoute: typeof HrEmployeeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchases_/$orderId': {
+      id: '/purchases_/$orderId'
+      path: '/purchases/$orderId'
+      fullPath: '/purchases/$orderId'
+      preLoaderRoute: typeof PurchasesOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sales_/$invoiceId': {
+      id: '/sales_/$invoiceId'
+      path: '/sales/$invoiceId'
+      fullPath: '/sales/$invoiceId'
+      preLoaderRoute: typeof SalesInvoiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +369,9 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRoute,
+  HrEmployeeIdRoute: HrEmployeeIdRoute,
+  PurchasesOrderIdRoute: PurchasesOrderIdRoute,
+  SalesInvoiceIdRoute: SalesInvoiceIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

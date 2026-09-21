@@ -241,7 +241,7 @@ export const INITIAL_AUDIT_LOGS: AuditEntry[] = [
     timestamp: "2026-09-09 14:15:30",
     actorType: "human",
     user: {
-      ar: "م. حافظ رحيم",
+      ar: "م. وزير الحلو",
       en: "Mr. Hafez Rahim",
       role: "المدير العام والمسؤول التقني",
       ip: "197.38.102.14 (HQ Administrator)",

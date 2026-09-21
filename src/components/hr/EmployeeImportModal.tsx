@@ -196,11 +196,11 @@ export function EmployeeImportModal({
                           <td className="px-3 py-2 font-mono text-muted-foreground font-semibold">
                             {emp.code}
                           </td>
-                          <td className="px-3 py-2 font-bold text-ink-foreground">
+                          <td className="px-3 py-2 font-bold text-foreground">
                             {emp.name.ar}
                           </td>
-                          <td className="px-3 py-2">
-                            {emp.gender === "female" ? "👩 أنثى" : "👨 ذكر"}
+                          <td className="px-3 py-2 text-foreground">
+                            {emp.gender === "female" ? pick("أنثى", "Female") : pick("ذكر", "Male")}
                           </td>
                           <td className="px-3 py-2 text-muted-foreground">
                             {emp.departmentName.ar}

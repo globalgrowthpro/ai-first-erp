@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Users,
   Building2,
@@ -16,6 +16,9 @@ import {
   Filter,
   DollarSign,
   Briefcase,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
@@ -25,9 +28,15 @@ import {
   type PartnerType,
 } from "@/lib/partners-store";
 import { PartnerFormModal } from "@/components/partners/PartnerFormModal";
-import { PartnerDetailModal } from "@/components/partners/PartnerDetailModal";
+import { PartnerDetailPage } from "@/components/partners/PartnerDetailPage";
 
 export const Route = createFileRoute("/partners")({
+  validateSearch: (search: Record<string, unknown>): { id?: string | undefined } => {
+    const rawId = search["id"];
+    return {
+      id: typeof rawId === "string" ? rawId : undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Customers & Suppliers — Wazeer ERP" },
@@ -48,13 +57,18 @@ export const Route = createFileRoute("/partners")({
 });
 
 function PartnersPage() {
-  const { t, pick, money } = useI18n();
+  const { t, pick, money, dir } = useI18n();
+  const isRtl = dir === "rtl";
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+
   const {
     partners,
     addPartner,
     updatePartner,
     deletePartner,
     toggleStatus,
+    recordPayment,
   } = usePartnersStore();
 
   const [activeFilter, setActiveFilter] = useState<
@@ -62,11 +76,60 @@ function PartnersPage() {
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modals
+  // Edit / Create Modal state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedPartnerForDetail, setSelectedPartnerForDetail] =
-    useState<Partner | null>(null);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+
+  // Active partner for the dedicated full details page
+  const activePartner = useMemo(() => {
+    if (!search.id) return null;
+    const q = decodeURIComponent(String(search.id)).toLowerCase().trim();
+    if (!q) return null;
+
+    // 1. Direct match by ID, Code, or Transaction Document Ref (INV-XXXX, PO-XXXX)
+    const directMatch = partners.find(
+      (p) =>
+        p.id.toLowerCase() === q ||
+        p.code.toLowerCase() === q ||
+        p.transactions?.some(
+          (tx) =>
+            tx.docRef?.toLowerCase() === q ||
+            q.includes(tx.docRef?.toLowerCase() || "___")
+        )
+    );
+    if (directMatch) return directMatch;
+
+    // 2. Full Name / Substring Match
+    const nameMatch = partners.find(
+      (p) =>
+        p.name.ar.toLowerCase().includes(q) ||
+        p.name.en.toLowerCase().includes(q) ||
+        q.includes(p.name.ar.toLowerCase()) ||
+        q.includes(p.name.en.toLowerCase()) ||
+        (p.name.ar.split("—")[0]?.trim() &&
+          q.includes(p.name.ar.split("—")[0]!.trim().toLowerCase())) ||
+        (p.name.en.split("—")[0]?.trim() &&
+          q.includes(p.name.en.split("—")[0]!.trim().toLowerCase()))
+    );
+    if (nameMatch) return nameMatch;
+
+    // 3. Keyword / Token matching (e.g., "لوسيل", "فيريرو", "الماسة", "سيزار", "دينا", "الدلتا")
+    const words = q
+      .split(/[\s—\-،,]+/)
+      .map((w) => w.trim().toLowerCase())
+      .filter((w) => w.length >= 3 && !["شركة", "فندق", "مطعم", "مؤسسة", "مكتب", "توريد"].includes(w));
+
+    if (words.length > 0) {
+      const tokenMatch = partners.find((p) => {
+        const ar = p.name.ar.toLowerCase();
+        const en = p.name.en.toLowerCase();
+        return words.some((w) => ar.includes(w) || en.includes(w));
+      });
+      if (tokenMatch) return tokenMatch;
+    }
+
+    return null;
+  }, [search.id, partners]);
 
   // Financial Aggregations
   const totalCustomers = partners.filter((p) => p.type === "customer").length;
@@ -102,6 +165,72 @@ function PartnersPage() {
     });
   }, [partners, activeFilter, searchQuery]);
 
+  // If search.id is provided and partner is found, render the DEDICATED FULL DETAILS PAGE!
+  if (search.id && activePartner) {
+    return (
+      <>
+        <PartnerDetailPage
+          partner={activePartner}
+          onBack={() => navigate({ search: {} })}
+          onEdit={(partner) => {
+            setEditingPartner(partner);
+            setIsFormModalOpen(true);
+          }}
+          onToggleStatus={(id) => toggleStatus(id)}
+          onRecordPayment={(partnerId, params) => recordPayment(partnerId, params)}
+        />
+
+        {/* Edit / Add Modal */}
+        <PartnerFormModal
+          open={isFormModalOpen}
+          onClose={() => {
+            setIsFormModalOpen(false);
+            setEditingPartner(null);
+          }}
+          onSubmit={(partnerData) => {
+            if (editingPartner) {
+              updatePartner(editingPartner.id, partnerData);
+            } else {
+              addPartner(partnerData);
+            }
+          }}
+          editingPartner={editingPartner}
+        />
+      </>
+    );
+  }
+
+  // If search.id was provided but not found
+  if (search.id && !activePartner) {
+    return (
+      <div className="space-y-6">
+        <div className="p-8 rounded-2xl border border-border bg-card text-center space-y-4 max-w-lg mx-auto mt-12">
+          <div className="size-14 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
+            <AlertCircle className="size-8" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">
+            {pick("لم يتم العثور على الشريك المطلوب", "Partner Not Found")}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {pick(
+              `لا توجد سجلات تطابق المعرف (${search.id}). ربما تم حذفه أو تغييره.`,
+              `No records found matching ID (${search.id}). It may have been removed.`
+            )}
+          </p>
+          <Btn
+            variant="solid"
+            onClick={() => navigate({ search: {} })}
+            className="gap-2 mx-auto"
+          >
+            {isRtl ? <ArrowRight className="size-4" /> : <ArrowLeft className="size-4" />}
+            <span>{pick("العودة لدليل الشركاء", "Back to Partners Directory")}</span>
+          </Btn>
+        </div>
+      </div>
+    );
+  }
+
+  // Directory Table View
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -171,7 +300,7 @@ function PartnersPage() {
             <button
               key={item.id}
               onClick={() => setActiveFilter(item.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeFilter === item.id
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -239,26 +368,52 @@ function PartnersPage() {
                   return (
                     <tr key={p.id} className="hover:bg-secondary/40 transition-colors">
                       {/* Code */}
-                      <td className="p-3 font-mono font-bold text-primary">
-                        {p.code}
+                      <td className="p-3">
+                        <button
+                          onClick={() => navigate({ search: { id: p.id } })}
+                          className="font-mono font-bold text-primary hover:underline cursor-pointer"
+                          title={pick("الانتقال لصفحة التفاصيل", "Go to details page")}
+                        >
+                          {p.code}
+                        </button>
                       </td>
 
                       {/* Name & Group */}
                       <td className="p-3">
-                        <button
-                          onClick={() => setSelectedPartnerForDetail(p)}
-                          className="font-bold text-foreground text-start hover:text-primary transition-colors block"
-                        >
-                          {pick(p.name.ar, p.name.en)}
-                        </button>
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
-                          {p.contactPerson && <span>{p.contactPerson}</span>}
-                          {p.taxNumber && (
-                            <>
-                              <span>•</span>
-                              <span className="font-mono">{p.taxNumber}</span>
-                            </>
-                          )}
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-8 rounded-lg bg-card border border-border/80 p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                            {p.logo ? (
+                              <img src={p.logo} alt="" className="size-full object-contain rounded-md" />
+                            ) : (
+                              <div
+                                className={`size-full rounded-md flex items-center justify-center ${
+                                  p.type === "customer" ? "bg-brand/10 text-brand" : "bg-gold/20 text-gold-foreground"
+                                }`}
+                              >
+                                {p.type === "customer" ? <Building2 className="size-4" /> : <Users className="size-4" />}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <button
+                              onClick={() => navigate({ search: { id: p.id } })}
+                              className="font-bold text-foreground text-start hover:text-primary transition-colors block cursor-pointer hover:underline"
+                              title={pick("الانتقال لصفحة التفاصيل", "Go to details page")}
+                            >
+                              {pick(p.name.ar, p.name.en)}
+                            </button>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                              {p.contactPerson && <span>{p.contactPerson}</span>}
+                              {p.taxNumber && (
+                                <>
+                                  <span>•</span>
+                                  <span dir="ltr" className="font-mono tabular-nums" style={{ unicodeBidi: "isolate" }}>
+                                    {p.taxNumber}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </td>
 
@@ -278,10 +433,12 @@ function PartnersPage() {
 
                       {/* Phone & Shortcuts */}
                       <td className="p-3">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5" dir="ltr">
                           <a
                             href={`tel:${cleanPhone}`}
-                            className="font-mono text-muted-foreground hover:text-foreground font-medium"
+                            dir="ltr"
+                            className="font-mono text-muted-foreground hover:text-foreground font-medium tabular-nums"
+                            style={{ unicodeBidi: "isolate" }}
                           >
                             {p.phone}
                           </a>
@@ -289,7 +446,7 @@ function PartnersPage() {
                             href={`https://wa.me/${cleanPhone}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="size-5 rounded bg-emerald-500/10 text-emerald-600 flex items-center justify-center hover:bg-emerald-500/20"
+                            className="size-5 rounded bg-emerald-500/10 text-emerald-600 flex items-center justify-center hover:bg-emerald-500/20 shrink-0"
                             title="WhatsApp"
                           >
                             <MessageCircle className="size-3" />
@@ -332,9 +489,9 @@ function PartnersPage() {
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => setSelectedPartnerForDetail(p)}
-                            title={pick("عرض التفاصيل وكشف الحساب", "View details")}
-                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                            onClick={() => navigate({ search: { id: p.id } })}
+                            title={pick("عرض صفحة التفاصيل وكشف الحساب", "View details page")}
+                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors cursor-pointer"
                           >
                             <Eye className="size-3.5" />
                           </button>
@@ -344,14 +501,14 @@ function PartnersPage() {
                               setIsFormModalOpen(true);
                             }}
                             title={pick("تعديل", "Edit")}
-                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                           >
                             <Edit2 className="size-3.5" />
                           </button>
                           <button
                             onClick={() => deletePartner(p.id)}
                             title={pick("حذف", "Delete")}
-                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-rose-600 transition-colors"
+                            className="size-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-rose-600 transition-colors cursor-pointer"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -366,7 +523,7 @@ function PartnersPage() {
         </div>
       </Panel>
 
-      {/* Modals */}
+      {/* Create / Edit Form Modal */}
       <PartnerFormModal
         open={isFormModalOpen}
         onClose={() => {
@@ -381,24 +538,6 @@ function PartnersPage() {
           }
         }}
         editingPartner={editingPartner}
-      />
-
-      <PartnerDetailModal
-        partner={selectedPartnerForDetail}
-        open={!!selectedPartnerForDetail}
-        onClose={() => setSelectedPartnerForDetail(null)}
-        onEdit={(partner) => {
-          setEditingPartner(partner);
-          setIsFormModalOpen(true);
-        }}
-        onToggleStatus={(id) => {
-          toggleStatus(id);
-          setSelectedPartnerForDetail((prev) =>
-            prev && prev.id === id
-              ? { ...prev, status: prev.status === "active" ? "inactive" : "active" }
-              : prev
-          );
-        }}
       />
     </div>
   );

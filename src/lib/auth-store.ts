@@ -17,7 +17,7 @@ export interface DemoUser {
 export const DEMO_ACCOUNTS: DemoUser[] = [
   {
     id: "usr-admin",
-    name: { ar: "م. حافظ رحيم", en: "Mr. Hafez Rahim" },
+    name: { ar: "م. وزير الحلو", en: "Mr. Hafez Rahim" },
     email: "admin@wazeer-elhelw.com",
     password: "admin123",
     role: "admin",

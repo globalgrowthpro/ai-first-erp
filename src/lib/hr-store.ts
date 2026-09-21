@@ -49,6 +49,7 @@ export interface EmployeeRecord {
   status: EmployeeStatus;
   avatarBg: string;
   avatarInitials: string;
+  avatarUrl?: string;
   compensation: CompensationDetails;
   bank: BankDetails;
   healthCert: {
@@ -160,10 +161,42 @@ export interface HrAiInsight {
   actionKey?: string;
 }
 
-const STORAGE_KEY_EMPLOYEES = "wazeer_erp_hr_employees_v1";
+const STORAGE_KEY_EMPLOYEES = "wazeer_erp_hr_employees_v2";
 const STORAGE_KEY_ATTENDANCE = "wazeer_erp_hr_attendance_v1";
 const STORAGE_KEY_LEAVES = "wazeer_erp_hr_leaves_v1";
 const STORAGE_KEY_PAYROLL = "wazeer_erp_hr_payroll_v1";
+
+export const MALE_AVATARS = [
+  "/avatars/male-1.png",
+  "/avatars/male-2.png",
+  "/avatars/male-3.png",
+  "/avatars/male-4.png",
+];
+
+export const FEMALE_AVATARS = [
+  "/avatars/female-1.jpg",
+  "/avatars/female-2.jpg",
+  "/avatars/female-3.jpg",
+  "/avatars/female-4.png",
+];
+
+export function getDefaultAvatar(gender: "male" | "female", seed?: string | number): string {
+  const list = gender === "female" ? FEMALE_AVATARS : MALE_AVATARS;
+  if (!seed) return list[0] ?? (gender === "female" ? "/avatars/female-1.jpg" : "/avatars/male-1.png");
+  let num = 0;
+  if (typeof seed === "number") {
+    num = seed;
+  } else {
+    const digits = seed.replace(/\D/g, "");
+    if (digits) {
+      num = parseInt(digits, 10);
+      num = num > 0 ? num - 1 : num;
+    } else {
+      for (let i = 0; i < seed.length; i++) num = (num * 31 + seed.charCodeAt(i)) >>> 0;
+    }
+  }
+  return list[Math.abs(num) % list.length] ?? list[0] ?? (gender === "female" ? "/avatars/female-1.jpg" : "/avatars/male-1.png");
+}
 
 export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
   {
@@ -184,7 +217,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     positionName: { ar: "كبير حلوانية ومدير الإنتاج", en: "Head Pastry Chef & Production Lead" },
     branchId: "br-tenth",
     branchName: { ar: "مصنع العاشر من رمضان", en: "10th of Ramadan Factory" },
-    directManager: "م. حافظ رحيم",
+    directManager: "م. وزير الحلو",
     hireDate: "2022-03-15",
     gender: "male",
     contractType: "عقد دائم غير محدد المدة (Permanent)",
@@ -192,6 +225,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-amber-600 to-orange-700",
     avatarInitials: "إب",
+    avatarUrl: "/avatars/male-1.png",
     compensation: {
       basicSalary: 28000,
       housingAllowance: 4000,
@@ -239,7 +273,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     positionName: { ar: "مدير فرع الكوربة وحفلات التوزيع", en: "Branch Manager (Korba)" },
     branchId: "br-korba",
     branchName: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba Branch — Heliopolis" },
-    directManager: "م. حافظ رحيم",
+    directManager: "م. وزير الحلو",
     hireDate: "2023-01-10",
     gender: "male",
     contractType: "عقد محدد المدة 3 سنوات (Fixed-term)",
@@ -247,6 +281,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-blue-600 to-indigo-700",
     avatarInitials: "أس",
+    avatarUrl: "/avatars/male-2.png",
     compensation: {
       basicSalary: 18500,
       housingAllowance: 2500,
@@ -294,7 +329,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     positionName: { ar: "أخصائي أول موارد بشرية واستحقاقات", en: "Senior HR & People Partner" },
     branchId: "br-hq",
     branchName: { ar: "المقر الرئيسي — القاهرة الجديدة", en: "Headquarters — New Cairo" },
-    directManager: "م. حافظ رحيم",
+    directManager: "م. وزير الحلو",
     hireDate: "2023-06-01",
     gender: "female",
     contractType: "عقد دائم غير محدد المدة (Permanent)",
@@ -302,6 +337,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-pink-600 to-rose-700",
     avatarInitials: "سع",
+    avatarUrl: "/avatars/female-1.jpg",
     compensation: {
       basicSalary: 16000,
       housingAllowance: 2000,
@@ -357,6 +393,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-cyan-600 to-blue-700",
     avatarInitials: "مع",
+    avatarUrl: "/avatars/male-3.png",
     compensation: {
       basicSalary: 14000,
       housingAllowance: 2000,
@@ -412,6 +449,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-emerald-600 to-teal-700",
     avatarInitials: "طن",
+    avatarUrl: "/avatars/male-4.png",
     compensation: {
       basicSalary: 15500,
       housingAllowance: 2200,
@@ -467,6 +505,7 @@ export const INITIAL_EMPLOYEES: EmployeeRecord[] = [
     status: "active",
     avatarBg: "from-purple-600 to-indigo-700",
     avatarInitials: "يش",
+    avatarUrl: "/avatars/female-2.jpg",
     compensation: {
       basicSalary: 9500,
       housingAllowance: 1200,
@@ -636,7 +675,7 @@ export const INITIAL_LEAVES: LeaveRequest[] = [
     contactWhileAway: "+20 10 9988 7766",
     status: "approved",
     appliedDate: "2026-08-01",
-    reviewedBy: "م. حافظ رحيم",
+    reviewedBy: "م. وزير الحلو",
     reviewDate: "2026-08-02",
     reviewNotes: "تم الاعتماد مع تكليف شيف طارق بإدارة الوردية أثناء الغياب",
   },
@@ -892,7 +931,35 @@ export function useHrStore() {
     if (typeof window === "undefined") return INITIAL_EMPLOYEES;
     try {
       const saved = localStorage.getItem(STORAGE_KEY_EMPLOYEES);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((e: any) => {
+            let gender = e.gender || "male";
+            let avatarUrl = e.avatarUrl;
+
+            if (e.code === "EMP-1003" || e.id === "emp-103") {
+              gender = "female";
+              avatarUrl = "/avatars/female-1.jpg";
+            } else if (e.code === "EMP-1006" || e.id === "emp-106") {
+              gender = "female";
+              avatarUrl = "/avatars/female-2.jpg";
+            } else if (gender === "female" && (!avatarUrl || avatarUrl.includes("male"))) {
+              avatarUrl = getDefaultAvatar("female", e.code);
+            } else if (gender === "male" && (!avatarUrl || avatarUrl.includes("female"))) {
+              avatarUrl = getDefaultAvatar("male", e.code);
+            } else if (!avatarUrl) {
+              avatarUrl = getDefaultAvatar(gender, e.code);
+            }
+
+            return {
+              ...e,
+              gender,
+              avatarUrl,
+            };
+          });
+        }
+      }
     } catch (e) {
       console.error("Failed to load HR employees", e);
     }
@@ -970,10 +1037,12 @@ export function useHrStore() {
   // Employee actions
   const addEmployee = useCallback((empData: Omit<EmployeeRecord, "id" | "code"> & { code?: string }) => {
     const nextNum = 1000 + employees.length + 1;
+    const code = empData.code?.trim() || `EMP-${nextNum}`;
     const newEmp: EmployeeRecord = {
       ...empData,
       id: `emp-${Date.now()}`,
-      code: empData.code?.trim() || `EMP-${nextNum}`,
+      code,
+      avatarUrl: empData.avatarUrl || getDefaultAvatar(empData.gender, code),
     };
     setEmployees((prev) => [newEmp, ...prev]);
     return newEmp;
@@ -990,13 +1059,18 @@ export function useHrStore() {
   }, []);
 
   const bulkAddEmployees = useCallback((newEmps: Omit<EmployeeRecord, "id">[]) => {
-    const records: EmployeeRecord[] = newEmps.map((emp, i) => ({
-      ...emp,
-      id: `emp-${Date.now()}-${i}`,
-    }));
+    const records: EmployeeRecord[] = newEmps.map((emp, i) => {
+      const code = emp.code || `EMP-${1000 + employees.length + i + 1}`;
+      return {
+        ...emp,
+        code,
+        id: `emp-${Date.now()}-${i}`,
+        avatarUrl: emp.avatarUrl || getDefaultAvatar(emp.gender, code),
+      };
+    });
     setEmployees((prev) => [...records, ...prev]);
     return records.length;
-  }, []);
+  }, [employees.length]);
 
   // Attendance actions
   const logAttendance = useCallback((record: Omit<AttendanceRecord, "id">) => {
@@ -1186,10 +1260,10 @@ export function useHrStore() {
       prev.map((run) =>
         run.id === id
           ? {
-              ...run,
-              status: "posted_to_gl",
-              postedJournalId: journalId,
-            }
+            ...run,
+            status: "posted_to_gl",
+            postedJournalId: journalId,
+          }
           : run
       )
     );

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2 } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td } from "@/components/kit";
 import { kpis } from "@/lib/demo-data";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/sales")({
 
 function Sales() {
   const { t, pick, money } = useI18n();
+  const navigate = useNavigate();
   const { documents, addDocument, updateDocument, deleteDocument, markPaid, nextCode } =
     useSalesStore();
 
@@ -85,9 +86,37 @@ function Sales() {
           ]}
         >
           {documents.map((inv) => (
-            <tr key={inv.id} className="hover:bg-secondary">
-              <Td className="num font-bold">{inv.id}</Td>
-              <Td>{pick(inv.party.ar, inv.party.en)}</Td>
+            <tr
+              key={inv.id}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("button, a")) return;
+                navigate({ to: "/sales/$invoiceId", params: { invoiceId: inv.id } });
+              }}
+              className="hover:bg-secondary/70 cursor-pointer transition-colors group"
+            >
+              <Td className="num font-bold">
+                <Link
+                  to="/sales/$invoiceId"
+                  params={{ invoiceId: inv.id }}
+                  className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                  title={pick("عرض تفاصيل الفاتورة وبنودها", "View invoice details & items")}
+                >
+                  <span>{inv.id}</span>
+                  <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                </Link>
+              </Td>
+              <Td>
+                <Link
+                  to="/sales/$invoiceId"
+                  params={{ invoiceId: inv.id }}
+                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                  title={pick("عرض تفاصيل الفاتورة والعميل", "View invoice & customer profile")}
+                >
+                  <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                  <span>{pick(inv.party.ar, inv.party.en)}</span>
+                  <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                </Link>
+              </Td>
               <Td className="num text-muted-foreground">{inv.date}</Td>
               <Td className="num font-semibold">{money(inv.amount)}</Td>
               <Td className="num">{money(inv.balance)}</Td>
@@ -96,6 +125,14 @@ function Sales() {
               </Td>
               <Td>
                 <div className="flex items-center gap-1">
+                  <Link
+                    to="/sales/$invoiceId"
+                    params={{ invoiceId: inv.id }}
+                    title={pick("عرض بنود وتفاصيل الفاتورة", "View invoice details & items")}
+                    className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Eye className="size-4" />
+                  </Link>
                   {inv.status !== "paid" && (
                     <button
                       type="button"
