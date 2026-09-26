@@ -8,6 +8,7 @@ import {
   Calculator,
   Boxes,
   Users,
+  Truck,
   BarChart3,
   ScrollText,
   ShieldCheck,
@@ -30,12 +31,14 @@ import {
   ExternalLink,
   ShieldAlert,
   UserCheck,
+  LifeBuoy,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useSidebarVisible } from "@/lib/ui-prefs";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
+import { useHelpdeskStore } from "@/lib/helpdesk-store";
 import { LoginOverlay } from "@/components/auth/LoginOverlay";
 import { AccessDeniedView } from "./AccessDeniedView";
 import { cn } from "@/lib/utils";
@@ -55,6 +58,7 @@ const erpNav = [
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
   { to: "/inventory", key: "nav_inventory", icon: Boxes },
   { to: "/manufacturing", key: "nav_manufacturing", icon: Factory },
+  { to: "/dispatch", key: "nav_dispatch", icon: Truck },
   { to: "/partners", key: "nav_partners", icon: Users },
   { to: "/hr", key: "nav_hr", icon: UserCheck },
 ] as const;
@@ -62,6 +66,7 @@ const erpNav = [
 const controlNav = [
   { to: "/reports", key: "nav_reports", icon: BarChart3 },
   { to: "/audit", key: "nav_audit", icon: ScrollText },
+  { to: "/helpdesk", key: "nav_helpdesk", icon: LifeBuoy },
   { to: "/ai-modules", key: "nav_ai_modules", icon: Bot },
   { to: "/settings", key: "nav_settings", icon: ShieldCheck },
 ] as const;
@@ -121,6 +126,11 @@ function NavList({
   allowedPages: string[];
 }) {
   const { t } = useI18n();
+  const { tickets } = useHelpdeskStore();
+  const activeTicketsCount = tickets.filter(
+    (tk) => tk.status === "open" || tk.status === "in_progress"
+  ).length;
+
   const visibleItems = items.filter((item) => allowedPages.includes(item.to));
   if (visibleItems.length === 0) return null;
 
@@ -135,10 +145,17 @@ function NavList({
             key={to}
             to={to}
             activeOptions={{ exact: to === "/" }}
-            className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-foreground/75 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+            className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-foreground/75 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
           >
-            <Icon className="size-4 shrink-0" />
-            <span className="truncate">{t(key)}</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Icon className="size-4 shrink-0" />
+              <span className="truncate">{t(key)}</span>
+            </div>
+            {to === "/helpdesk" && activeTicketsCount > 0 && (
+              <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 group-data-[status=active]:bg-primary-foreground/20 group-data-[status=active]:text-primary-foreground shrink-0">
+                {activeTicketsCount}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
@@ -502,6 +519,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
+          {/* Quick Helpdesk Link */}
+          {(currentUser.allowedPages.includes("/helpdesk") || currentUser.allowedPages.includes("/settings")) && (
+            <Link
+              to="/helpdesk"
+              title={pick("مركز الدعم الفني والتذاكر", "Helpdesk & Support Tickets")}
+              className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-primary hover:bg-secondary transition-colors shrink-0"
+            >
+              <LifeBuoy className="size-4" />
+            </Link>
+          )}
+
           {/* Language Switcher */}
           <button
             onClick={toggle}
@@ -608,7 +636,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                   })}
                 </div>
 
-                <div className="pt-2 border-t border-border/50 text-[11px]">
+                <div className="pt-2 border-t border-border/50 text-[11px] space-y-1">
+                  <Link
+                    to="/helpdesk"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="inline-flex items-center justify-between w-full p-2 rounded-xl text-foreground font-semibold hover:bg-primary/10 hover:text-primary transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <LifeBuoy className="size-3.5 text-primary" />
+                      <span>{pick("مركز الدعم الفني (Helpdesk)", "Operations Helpdesk")}</span>
+                    </span>
+                    <span className="bg-primary/15 text-primary text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+                      Support
+                    </span>
+                  </Link>
+
                   <a
                     href="https://odooteams.com"
                     target="_blank"

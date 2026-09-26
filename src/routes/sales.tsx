@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td } from "@/components/kit";
 import { kpis } from "@/lib/demo-data";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
+import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 
 export const Route = createFileRoute("/sales")({
@@ -27,13 +30,158 @@ function Sales() {
   const navigate = useNavigate();
   const { documents, addDocument, updateDocument, deleteDocument, markPaid, nextCode } =
     useSalesStore();
+  const { addOrder: addDispatchOrder } = useDispatchStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
+  const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const outstanding = documents.reduce((s, i) => s + i.balance, 0);
   const total = documents.reduce((s, i) => s + i.amount, 0);
+
+  const handleDownloadTemplate = () => {
+    const sampleRows = [
+      {
+        "رقم_الفاتورة_ID": "INV-1001",
+        "العميل_Customer": "شركة الأمل",
+        "الفرع_Branch": "الفرع الرئيسي",
+        "التاريخ_Date": "2026-10-01",
+        "كود_الصنف_SKU": "SKU-001",
+        "اسم_الصنف_ItemName": "منتج أ",
+        "الكمية_Qty": 10,
+        "سعر_الوحدة_Price": 150,
+        "الوحدة_Unit": "قطعة",
+        "طريقة_الدفع_PaymentMethod": "cash",
+        "المدفوع_Paid": 2000,
+        "حالة_السداد_Status": "partial"
+      },
+      {
+        "رقم_الفاتورة_ID": "INV-1001",
+        "العميل_Customer": "شركة الأمل",
+        "الفرع_Branch": "الفرع الرئيسي",
+        "التاريخ_Date": "2026-10-01",
+        "كود_الصنف_SKU": "SKU-002",
+        "اسم_الصنف_ItemName": "منتج ب",
+        "الكمية_Qty": 5,
+        "سعر_الوحدة_Price": 100,
+        "الوحدة_Unit": "قطعة",
+        "طريقة_الدفع_PaymentMethod": "cash",
+        "المدفوع_Paid": 2000,
+        "حالة_السداد_Status": "partial"
+      },
+      {
+        "رقم_الفاتورة_ID": "INV-1002",
+        "العميل_Customer": "مؤسسة النور",
+        "الفرع_Branch": "مستودع الشرق",
+        "التاريخ_Date": "2026-10-02",
+        "كود_الصنف_SKU": "SKU-003",
+        "اسم_الصنف_ItemName": "منتج ج",
+        "الكمية_Qty": 20,
+        "سعر_الوحدة_Price": 50,
+        "الوحدة_Unit": "قطعة",
+        "طريقة_الدفع_PaymentMethod": "bank_transfer",
+        "المدفوع_Paid": 1000,
+        "حالة_السداد_Status": "paid"
+      }
+    ];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(sampleRows);
+    XLSX.utils.book_append_sheet(wb, ws, "الفواتير_Invoices");
+    safeDownloadWorkbook(wb, "نموذج_استيراد_الفواتير_الشامل.xlsx");
+  };
+
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const sheetName = wb.SheetNames[0];
+        if (!sheetName) return;
+        const sheet = wb.Sheets[sheetName];
+        if (!sheet) return;
+        const rawRows = XLSX.utils.sheet_to_json(sheet) as Record<string, any>[];
+
+        const grouped = rawRows.reduce((acc: Record<string, Record<string, any>[]>, row: Record<string, any>, idx: number) => {
+          const rawId = String(row["رقم_الفاتورة_ID"] || row["ID"] || `INV-IMP-${Date.now()}-${idx}`).trim();
+          if (!acc[rawId]) acc[rawId] = [];
+          acc[rawId].push(row);
+          return acc;
+        }, {});
+
+        let count = 0;
+        Object.entries(grouped).forEach(([invId, rows]) => {
+          const firstRow = rows[0] || {};
+          const rawCustomer = String(firstRow["العميل_Customer"] || firstRow["Customer"] || "عميل مبيعات").trim();
+          const rawBranch = String(firstRow["الفرع_Branch"] || firstRow["Branch"] || "").trim();
+          const rawDate = String(firstRow["التاريخ_Date"] || firstRow["Date"] || new Date().toISOString().slice(0, 10)).trim();
+          const rawPaymentMethod = String(firstRow["طريقة_الدفع_PaymentMethod"] || firstRow["PaymentMethod"] || "cash").trim();
+          const rawPaid = Number(firstRow["المدفوع_Paid"] || firstRow["Paid"]) || 0;
+          let rawStatus = String(firstRow["حالة_السداد_Status"] || firstRow["Status"] || "").trim().toLowerCase();
+
+          const items = rows.map((r: Record<string, any>, i: number) => {
+            const qty = Number(r["الكمية_Qty"] || r["Qty"]) || 1;
+            const price = Number(r["سعر_الوحدة_Price"] || r["Price"]) || 0;
+            const unit = String(r["الوحدة_Unit"] || r["Unit"] || "قطعة").trim();
+            return {
+              id: `itm-${Date.now()}-${i}`,
+              sku: String(r["كود_الصنف_SKU"] || r["SKU"] || `SKU-${i+1}`).trim(),
+              name: { ar: String(r["اسم_الصنف_ItemName"] || r["ItemName"] || "صنف مستورد").trim(), en: "Imported Item" },
+              quantity: qty,
+              unit: { ar: unit, en: unit === "قطعة" ? "pcs" : unit },
+              unitPrice: price,
+              total: qty * price
+            };
+          });
+
+          const totalAmount = items.reduce((sum: number, item: any) => sum + item.total, 0);
+
+          if (!["draft", "partial", "paid", "overdue"].includes(rawStatus)) {
+            if (rawPaid >= totalAmount && totalAmount > 0) rawStatus = "paid";
+            else if (rawPaid > 0 && rawPaid < totalAmount) rawStatus = "partial";
+            else rawStatus = "draft";
+          }
+          
+          const newDoc: Omit<BizDocument, "id"> & { id: string } = {
+            id: invId,
+            date: rawDate,
+            party: { ar: rawCustomer, en: rawCustomer },
+            ...(rawBranch ? { branch: { ar: rawBranch, en: rawBranch } } : {}),
+            amount: totalAmount,
+            balance: Math.max(0, totalAmount - rawPaid),
+            status: rawStatus as any,
+            paymentMethod: rawPaymentMethod,
+            items
+          };
+          const created = addDocument(newDoc);
+          
+          // Auto-create Dispatch Order
+          addDispatchOrder({
+            date: created.date,
+            branch: created.branch || { ar: "الفرع الرئيسي", en: "Main Branch" },
+            linkedDoc: { type: "sales", id: created.id },
+            status: "draft",
+            totalItems: created.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+            items: [],
+          });
+          count++;
+        });
+
+        setImportMsg({ type: "success", text: pick(`تم استيراد ${count} فاتورة بنجاح`, `Successfully imported ${count} invoices`) });
+        setTimeout(() => setImportMsg(null), 4000);
+      } catch (err) {
+        console.error(err);
+        setImportMsg({ type: "error", text: pick("حدث خطأ أثناء الاستيراد", "Error during import") });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -49,7 +197,16 @@ function Sales() {
     if (editing) {
       updateDocument(editing.id, doc);
     } else {
-      addDocument(doc);
+      const created = addDocument(doc);
+      // Auto-create Dispatch Order
+      addDispatchOrder({
+        date: created.date,
+        branch: created.branch || { ar: "الفرع الرئيسي", en: "Main Branch" },
+        linkedDoc: { type: "sales", id: created.id },
+        status: "draft",
+        totalItems: created.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+        items: [],
+      });
     }
     setEditing(null);
   };
@@ -60,12 +217,35 @@ function Sales() {
         title={t("nav_sales")}
         subtitle={pick("الفواتير والتحصيل", "Invoices and collection")}
         actions={
-          <Btn onClick={openNew}>
-            <Plus className="size-4" />
-            {t("newInvoice")}
-          </Btn>
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleImportExcel}
+            />
+            <Btn variant="outline" onClick={handleDownloadTemplate} title={pick("تحميل نموذج استيراد الفواتير", "Download Invoices Template")}>
+              <Download className="size-4" />
+            </Btn>
+            <Btn variant="outline" className="text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10" onClick={() => fileInputRef.current?.click()} title={pick("استيراد فواتير", "Import Invoices")}>
+              <Upload className="size-4" />
+              <span className="hidden sm:inline">{pick("استيراد", "Import")}</span>
+            </Btn>
+            <Btn onClick={openNew}>
+              <Plus className="size-4" />
+              {t("newInvoice")}
+            </Btn>
+          </div>
         }
       />
+
+      {importMsg && (
+        <div className={`p-3 mb-4 rounded-lg text-sm font-bold flex items-center gap-2 ${importMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'}`}>
+          {importMsg.type === 'success' ? <CheckCircle2 className="size-4" /> : <AlertTriangle className="size-4" />}
+          <span>{importMsg.text}</span>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard label={t("kpi_sales")} value={money(total || kpis.sales)} delta={kpis.salesDelta} accent="primary" />
@@ -106,16 +286,23 @@ function Sales() {
                 </Link>
               </Td>
               <Td>
-                <Link
-                  to="/sales/$invoiceId"
-                  params={{ invoiceId: inv.id }}
-                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
-                  title={pick("عرض تفاصيل الفاتورة والعميل", "View invoice & customer profile")}
-                >
-                  <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                  <span>{pick(inv.party.ar, inv.party.en)}</span>
-                  <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </Link>
+                <div className="space-y-0.5">
+                  <Link
+                    to="/sales/$invoiceId"
+                    params={{ invoiceId: inv.id }}
+                    className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                    title={pick("عرض تفاصيل الفاتورة والعميل", "View invoice & customer profile")}
+                  >
+                    <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <span>{pick(inv.party.ar, inv.party.en)}</span>
+                    <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </Link>
+                  {inv.branch && (
+                    <span className="block text-[10px] text-muted-foreground font-medium">
+                      📍 {pick(inv.branch.ar, inv.branch.en)}
+                    </span>
+                  )}
+                </div>
               </Td>
               <Td className="num text-muted-foreground">{inv.date}</Td>
               <Td className="num font-semibold">{money(inv.amount)}</Td>

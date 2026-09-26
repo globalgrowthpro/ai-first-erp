@@ -35,6 +35,13 @@ import type {
   InventoryUnit,
   InventoryBom,
 } from "@/lib/inventory-store";
+import {
+  FACTORY_PRODUCTS,
+  FACTORY_BOMS,
+  FACTORY_CATEGORIES,
+  FACTORY_WAREHOUSES,
+  FACTORY_UNITS,
+} from "@/lib/wazeer-factory-data-2026";
 
 export type InventoryImportTarget =
   | "products"
@@ -63,6 +70,114 @@ interface InventoryImportModalProps {
 // ==========================================
 const READY_PRESETS = {
   products: [
+    {
+      id: "preset-wazeer-factory-109",
+      title: {
+        ar: "قالب مصنع وزير الحلو 2026 الكامل (109 صنف قياسي معتمد)",
+        en: "Wazeer El-Helw 2026 Factory Master Catalog (109 Items)",
+      },
+      description: {
+        ar: "الكتالوج الرسمي الكامل للمصنع لعام 2026: خامات مشتراه (51 خامة) + خامات مصنعة ونصف مصنعة (38 خلطة) + منتجات تامة الصنع (20 صنف)",
+        en: "Official factory master catalog: 51 raw materials + 38 semi-finished + 20 finished goods",
+      },
+      badge: "معتمد مصنع 2026",
+      items: FACTORY_PRODUCTS.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        categoryId: p.categoryId,
+        warehouseId: p.warehouseId,
+        unitId: p.unitId,
+        costPrice: p.costPrice,
+        sellingPrice: p.sellingPrice,
+        qty: p.qty,
+        minStock: p.minStock,
+        isRawMaterial: p.isRawMaterial,
+        department: p.department,
+        classification: p.classification,
+        rawType: p.rawType,
+      })),
+    },
+    {
+      id: "preset-wazeer-raw-51",
+      title: {
+        ar: "قالب خامات ومشتريات مصنع وزير الحلو 2026 (51 خامة أساسية)",
+        en: "Wazeer El-Helw Factory Raw Materials (51 Items)",
+      },
+      description: {
+        ar: "سكر، دقيق جولد/جونزارو، بيض، زبدة فيرن، كاكاو، فانيليا، لبن بخيره، نشا، زيت، مكسرات، ومواد التعبئة والتغليف",
+        en: "Flour, sugar, butter, eggs, milk, cocoa, vanilla, nuts, starch & packaging",
+      },
+      badge: "خامات مشتراه 2026",
+      items: FACTORY_PRODUCTS.filter((p) => p.rawType?.includes("مشتراه") || p.isRawMaterial).map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        categoryId: p.categoryId,
+        warehouseId: p.warehouseId,
+        unitId: p.unitId,
+        costPrice: p.costPrice,
+        sellingPrice: p.sellingPrice,
+        qty: p.qty,
+        minStock: p.minStock,
+        isRawMaterial: true,
+        department: p.department,
+        classification: p.classification,
+        rawType: p.rawType,
+      })),
+    },
+    {
+      id: "preset-wazeer-semi-38",
+      title: {
+        ar: "قالب خامات مصنعة وقواعد كيك وأسبونش وصوصات (38 صنف)",
+        en: "Wazeer El-Helw Semi-Finished & Sponges (38 Items)",
+      },
+      description: {
+        ar: "صاجات فادج، صاجات أسبونش، ريد فيلفيت، كيك بوم فولكانو، سابليه، صوصات مخففة، بودينج، وأرز بلبن خام",
+        en: "Fudge sheets, sponge bases, diluted sauces, puddings & cooked rice bases",
+      },
+      badge: "خامات مصنعة 2026",
+      items: FACTORY_PRODUCTS.filter((p) => p.rawType?.includes("مصنعة")).map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        categoryId: p.categoryId,
+        warehouseId: p.warehouseId,
+        unitId: p.unitId,
+        costPrice: p.costPrice,
+        sellingPrice: p.sellingPrice,
+        qty: p.qty,
+        minStock: p.minStock,
+        isRawMaterial: false,
+        department: p.department,
+        classification: p.classification,
+        rawType: p.rawType,
+      })),
+    },
+    {
+      id: "preset-wazeer-finished-20",
+      title: {
+        ar: "قالب حلويات ومنتجات وزير الحلو التامة للفروع (20 منتج نهائي)",
+        en: "Wazeer El-Helw Finished Retail Products (20 Items)",
+      },
+      description: {
+        ar: "علب رويال (دبي، كيت كات، ريد فيلفيت)، كرانشي، متسلطنة مانجو، جارات دريم كيك وشوكلت، وعبوات الأرز باللبن",
+        en: "Royal cakes, crunchy bowls, motsaltana, layered jars & retail bowls",
+      },
+      badge: "منتجات تامة 2026",
+      items: FACTORY_PRODUCTS.filter((p) => p.rawType?.includes("منتج تام") || (!p.isRawMaterial && !p.rawType?.includes("مصنعة"))).map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        categoryId: p.categoryId,
+        warehouseId: p.warehouseId,
+        unitId: p.unitId,
+        costPrice: p.costPrice,
+        sellingPrice: p.sellingPrice,
+        qty: p.qty,
+        minStock: p.minStock,
+        isRawMaterial: false,
+        department: p.department,
+        classification: p.classification,
+        rawType: p.rawType,
+      })),
+    },
     {
       id: "preset-desserts-luxe",
       title: {
@@ -512,6 +627,130 @@ const READY_PRESETS = {
 
   bom: [
     {
+      id: "preset-wazeer-bom-all-55",
+      title: {
+        ar: "قالب وصفات وتشغيل مصنع وزير الحلو 2026 الكامل (55 ريسبي قياسي)",
+        en: "Wazeer El-Helw Standard Production Recipes (55 BOMs)",
+      },
+      description: {
+        ar: "جميع وصفات التشغيل المعتمدة 2026: خلطات الأسبونش والفادج + الصوصات والكريمات + تجميع جارات وعلب الحلويات مع الأوزان ونسب الهدر",
+        en: "Complete 55 multi-level recipes with batch weights, waste scrap rates, and component costs",
+      },
+      badge: "وصفات معتمدة 2026",
+      items: FACTORY_BOMS.map((b) => ({
+        code: b.code,
+        name: b.name,
+        finishedProductId: b.finishedProductId,
+        branchId: b.branchId,
+        outputYield: b.outputYield,
+        outputUnitId: b.outputUnitId,
+        overheadCost: b.overheadCost,
+        components: b.components,
+        notes: b.notes,
+        status: b.status,
+        category: b.category,
+        department: b.department,
+        batchYieldWeightKg: b.batchYieldWeightKg,
+        unitWeightKg: b.unitWeightKg,
+        totalMaterialCost: b.totalMaterialCost,
+        unitCost: b.unitCost,
+        isSemiFinished: b.isSemiFinished,
+      })),
+    },
+    {
+      id: "preset-wazeer-bom-sponge",
+      title: {
+        ar: "وصفات عنبر تحضير الأسبونش والفرن (14 ريسبي صاج وكيك)",
+        en: "Sponge & Baking Dept Recipes (14 BOMs)",
+      },
+      description: {
+        ar: "صاج قشطوطة، صاج فادج 1.6k و2.2k، تورت فادج، مولتن كيك، صاج ريد فيلفيت، كيك بوم، وبراونيز",
+        en: "Sponge sheets, fudge trays, lava cakes, red velvet & brownies",
+      },
+      badge: "عنبر الأسبونش",
+      items: FACTORY_BOMS.filter((b) => b.department?.includes("أسبونش")).map((b) => ({
+        code: b.code,
+        name: b.name,
+        finishedProductId: b.finishedProductId,
+        branchId: b.branchId,
+        outputYield: b.outputYield,
+        outputUnitId: b.outputUnitId,
+        overheadCost: b.overheadCost,
+        components: b.components,
+        notes: b.notes,
+        status: b.status,
+        category: b.category,
+        department: b.department,
+        batchYieldWeightKg: b.batchYieldWeightKg,
+        unitWeightKg: b.unitWeightKg,
+        totalMaterialCost: b.totalMaterialCost,
+        unitCost: b.unitCost,
+        isSemiFinished: b.isSemiFinished,
+      })),
+    },
+    {
+      id: "preset-wazeer-bom-dairy",
+      title: {
+        ar: "وصفات قسم الألبان والصوصات والتبريد (18 ريسبي صوص وكريمة)",
+        en: "Dairy & Sauces Dept Recipes (18 BOMs)",
+      },
+      description: {
+        ar: "أرز بلبن خام، صوصات نوتيلا وبستاشيو ولوتس مخففة، كريمة تشيز، بودينج شوكولاتة وأبيض، واجلاسية",
+        en: "Rice pudding, diluted sauces, cheese creams, chocolate puddings & glazes",
+      },
+      badge: "عنبر الألبان",
+      items: FACTORY_BOMS.filter((b) => b.department?.includes("الألبان")).map((b) => ({
+        code: b.code,
+        name: b.name,
+        finishedProductId: b.finishedProductId,
+        branchId: b.branchId,
+        outputYield: b.outputYield,
+        outputUnitId: b.outputUnitId,
+        overheadCost: b.overheadCost,
+        components: b.components,
+        notes: b.notes,
+        status: b.status,
+        category: b.category,
+        department: b.department,
+        batchYieldWeightKg: b.batchYieldWeightKg,
+        unitWeightKg: b.unitWeightKg,
+        totalMaterialCost: b.totalMaterialCost,
+        unitCost: b.unitCost,
+        isSemiFinished: b.isSemiFinished,
+      })),
+    },
+    {
+      id: "preset-wazeer-bom-assembly",
+      title: {
+        ar: "وصفات تجميع ومعلبات الحلويات الفاخرة (23 ريسبي تشطيب)",
+        en: "Assembly & Packaging Dept Recipes (23 BOMs)",
+      },
+      description: {
+        ar: "عبوات كشري وفتة وديناميت أرز بلبن، علب رويال دبي وكيت كات، كرانشي، متسلطنة مانجو، وجارات الحلو",
+        en: "Sweet koshary bowls, royal cakes, crunchy bowls, and layered jars",
+      },
+      badge: "عنبر المعلبات",
+      items: FACTORY_BOMS.filter((b) => b.department?.includes("معلبات")).map((b) => ({
+        code: b.code,
+        name: b.name,
+        finishedProductId: b.finishedProductId,
+        branchId: b.branchId,
+        outputYield: b.outputYield,
+        outputUnitId: b.outputUnitId,
+        overheadCost: b.overheadCost,
+        components: b.components,
+        notes: b.notes,
+        status: b.status,
+        category: b.category,
+        department: b.department,
+        batchYieldWeightKg: b.batchYieldWeightKg,
+        unitWeightKg: b.unitWeightKg,
+        totalMaterialCost: b.totalMaterialCost,
+        unitCost: b.unitCost,
+        isSemiFinished: b.isSemiFinished,
+      })),
+    },
+    {
       id: "preset-bom-popular",
       title: {
         ar: "قالب وصفات تصنيع جاهزة بالمعايير الدقيقة (3 وصفات)",
@@ -597,6 +836,7 @@ export function InventoryImportModal({
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync initial target if modal reopens
@@ -624,10 +864,221 @@ export function InventoryImportModal({
     setFileName("");
   };
 
-  // Generate and download sample Excel Template
+  // Safe bulletproof Excel workbook download in browser
+  const safeDownloadWorkbook = (workbook: XLSX.WorkBook, filename: string): boolean => {
+    try {
+      const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(anchor);
+          window.URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+      }, 300);
+      return true;
+    } catch (err) {
+      console.warn("Direct blob download failed, attempting XLSX.writeFile fallback:", err);
+      try {
+        XLSX.writeFile(workbook, filename);
+        return true;
+      } catch (err2) {
+        console.error("XLSX.writeFile also failed:", err2);
+        return false;
+      }
+    }
+  };
+
+  // Direct download of the authentic official factory 2026 Excel spreadsheet
+  const handleDownloadOfficialExcel = async () => {
+    const filename = "Standard Recipe - Wazeer EL-Helw Factory 2026.xlsx";
+    try {
+      const res = await fetch(`/${encodeURIComponent(filename)}`);
+      if (!res.ok) throw new Error("Fetch failed");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 300);
+      setDownloadNotice(
+        pick(
+          "تم تنزيل شيت مصنع وزير الحلو 2026 الرسمي المعتمد بنجاح!",
+          "Wazeer El-Helw 2026 Official Factory Sheet downloaded successfully!"
+        )
+      );
+      setTimeout(() => setDownloadNotice(null), 5000);
+    } catch (err) {
+      console.warn("Direct fetch failed, falling back to window.open", err);
+      window.open(`/${encodeURIComponent(filename)}`, "_blank");
+    }
+  };
+
+  // Export any ready preset directly as a complete Excel (.xlsx) file
+  const handleDownloadPresetExcel = (preset: any) => {
+    const wb = XLSX.utils.book_new();
+    let filename = `${preset.id}.xlsx`;
+
+    if (activeTab === "products") {
+      filename = `قالب_أصناف_${preset.id}.xlsx`;
+      const rows = preset.items.map((it: any) => ({
+        "كود الصنف (SKU)": it.sku || "",
+        "اسم الصنف بالعربية": it.name?.ar || it.name || "",
+        "اسم الصنف بالإنجليزية": it.name?.en || it.name || "",
+        "كود التصنيف": it.categoryId || "",
+        "كود المستودع": it.warehouseId || "",
+        "كود وحدة القياس": it.unitId || "",
+        "سعر التكلفة (ج.م)": it.costPrice || 0,
+        "سعر البيع (ج.م)": it.sellingPrice || 0,
+        "الرصيد الافتتاحي": it.qty || 0,
+        "حد إعادة الطلب": it.minStock || 10,
+        "مادة خام (نعم/لا)": it.isRawMaterial ? "نعم" : "لا",
+        "القسم / العنبر": it.department || "",
+        "التصنيف الفني": it.classification || "",
+        "نوع الخامة": it.rawType || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 18 }, { wch: 34 }, { wch: 30 }, { wch: 15 },
+        { wch: 15 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
+        { wch: 15 }, { wch: 14 }, { wch: 16 }, { wch: 22 },
+        { wch: 22 }, { wch: 22 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "الأصناف_والمنتجات");
+    } else if (activeTab === "bom") {
+      filename = `قالب_وصفات_التصنيع_ريسبي_${preset.id}.xlsx`;
+      const masterRows = preset.items.map((b: any) => ({
+        "كود الوصفة": b.code || "",
+        "اسم الوصفة بالعربية": b.name?.ar || b.name || "",
+        "اسم الوصفة بالإنجليزية": b.name?.en || b.name || "",
+        "كود المنتج النهائي": b.finishedProductId || "",
+        "إنتاجية الوجبة": b.outputYield || 1,
+        "وحدة الإنتاج": b.outputUnitId || "",
+        "القسم / العنبر": b.department || "",
+        "وزن الوجبة (كجم)": b.batchYieldWeightKg || "",
+        "وزن الوحدة (كجم)": b.unitWeightKg || "",
+        "تكلفة الخامات (ج.م)": b.totalMaterialCost || 0,
+        "تكلفة الوحدة (ج.م)": b.unitCost || 0,
+        "المصاريف الإضافية (ج.م)": b.overheadCost || 0,
+        "الحالة": b.status || "active",
+        "ملاحظات التشغيل": b.notes || "",
+      }));
+      const ws1 = XLSX.utils.json_to_sheet(masterRows);
+      ws1["!cols"] = [
+        { wch: 16 }, { wch: 35 }, { wch: 30 }, { wch: 18 },
+        { wch: 14 }, { wch: 12 }, { wch: 18 }, { wch: 16 },
+        { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
+        { wch: 12 }, { wch: 35 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws1, "وصفات_التصنيع_Recipes");
+
+      // Ingredients sheet
+      const ingredientRows: any[] = [];
+      preset.items.forEach((b: any) => {
+        if (Array.isArray(b.components)) {
+          b.components.forEach((c: any) => {
+            const rawProd = FACTORY_PRODUCTS.find(
+              (p) => p.id === c.componentProductId || p.sku === c.componentProductId
+            );
+            ingredientRows.push({
+              "كود الوصفة": b.code,
+              "اسم الوصفة": b.name?.ar || b.name,
+              "كود الخامة (SKU)": rawProd?.sku || c.componentProductId,
+              "اسم الخامة بالعربية": rawProd?.name?.ar || c.componentProductId,
+              "الكمية المطلوبة": c.quantity,
+              "وحدة القياس": c.unitId || rawProd?.unitId || "KG",
+              "سعر الوحدة (ج.م)": c.unitCost || rawProd?.costPrice || 0,
+              "التكلفة الإجمالية (ج.م)": c.totalCost || (c.quantity * (c.unitCost || 0)),
+              "نسبة الهدر المسموح %": c.wastePercentage || 0,
+            });
+          });
+        }
+      });
+      if (ingredientRows.length > 0) {
+        const ws2 = XLSX.utils.json_to_sheet(ingredientRows);
+        ws2["!cols"] = [
+          { wch: 16 }, { wch: 32 }, { wch: 18 }, { wch: 30 },
+          { wch: 15 }, { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 18 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws2, "شجرة_المكونات_Ingredients");
+      }
+    } else if (activeTab === "categories") {
+      filename = `قالب_تصنيفات_المخزون_${preset.id}.xlsx`;
+      const rows = preset.items.map((it: any) => ({
+        "كود التصنيف": it.code || "",
+        "الاسم بالعربية": it.name?.ar || it.name || "",
+        "الاسم بالإنجليزية": it.name?.en || it.name || "",
+        "نوع التصنيف": it.type || "finished",
+        "الوصف والبيان": it.description?.ar || it.description || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [{ wch: 16 }, { wch: 30 }, { wch: 25 }, { wch: 16 }, { wch: 45 }];
+      XLSX.utils.book_append_sheet(wb, ws, "التصنيفات_Categories");
+    } else if (activeTab === "warehouses") {
+      filename = `قالب_الفروع_والمستودعات_${preset.id}.xlsx`;
+      const rows = preset.items.map((it: any) => ({
+        "كود المستودع": it.code || "",
+        "الاسم بالعربية": it.name?.ar || it.name || "",
+        "الاسم بالإنجليزية": it.name?.en || it.name || "",
+        "النوع": it.type || "retail",
+        "العنوان": it.location?.address || it.address?.ar || it.address || "",
+        "اسم المسؤول": it.managerName || "",
+        "رقم الهاتف": it.phone || "",
+        "نسبة الاستيعاب %": it.capacityPercentage || 80,
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 16 }, { wch: 30 }, { wch: 25 }, { wch: 14 },
+        { wch: 35 }, { wch: 20 }, { wch: 18 }, { wch: 16 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "الفروع_Warehouses");
+    } else if (activeTab === "units") {
+      filename = `قالب_وحدات_القياس_${preset.id}.xlsx`;
+      const rows = preset.items.map((it: any) => ({
+        "كود الوحدة": it.code || "",
+        "الاسم بالعربية": it.name?.ar || it.name || "",
+        "الاسم بالإنجليزية": it.name?.en || it.name || "",
+        "نوع القياس": it.type || "weight",
+        "معامل التحويل": it.conversionFactor || 1,
+        "كود الوحدة الأساسية": it.baseUnitCode || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [{ wch: 16 }, { wch: 25 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, ws, "الوحدات_Units");
+    }
+
+    const success = safeDownloadWorkbook(wb, filename);
+    if (success) {
+      setDownloadNotice(
+        pick(
+          `تم تنزيل القالب بنجاح كملف إكسيل: ${filename}`,
+          `Downloaded template Excel file: ${filename}`
+        )
+      );
+      setTimeout(() => setDownloadNotice(null), 5000);
+    }
+  };
+
+  // Generate and download sample blank Excel Template
   const handleDownloadExcelTemplate = () => {
     let headers: Record<string, any>[] = [];
     let filename = "";
+    let sheetName = "Template_قالب_فارغ";
 
     if (activeTab === "products") {
       headers = [
@@ -643,6 +1094,7 @@ export function InventoryImportModal({
           "الرصيد الافتتاحي": 60,
           "حد إعادة الطلب": 20,
           "مادة خام (نعم/لا)": "لا",
+          "القسم": "قسم المعلبات",
         },
         {
           "كود الصنف (SKU)": "RM-PST-GR",
@@ -656,9 +1108,11 @@ export function InventoryImportModal({
           "الرصيد الافتتاحي": 25,
           "حد إعادة الطلب": 10,
           "مادة خام (نعم/لا)": "نعم",
+          "القسم": "المخزن الرئيسي",
         },
       ];
       filename = "products_template.xlsx";
+      sheetName = "أصناف_Products";
     } else if (activeTab === "categories") {
       headers = [
         {
@@ -677,6 +1131,7 @@ export function InventoryImportModal({
         },
       ];
       filename = "categories_template.xlsx";
+      sheetName = "تصنيفات_Categories";
     } else if (activeTab === "warehouses") {
       headers = [
         {
@@ -691,6 +1146,7 @@ export function InventoryImportModal({
         },
       ];
       filename = "warehouses_template.xlsx";
+      sheetName = "فروع_Warehouses";
     } else if (activeTab === "units") {
       headers = [
         {
@@ -711,6 +1167,7 @@ export function InventoryImportModal({
         },
       ];
       filename = "units_template.xlsx";
+      sheetName = "وحدات_Units";
     } else if (activeTab === "bom") {
       headers = [
         {
@@ -725,12 +1182,19 @@ export function InventoryImportModal({
         },
       ];
       filename = "recipes_bom_template.xlsx";
+      sheetName = "وصفات_BOM";
     }
 
     const ws = XLSX.utils.json_to_sheet(headers);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template_قالب_جاهز");
-    XLSX.writeFile(wb, filename);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const success = safeDownloadWorkbook(wb, filename);
+    if (success) {
+      setDownloadNotice(
+        pick(`تم تنزيل نموذج الإكسيل بنجاح: ${filename}`, `Downloaded blank template: ${filename}`)
+      );
+      setTimeout(() => setDownloadNotice(null), 5000);
+    }
   };
 
   // Handle uploaded Excel / CSV file
@@ -746,6 +1210,42 @@ export function InventoryImportModal({
       try {
         const bstr = evt.target?.result;
         const wb = XLSX.read(bstr, { type: "binary" });
+
+        // Auto-detect Wazeer El-Helw Factory 2026 sheet structure
+        if (activeTab === "products" && wb.Sheets["الأصناف والمنتجات"]) {
+          const s1 = wb.Sheets["الأصناف والمنتجات"];
+          const rawRows: any[][] = XLSX.utils.sheet_to_json(s1, { header: 1, defval: "" });
+          const items: any[] = [];
+          for (let r = 3; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || !row[1] || !row[2]) continue;
+            const code = String(row[2]).trim();
+            const name = String(row[1]).trim();
+            const unit = String(row[4] || "كيلو").trim();
+            const cost = typeof row[3] === "number" ? row[3] : 0;
+            const type = String(row[5] || "").trim();
+            const dept = String(row[8] || "المخزن").trim();
+            items.push({
+              "كود الصنف (SKU)": `SKU-${code}`,
+              "اسم الصنف بالعربية": name,
+              "اسم الصنف بالإنجليزية": name,
+              "كود التصنيف": dept.includes("أسبونش") ? "CAT-SPONGE" : dept.includes("الألبان") ? "CAT-DAIRY" : type.includes("منتج تام") ? "CAT-FINISHED" : "CAT-RAW",
+              "كود المستودع": dept.includes("أسبونش") ? "WH-SPONGE" : dept.includes("الألبان") ? "WH-DAIRY" : "WH-RAW-STORE",
+              "كود وحدة القياس": unit.includes("كيلو") ? "KG" : unit.includes("جرام") ? "G" : unit.includes("صاج") ? "SAJ" : unit.includes("عبوة") ? "BOX" : unit.includes("جار") ? "JAR" : "PCS",
+              "سعر التكلفة": cost,
+              "سعر البيع": cost > 0 ? Math.round(cost * 1.6) : 0,
+              "الرصيد الافتتاحي": 100,
+              "حد إعادة الطلب": 20,
+              "مادة خام (نعم/لا)": type.includes("مشتراه") ? "نعم" : "لا",
+              "القسم": dept,
+            });
+          }
+          if (items.length > 0) {
+            setParsedRows(items);
+            return;
+          }
+        }
+
         const wsName = wb.SheetNames[0];
         if (!wsName) {
           setFileError("الملف فارغ أو لا يحتوي على أوراق عمل صالحة.");
@@ -972,6 +1472,58 @@ export function InventoryImportModal({
             })}
           </div>
 
+          {/* Download Notification Toast / Alert */}
+          {downloadNotice && (
+            <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                <span>{downloadNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDownloadNotice(null)}
+                className="p-1 hover:bg-emerald-500/20 rounded cursor-pointer text-emerald-700 dark:text-emerald-300"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Official Wazeer Factory 2026 Master Download Banner */}
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                <FileSpreadsheet className="size-5" />
+              </div>
+              <div>
+                <span className="font-bold text-foreground text-xs block">
+                  {pick(
+                    "شيت مصنع وزير الحلو 2026 المعتمد (Excel الأصلي الكامل)",
+                    "Official Wazeer El-Helw 2026 Factory Master Sheet"
+                  )}
+                </span>
+                <span className="text-[11px] text-muted-foreground block">
+                  {pick(
+                    "ملف Excel يضم 3 أوراق عمل: كتالوج الـ 109 صنف، شجرة الـ 55 وصفة ريسبي، وجداول تكاليف الإنتاج",
+                    "Complete 3-sheet factory workbook: 109 items, 55 BOM recipes, & production cost rollups"
+                  )}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDownloadOfficialExcel}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Download className="size-3.5" />
+                <span>
+                  {pick("تنزيل شيت المصنع الأصلي (.xlsx)", "Download Master Factory (.xlsx)")}
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* Import Mode Switcher: Ready Presets vs Excel File Upload */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
@@ -1071,13 +1623,25 @@ export function InventoryImportModal({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-center">
+                        <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
                           <button
                             type="button"
                             onClick={() => setSelectedPresetId(isSelected ? "" : preset.id)}
                             className="px-2.5 py-1 rounded-lg border border-border text-xs font-semibold hover:bg-secondary transition-colors cursor-pointer text-foreground"
                           >
                             {isSelected ? pick("إخفاء المعاينة", "Hide Preview") : pick("معاينة البنود", "Preview Items")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadPresetExcel(preset)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                            title={pick(
+                              "تنزيل هذا القالب كملف Excel (.xlsx) كامل على جهازك",
+                              "Download this preset as an Excel (.xlsx) file"
+                            )}
+                          >
+                            <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>{pick("تنزيل كـ Excel", "Download .xlsx")}</span>
                           </button>
                           <Btn
                             variant="solid"
@@ -1147,36 +1711,69 @@ export function InventoryImportModal({
           {/* MODE 2: Custom Excel / CSV File Upload */}
           {importMode === "excel" && (
             <div className="space-y-3.5">
-              {/* Download Sample Template Banner */}
-              <div className="rounded-xl border border-border/80 bg-secondary/30 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <FileSpreadsheet className="size-4" />
+              {/* Download Sample Template & Master Factory Cards */}
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div className="rounded-xl border border-border/80 bg-secondary/30 p-3.5 flex flex-col justify-between gap-3 shadow-2xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <FileSpreadsheet className="size-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground text-xs block">
+                        {pick(
+                          "تحميل نموذج Excel فارغ مجهز للتعبئة",
+                          "Download Official Blank Excel Spreadsheet"
+                        )}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block mt-0.5">
+                        {pick(
+                          "يحتوي الملف على الأعمدة والمسميات المطابقة للنظام لتسهيل الإدخال السريع",
+                          "Pre-formatted with expected columns and sample guidance"
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-bold text-foreground text-xs block">
-                      {pick(
-                        "تحميل نموذج Excel فارغ معتمد ومجهز للتعبئة",
-                        "Download Official Blank Excel Spreadsheet"
-                      )}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {pick(
-                        "يحتوي الملف على الأعمدة والمسميات المطابقة للنظام لتسهيل الإدخال السريع",
-                        "Pre-formatted with expected columns and sample guidance"
-                      )}
-                    </span>
-                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadExcelTemplate}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card text-foreground hover:bg-secondary text-xs font-bold transition-all shadow-xs cursor-pointer w-full"
+                  >
+                    <Download className="size-3.5 text-primary" />
+                    <span>{pick("تحميل ملف النموذج الفارغ (.xlsx)", "Download Blank Template (.xlsx)")}</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleDownloadExcelTemplate}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-foreground hover:bg-secondary text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
-                >
-                  <Download className="size-3.5 text-primary" />
-                  <span>{pick("تحميل ملف النموذج (.xlsx)", "Download Template (.xlsx)")}</span>
-                </button>
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 flex flex-col justify-between gap-3 shadow-2xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Download className="size-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-foreground text-xs block">
+                        {pick(
+                          "شيت مصنع وزير الحلو 2026 الأصلي المعتمد",
+                          "Wazeer El-Helw 2026 Factory Master File"
+                        )}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block mt-0.5">
+                        {pick(
+                          "ملف الإكسيل الأصلي الكامل (109 صنف، 55 ريسبي، وتكاليف الإنتاج)",
+                          "Authentic master workbook with 3 full sheets"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadOfficialExcel}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer w-full"
+                  >
+                    <Download className="size-3.5" />
+                    <span>{pick("تحميل شيت المصنع الأصلي (.xlsx)", "Download Master Factory (.xlsx)")}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Upload Dropzone */}

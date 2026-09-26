@@ -141,7 +141,15 @@ export const partners = [
   { code: "S-2012", name: { ar: "مزارع دينا للألبان", en: "Dina Farms Dairy" }, type: "supplier" as const, balance: 18900, phone: "+20 100 664 2211" },
 ];
 
-export const journal = [
+export interface JournalEntry {
+  id: string;
+  date: string;
+  account: Bi;
+  debit: number;
+  credit: number;
+}
+
+export const journal: JournalEntry[] = [
   { id: "JE-8841", date: "2026-09-07", account: { ar: "المدينون — أحمد محمد", en: "Receivables — Ahmed Mohamed" }, debit: 36000, credit: 0 },
   { id: "JE-8841", date: "2026-09-07", account: { ar: "إيرادات المبيعات", en: "Sales Revenue" }, debit: 0, credit: 31300 },
   { id: "JE-8841", date: "2026-09-07", account: { ar: "ضريبة القيمة المضافة", en: "VAT Payable" }, debit: 0, credit: 4700 },

@@ -520,10 +520,23 @@ export function BomTab({
                       </span>
                       <span>•</span>
                       <span>{pick(bom.name)}</span>
-                      {bom.branchId && warehouses && warehouses.length > 0 && (
+                      {bom.department && (
                         <>
                           <span>•</span>
                           <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary font-medium px-1.5 py-0.5 rounded">
+                            {bom.department}
+                          </span>
+                        </>
+                      )}
+                      {bom.batchYieldWeightKg && (
+                        <span className="text-[10px] bg-muted/60 text-muted-foreground px-1.5 py-0.2 rounded font-mono">
+                          {n(bom.batchYieldWeightKg)} كجم
+                        </span>
+                      )}
+                      {bom.branchId && warehouses && warehouses.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="inline-flex items-center gap-1 text-[10px] bg-secondary text-secondary-foreground font-medium px-1.5 py-0.5 rounded">
                             <Building2 className="w-2.5 h-2.5" />
                             {warehouses.find((w) => w.id === bom.branchId)?.name
                               ? pick(warehouses.find((w) => w.id === bom.branchId)!.name)
@@ -1164,7 +1177,7 @@ export function BomTab({
                 </DialogHeader>
 
                 {/* Product info banner */}
-                <div className="p-3 rounded-xl bg-muted/40 border border-border/60 flex flex-wrap items-center justify-between gap-3">
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <span className="text-[10px] text-muted-foreground block">
                       {pick({ ar: "المنتج النهائي المُصنّع", en: "Finished Product" })}
@@ -1172,10 +1185,28 @@ export function BomTab({
                     <span className="font-bold text-sm text-foreground">
                       {summary.finishedProd ? pick(summary.finishedProd.name) : "N/A"}
                     </span>
-                    <div className="text-[11px] text-muted-foreground font-mono">
-                      SKU: {summary.finishedProd?.sku}
+                    <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2 mt-0.5">
+                      <span>SKU: {summary.finishedProd?.sku}</span>
+                      {viewingBom.department && (
+                        <span className="bg-primary/10 text-primary px-1.5 py-0.2 rounded font-sans text-[10px]">
+                          {viewingBom.department}
+                        </span>
+                      )}
                     </div>
                   </div>
+
+                  {/* Batch Yield Weight & Unit Weight */}
+                  {(viewingBom.batchYieldWeightKg || viewingBom.unitWeightKg) && (
+                    <div className="text-start">
+                      <span className="text-[10px] text-muted-foreground block">
+                        {pick({ ar: "أوزان الخلطة والوحدة", en: "Batch & Unit Weights" })}
+                      </span>
+                      <div className="font-mono text-xs text-foreground font-semibold">
+                        {viewingBom.batchYieldWeightKg ? `${n(viewingBom.batchYieldWeightKg)} كجم خلطة` : ""}
+                        {viewingBom.unitWeightKg ? ` (${n(viewingBom.unitWeightKg, { maximumFractionDigits: 3 })} كجم/وحدة)` : ""}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Branch / Kitchen Facility */}
                   <div>
@@ -1211,8 +1242,8 @@ export function BomTab({
                     <Layers className="w-3.5 h-3.5 text-primary" />
                     <span>
                       {pick({
-                        ar: "المكونات والمقادير لكل دفعة",
-                        en: "Recipe Ingredients & Portions per Batch",
+                        ar: "المكونات والمقادير المعيارية للخلطة",
+                        en: "Standard Recipe Ingredients & Portions",
                       })}
                     </span>
                   </h4>
@@ -1221,10 +1252,13 @@ export function BomTab({
                       <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground">
                         <tr>
                           <th className="py-2 px-3 text-start">
-                            {pick({ ar: "المادة الخام", en: "Raw Material" })}
+                            {pick({ ar: "المادة الخام / المكون", en: "Component / Raw Material" })}
                           </th>
                           <th className="py-2 px-3 text-center w-24">
                             {pick({ ar: "الكمية", en: "Quantity" })}
+                          </th>
+                          <th className="py-2 px-3 text-center w-28">
+                            {pick({ ar: "الوزن المعياري", en: "Std Weight" })}
                           </th>
                           <th className="py-2 px-3 text-end w-24">
                             {pick({ ar: "سعر الوحدة", en: "Unit Cost" })}
@@ -1242,13 +1276,24 @@ export function BomTab({
                           return (
                             <tr key={i} className="hover:bg-muted/20">
                               <td className="py-2 px-3 font-medium text-foreground">
-                                {rawProd ? pick(rawProd.name) : matId}
+                                <div>{rawProd ? pick(rawProd.name) : (c.notes || matId)}</div>
+                                {c.notes && (
+                                  <div className="text-[10px] text-muted-foreground font-normal">{c.notes}</div>
+                                )}
                               </td>
                               <td className="py-2 px-3 text-center font-mono">
-                                {n(c.quantity)}{" "}
+                                <span>{n(c.quantity)} </span>
                                 <span className="text-[10px] text-muted-foreground">
-                                  {unitObj ? unitObj.code : ""}
+                                  {unitObj ? pick(unitObj.name) : ""}
                                 </span>
+                                {c.wastePercent && c.wastePercent > 0 ? (
+                                  <span className="block text-[9px] text-amber-600 dark:text-amber-400 font-sans">
+                                    هدر {c.wastePercent}%
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono text-[11px] text-muted-foreground">
+                                {c.weightQty ? `${n(c.weightQty)} ${c.weightUnit || 'كجم'}` : "-"}
                               </td>
                               <td className="py-2 px-3 text-end font-mono text-muted-foreground">
                                 {n(c.unitCost)} ج.م

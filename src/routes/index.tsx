@@ -183,6 +183,28 @@ function Dashboard() {
         </Panel>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-3 mb-6">
+        <Panel title={pick("إحصاء العمليات (اليوم)", "Operations Stats (Today)")} className="lg:col-span-3">
+          <div className="grid gap-4 sm:grid-cols-3 text-center">
+            <div className="surface-flat rounded-xl p-4 border border-border/60">
+              <p className="text-sm font-semibold text-muted-foreground">{pick("مبيعات اليوم", "Today's Sales")}</p>
+              <p className="mt-2 text-2xl font-bold text-primary">{n(124)} <span className="text-sm font-normal text-muted-foreground">{pick("طلب", "orders")}</span></p>
+              <p className="mt-1 text-xs text-emerald-600 font-bold">↑ 12% {pick("عن الأمس", "vs yesterday")}</p>
+            </div>
+            <div className="surface-flat rounded-xl p-4 border border-border/60">
+              <p className="text-sm font-semibold text-muted-foreground">{pick("الإنتاج التام", "Completed Production")}</p>
+              <p className="mt-2 text-2xl font-bold text-brand">{n(850)} <span className="text-sm font-normal text-muted-foreground">{pick("وحدة", "units")}</span></p>
+              <p className="mt-1 text-xs text-emerald-600 font-bold">↑ 5% {pick("عن الأمس", "vs yesterday")}</p>
+            </div>
+            <div className="surface-flat rounded-xl p-4 border border-border/60">
+              <p className="text-sm font-semibold text-muted-foreground">{pick("صرف المخزون (خامات)", "Stock Issued (Raw)")}</p>
+              <p className="mt-2 text-2xl font-bold text-amber-600">{n(420)} <span className="text-sm font-normal text-muted-foreground">{pick("كجم", "kg")}</span></p>
+              <p className="mt-1 text-xs text-rose-600 font-bold">↓ 3% {pick("عن الأمس", "vs yesterday")}</p>
+            </div>
+          </div>
+        </Panel>
+      </div>
+
       <Panel
         title={t("recentInvoices")}
         aside={

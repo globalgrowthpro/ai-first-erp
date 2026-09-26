@@ -3,8 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { FolderTree, BookOpen, Scale } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
-import { journal, kpis, trialBalance } from "@/lib/demo-data";
+import { kpis, trialBalance } from "@/lib/demo-data";
 import { ChartOfAccounts } from "@/components/accounting/ChartOfAccounts";
+import { JournalEntryForm } from "@/components/accounting/JournalEntryForm";
+import { useJournalStore } from "@/lib/accounting-store";
+import { Plus } from "lucide-react";
 
 export const Route = createFileRoute("/accounting")({
   head: () => ({
@@ -24,6 +27,8 @@ export const Route = createFileRoute("/accounting")({
 function Accounting() {
   const { t, pick, money } = useI18n();
   const [activeTab, setActiveTab] = useState<"coa" | "journal" | "trial">("coa");
+  const [isJournalFormOpen, setIsJournalFormOpen] = useState(false);
+  const { entries } = useJournalStore();
 
   const totalDebit = trialBalance.reduce((s, r) => s + r.debit, 0);
   const totalCredit = trialBalance.reduce((s, r) => s + r.credit, 0);
@@ -36,6 +41,14 @@ function Accounting() {
           "دليل الحسابات وقيود اليومية وميزان المراجعة — وفق القواعد المحاسبية المعتمدة",
           "Chart of accounts, journal entries and trial balance — according to standard accounting principles",
         )}
+        actions={
+          activeTab === "journal" ? (
+            <Btn onClick={() => setIsJournalFormOpen(true)} className="gap-2">
+              <Plus className="size-4" />
+              {pick("قيد يومية جديد", "New Journal Entry")}
+            </Btn>
+          ) : undefined
+        }
       />
 
       {/* Accounting View Tabs */}
@@ -80,7 +93,7 @@ function Accounting() {
 
           <Panel title={t("journal")}>
             <DataTable head={["#", t("date"), t("account"), t("debit"), t("credit")]}>
-              {journal.map((j, idx) => (
+              {entries.map((j, idx) => (
                 <tr key={`${j.id}-${idx}`} className="hover:bg-secondary">
                   <Td className="num font-bold">{j.id}</Td>
                   <Td className="num text-muted-foreground">{j.date}</Td>
@@ -121,6 +134,8 @@ function Accounting() {
           </Panel>
         </div>
       )}
+      {/* Journal Entry Form Modal */}
+      <JournalEntryForm open={isJournalFormOpen} onOpenChange={setIsJournalFormOpen} />
     </div>
   );
 }

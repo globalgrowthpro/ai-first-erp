@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { chartOfAccounts, type AccountItem } from "@/lib/demo-data";
+import { chartOfAccounts, journal as initialJournal, type AccountItem, type JournalEntry } from "@/lib/demo-data";
 
 const STORAGE_KEY = "wazeer_erp_chart_of_accounts_v1";
 
@@ -76,5 +76,37 @@ export function useAccountsStore() {
     addAccount,
     updateAccount,
     deleteAccount,
+  };
+}
+
+const JOURNAL_STORAGE_KEY = "wazeer_erp_journal_v1";
+
+export function useJournalStore() {
+  const [entries, setEntries] = useState<JournalEntry[]>(() => {
+    if (typeof window === "undefined") return initialJournal;
+    try {
+      const saved = localStorage.getItem(JOURNAL_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse journal store", e);
+    }
+    return initialJournal;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(entries));
+    } catch (e) {
+      console.error("Failed to save journal store", e);
+    }
+  }, [entries]);
+
+  const addEntries = useCallback((newEntries: JournalEntry[]) => {
+    setEntries((prev) => [...newEntries, ...prev]);
+  }, []);
+
+  return {
+    entries,
+    addEntries,
   };
 }

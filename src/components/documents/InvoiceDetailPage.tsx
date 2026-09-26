@@ -312,7 +312,11 @@ export function InvoiceDetailPage({ docId, kind }: InvoiceDetailPageProps) {
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-[10px]">{pick("الفرع المنفذ:", "Fulfillment Branch:")}</span>
-                  <span className="font-semibold text-foreground">{pick("المطبخ المركزي — العاشر", "Central Kitchen")}</span>
+                  <span className="font-semibold text-foreground">
+                    {doc.branch
+                      ? pick(doc.branch.ar, doc.branch.en)
+                      : pick("المطبخ المركزي — العاشر", "Central Kitchen")}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-[10px]">{pick("الفاتورة الإلكترونية:", "E-Invoice Status:")}</span>

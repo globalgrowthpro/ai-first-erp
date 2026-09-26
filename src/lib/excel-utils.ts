@@ -60,7 +60,44 @@ export function exportEmployeesToExcel(employees: EmployeeRecord[], filename?: s
   XLSX.utils.book_append_sheet(workbook, worksheet, "Employees_الموظفون");
 
   const actualFilename = filename || `employees-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, actualFilename);
+  safeDownloadWorkbook(workbook, actualFilename);
+}
+
+/**
+ * Safe browser workbook downloader
+ */
+export function safeDownloadWorkbook(workbook: XLSX.WorkBook, filename: string): boolean {
+  try {
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    anchor.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // ignore
+      }
+    }, 300);
+    return true;
+  } catch (err) {
+    console.warn("Direct blob download failed, attempting XLSX.writeFile fallback:", err);
+    try {
+      XLSX.writeFile(workbook, filename);
+      return true;
+    } catch (err2) {
+      console.error("XLSX.writeFile also failed:", err2);
+      return false;
+    }
+  }
 }
 
 /**
@@ -86,7 +123,7 @@ export function exportAttendanceToExcel(attendance: AttendanceRecord[], filename
   XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance_الحضور");
 
   const actualFilename = filename || `attendance-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, actualFilename);
+  safeDownloadWorkbook(workbook, actualFilename);
 }
 
 /**
@@ -154,7 +191,7 @@ export function downloadEmployeeTemplateExcel() {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Template_نموذج_استيراد");
 
-  XLSX.writeFile(workbook, "employees_import_template.xlsx");
+  safeDownloadWorkbook(workbook, "employees_import_template.xlsx");
 }
 
 /**
