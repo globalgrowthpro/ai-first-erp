@@ -26,9 +26,6 @@ function DispatchPage() {
 
   const activeOrder = editing ? orders.find(o => o.id === editing.id) || editing : null;
 
-  const markStatus = (id: string, status: DispatchOrder["status"]) => {
-    updateOrder(id, { status });
-  };
 
 
   return (
