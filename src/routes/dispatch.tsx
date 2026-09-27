@@ -18,13 +18,15 @@ export const Route = createFileRoute("/dispatch")({
 
 function DispatchPage() {
   const { t, pick, money } = useI18n();
-  const { orders, addOrder, updateOrder, deleteOrder, nextId } = useDispatchStore();
+  const { orders, addOrder, updateOrder, deleteOrder, nextId, markStatus } = useDispatchStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DispatchOrder | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const activeOrder = editing ? orders.find(o => o.id === editing.id) || editing : null;
+
+
 
   return (
     <div className="space-y-6">
