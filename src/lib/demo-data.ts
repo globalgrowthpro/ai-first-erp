@@ -634,13 +634,21 @@ export const quickReplies = [
 ];
 
 export const roles = [
-  { key: { ar: "مدير عام", en: "Admin" }, users: 2 },
-  { key: { ar: "مدير", en: "Manager" }, users: 4 },
-  { key: { ar: "محاسب", en: "Accountant" }, users: 6 },
-  { key: { ar: "مبيعات", en: "Sales" }, users: 11 },
-  { key: { ar: "مشتريات", en: "Purchase" }, users: 3 },
-  { key: { ar: "مخزن", en: "Warehouse" }, users: 5 },
-  { key: { ar: "مراجع", en: "Auditor" }, users: 1 },
+  { key: { ar: "مدير عام ونظام", en: "Admin" }, users: 2 },
+  { key: { ar: "الموارد البشرية", en: "HR" }, users: 2 },
+  { key: { ar: "محاسب مالي", en: "Accountant" }, users: 6 },
+  { key: { ar: "المشتريات والتوريد", en: "Purchase" }, users: 3 },
+  { key: { ar: "الدعم الفني والخدمة", en: "Helpdesk" }, users: 2 },
+  { key: { ar: "المدير التقني والتطوير", en: "CTO" }, users: 1 },
+  { key: { ar: "مدير فرع ونقاط بيع", en: "Branch Manager" }, users: 4 },
+  { key: { ar: "مدير إدارة / تشغيل", en: "Manager" }, users: 3 },
+  { key: { ar: "مبيعات وكاشير", en: "Sales" }, users: 11 },
+  { key: { ar: "مخازن وسلاسل إمداد", en: "Warehouse" }, users: 5 },
+  { key: { ar: "مراجع داخلي ورقابة", en: "Auditor" }, users: 1 },
+  { key: { ar: "شيف تصنيع وحلويات", en: "Chef" }, users: 6 },
+  { key: { ar: "سائق وتوزيع أسطول", en: "Driver" }, users: 4 },
+  { key: { ar: "مساعد إداري وفني", en: "Assistant" }, users: 3 },
+  { key: { ar: "موظف عام", en: "Employee" }, users: 8 },
 ];
 
 export const permissionMatrix = {
@@ -675,7 +683,7 @@ export interface DepartmentItem {
   id: string;
   name: Bi;
   code: string;
-  manager: Bi;
+  manager?: Bi;
   headcount: number;
 }
 
@@ -690,6 +698,7 @@ export const departments: DepartmentItem[] = [
 
 export interface PositionItem {
   id: string;
+  code?: string;
   title: Bi;
   departmentId: string;
   level: "c-level" | "manager" | "specialist" | "staff";
@@ -715,11 +724,15 @@ export interface SystemPage {
 
 export const systemPages: SystemPage[] = [
   { id: "page-dashboard", path: "/", name: { ar: "لوحة التحكم التنفيذية", en: "Executive Dashboard" }, badge: { ar: "رئيسية", en: "Core" } },
+  { id: "page-pos", path: "/pos", name: { ar: "شاشة الكاشير ونقاط البيع (POS)", en: "Point of Sale (POS)" }, badge: { ar: "كاشير", en: "POS" } },
   { id: "page-sales", path: "/sales", name: { ar: "المبيعات وفواتير العملاء", en: "Sales & Invoices" }, badge: { ar: "تجاري", en: "Sales" } },
   { id: "page-purchases", path: "/purchases", name: { ar: "المشتريات وأوامر التوريد", en: "Purchases & Orders" }, badge: { ar: "إمداد", en: "Supply" } },
   { id: "page-accounting", path: "/accounting", name: { ar: "شجرة الحسابات والمالية", en: "Accounting & Ledger" }, badge: { ar: "مالي", en: "Finance" } },
   { id: "page-inventory", path: "/inventory", name: { ar: "مخزون أصناف حلويات الوزير", en: "Inventory & Sweets" }, badge: { ar: "مخازن", en: "Stock" } },
   { id: "page-partners", path: "/partners", name: { ar: "العملاء والموردون والفنادق", en: "Customers & Vendors" }, badge: { ar: "علاقات", en: "CRM" } },
+  { id: "page-hr", path: "/hr", name: { ar: "الموارد البشرية وشؤون الموظفين", en: "HR & Employee Records" }, badge: { ar: "أفراد", en: "HR" } },
+  { id: "page-helpdesk", path: "/helpdesk", name: { ar: "الدعم الفني وخدمة العملاء", en: "Helpdesk & Support" }, badge: { ar: "دعم", en: "Support" } },
+  { id: "page-dispatch", path: "/dispatch", name: { ar: "التوزيع وتوجيه الأسطول", en: "Dispatch & Fleet" }, badge: { ar: "أسطول", en: "Fleet" } },
   { id: "page-reports", path: "/reports", name: { ar: "تقارير الأداء والأرباح الذكية", en: "Reports & Profitability" }, badge: { ar: "تحليل", en: "BI" } },
   { id: "page-audit", path: "/audit", name: { ar: "سجل التدقيق والحركات الرقابية", en: "Audit Trail & Compliance" }, badge: { ar: "أمان", en: "Security" } },
   { id: "page-ai", path: "/ai", name: { ar: "غرفة عمليات الذكاء الاصطناعي", en: "AI Operations Center" }, badge: { ar: "ذكاء", en: "AI" } },
@@ -730,7 +743,7 @@ export const systemPages: SystemPage[] = [
 export interface SystemAction {
   id: string;
   name: Bi;
-  category: "sales" | "purchases" | "accounting" | "inventory" | "admin" | "ai";
+  category: "sales" | "purchases" | "accounting" | "inventory" | "admin" | "ai" | "hr" | "support" | "fleet";
 }
 
 export const systemActions: SystemAction[] = [
@@ -746,6 +759,186 @@ export const systemActions: SystemAction[] = [
   { id: "ai.configure", name: { ar: "إعداد وكلاء الذكاء ومفاتيح API", en: "Configure AI Modules & Keys" }, category: "ai" },
 ];
 
+export type AppUserRole =
+  | "admin"
+  | "hr"
+  | "accountant"
+  | "purchase"
+  | "helpdesk"
+  | "cto"
+  | "branch_manager"
+  | "manager"
+  | "sales"
+  | "warehouse"
+  | "auditor"
+  | "employee"
+  | "driver"
+  | "chef"
+  | "assistant"
+  | "pos_cashier";
+
+export interface RoleItem {
+  id: string;
+  key: string;
+  name: Bi;
+  description: Bi;
+  allowedPages: string[];
+  allowedActions: string[];
+  badgeClass?: string;
+  isSystem?: boolean;
+}
+
+export const defaultRoles: RoleItem[] = [
+  {
+    id: "role-admin",
+    key: "admin",
+    name: { ar: "Admin (مدير نظام / إدارة عليا)", en: "Admin (System Administrator)" },
+    description: { ar: "كامل صلاحيات التحكم بجميع الموديلات والإعدادات والحسابات", en: "Full administrative privileges over all ERP modules and records" },
+    allowedPages: ["/", "/pos", "/sales", "/purchases", "/accounting", "/inventory", "/manufacturing", "/partners", "/hr", "/helpdesk", "/dispatch", "/reports", "/audit", "/ai", "/ai-modules", "/settings"],
+    allowedActions: ["invoice.create", "invoice.delete", "purchase.create", "payment.approve", "accounting.edit", "stock.adjust", "stock.transfer", "reports.export", "users.manage", "ai.configure"],
+    isSystem: true,
+  },
+  {
+    id: "role-hr",
+    key: "hr",
+    name: { ar: "HR (الموارد البشرية)", en: "HR (Human Resources)" },
+    description: { ar: "إدارة شؤون الموظفين، الحضور والانصراف، الهيكل الإداري والرواتب", en: "Manage staff directory, payroll, attendance, and organizational chart" },
+    allowedPages: ["/", "/hr", "/reports", "/audit", "/settings"],
+    allowedActions: ["reports.export", "users.manage"],
+    isSystem: true,
+  },
+  {
+    id: "role-accountant",
+    key: "accountant",
+    name: { ar: "Accountant (محاسب مالي)", en: "Accountant (Finance)" },
+    description: { ar: "إدارة قيود اليومية، شجرة الحسابات، الضرائب، والتقارير المالية", en: "Journal entries, chart of accounts, financial statements, and ledger auditing" },
+    allowedPages: ["/", "/accounting", "/sales", "/purchases", "/reports", "/audit"],
+    allowedActions: ["payment.approve", "accounting.edit", "reports.export", "invoice.create"],
+    isSystem: true,
+  },
+  {
+    id: "role-purchase",
+    key: "purchase",
+    name: { ar: "Purchase (المشتريات والتوريد)", en: "Purchase (Procurement)" },
+    description: { ar: "إصدار أوامر التوريد ومتابعة عروض أسعار الموردين وخامات الإنتاج", en: "Purchase orders, vendor relationship, quote evaluation, and procurement" },
+    allowedPages: ["/", "/purchases", "/inventory", "/partners", "/reports"],
+    allowedActions: ["purchase.create", "reports.export"],
+    isSystem: true,
+  },
+  {
+    id: "role-helpdesk",
+    key: "helpdesk",
+    name: { ar: "Helpdesk (الدعم الفني وخدمة العملاء)", en: "Helpdesk (Support)" },
+    description: { ar: "استقبال وتوجيه تذاكر الدعم الفني ومتابعة طلبات العملاء والفروع", en: "Support ticketing, issue resolution, customer assistance, and branch help" },
+    allowedPages: ["/", "/helpdesk", "/partners"],
+    allowedActions: [],
+    isSystem: true,
+  },
+  {
+    id: "role-cto",
+    key: "cto",
+    name: { ar: "CTO (المدير التقني والتطوير)", en: "CTO (Technology Lead)" },
+    description: { ar: "الإشراف على البنية التقنية، تكاملات الـ API، أمن البيانات ونماذج الذكاء", en: "Technical infrastructure, API keys, AI module routing, and cyber compliance" },
+    allowedPages: ["/", "/settings", "/ai", "/ai-modules", "/audit", "/reports"],
+    allowedActions: ["ai.configure", "users.manage", "reports.export"],
+    isSystem: true,
+  },
+  {
+    id: "role-branch-manager",
+    key: "branch_manager",
+    name: { ar: "Branch Manager (مدير فرع ونقاط بيع)", en: "Branch Manager (Retail)" },
+    description: { ar: "متابعة كاشير الفرع، المبيعات اليومية، وتحويلات المخازن الداخلية", en: "Store sales, register shifts, cash settlement, and branch replenishment" },
+    allowedPages: ["/", "/pos", "/sales", "/inventory", "/partners", "/reports"],
+    allowedActions: ["invoice.create", "stock.transfer", "reports.export"],
+    isSystem: true,
+  },
+  {
+    id: "role-manager",
+    key: "manager",
+    name: { ar: "Manager (مدير إدارة / تشغيل)", en: "Manager (Operations)" },
+    description: { ar: "إدارة العمليات التشغيلية واعتماد الخطط ومراقبة مؤشرات الأداء", en: "Department management, operations oversight, and approval workflows" },
+    allowedPages: ["/", "/sales", "/purchases", "/inventory", "/reports", "/audit"],
+    allowedActions: ["reports.export", "payment.approve"],
+    isSystem: true,
+  },
+  {
+    id: "role-chef",
+    key: "chef",
+    name: { ar: "Chef (شيف تصنيع وحلويات)", en: "Chef (Kitchen & Pastry)" },
+    description: { ar: "إدارة خطوط إنتاج الحلويات، وصفات التشغيل، واستهلاك خامات المطبخ", en: "Confectionery production runs, recipe adherence, and ingredient tracking" },
+    allowedPages: ["/", "/inventory", "/purchases"],
+    allowedActions: ["stock.adjust", "stock.transfer"],
+    isSystem: true,
+  },
+  {
+    id: "role-sales",
+    key: "sales",
+    name: { ar: "Sales (مبيعات وكاشير)", en: "Sales (Cashier & Rep)" },
+    description: { ar: "إصدار فواتير البيع للعملاء وإدارة الكاشير وتحصيل المدفوعات", en: "Point of sale invoicing, cash collection, and customer relationship" },
+    allowedPages: ["/", "/pos", "/sales", "/partners"],
+    allowedActions: ["invoice.create"],
+    isSystem: true,
+  },
+  {
+    id: "role-warehouse",
+    key: "warehouse",
+    name: { ar: "Warehouse (مخازن وسلاسل إمداد)", en: "Warehouse (Stock & Supply)" },
+    description: { ar: "استلام الشحنات، الجرد الدوري، تحويل الأصناف وتتبع الأرصدة", en: "Goods receipt, warehouse transfers, cycle count, and storage management" },
+    allowedPages: ["/", "/inventory", "/purchases"],
+    allowedActions: ["stock.adjust", "stock.transfer", "purchase.create"],
+    isSystem: true,
+  },
+  {
+    id: "role-driver",
+    key: "driver",
+    name: { ar: "Driver (سائق وتوزيع أسطول)", en: "Driver (Delivery & Fleet)" },
+    description: { ar: "استلام أوامر التوزيع، توصيل الشحنات، وتأكيد الاستلام من الفروع", en: "Order delivery dispatch, route navigation, and delivery proof verification" },
+    allowedPages: ["/", "/dispatch"],
+    allowedActions: [],
+    isSystem: true,
+  },
+  {
+    id: "role-auditor",
+    key: "auditor",
+    name: { ar: "Auditor (مراجع داخلي وجودة)", en: "Auditor (Internal Compliance)" },
+    description: { ar: "فحص سجلات التدقيق، التحقق من الحركات الشاذة، والامتثال الرقابي", en: "Review audit trails, suspicious transactions, and corporate compliance" },
+    allowedPages: ["/", "/audit", "/reports", "/accounting", "/sales", "/purchases"],
+    allowedActions: ["reports.export"],
+    isSystem: true,
+  },
+  {
+    id: "role-assistant",
+    key: "assistant",
+    name: { ar: "Assistant (مساعد إداري وفني)", en: "Assistant (Admin/Technical)" },
+    description: { ar: "الدعم المكتبي، تنظيم السجلات، وإدخال البيانات الأساسية", en: "Administrative assistance, record organization, and data entry" },
+    allowedPages: ["/", "/partners", "/sales"],
+    allowedActions: [],
+    isSystem: true,
+  },
+  {
+    id: "role-employee",
+    key: "employee",
+    name: { ar: "Employee (موظف عام)", en: "Employee (Staff)" },
+    description: { ar: "حساب موظف قياسي للوصول إلى لوحة التحكم والبيانات العامة", en: "Standard employee portal access" },
+    allowedPages: ["/"],
+    allowedActions: [],
+    isSystem: true,
+  },
+  {
+    id: "role-pos-cashier",
+    key: "pos_cashier",
+    name: { ar: "POS Cashier (كاشير نقطة بيع فقط)", en: "POS Cashier (POS Terminal Only)" },
+    description: {
+      ar: "صلاحية وصول حصرية ومقيدة لشاشة نقطة البيع (POS) فقط مع حظر كافة أقسام وموديلات النظام الأخرى",
+      en: "Exclusive access strictly limited to the POS screen only, blocking all other ERP modules",
+    },
+    allowedPages: ["/pos"],
+    allowedActions: ["invoice.create"],
+    badgeClass: "bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+    isSystem: true,
+  },
+];
+
 export interface UserItem {
   id: string;
   name: Bi;
@@ -753,7 +946,7 @@ export interface UserItem {
   avatar?: string;
   departmentId: string;
   positionId: string;
-  role: "admin" | "manager" | "accountant" | "sales" | "warehouse" | "auditor";
+  role: AppUserRole;
   allowedPages: string[];
   allowedActions: string[];
   status: "active" | "inactive";
@@ -763,13 +956,26 @@ export interface UserItem {
 
 export const users: UserItem[] = [
   {
+    id: "usr-pos-cashier",
+    name: { ar: "كاشير نقطة البيع", en: "POS Cashier" },
+    email: "cashier@wazeer-elhelw.com",
+    departmentId: "dept-retail",
+    positionId: "pos-cashier-rep",
+    role: "pos_cashier",
+    allowedPages: ["/pos"],
+    allowedActions: ["invoice.create"],
+    status: "active",
+    lastActive: "الآن / Active",
+    sidebarVisible: false,
+  },
+  {
     id: "usr-1",
     name: { ar: "وزير الحلو", en: "Hafez Rahim" },
     email: "hafez@wazeer-elhelw.com",
     departmentId: "dept-exec",
     positionId: "pos-gm",
     role: "admin",
-    allowedPages: ["/", "/sales", "/purchases", "/accounting", "/inventory", "/partners", "/reports", "/audit", "/ai", "/ai-modules", "/settings"],
+    allowedPages: ["/", "/pos", "/sales", "/purchases", "/accounting", "/inventory", "/manufacturing", "/dispatch", "/partners", "/hr", "/reports", "/audit", "/ai", "/ai-modules", "/settings"],
     allowedActions: ["invoice.create", "invoice.delete", "purchase.create", "payment.approve", "accounting.edit", "stock.adjust", "stock.transfer", "reports.export", "users.manage", "ai.configure"],
     status: "active",
     lastActive: "الآن / Just now",
@@ -782,7 +988,7 @@ export const users: UserItem[] = [
     departmentId: "dept-retail",
     positionId: "pos-branch-mgr",
     role: "sales",
-    allowedPages: ["/", "/sales", "/inventory", "/partners", "/ai"],
+    allowedPages: ["/", "/pos", "/sales", "/inventory", "/partners", "/ai"],
     allowedActions: ["invoice.create", "stock.transfer"],
     status: "active",
     lastActive: "منذ 15 دقيقة / 15m ago",

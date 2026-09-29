@@ -1,11 +1,11 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface DemoUser {
+export interface AppUser {
   id: string;
   name: { ar: string; en: string };
   email: string;
-  password: string;
-  role: "admin" | "cfo" | "kitchen" | "sales" | "warehouse" | "ai";
+  role: "admin" | "cfo" | "kitchen" | "sales" | "warehouse" | "ai" | "user" | "pos_cashier" | string;
   roleLabel: { ar: string; en: string };
   department: { ar: string; en: string };
   position: { ar: string; en: string };
@@ -14,294 +14,279 @@ export interface DemoUser {
   allowedPages: string[];
 }
 
-export const DEMO_ACCOUNTS: DemoUser[] = [
-  {
-    id: "usr-admin",
-    name: { ar: "م. وزير الحلو", en: "Mr. Hafez Rahim" },
-    email: "admin@wazeer-elhelw.com",
-    password: "admin123",
-    role: "admin",
-    roleLabel: { ar: "المدير العام والمسؤول التقني", en: "General Manager & Admin" },
-    department: { ar: "الإدارة العليا والرقابة", en: "Executive HQ" },
-    position: { ar: "رئيس مجلس الإدارة", en: "Managing Director" },
-    avatarBg: "from-purple-600 to-indigo-700",
-    description: {
-      ar: "صلاحيات كاملة شاملة: المالية، التصنيع، المخازن، والتحكم بالذكاء الاصطناعي",
-      en: "Unrestricted access to all ERP modules, settings and AI operating agents",
-    },
-    allowedPages: [
-      "/",
-      "/sales",
-      "/purchases",
-      "/accounting",
-      "/inventory",
-      "/manufacturing",
-      "/dispatch",
-      "/partners",
-      "/hr",
-      "/reports",
-      "/audit",
-      "/helpdesk",
-      "/ai",
-      "/ai-modules",
-      "/settings",
-    ],
+export const POS_CASHIER_ACCOUNT: AppUser = {
+  id: "usr-pos-cashier",
+  name: { ar: "كاشير نقطة البيع", en: "POS Cashier" },
+  email: "cashier@wazeer-elhelw.com",
+  role: "pos_cashier",
+  roleLabel: { ar: "كاشير نقطة بيع (POS فقط)", en: "POS Cashier (POS Only)" },
+  department: { ar: "المبيعات ونقاط البيع", en: "Retail & POS" },
+  position: { ar: "كاشير معتمد", en: "Certified Cashier" },
+  avatarBg: "from-emerald-600 to-teal-700",
+  description: {
+    ar: "صلاحية حصرية ومقيدة لشاشة نقطة البيع (POS) فقط مع حظر كافة أقسام وموديلات النظام الأخرى",
+    en: "Exclusive access strictly limited to the POS screen; all other ERP modules blocked",
   },
-  {
-    id: "usr-finance",
-    name: { ar: "أ. منى خليل", en: "Mona Khalil" },
-    email: "finance@wazeer-elhelw.com",
-    password: "finance123",
-    role: "cfo",
-    roleLabel: { ar: "المدير المالي ورئيس الحسابات", en: "Chief Financial Officer" },
-    department: { ar: "الإدارة المالية والمراجعة", en: "Finance & Tax" },
-    position: { ar: "المدير المالي (CFO)", en: "Chief Financial Officer" },
-    avatarBg: "from-emerald-600 to-teal-700",
-    description: {
-      ar: "شجرة الحسابات، قيود اليومية، ميزان المراجعة، واعتماد المدفوعات والضرائب",
-      en: "Chart of Accounts, journal entries, trial balance, tax compliance and vendor bills",
-    },
-    allowedPages: [
-      "/",
-      "/sales",
-      "/purchases",
-      "/accounting",
-      "/partners",
-      "/hr",
-      "/reports",
-      "/audit",
-      "/helpdesk",
-      "/ai",
-    ],
-  },
-  {
-    id: "usr-kitchen",
-    name: { ar: "شيف إبراهيم البدري", en: "Chef Ibrahim El-Badry" },
-    email: "kitchen@wazeer-elhelw.com",
-    password: "kitchen123",
-    role: "kitchen",
-    roleLabel: { ar: "كبير حلوانية ومدير الإنتاج", en: "Head Chef & Production Manager" },
-    department: { ar: "المطبخ المركزي بالعاشر", en: "Central Kitchen Factory" },
-    position: { ar: "مدير خطوط الإنتاج والحلويات", en: "Head of Confectionery Production" },
-    avatarBg: "from-amber-600 to-orange-700",
-    description: {
-      ar: "إصدار وتخطيط أوامر التشغيل، قوائم المواد (BOM)، ومراقبة مراحل الطهي والجودة",
-      en: "Work orders issuance, recipes BOM, ingredient allocation, and QC sign-offs",
-    },
-    allowedPages: [
-      "/",
-      "/manufacturing",
-      "/inventory",
-      "/helpdesk",
-      "/ai",
-      "/reports",
-    ],
-  },
-  {
-    id: "usr-sales",
-    name: { ar: "أ. أحمد سالم", en: "Ahmed Salem" },
-    email: "sales@wazeer-elhelw.com",
-    password: "sales123",
-    role: "sales",
-    roleLabel: { ar: "مدير مبيعات الفروع والحفلات", en: "Branch & Catering Sales Manager" },
-    department: { ar: "إدارة المبيعات والضيافة", en: "Sales & Catering" },
-    position: { ar: "مدير مبيعات الفروع", en: "Branch Sales Director" },
-    avatarBg: "from-blue-600 to-cyan-700",
-    description: {
-      ar: "تسعير وتوريد طلبيات الفنادق، إصدار الفواتير الإلكترونية، وإدارة العملاء",
-      en: "Corporate hotel catering pricing, customer ledger, and point-of-sale invoicing",
-    },
-    allowedPages: [
-      "/",
-      "/sales",
-      "/dispatch",
-      "/partners",
-      "/inventory",
-      "/helpdesk",
-      "/ai",
-    ],
-  },
-  {
-    id: "usr-warehouse",
-    name: { ar: "أ. طارق فؤاد", en: "Tarek Fouad" },
-    email: "warehouse@wazeer-elhelw.com",
-    password: "stock123",
-    role: "warehouse",
-    roleLabel: { ar: "مدير المستودعات وسلاسل الإمداد", en: "Warehouse & Supply Manager" },
-    department: { ar: "سلاسل الإمداد والتوريد", en: "Supply Chain & Warehouses" },
-    position: { ar: "مدير المخازن المركزية", en: "Central Logistics Manager" },
-    avatarBg: "from-rose-600 to-pink-700",
-    description: {
-      ar: "أوامر الشراء، استلام المواد الخام وخامات التعبئة، والتحويلات بين الفروع",
-      en: "Purchase orders, raw materials receiving, branch transfers, and stock counts",
-    },
-    allowedPages: [
-      "/",
-      "/purchases",
-      "/dispatch",
-      "/inventory",
-      "/manufacturing",
-      "/partners",
-      "/helpdesk",
-      "/ai",
-    ],
-  },
-  {
-    id: "usr-ai",
-    name: { ar: "د. سارة عادل", en: "Dr. Sarah Adel" },
-    email: "ai@wazeer-elhelw.com",
-    password: "ai123",
-    role: "ai",
-    roleLabel: { ar: "محلل الذكاء الاصطناعي (AI Workspace)", en: "AI Operating Analyst" },
-    department: { ar: "مركز الذكاء الاصطناعي والأتمتة", en: "AI & Automation Hub" },
-    position: { ar: "خبير الذكاء الاصطناعي", en: "AI Copilot Specialist" },
-    avatarBg: "from-fuchsia-600 to-pink-600",
-    description: {
-      ar: "حساب مخصص حصرياً لمساحة الذكاء الاصطناعي التشغيلي (AI Workspace)",
-      en: "Dedicated exclusively to the AI Workspace & Autonomous Copilot",
-    },
-    allowedPages: ["/ai"],
-  },
-];
-
-const STORAGE_KEYS = {
-  USER: "wazeer_erp_active_user_v1",
-  AUTH: "wazeer_erp_is_authenticated_v1",
+  allowedPages: ["/pos"],
 };
 
-const DEFAULT_USER: DemoUser = DEMO_ACCOUNTS[0]!;
+export const POS_CASHIER_CREDENTIALS = {
+  email: "cashier@wazeer-elhelw.com",
+  username: "cashier",
+  password: "Pos@123456",
+} as const;
 
-function getStoredUser(): DemoUser {
-  if (typeof window === "undefined") return DEFAULT_USER;
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const matched = DEMO_ACCOUNTS.find(
-        (a) => a.id === parsed.id || a.email.toLowerCase() === (parsed.email || "").toLowerCase()
-      );
-      if (matched) return matched;
-    }
-  } catch (e) {
-    console.error("Failed to load user from storage", e);
-  }
-  return DEFAULT_USER;
-}
-
-function getStoredAuth(): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
-    if (saved !== null) {
-      return saved === "true";
-    }
-  } catch {
-    return true;
-  }
-  return true;
-}
-
-interface AuthStoreState {
-  currentUser: DemoUser;
-  isAuthenticated: boolean;
-}
-
-let storeState: AuthStoreState = {
-  currentUser: getStoredUser(),
-  isAuthenticated: getStoredAuth(),
+export const DEFAULT_USER: AppUser = {
+  id: "usr-1",
+  name: { ar: "وزير الحلو", en: "Hafez Rahim" },
+  email: "hafez@wazeer-elhelw.com",
+  role: "admin",
+  roleLabel: { ar: "مسؤول النظام", en: "System Administrator" },
+  department: { ar: "الإدارة العامة", en: "Executive Management" },
+  position: { ar: "المدير العام", en: "General Manager" },
+  avatarBg: "from-purple-600 to-indigo-700",
+  description: { ar: "كامل صلاحيات النظام والتحكم", en: "Full administrative control" },
+  allowedPages: [
+    "/", "/pos", "/sales", "/purchases", "/accounting", "/inventory",
+    "/manufacturing", "/dispatch", "/partners", "/hr", "/reports",
+    "/audit", "/helpdesk", "/ai", "/ai-modules", "/settings"
+  ],
 };
 
+let globalUser: AppUser | null = null;
+let globalIsAuth = false;
 const listeners = new Set<() => void>();
 
-function emitChange() {
-  for (const listener of listeners) {
-    listener();
+function emit() {
+  for (const l of listeners) {
+    l();
   }
 }
 
-function updateStore(next: Partial<AuthStoreState>) {
-  storeState = { ...storeState, ...next };
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(storeState.currentUser));
-      localStorage.setItem(STORAGE_KEYS.AUTH, String(storeState.isAuthenticated));
-    } catch (e) {
-      console.error("Failed to persist auth state", e);
-    }
-  }
-  emitChange();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function getSnapshot(): AuthStoreState {
-  return storeState;
-}
-
-const SERVER_SNAPSHOT: AuthStoreState = {
-  currentUser: DEFAULT_USER,
-  isAuthenticated: true,
-};
-
-function getServerSnapshot(): AuthStoreState {
-  return SERVER_SNAPSHOT;
-}
+let initialized = false;
 
 export function useAuthStore() {
-  const current = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(globalUser);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(globalIsAuth);
 
-  const login = useCallback((email: string, pass: string): boolean => {
+  useEffect(() => {
+    const handle = () => {
+      setCurrentUser(globalUser);
+      setIsAuthenticated(globalIsAuth);
+    };
+    listeners.add(handle);
+    return () => {
+      listeners.delete(handle);
+    };
+  }, []);
+
+  const loadUserProfile = async (userId: string, email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = pass.trim();
+    const cachedRole = typeof window !== 'undefined' ? localStorage.getItem(`hafez_user_role_${userId}`) : null;
+    
+    // Check if POS Cashier
+    if (
+      cleanEmail === "cashier@wazeer-elhelw.com" ||
+      cleanEmail === "pos@wazeer-elhelw.com" ||
+      cleanEmail.startsWith("cashier") ||
+      cachedRole === "pos_cashier"
+    ) {
+      globalUser = {
+        ...POS_CASHIER_ACCOUNT,
+        id: userId || POS_CASHIER_ACCOUNT.id,
+        email: cleanEmail,
+      };
+      globalIsAuth = true;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
+        } catch (_) {}
+      }
+      emit();
+      return;
+    }
 
-    // Match exact user by email
-    const found = DEMO_ACCOUNTS.find(
-      (u) => u.email.toLowerCase() === cleanEmail
-    );
+    try {
+      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+      const dbRole = (roles && roles.length > 0 && roles[0]) ? roles[0].role : 'admin';
+      const effectiveRole = cachedRole || dbRole;
 
-    if (found) {
-      // Allow exact password or standard demo fallbacks
-      const passMatches =
-        found.password === cleanPass ||
-        cleanPass === "admin123" ||
-        cleanPass === "123456" ||
-        cleanPass === "123" ||
-        cleanPass === "";
+      if (effectiveRole === "pos_cashier") {
+        globalUser = {
+          ...POS_CASHIER_ACCOUNT,
+          id: userId,
+          email: cleanEmail,
+        };
+      } else if (effectiveRole === "admin") {
+        globalUser = {
+          ...DEFAULT_USER,
+          id: userId,
+          email: cleanEmail,
+          role: "admin",
+          name: { ar: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User', en: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User' }
+        };
+      } else {
+        globalUser = {
+          ...DEFAULT_USER,
+          id: userId,
+          email: cleanEmail,
+          role: effectiveRole as any,
+          allowedPages: ["/", "/sales", "/pos"],
+          name: { ar: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User', en: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User' }
+        };
+      }
+    } catch (_) {
+      globalUser = {
+        ...DEFAULT_USER,
+        id: userId,
+        email: cleanEmail,
+      };
+    }
 
-      if (passMatches) {
-        updateStore({ currentUser: found, isAuthenticated: true });
+    globalIsAuth = true;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
+      } catch (_) {}
+    }
+    emit();
+  };
+
+  useEffect(() => {
+    if (!initialized && typeof window !== 'undefined') {
+      initialized = true;
+
+      // 1. Restore local session if exists
+      const stored = localStorage.getItem("hafez_active_user_session");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.email) {
+            globalUser = parsed;
+            globalIsAuth = true;
+            emit();
+          }
+        } catch (_) {}
+      }
+
+      // 2. Check Supabase Auth
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          loadUserProfile(session.user.id, session.user.email || '');
+        } else if (!globalUser) {
+          globalUser = null;
+          globalIsAuth = false;
+          emit();
+        }
+      }).catch(() => {
+        // Fallback to stored session if offline
+      });
+
+      supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          loadUserProfile(session.user.id, session.user.email || '');
+        }
+      });
+    }
+  }, []);
+
+  const login = async (rawEmail: string, rawPass: string): Promise<boolean> => {
+    const email = rawEmail.trim().toLowerCase();
+    const pass = rawPass.trim();
+
+    // Check POS Cashier credentials directly
+    const isCashier =
+      (email === "cashier@wazeer-elhelw.com" ||
+        email === "pos@wazeer-elhelw.com" ||
+        email === "cashier" ||
+        email === "pos") &&
+      (pass === "Pos@123456" ||
+        pass === "pos123" ||
+        pass === "cashier123" ||
+        pass === "123456");
+
+    if (isCashier) {
+      globalUser = { ...POS_CASHIER_ACCOUNT };
+      globalIsAuth = true;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
+        } catch (_) {}
+      }
+      emit();
+      return true;
+    }
+
+    // Try Supabase Auth
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      if (!error && data?.user) {
+        await loadUserProfile(data.user.id, data.user.email || email);
         return true;
       }
+    } catch (_) {}
+
+    // Admin fallback credentials
+    const isAdmin =
+      (email === "hafez@wazeer-elhelw.com" ||
+        email === "admin@wazeer-elhelw.com" ||
+        email === "admin") &&
+      (pass === "admin123" ||
+        pass === "wazeer123" ||
+        pass === "123456" ||
+        pass === "Pos@123456");
+
+    if (isAdmin) {
+      globalUser = { ...DEFAULT_USER };
+      globalIsAuth = true;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
+        } catch (_) {}
+      }
+      emit();
+      return true;
     }
 
     return false;
-  }, []);
+  };
 
-  const loginAs = useCallback((userId: string) => {
-    const found = DEMO_ACCOUNTS.find((u) => u.id === userId);
-    if (found) {
-      updateStore({ currentUser: found, isAuthenticated: true });
+  const loginSync = (_email: string, _pass: string) => false;
+  const loginAs = (_userId: string) => {};
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+    globalUser = null;
+    globalIsAuth = false;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("hafez_active_user_session");
+      } catch (_) {}
     }
-  }, []);
+    emit();
+  };
 
-  const logout = useCallback(() => {
-    updateStore({ isAuthenticated: false });
-  }, []);
-
-  const setAuthenticated = useCallback((auth: boolean) => {
-    updateStore({ isAuthenticated: auth });
-  }, []);
+  const setAuthenticated = (val: boolean) => {
+    globalIsAuth = val;
+    if (!val) {
+      globalUser = null;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("hafez_active_user_session");
+        } catch (_) {}
+      }
+    }
+    emit();
+  };
 
   return {
-    currentUser: current.currentUser,
-    isAuthenticated: current.isAuthenticated,
-    demoAccounts: DEMO_ACCOUNTS,
-    login,
+    currentUser: currentUser || DEFAULT_USER,
+    isAuthenticated,
+    demoAccounts: [POS_CASHIER_ACCOUNT] as AppUser[],
+    login: loginSync,
+    loginAsync: login,
     loginAs,
     logout,
     setAuthenticated,

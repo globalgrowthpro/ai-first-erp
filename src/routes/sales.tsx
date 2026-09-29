@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
@@ -232,6 +232,12 @@ function Sales() {
               <Upload className="size-4" />
               <span className="hidden sm:inline">{pick("استيراد", "Import")}</span>
             </Btn>
+            <Link to="/pos">
+              <Btn className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold border-none shadow-sm shadow-amber-500/25">
+                <Store className="size-4" />
+                <span className="hidden sm:inline">{pick("شاشة الكاشير (POS)", "POS Terminal")}</span>
+              </Btn>
+            </Link>
             <Btn onClick={openNew}>
               <Plus className="size-4" />
               {t("newInvoice")}
@@ -239,6 +245,35 @@ function Sales() {
           </div>
         }
       />
+
+      {/* POS Quick Launcher Card */}
+      <div className="mb-4 relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="size-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/20 shrink-0">
+            <Store className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              {pick("شاشة الكاشير ونقاط البيع السريعة (POS Terminal)", "High-Speed Retail POS Terminal")}
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                {pick("نشط ومحدث", "Ready")}
+              </span>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {pick(
+                "بيع مباشر سريع للحلويات والمعارض، مسح باركود، فواتير حرارية 80mm، ربط ضريبي ZATCA/ETA، وحفظ تعليق الطلبات.",
+                "Fast confectionery & retail checkout, barcode scan ready, 80mm thermal receipts, tax QR, and order holding."
+              )}
+            </p>
+          </div>
+        </div>
+        <Link to="/pos" className="shrink-0">
+          <Btn className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
+            <Store className="size-4" />
+            {pick("فتح شاشة الكاشير", "Open Cashier")}
+          </Btn>
+        </Link>
+      </div>
 
       {importMsg && (
         <div className={`p-3 mb-4 rounded-lg text-sm font-bold flex items-center gap-2 ${importMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'}`}>

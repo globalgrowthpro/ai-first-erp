@@ -17,10 +17,11 @@ import {
   ChevronRight,
   Pause,
   Play,
+  Store,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
-import { useAuthStore, type DemoUser } from "@/lib/auth-store";
+import { useAuthStore, POS_CASHIER_CREDENTIALS } from "@/lib/auth-store";
 import { cn } from "@/lib/utils";
 
 interface LoginOverlayProps {
@@ -105,10 +106,10 @@ const SLIDER_IMAGES = [
 export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const { pick, dir, lang } = useI18n();
   const { settings } = useCompanySettings();
-  const { demoAccounts, login, loginAs } = useAuthStore();
+  const { loginAsync } = useAuthStore();
 
-  const [email, setEmail] = useState("admin@wazeer-elhelw.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -136,28 +137,22 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
   const companyLogo = settings.logoUrl || "/wazeer-logo.png";
   const companyName = lang === "ar" ? settings.nameAr : settings.nameEn;
 
-  const handleManualLogin = (e: React.FormEvent) => {
+  const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const ok = login(email, password);
+    setLoading(true);
+    const ok = await loginAsync(email, password);
+    setLoading(false);
     if (ok) {
       onLoginSuccess?.();
     } else {
       setError(
         pick(
-          "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى اختيار أحد الحسابات بالأسفل.",
-          "Invalid email or password. Please choose one of the demo accounts below."
+          "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+          "Invalid email or password."
         )
       );
     }
-  };
-
-  const handleQuickDemoLogin = (account: DemoUser) => {
-    setEmail(account.email);
-    setPassword(account.password);
-    setError("");
-    loginAs(account.id);
-    onLoginSuccess?.();
   };
 
   const currentSlide = SLIDER_IMAGES[activeSlide] ?? SLIDER_IMAGES[0]!;
@@ -327,8 +322,8 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
               </h1>
               <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
                 {pick(
-                  "أدخل بياناتك أو اختر أحد الحسابات التجريبية للدخول الفوري",
-                  "Enter credentials or select a 1-click demo role below"
+                  "أدخل بريدك الإلكتروني وكلمة المرور للدخول",
+                  "Enter your credentials to securely access your workspace"
                 )}
               </p>
             </div>
@@ -344,15 +339,16 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
             <form onSubmit={handleManualLogin} className="space-y-2.5 mt-3">
               <div>
                 <label className="block text-[11px] font-bold text-muted-foreground mb-0.5">
-                  {pick("البريد الإلكتروني", "Email Address")}
+                  {pick("اسم المستخدم أو البريد الإلكتروني", "Username or Email")}
                 </label>
                 <div className="relative">
-                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <User className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="cashier@wazeer-elhelw.com"
                     className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
                   />
                 </div>
@@ -369,6 +365,7 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
                     className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
                   />
                 </div>
@@ -383,67 +380,39 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                 <span>{loading ? pick("جاري التحقق...", "Signing in...") : pick("تسجيل الدخول", "Sign In")}</span>
               </button>
             </form>
-          </div>
 
-          {/* Quick Demo Accounts List - Sized to fit all 6 cards with ZERO scrollbar */}
-          <div className="space-y-2 pt-3 border-t border-border/60">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <User className="size-3.5 text-primary" />
-                <span>{pick("الحسابات التجريبية (1-Click Login)", "Ready Demo Accounts")}</span>
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {pick("دخول فوري بنقرة واحدة", "1-click instant login")}
-              </span>
-            </div>
-
-            {/* Complete 6-card 2-column grid without any scrollbar */}
-            <div className="grid gap-1.5 sm:grid-cols-2">
-              {demoAccounts.map((account) => {
-                let RoleIcon = User;
-                if (account.role === "admin") RoleIcon = ShieldCheck;
-                if (account.role === "cfo") RoleIcon = Calculator;
-                if (account.role === "kitchen") RoleIcon = ChefHat;
-                if (account.role === "sales") RoleIcon = Building2;
-                if (account.role === "warehouse") RoleIcon = Boxes;
-                if (account.role === "ai") RoleIcon = Sparkles;
-
-                const isCurrent = email === account.email;
-
-                return (
-                  <button
-                    key={account.id}
-                    type="button"
-                    onClick={() => handleQuickDemoLogin(account)}
-                    className={cn(
-                      "group p-2 rounded-xl border text-start transition-all flex items-center gap-2 hover:shadow-xs cursor-pointer",
-                      isCurrent
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                        : "border-border/70 bg-card hover:bg-secondary/70 hover:border-primary/50"
-                    )}
-                  >
-                    <div
-                      className={`size-7 rounded-lg bg-gradient-to-tr ${account.avatarBg} text-white flex items-center justify-center shrink-0 shadow-xs transition-transform group-hover:scale-105`}
-                    >
-                      <RoleIcon className="size-3.5" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-[11px] font-bold text-foreground truncate">
-                          {pick(account.name.ar, account.name.en)}
-                        </p>
-                        <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
-                          {pick("دخول", "Login")}
-                        </span>
-                      </div>
-                      <p className="text-[9px] font-semibold text-primary truncate leading-tight">
-                        {pick(account.roleLabel.ar, account.roleLabel.en)}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Quick POS Cashier Credentials Card */}
+            <div className="mt-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold text-xs">
+                  <Store className="size-3.5" />
+                  <span>{pick("حساب كاشير نقطة البيع (POS Only)", "POS Cashier Account (POS Only)")}</span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  {pick("وصول حصري للـ POS", "POS Screen Only")}
+                </span>
+              </div>
+              <div className="text-[11px] space-y-1 text-muted-foreground bg-card/70 rounded-xl p-2 border border-border/60 font-mono">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-sans text-muted-foreground/80">{pick("المستخدم:", "User:")}</span>
+                  <span className="font-bold text-foreground">{POS_CASHIER_CREDENTIALS.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-sans text-muted-foreground/80">{pick("كلمة المرور:", "Pass:")}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{POS_CASHIER_CREDENTIALS.password}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(POS_CASHIER_CREDENTIALS.email);
+                  setPassword(POS_CASHIER_CREDENTIALS.password);
+                }}
+                className="w-full py-1.5 rounded-xl border border-emerald-500/40 bg-card text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Check className="size-3" />
+                <span>{pick("تعبئة بيانات الكاشير بنقرة واحدة", "Fill Cashier Credentials (1-Click)")}</span>
+              </button>
             </div>
           </div>
         </div>

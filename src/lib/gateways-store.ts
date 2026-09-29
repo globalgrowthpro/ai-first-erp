@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SmsGatewaySettings {
   environment: "live" | "sandbox";
@@ -21,17 +22,12 @@ export interface SmtpEmailSettings {
   enableEmail: boolean;
 }
 
-const STORAGE_KEYS = {
-  SMS: "wazeer_erp_gateway_sms_v1",
-  SMTP: "wazeer_erp_gateway_smtp_v1",
-};
-
 export const DEFAULT_SMS_SETTINGS: SmsGatewaySettings = {
   environment: "live",
   defaultLanguage: "english",
   username: "wazeer_sms_gateway",
-  password: "••••••••••••",
-  apiKey: "sms_live_sec_8849201948291039",
+  password: "",
+  apiKey: "",
   senderToken: "WazeerElHelw",
   enableSms: true,
 };
@@ -40,7 +36,7 @@ export const DEFAULT_SMTP_SETTINGS: SmtpEmailSettings = {
   host: "smtp.hostinger.com",
   port: 465,
   username: "notifications@odooteams.com",
-  password: "••••••••••••",
+  password: "",
   fromName: "وزير الحلو — نظام ERP الذكي",
   fromEmail: "info@odooteams.com",
   useSslTls: true,
@@ -48,49 +44,55 @@ export const DEFAULT_SMTP_SETTINGS: SmtpEmailSettings = {
 };
 
 export function useGatewaysStore() {
-  const [smsSettings, setSmsSettings] = useState<SmsGatewaySettings>(() => {
-    if (typeof window === "undefined") return DEFAULT_SMS_SETTINGS;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SMS);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to load SMS settings", e);
-    }
-    return DEFAULT_SMS_SETTINGS;
-  });
+  const [smsSettings, setSmsSettings] = useState<SmsGatewaySettings>(DEFAULT_SMS_SETTINGS);
+  const [smtpSettings, setSmtpSettings] = useState<SmtpEmailSettings>(DEFAULT_SMTP_SETTINGS);
+  const [loading, setLoading] = useState(true);
 
-  const [smtpSettings, setSmtpSettings] = useState<SmtpEmailSettings>(() => {
-    if (typeof window === "undefined") return DEFAULT_SMTP_SETTINGS;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SMTP);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to load SMTP settings", e);
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    const { data } = (await supabase.from('gateway_settings' as any).select('*')) as { data: any[] | null };
+    if (data) {
+      const sms = data.find(d => d.type === 'sms');
+      const smtp = data.find(d => d.type === 'smtp');
+      if (sms && sms.settings) setSmsSettings(sms.settings as unknown as SmsGatewaySettings);
+      if (smtp && smtp.settings) setSmtpSettings(smtp.settings as unknown as SmtpEmailSettings);
     }
-    return DEFAULT_SMTP_SETTINGS;
-  });
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SMS, JSON.stringify(smsSettings));
-      localStorage.setItem(STORAGE_KEYS.SMTP, JSON.stringify(smtpSettings));
-    } catch (e) {
-      console.error("Failed to save gateway settings", e);
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const updateSmsSettings = useCallback(async (updates: Partial<SmsGatewaySettings>) => {
+    const newSettings = { ...smsSettings, ...updates };
+    setSmsSettings(newSettings);
+    
+    const { data } = (await supabase.from('gateway_settings' as any).select('id').eq('type', 'sms').single()) as { data: any };
+    if (data) {
+      await supabase.from('gateway_settings' as any).update({ settings: newSettings as any }).eq('id', data.id);
+    } else {
+      await supabase.from('gateway_settings' as any).insert({ type: 'sms', settings: newSettings as any });
     }
-  }, [smsSettings, smtpSettings]);
+  }, [smsSettings]);
 
-  const updateSmsSettings = useCallback((updates: Partial<SmsGatewaySettings>) => {
-    setSmsSettings((prev) => ({ ...prev, ...updates }));
-  }, []);
-
-  const updateSmtpSettings = useCallback((updates: Partial<SmtpEmailSettings>) => {
-    setSmtpSettings((prev) => ({ ...prev, ...updates }));
-  }, []);
+  const updateSmtpSettings = useCallback(async (updates: Partial<SmtpEmailSettings>) => {
+    const newSettings = { ...smtpSettings, ...updates };
+    setSmtpSettings(newSettings);
+    
+    const { data } = (await supabase.from('gateway_settings' as any).select('id').eq('type', 'smtp').single()) as { data: any };
+    if (data) {
+      await supabase.from('gateway_settings' as any).update({ settings: newSettings as any }).eq('id', data.id);
+    } else {
+      await supabase.from('gateway_settings' as any).insert({ type: 'smtp', settings: newSettings as any });
+    }
+  }, [smtpSettings]);
 
   return {
     smsSettings,
     smtpSettings,
     updateSmsSettings,
     updateSmtpSettings,
+    loading
   };
 }

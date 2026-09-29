@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DispatchItem {
   sku: string;
@@ -7,7 +8,7 @@ export interface DispatchItem {
 }
 
 export interface DispatchOrder {
-  id: string;
+  id: string; // we'll use tracking_number for this in UI
   date: string;
   branch: { ar: string; en: string };
   linkedDoc: { type: "sales" | "purchase" | "none"; id: string };
@@ -18,81 +19,99 @@ export interface DispatchOrder {
   vehicle?: string;
 }
 
-const DEMO_DISPATCH_ORDERS: DispatchOrder[] = [
-  { 
-    id: "DO-1001", 
-    date: new Date().toISOString().slice(0, 10), 
-    branch: { ar: "الفرع الرئيسي", en: "Main Branch" }, 
-    linkedDoc: { type: "sales", id: "INV-10452" },
-    status: "shipped", 
-    totalItems: 120,
-    items: [
-      { sku: "SKU-001", name: { ar: "علبة شوكولاتة", en: "Chocolate Box" }, qty: 120 }
-    ],
-    driver: "أحمد حسن",
-    vehicle: "نقل خفيف - أ ب ج 123"
-  },
-  { 
-    id: "DO-1002", 
-    date: new Date().toISOString().slice(0, 10), 
-    branch: { ar: "مستودع الشرق", en: "East Warehouse" }, 
-    linkedDoc: { type: "purchase", id: "PO-2291" },
-    status: "draft", 
-    totalItems: 45,
-    items: [
-      { sku: "RAW-001", name: { ar: "دقيق فاخر", en: "Fine Flour" }, qty: 45 }
-    ]
-  },
-];
-
-const STORAGE_KEY = "wazeer_erp_dispatch_orders_v2";
-
 export function useDispatchStore() {
-  const [orders, setOrders] = useState<DispatchOrder[]>(() => {
-    if (typeof window === "undefined") return DEMO_DISPATCH_ORDERS;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEMO_DISPATCH_ORDERS;
-    } catch {
-      return DEMO_DISPATCH_ORDERS;
+  const [orders, setOrders] = useState<DispatchOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('dispatch_shipments')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching dispatch orders:", error);
+      setLoading(false);
+      return;
     }
-  });
+
+    if (data) {
+      const mapped: DispatchOrder[] = data.map((row: any) => ({
+        id: row.tracking_number,
+        date: row.created_at,
+        branch: row.branch || { ar: "فرع عام", en: "General Branch" },
+        linkedDoc: row.linked_doc || { type: "none", id: "" },
+        status: (row.status === 'pending' ? 'draft' : row.status) as any,
+        totalItems: row.total_items || 0,
+        items: row.items || [],
+        driver: row.assigned_driver || "",
+        vehicle: row.assigned_vehicle || ""
+      }));
+      setOrders(mapped);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [orders]);
+    fetchOrders();
+  }, [fetchOrders]);
 
   const nextId = useCallback(() => {
     const max = orders.reduce((acc, curr) => {
       const num = parseInt(curr.id.replace("DO-", ""), 10);
-      return num > acc ? num : acc;
+      return !isNaN(num) && num > acc ? num : acc;
     }, 1000);
     return `DO-${max + 1}`;
   }, [orders]);
 
-  const addOrder = useCallback((order: Omit<DispatchOrder, "id">) => {
+  const addOrder = useCallback(async (order: Omit<DispatchOrder, "id">) => {
     const id = nextId();
-    setOrders((prev) => [{ ...order, id }, ...prev]);
+    const newOrder = { ...order, id };
+    setOrders((prev) => [newOrder, ...prev]);
+
+    // Save to Supabase
+    await supabase.from('dispatch_shipments').insert({
+      tracking_number: id,
+      origin_address: 'Main Warehouse',
+      destination_address: order.branch?.en || 'Unknown',
+      status: 'pending',
+      branch: order.branch as any,
+      linked_doc: order.linkedDoc as any,
+      total_items: order.totalItems,
+      items: order.items as any
+    });
   }, [nextId]);
 
-  const updateOrder = useCallback((id: string, orderUpdate: Partial<DispatchOrder>) => {
+  const updateOrder = useCallback(async (id: string, orderUpdate: Partial<DispatchOrder>) => {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...orderUpdate } : o)));
+
+    // Update in Supabase
+    const updateData: any = {};
+    if (orderUpdate.status) updateData.status = orderUpdate.status === 'draft' ? 'pending' : orderUpdate.status;
+    if (orderUpdate.branch) updateData.branch = orderUpdate.branch as any;
+    if (orderUpdate.linkedDoc) updateData.linked_doc = orderUpdate.linkedDoc as any;
+    if (orderUpdate.totalItems) updateData.total_items = orderUpdate.totalItems;
+    if (orderUpdate.items) updateData.items = orderUpdate.items as any;
+
+    await supabase.from('dispatch_shipments').update(updateData).eq('tracking_number', id);
   }, []);
 
-  const deleteOrder = useCallback((id: string) => {
+  const deleteOrder = useCallback(async (id: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== id));
+    await supabase.from('dispatch_shipments').delete().eq('tracking_number', id);
   }, []);
 
-  const markStatus = useCallback((id: string, status: DispatchOrder["status"]) => {
+  const markStatus = useCallback(async (id: string, status: DispatchOrder["status"]) => {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    
+    const dbStatus = status === 'draft' ? 'pending' : (status === 'partial' ? 'processing' : status);
+    await supabase.from('dispatch_shipments').update({ status: dbStatus as any }).eq('tracking_number', id);
   }, []);
 
   return {
     orders,
+    loading,
     addOrder,
     updateOrder,
     deleteOrder,

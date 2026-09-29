@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CompanySettings {
   nameAr: string;
@@ -113,59 +114,104 @@ export const DEFAULT_SETTINGS: CompanySettings = {
   bankDetailsEn: "CIB Commercial Bank — Acc: 1000-8492-3312 — IBAN: EG3800000100084923312000",
 };
 
-const STORAGE_KEY = "hafez_erp_company_settings";
+let globalSettings: CompanySettings = DEFAULT_SETTINGS;
+const listeners = new Set<() => void>();
 
-export function getStoredSettings(): CompanySettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw);
-    // Automatically migrate old logo to Wazeer El-Helw if it was the initial placeholder
-    if (parsed.logoUrl === "/al-firsterp-logo.png" || !parsed.logoUrl) {
-      parsed.logoUrl = "/wazeer-emblem.png";
-      parsed.primaryColor = "#2E1A6B";
-      parsed.accentColor = "#E11D2E";
-      parsed.nameAr = "شركة وزير الحلو للحلويات والمواد الغذائية";
-      parsed.nameEn = "Wazeer El-Helw Sweets & Food Industries";
-      saveStoredSettings({ ...DEFAULT_SETTINGS, ...parsed });
-    }
-    return { ...DEFAULT_SETTINGS, ...parsed };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-export function saveStoredSettings(settings: CompanySettings): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    window.dispatchEvent(new Event("hafez_erp_settings_updated"));
-  } catch (err) {
-    console.error("Failed to save settings:", err);
+function emit() {
+  for (const l of listeners) {
+    l();
   }
 }
 
 export function useCompanySettings() {
-  const [settings, setSettingsState] = useState<CompanySettings>(() => getStoredSettings());
+  const [settings, setSettingsState] = useState<CompanySettings>(globalSettings);
 
   useEffect(() => {
     const handleUpdate = () => {
-      setSettingsState(getStoredSettings());
+      setSettingsState(globalSettings);
     };
-    window.addEventListener("hafez_erp_settings_updated", handleUpdate);
-    return () => window.removeEventListener("hafez_erp_settings_updated", handleUpdate);
+    listeners.add(handleUpdate);
+    return () => {
+      listeners.delete(handleUpdate);
+    };
   }, []);
 
-  const updateSettings = (newSettings: Partial<CompanySettings>) => {
-    const merged = { ...settings, ...newSettings };
-    setSettingsState(merged);
-    saveStoredSettings(merged);
+  const fetchSettings = useCallback(async () => {
+    const { data } = (await supabase.from('company_settings').select('*').limit(1).maybeSingle()) as { data: any };
+    if (data) {
+      globalSettings = {
+        ...DEFAULT_SETTINGS,
+        nameAr: data.name_ar,
+        nameEn: data.name_en,
+        taxNumber: data.tax_number || '',
+        commercialRegister: data.commercial_register || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        website: (data as any).website || '',
+        addressAr: data.address_ar || '',
+        addressEn: data.address_en || '',
+        currency: data.currency || 'EGP',
+        logoUrl: data.logo_url || '/wazeer-emblem.png',
+        ...((data as any).branding || {})
+      };
+      emit();
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const updateSettings = async (newSettings: Partial<CompanySettings>) => {
+    const merged = { ...globalSettings, ...newSettings };
+    globalSettings = merged;
+    emit();
+
+    const { data: existing } = (await supabase.from('company_settings').select('id').limit(1).maybeSingle()) as { data: any };
+    
+    const dbPayload = {
+      name_ar: merged.nameAr,
+      name_en: merged.nameEn,
+      tax_number: merged.taxNumber,
+      commercial_register: merged.commercialRegister,
+      phone: merged.phone,
+      email: merged.email,
+      address_ar: merged.addressAr,
+      address_en: merged.addressEn,
+      currency: merged.currency,
+      logo_url: merged.logoUrl,
+      website: merged.website,
+      branding: {
+        primaryColor: merged.primaryColor,
+        accentColor: merged.accentColor,
+        headerTitleAr: merged.headerTitleAr,
+        headerTitleEn: merged.headerTitleEn,
+        invoiceSubtitleAr: merged.invoiceSubtitleAr,
+        invoiceSubtitleEn: merged.invoiceSubtitleEn,
+        billSubtitleAr: merged.billSubtitleAr,
+        billSubtitleEn: merged.billSubtitleEn,
+        headerLayout: merged.headerLayout,
+        showTaxQr: merged.showTaxQr,
+        showSignature: merged.showSignature,
+        footerNotesAr: merged.footerNotesAr,
+        footerNotesEn: merged.footerNotesEn,
+        bankDetailsAr: merged.bankDetailsAr,
+        bankDetailsEn: merged.bankDetailsEn,
+      } as any
+    };
+
+    if (existing?.id) {
+      await supabase.from('company_settings').update(dbPayload as any).eq('id', existing.id);
+    } else {
+      await supabase.from('company_settings').insert({
+        ...dbPayload,
+        fiscal_year_start: new Date().toISOString()
+      } as any);
+    }
   };
 
   const resetSettings = () => {
-    setSettingsState(DEFAULT_SETTINGS);
-    saveStoredSettings(DEFAULT_SETTINGS);
+    updateSettings(DEFAULT_SETTINGS);
   };
 
   return {

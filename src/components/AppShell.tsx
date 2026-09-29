@@ -32,12 +32,13 @@ import {
   ShieldAlert,
   UserCheck,
   LifeBuoy,
+  Store,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useSidebarVisible } from "@/lib/ui-prefs";
 import { useCompanySettings } from "@/lib/settings-store";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, type AppUser } from "@/lib/auth-store";
 import { useHelpdeskStore } from "@/lib/helpdesk-store";
 import { LoginOverlay } from "@/components/auth/LoginOverlay";
 import { AccessDeniedView } from "./AccessDeniedView";
@@ -53,6 +54,7 @@ import {
 const erpNav = [
   { to: "/", key: "nav_dashboard", icon: LayoutDashboard },
   { to: "/ai", key: "nav_ai", icon: Sparkles },
+  { to: "/pos", key: "nav_pos", icon: Store },
   { to: "/sales", key: "nav_sales", icon: ReceiptText },
   { to: "/purchases", key: "nav_purchases", icon: ShoppingCart },
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
@@ -120,10 +122,12 @@ function NavList({
   items,
   label,
   allowedPages,
+  isAdmin = false,
 }: {
   items: typeof erpNav | typeof controlNav;
   label: string;
   allowedPages: string[];
+  isAdmin?: boolean;
 }) {
   const { t } = useI18n();
   const { tickets } = useHelpdeskStore();
@@ -131,7 +135,9 @@ function NavList({
     (tk) => tk.status === "open" || tk.status === "in_progress"
   ).length;
 
-  const visibleItems = items.filter((item) => allowedPages.includes(item.to));
+  const visibleItems = items.filter(
+    (item) => isAdmin || allowedPages.includes("*") || allowedPages.includes(item.to)
+  );
   if (visibleItems.length === 0) return null;
 
   return (
@@ -183,7 +189,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const normalizedPath = currentPath === "/" ? "/" : currentPath.replace(/\/$/, "");
+  const isAdmin = currentUser.role === "admin";
   const isPageAllowed =
+    isAdmin ||
+    currentUser.allowedPages.includes("*") ||
     currentUser.allowedPages.includes(normalizedPath) ||
     currentUser.allowedPages.some(
       (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
@@ -191,9 +200,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Check if current user only has permission for AI Workspace
   const hasOnlyAiPermission =
-    currentUser.role === "ai" ||
-    (currentUser.allowedPages.length > 0 &&
-      currentUser.allowedPages.every((p) => p === "/ai"));
+    !isAdmin &&
+    (currentUser.role === "ai" ||
+      (currentUser.allowedPages.length > 0 &&
+        currentUser.allowedPages.every((p) => p === "/ai")));
+
+  // Check if current user only has permission for POS Screen
+  const hasOnlyPosPermission =
+    !isAdmin &&
+    (currentUser.role === "pos_cashier" ||
+      (currentUser.allowedPages.length > 0 &&
+        currentUser.allowedPages.every((p) => p === "/pos")));
 
   useEffect(() => {
     if (!isPageAllowed) {
@@ -244,8 +261,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const allowedNavItems = [...erpNav, ...controlNav].filter((item) =>
-    currentUser.allowedPages.includes(item.to)
+  const allowedNavItems = [...erpNav, ...controlNav].filter(
+    (item) => isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes(item.to)
   );
 
   const searchResults = searchQuery.trim()
@@ -288,44 +305,46 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-secondary">
-      {/* Sidebar - Compact Width */}
-      <aside
-        className={cn(
-          "gradient-ink sticky top-0 hidden h-screen w-52 xl:w-56 shrink-0 flex-col border-e border-border/20 p-3",
-          sidebarVisible && "lg:flex"
-        )}
-      >
-        <Link to="/" className="block px-0.5" aria-label={companyName}>
-          <div className="rounded-xl bg-white p-2 shadow-xs transition-transform hover:scale-[1.01]">
-            <img
-              src={companyLogo}
-              alt={companyName}
-              className="h-auto max-h-16 w-full object-contain"
-            />
+      {/* Sidebar - Compact Width (Hidden for POS-only cashiers to maximize terminal workspace) */}
+      {!hasOnlyPosPermission && (
+        <aside
+          className={cn(
+            "gradient-ink sticky top-0 hidden h-screen w-52 xl:w-56 shrink-0 flex-col border-e border-border/20 p-3",
+            sidebarVisible && "lg:flex"
+          )}
+        >
+          <Link to="/" className="block px-0.5" aria-label={companyName}>
+            <div className="rounded-xl bg-white p-2 shadow-xs transition-transform hover:scale-[1.01]">
+              <img
+                src={companyLogo}
+                alt={companyName}
+                className="h-auto max-h-16 w-full object-contain"
+              />
+            </div>
+          </Link>
+
+          <div className="mt-3.5 flex-1 overflow-y-auto">
+            <NavList items={erpNav} label={t("group_erp")} allowedPages={currentUser.allowedPages} isAdmin={isAdmin} />
+            <NavList items={controlNav} label={t("group_control")} allowedPages={currentUser.allowedPages} isAdmin={isAdmin} />
           </div>
-        </Link>
 
-        <div className="mt-3.5 flex-1 overflow-y-auto">
-          <NavList items={erpNav} label={t("group_erp")} allowedPages={currentUser.allowedPages} />
-          <NavList items={controlNav} label={t("group_control")} allowedPages={currentUser.allowedPages} />
-        </div>
-
-        <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-2.5 space-y-0.5">
-          <p className="text-xs font-bold text-ink-foreground truncate">
-            {pick(currentUser.name.ar, currentUser.name.en)}
-          </p>
-          <p className="text-[10px] text-ink-foreground/65 truncate">
-            {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
-          </p>
-        </div>
-      </aside>
+          <div className="rounded-lg border border-ink-foreground/15 bg-ink-foreground/5 p-2.5 space-y-0.5">
+            <p className="text-xs font-bold text-ink-foreground truncate">
+              {pick(currentUser.name.ar, currentUser.name.en)}
+            </p>
+            <p className="text-[10px] text-ink-foreground/65 truncate">
+              {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+            </p>
+          </div>
+        </aside>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header */}
         {!hasOnlyAiPermission && (
           <header className="sticky top-0 z-20 flex items-center gap-2.5 sm:gap-3 border-b border-border/70 bg-card/95 backdrop-blur px-4 py-3">
           <Link
-            to="/"
+            to={hasOnlyPosPermission ? "/pos" : "/"}
             className="w-32 shrink-0 lg:hidden"
             aria-label={companyName}
           >
@@ -336,36 +355,47 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </Link>
 
+          {/* POS Terminal Station Badge */}
+          {hasOnlyPosPermission && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+              <Store className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{pick("محطة نقطة البيع المباشرة (POS Terminal)", "Direct POS Terminal Station")}</span>
+            </div>
+          )}
+
           {/* Sidebar toggle */}
-          <button
-            onClick={() => setSidebarVisible(!sidebarVisible)}
-            title={
-              sidebarVisible
-                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
-                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
-            }
-            aria-label={
-              sidebarVisible
-                ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
-                : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
-            }
-            aria-pressed={sidebarVisible}
-            className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            {sidebarVisible ? (
-              <PanelLeftClose className="size-4" />
-            ) : (
-              <PanelLeft className="size-4" />
-            )}
-          </button>
+          {!hasOnlyPosPermission && (
+            <button
+              onClick={() => setSidebarVisible(!sidebarVisible)}
+              title={
+                sidebarVisible
+                  ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                  : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+              }
+              aria-label={
+                sidebarVisible
+                  ? lang === "ar" ? "إخفاء الشريط الجانبي" : "Hide sidebar"
+                  : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
+              }
+              aria-pressed={sidebarVisible}
+              className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              {sidebarVisible ? (
+                <PanelLeftClose className="size-4" />
+              ) : (
+                <PanelLeft className="size-4" />
+              )}
+            </button>
+          )}
 
           {/* Protected Search Bar */}
-          <div className="relative hidden sm:flex min-w-0 flex-1" ref={searchRef}>
-            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
-              <Search className="size-4 shrink-0 text-muted-foreground" />
-              <input
-                value={searchQuery}
-                onChange={(e) => {
+          {!hasOnlyPosPermission && (
+            <div className="relative hidden sm:flex min-w-0 flex-1" ref={searchRef}>
+              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setIsSearchOpen(true);
                 }}
@@ -424,6 +454,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             )}
           </div>
+        )}
 
           {/* Notification Bell with Dropdown */}
           <div className="relative ms-auto sm:ms-0" ref={notifDropdownRef}>
@@ -542,7 +573,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
 
           {/* Ask AI Button (Only rendered if authorized) */}
-          {currentUser.allowedPages.includes("/ai") && (
+          {(isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes("/ai")) && (
             <Link
               to="/ai"
               className={cn(
@@ -598,7 +629,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
 
                 <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {demoAccounts.map((acc) => {
+                  {demoAccounts.map((acc: AppUser) => {
                     const isSelected = currentUser.id === acc.id;
                     return (
                       <button
@@ -681,7 +712,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {!hasOnlyAiPermission && (
           <nav className="flex gap-1 overflow-x-auto border-b border-border/40 bg-ink px-2 py-2 lg:hidden">
             {[...erpNav, ...controlNav]
-              .filter((item) => currentUser.allowedPages.includes(item.to))
+              .filter((item) => isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes(item.to))
               .map(({ to, key }) => (
               <Link
                 key={to}

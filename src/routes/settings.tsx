@@ -3,11 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, X, ShieldAlert, Building2, ShieldCheck, Users, Radio, LifeBuoy } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, PageHeader, Panel, Td } from "@/components/kit";
-import { highRiskActions, permissionMatrix, roles } from "@/lib/demo-data";
+import { roles } from "@/lib/demo-data";
 import { CompanyBrandingSettings } from "@/components/settings/CompanyBrandingSettings";
 import { UsersManagement } from "@/components/settings/UsersManagement";
 import { GatewaySettings } from "@/components/settings/GatewaySettings";
 import { HelpdeskManagement } from "@/components/settings/HelpdeskManagement";
+import { useSecurityStore } from "@/lib/security-store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/settings")({
 function Settings() {
   const { t, pick, n } = useI18n();
   const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways" | "helpdesk">("branding");
+  const { security } = useSecurityStore();
+  const { permissionMatrix, highRiskActions } = security;
 
   return (
     <div className="space-y-6">
