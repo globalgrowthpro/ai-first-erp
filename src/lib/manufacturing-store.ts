@@ -89,7 +89,7 @@ export function useManufacturingStore() {
       product_id: order.finishedProductId,
       quantity: order.targetQty,
       status: 'planned' as any,
-      notes: order.notes,
+      notes: order.notes ?? null,
       warehouse_id: order.destWarehouseId,
       bom_id: order.bomId,
       planned_date: order.startDate

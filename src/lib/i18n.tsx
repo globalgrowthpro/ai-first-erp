@@ -162,7 +162,6 @@ export const dict: Dict = {
   action: { ar: "الإجراء", en: "Action" },
   time: { ar: "الوقت", en: "Time" },
   result: { ar: "النتيجة", en: "Result" },
-  roles: { ar: "الأدوار", en: "Roles" },
   permissions: { ar: "الصلاحيات", en: "Permissions" },
   permissionMatrix: { ar: "مصفوفة الصلاحيات", en: "Permission Matrix" },
   highRisk: { ar: "عمليات تحتاج تأكيد إجباري", en: "Actions requiring confirmation" },

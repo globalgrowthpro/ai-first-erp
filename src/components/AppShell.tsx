@@ -198,6 +198,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
     );
 
+  // Check if on POS screen to render dedicated full-screen POS terminal
+  const isPosPage = normalizedPath === "/pos";
+
   // Check if current user only has permission for AI Workspace
   const hasOnlyAiPermission =
     !isAdmin &&
@@ -305,8 +308,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-secondary">
-      {/* Sidebar - Compact Width (Hidden for POS-only cashiers to maximize terminal workspace) */}
-      {!hasOnlyPosPermission && (
+      {/* Sidebar - Compact Width (Hidden on POS Terminal and for POS-only cashiers to maximize terminal workspace) */}
+      {!hasOnlyPosPermission && !isPosPage && (
         <aside
           className={cn(
             "gradient-ink sticky top-0 hidden h-screen w-52 xl:w-56 shrink-0 flex-col border-e border-border/20 p-3",
@@ -340,8 +343,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top Header */}
-        {!hasOnlyAiPermission && (
+        {/* Top Header - Hidden on POS page to eliminate double header and provide dedicated POS terminal UI */}
+        {!hasOnlyAiPermission && !isPosPage && (
           <header className="sticky top-0 z-20 flex items-center gap-2.5 sm:gap-3 border-b border-border/70 bg-card/95 backdrop-blur px-4 py-3">
           <Link
             to={hasOnlyPosPermission ? "/pos" : "/"}
@@ -597,11 +600,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 {currentUser.name.ar[0]}
               </div>
-              <div className="hidden md:block text-start leading-tight">
-                <p className="font-bold text-foreground text-[11px] truncate max-w-[105px]">
+              <div className="hidden md:block text-start leading-snug">
+                <p className="font-bold text-foreground text-[11px] truncate max-w-[140px]">
                   {pick(currentUser.name.ar, currentUser.name.en)}
                 </p>
-                <p className="text-[9px] text-muted-foreground truncate max-w-[105px]">
+                <p className="text-[9px] text-muted-foreground truncate max-w-[140px]">
                   {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
                 </p>
               </div>

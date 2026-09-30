@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Store,
@@ -55,13 +55,19 @@ import {
   TrendingUp,
   BarChart3,
   SlidersHorizontal,
+  LogOut,
+  Languages,
+  LayoutDashboard,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { products as defaultCatalogProducts, partners as defaultCustomers } from "@/lib/demo-data";
+import { partners as defaultCustomers } from "@/lib/demo-data";
+import { useInventoryStore } from "@/lib/inventory-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { RealQrCode } from "@/components/ui/qr-code";
 
 export const Route = createFileRoute("/pos")({
   head: () => ({
@@ -79,6 +85,7 @@ export const Route = createFileRoute("/pos")({
 
 // POS Product Interface
 interface PosProduct {
+  id?: string | undefined;
   sku: string;
   name: { ar: string; en: string };
   category: string;
@@ -261,108 +268,8 @@ export interface CashierShiftData {
   ordersCount: number;
 }
 
-export const INITIAL_CASHIER_SHIFTS: Record<string, CashierShiftData> = {
-  usr_korba_1: {
-    shiftNumber: "SHIFT-KB-101",
-    openedAt: "08:30 ص",
-    openingCash: 1500,
-    totalSales: 5420,
-    cashSales: 3420,
-    cardSales: 1600,
-    walletSales: 400,
-    ordersCount: 14,
-  },
-  usr_korba_2: {
-    shiftNumber: "SHIFT-KB-102",
-    openedAt: "11:00 ص",
-    openingCash: 1000,
-    totalSales: 2850,
-    cashSales: 1650,
-    cardSales: 1200,
-    walletSales: 0,
-    ordersCount: 7,
-  },
-  usr_korba_3: {
-    shiftNumber: "SHIFT-KB-103",
-    openedAt: "03:00 م",
-    openingCash: 1000,
-    totalSales: 1120,
-    cashSales: 820,
-    cardSales: 300,
-    walletSales: 0,
-    ordersCount: 3,
-  },
-  usr_korba_4: {
-    shiftNumber: "SHIFT-KB-100",
-    openedAt: "08:00 ص",
-    openingCash: 2000,
-    totalSales: 3200,
-    cashSales: 2100,
-    cardSales: 1100,
-    walletSales: 0,
-    ordersCount: 8,
-  },
-  usr_maadi_1: {
-    shiftNumber: "SHIFT-MD-201",
-    openedAt: "09:00 ص",
-    openingCash: 1500,
-    totalSales: 4100,
-    cashSales: 2700,
-    cardSales: 1400,
-    walletSales: 0,
-    ordersCount: 10,
-  },
-  usr_maadi_2: {
-    shiftNumber: "SHIFT-MD-202",
-    openedAt: "12:00 م",
-    openingCash: 1000,
-    totalSales: 1950,
-    cashSales: 1150,
-    cardSales: 800,
-    walletSales: 0,
-    ordersCount: 5,
-  },
-  usr_tagamoa_1: {
-    shiftNumber: "SHIFT-TG-301",
-    openedAt: "09:30 ص",
-    openingCash: 1500,
-    totalSales: 6300,
-    cashSales: 3800,
-    cardSales: 2500,
-    walletSales: 0,
-    ordersCount: 16,
-  },
-  usr_tagamoa_2: {
-    shiftNumber: "SHIFT-TG-302",
-    openedAt: "01:00 م",
-    openingCash: 1000,
-    totalSales: 2400,
-    cashSales: 1600,
-    cardSales: 800,
-    walletSales: 0,
-    ordersCount: 6,
-  },
-  usr_coast_1: {
-    shiftNumber: "SHIFT-CST-401",
-    openedAt: "10:00 ص",
-    openingCash: 1500,
-    totalSales: 3800,
-    cashSales: 2000,
-    cardSales: 1800,
-    walletSales: 0,
-    ordersCount: 9,
-  },
-  usr_kitchen_1: {
-    shiftNumber: "SHIFT-KT-501",
-    openedAt: "07:00 ص",
-    openingCash: 2500,
-    totalSales: 8900,
-    cashSales: 4200,
-    cardSales: 4700,
-    walletSales: 0,
-    ordersCount: 22,
-  },
-};
+export const INITIAL_CASHIER_SHIFTS: Record<string, CashierShiftData> = {};
+
 
 // Delivery & Aggregator Platforms (طلبات، تطبيقات أخرى، مباشر)
 export interface OrderPlatform {
@@ -572,221 +479,54 @@ export interface PosCompletedOrder {
   orderRefNumber?: string | undefined;
 }
 
-export const INITIAL_ORDERS_HISTORY: PosCompletedOrder[] = [
-  {
-    id: "INV-POS-10482",
-    date: "2026-09-29, 11:22:15 ص",
-    branch: POS_BRANCHES[0]!,
-    cashierId: "usr_korba_1",
-    cashierName: "أحمد سالم",
-    customer: { name: "عميل نقدي / صالة", phone: "" },
-    items: [
-      {
-        id: "init-1",
-        product: {
-          sku: "RICE-PST",
-          name: { ar: "رز بلبن بستاشيو", en: "Rice Pudding Pistachio" },
-          category: "عشاق الرز",
-          price: 80,
-          stock: 60,
-          unit: { ar: "علبة", en: "box" },
-          image: "/products/rice-pistachio.jpg",
-        },
-        quantity: 2,
-        unitPrice: 80,
-        discount: 0,
-      },
-      {
-        id: "init-2",
-        product: {
-          sku: "KSH-MNG",
-          name: { ar: "قشطوطة مانجو", en: "Kashtouta Mango" },
-          category: "القشطوطة",
-          price: 80,
-          stock: 92,
-          unit: { ar: "علبة", en: "box" },
-          image: "/products/kashtouta-mango.jpg",
-        },
-        quantity: 1,
-        unitPrice: 80,
-        discount: 0,
-      },
-    ],
-    subtotal: 240,
-    vat: 33.6,
-    discount: 0,
-    deliveryFee: 0,
-    total: 273.6,
-    paymentMethod: "cash",
-    tendered: 300,
-    change: 26.4,
-    orderType: "takeaway",
-    orderPlatform: "direct",
-  },
-  {
-    id: "INV-POS-10481",
-    date: "2026-09-29, 11:14:40 ص",
-    branch: POS_BRANCHES[0]!,
-    cashierId: "usr_korba_1",
-    cashierName: "أحمد سالم",
-    customer: { name: "م. محمد الشريف", phone: "01002345678" },
-    items: [
-      {
-        id: "init-3",
-        product: {
-          sku: "BOX-ROYAL-1KG",
-          name: { ar: "بوكس مشكل ملوكي فاخر 1 كجم", en: "Royal Mixed Sweets Box 1kg" },
-          category: "علب الهدايا",
-          price: 220,
-          stock: 45,
-          unit: { ar: "علبة", en: "box" },
-          image: "/products/baklava-box.jpg",
-        },
-        quantity: 2,
-        unitPrice: 220,
-        discount: 0,
-      },
-    ],
-    subtotal: 440,
-    vat: 61.6,
-    discount: 0,
-    deliveryFee: 0,
-    total: 501.6,
-    paymentMethod: "card",
-    tendered: 501.6,
-    change: 0,
-    orderType: "takeaway",
-    orderPlatform: "direct",
-  },
-  {
-    id: "INV-POS-10480",
-    date: "2026-09-29, 11:05:10 ص",
-    branch: POS_BRANCHES[0]!,
-    cashierId: "usr_korba_2",
-    cashierName: "سارة محمود",
-    customer: { name: "طلب تطبيق طلبات", phone: "01124455667" },
-    items: [
-      {
-        id: "init-4",
-        product: {
-          sku: "FAT-WZR",
-          name: { ar: "فتة ميكس الوزير", en: "Fatta Mix Al-Wazeer" },
-          category: "الفتة",
-          price: 90,
-          stock: 45,
-          unit: { ar: "علبة", en: "box" },
-          image: "/products/fatta-wazeer.jpg",
-        },
-        quantity: 2,
-        unitPrice: 90,
-        discount: 0,
-      },
-    ],
-    subtotal: 180,
-    vat: 25.2,
-    discount: 0,
-    deliveryFee: 20,
-    total: 225.2,
-    paymentMethod: "card",
-    tendered: 225.2,
-    change: 0,
-    orderType: "delivery",
-    orderPlatform: "talabat",
-    orderPlatformName: "تطبيق طلبات (Talabat)",
-    orderRefNumber: "TLB-94812",
-  },
-  {
-    id: "INV-POS-10478",
-    date: "2026-09-29, 10:48:30 ص",
-    branch: POS_BRANCHES[0]!,
-    cashierId: "usr_korba_2",
-    cashierName: "سارة محمود",
-    customer: { name: "عميل كاش صالة", phone: "" },
-    items: [
-      {
-        id: "init-5",
-        product: {
-          sku: "TJ-ALI",
-          name: { ar: "طاجن ام علي قشطة مكسرات", en: "Om Ali Cream & Nuts" },
-          category: "الطواجن",
-          price: 70,
-          stock: 90,
-          unit: { ar: "طاجن", en: "tajin" },
-          image: "/products/om-ali.jpg",
-        },
-        quantity: 2,
-        unitPrice: 70,
-        discount: 0,
-      },
-    ],
-    subtotal: 140,
-    vat: 19.6,
-    discount: 0,
-    deliveryFee: 0,
-    total: 159.6,
-    paymentMethod: "cash",
-    tendered: 200,
-    change: 40.4,
-    orderType: "dine_in",
-    orderPlatform: "direct",
-  },
-  {
-    id: "INV-POS-10468",
-    date: "2026-09-29, 09:30:15 ص",
-    branch: POS_BRANCHES[0]!,
-    cashierId: "usr_korba_3",
-    cashierName: "كريم عادل",
-    customer: { name: "طلب صالة محلي", phone: "" },
-    items: [
-      {
-        id: "init-6",
-        product: {
-          sku: "SHW-NUT",
-          name: { ar: "شاورما نوتيلا", en: "Sweet Shawarma Nutella" },
-          category: "شاورما الوزير",
-          price: 115,
-          stock: 4,
-          unit: { ar: "علبة", en: "box" },
-          image: "/products/shawarma-crepe.jpg",
-        },
-        quantity: 1,
-        unitPrice: 115,
-        discount: 0,
-      },
-    ],
-    subtotal: 115,
-    vat: 16.1,
-    discount: 0,
-    deliveryFee: 0,
-    total: 131.1,
-    paymentMethod: "cash",
-    tendered: 150,
-    change: 18.9,
-    orderType: "dine_in",
-    orderPlatform: "direct",
-  },
-];
+export const INITIAL_ORDERS_HISTORY: PosCompletedOrder[] = [];
 
 export function PosPage() {
-  const { t, pick, money, lang, dir } = useI18n();
+  const { t, pick, money, lang, dir, toggle } = useI18n();
   const { settings } = useCompanySettings();
-  const { currentUser } = useAuthStore();
+  const { currentUser, logout } = useAuthStore();
+  const navigate = useNavigate();
   const { addDocument, documents, nextCode } = useSalesStore();
+
+  const hasOnlyPosPermission =
+    currentUser?.role === "pos_cashier" ||
+    (!currentUser?.role?.includes("admin") &&
+      currentUser?.allowedPages?.length > 0 &&
+      currentUser?.allowedPages?.every((p) => p === "/pos"));
 
   // Fullscreen Kiosk Mode
   const [isKioskMode, setIsKioskMode] = useState(false);
 
-  // Selected Branch (persisted in localStorage for this terminal)
-  const [selectedBranch, setSelectedBranch] = useState<(typeof POS_BRANCHES)[number]>(() => {
+  // Live Inventory Store (branches, products, categories all from DB)
+  const { products: inventoryProducts, categories: inventoryCategories, branches: dbBranches, adjustStock } = useInventoryStore();
+
+  // Resolve active branch from live DB (locked — cashier cannot change it)
+  const activeBranch = useMemo(() => {
+    if (dbBranches.length === 0) return null;
     try {
       const saved = localStorage.getItem("pos_terminal_branch_id");
       if (saved) {
-        const found = POS_BRANCHES.find((b) => b.id === saved);
+        const found = dbBranches.find((b) => b.id === saved);
         if (found) return found;
       }
     } catch {}
+    return dbBranches[0] ?? null;
+  }, [dbBranches]);
+
+  // Selected Branch — derived from live DB branches (read-only on POS, cashier cannot change it)
+  // Kept in POS_BRANCHES-compatible shape { id, ar, en, phone } for backward compatibility
+  const selectedBranch = useMemo(() => {
+    if (activeBranch) {
+      return {
+        id: activeBranch.id,
+        ar: activeBranch.name.ar,
+        en: activeBranch.name.en,
+        phone: activeBranch.phone || "",
+      };
+    }
+    // Fallback to first static branch only if DB has no branches yet
     return POS_BRANCHES[0]!;
-  });
+  }, [activeBranch]);
 
   // Multi-Users / Cashiers for this branch
   const [allCashiers, setAllCashiers] = useState<PosCashierUser[]>(() => {
@@ -802,6 +542,8 @@ export function PosPage() {
     return allCashiers.filter((c) => c.branchId === selectedBranch.id);
   }, [allCashiers, selectedBranch.id]);
 
+
+
   // Active Cashier User on this POS Terminal
   const [activeCashier, setActiveCashier] = useState<PosCashierUser>(() => {
     try {
@@ -813,6 +555,9 @@ export function PosPage() {
     } catch {}
     return POS_BRANCH_CASHIERS[0]!;
   });
+
+  // Role-based access: cashiers only see their own shift, orders, and held tickets
+  const isCashierRole = currentUser?.role === "pos_cashier" || activeCashier.role === "cashier";
 
   // When branch changes, ensure activeCashier matches the selected branch
   useEffect(() => {
@@ -890,6 +635,122 @@ export function PosPage() {
     return ordersHistory.filter((o) => o.branch.id === selectedBranch.id);
   }, [ordersHistory, selectedBranch.id]);
 
+  // Fetch Live Orders History & Cashier Shifts from Supabase Database
+  const fetchDbPosData = useCallback(async () => {
+    try {
+      // 1. Fetch Orders with Items
+      const { data: ordersData, error: ordersErr } = await supabase
+        .from("pos_orders")
+        .select("*, pos_order_items(*)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!ordersErr && ordersData && ordersData.length > 0) {
+        const mappedOrders: PosCompletedOrder[] = ordersData.map((o: any) => {
+          const br = POS_BRANCHES.find((b) => b.id === o.branch_id) || {
+            id: o.branch_id,
+            ar: o.branch_id,
+            en: o.branch_id,
+            phone: "",
+          };
+          const items: CartItem[] = (o.pos_order_items || []).map((it: any) => ({
+            id: it.id,
+            product: {
+              id: it.product_id || undefined,
+              sku: it.sku,
+              name: { ar: it.name_ar, en: it.name_en },
+              category: "",
+              price: Number(it.unit_price),
+              stock: 0,
+              unit: { ar: "علبة", en: "box" },
+              image: PRODUCT_IMAGE_MAP[it.sku] || "/products/rice-pistachio.jpg",
+            },
+            quantity: Number(it.quantity),
+            unitPrice: Number(it.unit_price),
+            discount: 0,
+            note: it.notes || undefined,
+          }));
+
+          return {
+            id: o.order_number || o.id,
+            date: new Date(o.created_at).toLocaleString(lang === "ar" ? "ar-EG" : "en-US", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            branch: br,
+            cashierId: o.cashier_id,
+            cashierName: o.cashier_name,
+            customer: {
+              name: o.customer_name || (lang === "ar" ? "عميل نقدي" : "Walk-in Guest"),
+              phone: o.customer_phone || "",
+            },
+            items,
+            subtotal: Number(o.subtotal || 0),
+            vat: Number(o.tax_amount || 0),
+            discount: Number(o.discount_amount || 0),
+            deliveryFee: Number(o.delivery_fee || 0),
+            total: Number(o.total || 0),
+            paymentMethod: o.payment_method,
+            tendered: Number(o.tender_amount || o.total || 0),
+            change: Number(o.change_amount || 0),
+            orderType: o.order_type,
+            orderPlatform: o.order_platform || "direct",
+            orderRefNumber: o.order_ref_number || undefined,
+          };
+        });
+        setOrdersHistory(mappedOrders);
+      }
+
+      // 2. Fetch Shifts from Supabase pos_shifts
+      const { data: shiftsData, error: shiftsErr } = await supabase
+        .from("pos_shifts")
+        .select("*")
+        .eq("status", "open");
+
+      if (!shiftsErr && shiftsData && shiftsData.length > 0) {
+        setUserShifts((prev) => {
+          const next = { ...prev };
+          for (const s of shiftsData) {
+            next[s.cashier_id] = {
+              shiftNumber: s.shift_number,
+              openedAt: new Date(s.opened_at).toLocaleTimeString(lang === "ar" ? "ar-EG" : "en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              openingCash: Number(s.opening_cash),
+              totalSales: Number(s.total_sales),
+              cashSales: Number(s.cash_sales),
+              cardSales: Number(s.card_sales),
+              walletSales: Number(s.wallet_sales),
+              ordersCount: Number(s.orders_count),
+            };
+          }
+          return next;
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching POS data from Supabase:", e);
+    }
+  }, [lang]);
+
+  useEffect(() => {
+    fetchDbPosData();
+
+    // Subscribe to realtime updates for live sync across devices
+    const channel = supabase
+      .channel("pos_db_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pos_orders" }, () => fetchDbPosData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "pos_shifts" }, () => fetchDbPosData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchDbPosData]);
+
   // Cashier Switcher Modal State
   const [showCashierSwitchModal, setShowCashierSwitchModal] = useState(false);
   const [cashierPinInput, setCashierPinInput] = useState("");
@@ -907,6 +768,14 @@ export function PosPage() {
   const [ordersSearchQuery, setOrdersSearchQuery] = useState("");
   const [shiftModalTab, setShiftModalTab] = useState<"my_shift" | "all_cashiers">("my_shift");
 
+  // Force cashier role to stay on own shift and own orders only
+  useEffect(() => {
+    if (isCashierRole) {
+      if (shiftModalTab !== "my_shift") setShiftModalTab("my_shift");
+      if (ordersViewMode !== "my_orders") setOrdersViewMode("my_orders");
+    }
+  }, [isCashierRole, shiftModalTab, ordersViewMode]);
+
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("takeaway");
   const [tableNumber, setTableNumber] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
@@ -922,6 +791,89 @@ export function PosPage() {
   });
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
+  // Helper to determine category color theme
+  const getCategoryColorTheme = (catName: string) => {
+    if (catName.includes("الرز") || catName.includes("Rice")) return "from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300";
+    if (catName.includes("الفتة") || catName.includes("Fatta")) return "from-rose-500/20 to-pink-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
+    if (catName.includes("الدلع") || catName.includes("Specialt")) return "from-purple-500/20 to-violet-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300";
+    if (catName.includes("طواجن") || catName.includes("Tajin")) return "from-orange-500/20 to-amber-500/10 border-orange-500/30 text-orange-800 dark:text-orange-200";
+    if (catName.includes("شاورما") || catName.includes("Shawarma")) return "from-amber-600/20 to-yellow-500/10 border-amber-600/30 text-amber-700 dark:text-amber-300";
+    if (catName.includes("كيك") || catName.includes("Cake")) return "from-pink-500/20 to-rose-500/10 border-pink-500/30 text-pink-700 dark:text-pink-300";
+    if (catName.includes("كشري") || catName.includes("Koshary")) return "from-red-500/20 to-orange-500/10 border-red-500/30 text-red-700 dark:text-red-300";
+    if (catName.includes("قشطوطة") || catName.includes("Kashtouta")) return "from-yellow-500/20 to-amber-500/10 border-yellow-500/30 text-yellow-700 dark:text-yellow-300";
+    if (catName.includes("هدايا") || catName.includes("Gift")) return "from-amber-600/20 to-yellow-500/10 border-amber-500/40 text-amber-800 dark:text-amber-200";
+    if (catName.includes("مشروبات") || catName.includes("إضافات") || catName.includes("Drink")) return "from-blue-500/20 to-sky-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300";
+    return "from-primary/20 to-primary/5 border-primary/30 text-primary";
+  };
+
+  // Base Products Catalog dynamically derived directly from live Inventory Store
+  const catalogProducts: PosProduct[] = useMemo(() => {
+    // POS items: only show_on_pos enabled, non-raw-material products
+    // Branch filter: if product has a branchId, only show it for that branch; unassigned products show everywhere
+    const currentBranchId = activeBranch?.id ?? null;
+    const sellable = inventoryProducts.filter((p) => {
+      if (p.isRawMaterial) return false;
+      // showOnPos defaults to true when undefined (backward compat with older seed data)
+      if (p.showOnPos === false) return false;
+      if (p.branchId && currentBranchId && p.branchId !== currentBranchId) return false;
+      return true;
+    });
+
+    return sellable.map((p) => {
+      const cat = inventoryCategories.find((c) => c.id === p.categoryId);
+      const catName = cat ? cat.name.ar : (p.department || "أصناف عامة");
+
+      let badge: string | undefined = undefined;
+      if (p.qty <= 0) {
+        badge = lang === "ar" ? "نفد من المخزن" : "Out of Stock";
+      } else if (p.qty <= p.minStock) {
+        badge = lang === "ar" ? "كمية محدودة" : "Low Stock";
+      }
+
+      return {
+        id: p.id,
+        sku: p.sku,
+        name: p.name,
+        category: catName,
+        price: p.sellingPrice || p.costPrice || 0,
+        stock: p.qty,
+        unit: { ar: "علبة", en: "box" },
+        badge,
+        image: p.image || PRODUCT_IMAGE_MAP[p.sku] || "/products/rice-pistachio.jpg",
+        colorTheme: getCategoryColorTheme(catName),
+      };
+    });
+  }, [inventoryProducts, inventoryCategories, activeBranch, lang]);
+
+  // Dynamic Categories synced with inventory products
+  const allPosCategories = useMemo(() => {
+    const items = [{ id: "all", ar: "الكل", en: "All Items", icon: "✨" }];
+    const seen = new Set<string>(["all"]);
+
+    // Categories that currently exist in inventory sellable products
+    for (const prod of catalogProducts) {
+      if (prod.category && !seen.has(prod.category)) {
+        seen.add(prod.category);
+        const match = POS_CATEGORIES.find((c) => c.id === prod.category || c.ar === prod.category);
+        items.push({
+          id: prod.category,
+          ar: match ? match.ar : prod.category,
+          en: match ? match.en : prod.category,
+          icon: match?.icon || "🏷️",
+        });
+      }
+    }
+
+    // Retain standard POS category tabs if not yet added
+    for (const c of POS_CATEGORIES) {
+      if (!seen.has(c.id) && !seen.has(c.ar)) {
+        seen.add(c.id);
+        items.push(c);
+      }
+    }
+    return items;
+  }, [catalogProducts]);
+
   // Catalog State
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -930,8 +882,8 @@ export function PosPage() {
   const moreCatRef = useRef<HTMLDivElement>(null);
 
   // 5 Categories by default & remaining categories in dropdown list
-  const defaultCategories = useMemo(() => POS_CATEGORIES.slice(0, 5), []);
-  const dropdownCategories = useMemo(() => POS_CATEGORIES.slice(5), []);
+  const defaultCategories = useMemo(() => allPosCategories.slice(0, 5), [allPosCategories]);
+  const dropdownCategories = useMemo(() => allPosCategories.slice(5), [allPosCategories]);
   const activeDropdownCat = useMemo(
     () => dropdownCategories.find((c) => c.id === activeCategory),
     [dropdownCategories, activeCategory]
@@ -957,6 +909,14 @@ export function PosPage() {
   // Parked / Held Tickets
   const [heldOrders, setHeldOrders] = useState<HeldOrder[]>([]);
   const [showHeldModal, setShowHeldModal] = useState(false);
+
+  // Cashier-specific filtered parked orders
+  const visibleHeldOrders = useMemo(() => {
+    if (isCashierRole) {
+      return heldOrders.filter((h) => !h.cashierId || h.cashierId === activeCashier.id);
+    }
+    return heldOrders;
+  }, [heldOrders, isCashierRole, activeCashier.id]);
 
   // Checkout & Payment Modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -1001,116 +961,6 @@ export function PosPage() {
 
   // Shift & Cash Drawer Modal
   const [showShiftModal, setShowShiftModal] = useState(false);
-
-  // Base Products Catalog with extra sweets & gifts
-  const catalogProducts: PosProduct[] = useMemo(() => {
-    const list: PosProduct[] = defaultCatalogProducts.map((p) => ({
-      sku: p.sku,
-      name: p.name,
-      category: p.category.ar,
-      price: p.price,
-      stock: p.qty,
-      unit: { ar: "علبة", en: "box" },
-      image: PRODUCT_IMAGE_MAP[p.sku] ?? "/products/rice-pistachio.jpg",
-      colorTheme:
-        p.category.ar === "عشاق الرز"
-          ? "from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
-          : p.category.ar === "الفتة"
-          ? "from-rose-500/20 to-pink-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
-          : p.category.ar === "دنيا الدلع"
-          ? "from-purple-500/20 to-violet-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300"
-          : "from-primary/20 to-primary/5 border-primary/30 text-primary",
-    }));
-
-    // Add Special Confectionery & Gift Boxes
-    list.push(
-      {
-        sku: "BOX-ROYAL-1KG",
-        name: { ar: "بوكس مشكل ملوكي فاخر 1 كجم", en: "Royal Mixed Sweets Box 1kg" },
-        category: "علب الهدايا",
-        price: 220,
-        stock: 45,
-        unit: { ar: "علبة", en: "box" },
-        badge: "الأكثر طلباً",
-        image: PRODUCT_IMAGE_MAP["BOX-ROYAL-1KG"] ?? "/products/baklava-box.jpg",
-        colorTheme: "from-amber-600/20 to-yellow-500/10 border-amber-500/40 text-amber-800 dark:text-amber-200",
-      },
-      {
-        sku: "BOX-ROYAL-2KG",
-        name: { ar: "صينية ضيافة ملكية مشكلة 2 كجم", en: "Imperial Confectionery Platter 2kg" },
-        category: "علب الهدايا",
-        price: 430,
-        stock: 25,
-        unit: { ar: "صينية", en: "tray" },
-        badge: "فاخر",
-        image: PRODUCT_IMAGE_MAP["BOX-ROYAL-2KG"] ?? "/products/baklava-box.jpg",
-        colorTheme: "from-amber-600/20 to-yellow-500/10 border-amber-500/40 text-amber-800 dark:text-amber-200",
-      },
-      {
-        sku: "BKL-PIST-VIP",
-        name: { ar: "علبة بقلاوة تركية فستق حلبي بيور", en: "Pistachio Turkish Baklava Box" },
-        category: "علب الهدايا",
-        price: 280,
-        stock: 30,
-        unit: { ar: "علبة", en: "box" },
-        image: PRODUCT_IMAGE_MAP["BKL-PIST-VIP"] ?? "/products/baklava-box.jpg",
-        colorTheme: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
-      },
-      {
-        sku: "TRT-LOT-FAM",
-        name: { ar: "تورتة لوتس كيندر فاميلي", en: "Lotus Kinder Family Cake" },
-        category: "كيك وتشييز",
-        price: 340,
-        stock: 12,
-        unit: { ar: "تورتة", en: "cake" },
-        badge: "عائلي",
-        image: PRODUCT_IMAGE_MAP["TRT-LOT-FAM"] ?? "/products/cheesecake-pistachio.jpg",
-        colorTheme: "from-pink-500/20 to-rose-500/10 border-pink-500/30 text-pink-700 dark:text-pink-300",
-      },
-      {
-        sku: "ICE-SCOOP",
-        name: { ar: "بولاية آيس كريم فانيليا إضافية", en: "Extra Vanilla Ice Cream Scoop" },
-        category: "مشروبات وإضافات",
-        price: 25,
-        stock: 120,
-        unit: { ar: "بولة", en: "scoop" },
-        image: PRODUCT_IMAGE_MAP["ICE-SCOOP"] ?? "/products/kashtouta-pistachio.jpg",
-        colorTheme: "from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300",
-      },
-      {
-        sku: "EX-PIST-SAUCE",
-        name: { ar: "صوص بستاشيو بلجيكي خام إضافي", en: "Extra Belgian Pistachio Sauce" },
-        category: "مشروبات وإضافات",
-        price: 35,
-        stock: 90,
-        unit: { ar: "عبوة", en: "cup" },
-        image: PRODUCT_IMAGE_MAP["EX-PIST-SAUCE"] ?? "/products/cheesecake-pistachio.jpg",
-        colorTheme: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
-      },
-      {
-        sku: "EX-NUT-SAUCE",
-        name: { ar: "صوص نوتيلا أصلي إضافي", en: "Extra Original Nutella Sauce" },
-        category: "مشروبات وإضافات",
-        price: 25,
-        stock: 110,
-        unit: { ar: "عبوة", en: "cup" },
-        image: PRODUCT_IMAGE_MAP["EX-NUT-SAUCE"] ?? "/products/rice-nutella.jpg",
-        colorTheme: "from-amber-700/20 to-orange-600/10 border-amber-600/30 text-amber-800 dark:text-amber-200",
-      },
-      {
-        sku: "WATER-MINERAL",
-        name: { ar: "مياه معدنية طبيعية 600 مل", en: "Pure Mineral Water 600ml" },
-        category: "مشروبات وإضافات",
-        price: 15,
-        stock: 250,
-        unit: { ar: "زجاجة", en: "bottle" },
-        image: PRODUCT_IMAGE_MAP["WATER-MINERAL"] ?? "/products/mineral-water.jpg",
-        colorTheme: "from-blue-500/20 to-sky-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300",
-      }
-    );
-
-    return list;
-  }, []);
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
@@ -1252,8 +1102,26 @@ export function PosPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cart, finalTotal, paymentMethod, tenderAmount, splitCashAmount, splitCardAmount]);
 
-  // Add Item to Cart
+  // Add Item to Cart (Enforces Inventory Stock Availability)
   const handleAddToCart = (product: PosProduct, customQty = 1) => {
+    if (product.stock <= 0) {
+      toast.error(
+        lang === "ar"
+          ? `عفواً، صنف "${pick(product.name.ar, product.name.en)}" غير متوفر حالياً في المخزن!`
+          : `Sorry, "${pick(product.name.ar, product.name.en)}" is out of stock in inventory!`
+      );
+      return;
+    }
+
+    const currentInCart = cart.find((item) => item.product.sku === product.sku)?.quantity || 0;
+    if (currentInCart + customQty > product.stock) {
+      toast.warning(
+        lang === "ar"
+          ? `تنبيه: الكمية المطلوبة تتجاوز الرصيد المتاح بالمخزن (${product.stock})`
+          : `Warning: Requested quantity exceeds available inventory stock (${product.stock})`
+      );
+    }
+
     setCart((prev) => {
       const existing = prev.find((item) => item.product.sku === product.sku);
       if (existing) {
@@ -1282,13 +1150,20 @@ export function PosPage() {
     );
   };
 
-  // Update Item Quantity
+  // Update Item Quantity with inventory limit alert
   const handleUpdateQty = (itemId: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) => {
           if (item.id === itemId) {
             const nextQty = item.quantity + delta;
+            if (nextQty > item.product.stock && delta > 0) {
+              toast.warning(
+                lang === "ar"
+                  ? `تنبيه: الكمية (${nextQty}) تتجاوز رصيد المخزن المتاح (${item.product.stock})`
+                  : `Warning: Quantity (${nextQty}) exceeds available inventory stock (${item.product.stock})`
+              );
+            }
             return nextQty > 0 ? { ...item, quantity: nextQty } : null;
           }
           return item;
@@ -1359,6 +1234,8 @@ export function PosPage() {
         minute: "2-digit",
       }),
       customerName: selectedCustomer.name,
+      cashierId: activeCashier.id,
+      cashierName: pick(activeCashier.name.ar, activeCashier.name.en),
       items: [...cart],
       orderType,
       subtotal,
@@ -1450,6 +1327,11 @@ export function PosPage() {
     };
 
     addDocument(newInvoice);
+
+    // Deduct sold items from live inventory store
+    for (const ci of cart) {
+      adjustStock(ci.product.sku, -ci.quantity);
+    }
 
     // Update Shift sales according to payment settlement
     const cashIncrement =
@@ -1551,6 +1433,105 @@ export function PosPage() {
       return nextList;
     });
 
+    // Asynchronously persist to Supabase Database (pos_orders, pos_order_items, and pos_shifts)
+    (async () => {
+      try {
+        const { data: insertedOrder, error: orderErr } = await supabase
+          .from("pos_orders")
+          .insert({
+            order_number: orderId,
+            branch_id: selectedBranch.id,
+            cashier_id: activeCashier.id,
+            cashier_name: activeCashierDisplayName,
+            customer_name: selectedCustomer.name || null,
+            customer_phone: selectedCustomer.phone || null,
+            order_type: orderType,
+            order_platform: orderPlatform,
+            order_ref_number: orderRefNumber || null,
+            table_number: tableNumber || null,
+            delivery_notes: deliveryNotes || null,
+            subtotal,
+            tax_amount: vatAmount,
+            discount_amount: discountAmount,
+            delivery_fee: deliveryFee,
+            total: finalTotal,
+            payment_method: paymentMethod,
+            tender_amount: paymentMethod === "cash" ? (tenderAmount || finalTotal) : finalTotal,
+            change_amount: paymentMethod === "cash" ? Math.max(0, (tenderAmount || finalTotal) - finalTotal) : 0,
+            status: "completed",
+          })
+          .select("id")
+          .single();
+
+        if (orderErr) {
+          console.error("Failed to insert pos_order to Supabase:", orderErr);
+        } else if (insertedOrder) {
+          const isValidUuid = (val?: string | null) =>
+            Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+          const itemsPayload = cart.map((ci) => ({
+            order_id: insertedOrder.id,
+            product_id: (isValidUuid(ci.product?.id) && ci.product?.id ? ci.product.id : null) as string | null,
+            sku: ci.product?.sku || "SKU-001",
+            name_ar: (typeof ci.product?.name === "object" ? ci.product?.name?.ar : ci.product?.name) || "صنف حلوى",
+            name_en: (typeof ci.product?.name === "object" ? ci.product?.name?.en : ci.product?.name) || "Sweet Item",
+            quantity: Math.max(1, Number(ci.quantity) || 1),
+            unit_price: Number(ci.unitPrice) || 0,
+            total_price: (Math.max(1, Number(ci.quantity) || 1)) * (Number(ci.unitPrice) || 0),
+            notes: ci.note || null,
+          }));
+
+          const { error: itemsErr } = await supabase
+            .from("pos_order_items")
+            .insert(itemsPayload);
+
+          if (itemsErr) {
+            console.error("Failed to insert pos_order_items to Supabase:", itemsErr);
+          }
+
+          // Update cashier shift in Supabase pos_shifts
+          const { data: existingShift } = await supabase
+            .from("pos_shifts")
+            .select("id, total_sales, cash_sales, card_sales, wallet_sales, orders_count")
+            .eq("cashier_id", activeCashier.id)
+            .eq("status", "open")
+            .maybeSingle();
+
+          if (existingShift) {
+            await supabase
+              .from("pos_shifts")
+              .update({
+                total_sales: Number(existingShift.total_sales) + finalTotal,
+                cash_sales: Number(existingShift.cash_sales) + cashIncrement,
+                card_sales: Number(existingShift.card_sales) + cardIncrement,
+                wallet_sales: Number(existingShift.wallet_sales) + walletIncrement,
+                orders_count: Number(existingShift.orders_count) + 1,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existingShift.id);
+          } else {
+            await supabase
+              .from("pos_shifts")
+              .insert({
+                shift_number: activeShift.shiftNumber,
+                branch_id: selectedBranch.id,
+                cashier_id: activeCashier.id,
+                cashier_name: activeCashierDisplayName,
+                status: "open",
+                opening_cash: activeShift.openingCash,
+                total_sales: finalTotal,
+                cash_sales: cashIncrement,
+                card_sales: cardIncrement,
+                wallet_sales: walletIncrement,
+                orders_count: 1,
+              });
+          }
+        }
+      } catch (err) {
+        console.error("Error persisting POS order transaction to database:", err);
+      }
+    })();
+
     // Reset current ticket & close payment modal
     setShowPaymentModal(false);
     setCart([]);
@@ -1568,73 +1549,97 @@ export function PosPage() {
   return (
     <div
       dir={dir}
-      className={`min-h-[calc(100vh-4rem)] flex flex-col bg-background select-none font-sans ${
-        isKioskMode ? "fixed inset-0 z-50 p-2 bg-background overflow-hidden" : ""
+      className={`h-screen flex flex-col bg-background select-none font-sans overflow-hidden ${
+        isKioskMode ? "fixed inset-0 z-50 p-2 bg-background" : ""
       }`}
     >
       {/* ========================================================================= */}
-      {/* 1. TOP CASHIER TOOLBAR */}
+      {/* 1. PROFESSIONAL UNIFIED TERMINAL TOOLBAR */}
       {/* ========================================================================= */}
-      <header className="bg-card border-b border-border/70 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        {/* Left: Terminal Identity & Branch */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/25 text-primary">
-            <Store className="w-5 h-5 shrink-0" />
-            <div className="leading-tight">
-              <span className="font-black text-xs block">
-                {lang === "ar" ? "كاشير وزير الحلو POS" : "Wazeer POS Terminal"}
+      <header className="h-16 bg-card/95 backdrop-blur-md border-b border-border/70 px-3 sm:px-4 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs select-none">
+        {/* Left / Start: Brand Identity & Branch Context */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+          <div className="flex items-center gap-2.5">
+            {/* Official Wazeer El-Helw Logo */}
+            <div className="h-10 px-2 py-1 rounded-xl bg-white border border-border/80 shadow-xs flex items-center justify-center shrink-0">
+              <img
+                src={settings.logoUrl || "/wazeer-logo.png"}
+                alt="وزير الحلو"
+                className="h-7 w-auto max-w-[125px] object-contain"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                }}
+              />
+            </div>
+            <div className="leading-tight hidden sm:block">
+              <div className="flex items-center gap-1.5">
+                <span className="font-black text-xs text-[#2E1A6B] dark:text-purple-300 tracking-tight">
+                  {lang === "ar" ? "وزير الحلو" : "Wazeer El-Helw"}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-[#E11D2E]/10 text-[#E11D2E] font-black border border-[#E11D2E]/30 shadow-2xs">
+                  POS
+                </span>
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                REG-01 • v2.6
               </span>
-              <span className="text-[10px] font-mono opacity-80">REG-01 • v2.6 Pro</span>
             </div>
           </div>
 
-          {/* Branch Dropdown (POS Tied to One Branch) */}
-          <div className="relative">
-            <select
-              value={selectedBranch.id}
-              onChange={(e) => {
-                const found = POS_BRANCHES.find((b) => b.id === e.target.value);
-                if (found) setSelectedBranch(found);
-              }}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-border/80 bg-background text-foreground focus:border-primary focus:outline-none cursor-pointer"
-            >
-              {POS_BRANCHES.map((b) => (
-                <option key={b.id} value={b.id}>
-                  📍 {pick(b.ar, b.en)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="h-6 w-px bg-border/70 hidden md:block shrink-0" />
 
-          {/* Active Cashier Pill (Quick Switcher) */}
+          {/* Branch Indicator (Locked to terminal) */}
+          <div
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-border/60 bg-muted/30 text-foreground text-xs font-semibold shrink-0"
+            title={lang === "ar" ? "الفرع المخصص لنقطة البيع" : "Terminal Branch (Locked)"}
+          >
+            <span className="text-[#E11D2E] text-xs">📍</span>
+            <span className="truncate max-w-[150px]">
+              {activeBranch
+                ? (lang === "ar" ? activeBranch.name.ar : activeBranch.name.en)
+                : (lang === "ar" ? "لا يوجد فرع" : "No Branch")}
+            </span>
+            <Lock className="w-3 h-3 text-muted-foreground opacity-60 ms-0.5" />
+          </div>
+        </div>
+
+        {/* Center: Operational Actions Dock (Cashier, Shift, Orders & Parked) */}
+        <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/40 p-1 rounded-2xl border border-border/60 shrink-0">
+          {/* Active Cashier Pill */}
           <button
             type="button"
             onClick={() => setShowCashierSwitchModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-foreground text-xs font-bold transition-all shadow-xs group cursor-pointer"
-            title={lang === "ar" ? "تبديل الكاشير والمشغل" : "Switch Cashier User"}
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs group cursor-pointer"
+            title={lang === "ar" ? "بيانات الكاشير والتبديل" : "Cashier Details & Switch"}
           >
-            <span className="text-lg p-0.5 rounded-lg bg-card border border-border/60">{activeCashier.avatar}</span>
-            <div className="text-start leading-tight">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-foreground group-hover:text-primary transition-colors">
-                  {pick(activeCashier.name.ar, activeCashier.name.en)}
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-primary/20 text-primary font-bold">
-                  {pick(activeCashier.roleLabel.ar, activeCashier.roleLabel.en)}
-                </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground font-mono block">
-                {lang === "ar" ? "مبيعاتي:" : "My Sales:"}{" "}
-                <strong className="text-emerald-600 font-black">{money(activeShift.totalSales)}</strong>
-                {" "}({activeShift.ordersCount} {lang === "ar" ? "طلب" : "orders"})
+            <span className="text-base">{activeCashier.avatar}</span>
+            <div className="text-start leading-tight hidden sm:block">
+              <span className="font-bold text-xs text-[#2E1A6B] dark:text-purple-300 group-hover:text-[#E11D2E] transition-colors block truncate max-w-[110px]">
+                {pick(activeCashier.name.ar, activeCashier.name.en)}
+              </span>
+              <span className="text-[9px] text-muted-foreground font-medium block truncate max-w-[110px]">
+                {pick(activeCashier.roleLabel.ar, activeCashier.roleLabel.en)}
               </span>
             </div>
-            <Users className="w-3.5 h-3.5 text-primary ms-1 opacity-70 group-hover:opacity-100" />
           </button>
-        </div>
 
-        {/* Center: Shift Summary & My Orders & Parked Tickets Pill */}
-        <div className="flex items-center gap-2">
+          {/* Shift Sales Pill */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isCashierRole) setShiftModalTab("my_shift");
+              setShowShiftModal(true);
+            }}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title={lang === "ar" ? "تقرير الوردية وحركة الصندوق" : "Shift & Cash Drawer Summary"}
+          >
+            <Clock className="w-3.5 h-3.5 text-[#FBBF24] shrink-0" />
+            <span className="text-[11px] text-muted-foreground hidden lg:inline">{lang === "ar" ? "الوردية:" : "Shift:"}</span>
+            <span className="font-mono text-xs font-black text-[#16A34A] dark:text-emerald-400">
+              {money(activeShift.totalSales)}
+            </span>
+          </button>
+
           {/* My Orders Button */}
           <button
             type="button"
@@ -1642,67 +1647,108 @@ export function PosPage() {
               setOrdersViewMode("my_orders");
               setShowMyOrdersModal(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold transition-colors cursor-pointer"
-            title={lang === "ar" ? "سجل طلباتي في الوردية" : "My Orders History"}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title={lang === "ar" ? "سجل طلباتي" : "My Orders"}
           >
-            <Receipt className="w-3.5 h-3.5 text-blue-500" />
-            <span>{lang === "ar" ? "طلباتي" : "My Orders"}</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-black">
+            <Receipt className="w-3.5 h-3.5 text-[#2E1A6B] dark:text-purple-400 shrink-0" />
+            <span className="text-[11px] hidden sm:inline">{lang === "ar" ? "طلباتي" : "Orders"}</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-[#2E1A6B]/10 text-[#2E1A6B] dark:bg-purple-500/20 dark:text-purple-300 font-mono text-[10px] font-black border border-[#2E1A6B]/20">
               {myOrders.length}
             </span>
           </button>
 
-          {/* Shift Button (My Shift Summary) */}
-          <button
-            type="button"
-            onClick={() => setShowShiftModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold transition-colors cursor-pointer"
-            title={lang === "ar" ? "تصفية وردية الكاشير وحركة الصندوق" : "Shift & Cash Drawer Summary"}
-          >
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden sm:inline">{lang === "ar" ? "ورديتي:" : "My Shift:"}</span>
-            <span className="font-mono text-emerald-600 font-black">{money(activeShift.totalSales)}</span>
-          </button>
-
-          {/* Parked Orders Badge Button */}
+          {/* Parked Tickets Button */}
           <button
             type="button"
             onClick={() => setShowHeldModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-              heldOrders.length > 0
-                ? "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300 animate-pulse"
-                : "bg-card border-border/70 text-muted-foreground hover:bg-muted"
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              visibleHeldOrders.length > 0
+                ? "bg-[#FBBF24]/15 border-[#FBBF24]/50 text-amber-900 dark:text-amber-200 animate-pulse shadow-2xs"
+                : "bg-card hover:bg-card/80 border-border/60 text-muted-foreground hover:text-foreground shadow-2xs"
             }`}
+            title={lang === "ar" ? "الفواتير المعلقة" : "Parked Tickets"}
           >
-            <Pause className="w-3.5 h-3.5" />
-            <span>{lang === "ar" ? "المعلقات" : "Parked"}</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-mono text-[10px] font-bold">
-              {heldOrders.length}
+            <Pause className="w-3.5 h-3.5 shrink-0" />
+            <span className="text-[11px] hidden sm:inline">{lang === "ar" ? "المعلقات" : "Parked"}</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] font-bold ${
+                visibleHeldOrders.length > 0
+                  ? "bg-[#FBBF24] text-slate-950 font-black shadow-2xs"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {visibleHeldOrders.length}
             </span>
           </button>
         </div>
 
-        {/* Right: Kiosk Toggle & Exit */}
-        <div className="flex items-center gap-2">
+        {/* Right / End: Utilities, Fullscreen, Language & Logout */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Live Inventory Connected Status */}
+          <div
+            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground font-medium select-none"
+            title={lang === "ar" ? "المخزون متصل ومحدث بالأسعار والأرصدة" : "Live inventory synced with DB"}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-[11px]">
+              {lang === "ar" ? `${catalogProducts.length} صنف` : `${catalogProducts.length} items`}
+            </span>
+          </div>
+
+          {/* Language Switcher */}
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-foreground transition-colors cursor-pointer"
+            title={t("lang")}
+          >
+            <Languages className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[11px] uppercase">{lang === "ar" ? "EN" : "عربي"}</span>
+          </button>
+
+          {/* Fullscreen Kiosk Toggle */}
           <button
             type="button"
             onClick={() => setIsKioskMode((prev) => !prev)}
-            className="p-2 rounded-xl border border-border/70 bg-card hover:bg-muted text-foreground transition-colors"
+            className="p-2 rounded-xl border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             title={
               isKioskMode
-                ? lang === "ar" ? "الخروج من وضع الشاشة الكاملة" : "Exit Fullscreen"
-                : lang === "ar" ? "وضع ملء الشاشة للكاشير" : "Fullscreen Kiosk Mode"
+                ? lang === "ar" ? "الخروج من ملء الشاشة" : "Exit Fullscreen"
+                : lang === "ar" ? "وضع ملء الشاشة" : "Fullscreen"
             }
           >
             {isKioskMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
 
-          <Link
-            to="/sales"
-            className="px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          {/* Exit to ERP Dashboard (Managers / Admins only) */}
+          {!hasOnlyPosPermission && (
+            <Link
+              to="/"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+              title={lang === "ar" ? "العودة للوحة تحكم النظام" : "Exit to ERP Dashboard"}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px]">{lang === "ar" ? "لوحة التحكم" : "ERP"}</span>
+            </Link>
+          )}
+
+          {/* Safe Terminal Logout */}
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(lang === "ar" ? "هل ترغب في تسجيل الخروج من نقطة البيع؟" : "Are you sure you want to exit and log out?")) {
+                logout();
+                navigate({ to: "/" });
+              }
+            }}
+            className="p-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer"
+            title={lang === "ar" ? "تسجيل الخروج وإغلاق المحطة" : "Log out / Exit Terminal"}
           >
-            <span>{lang === "ar" ? "سجل الفواتير" : "Invoices Log"}</span>
-          </Link>
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -1847,7 +1893,11 @@ export function PosPage() {
                   <div
                     key={prod.sku}
                     onClick={() => handleAddToCart(prod, 1)}
-                    className="group relative bg-card hover:bg-accent/5 rounded-2xl border border-border/80 hover:border-primary/60 p-2.5 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:shadow-xl active:scale-98 select-none overflow-hidden"
+                    className={`group relative bg-card rounded-2xl border p-2.5 flex flex-col justify-between transition-all duration-200 select-none overflow-hidden ${
+                      prod.stock <= 0
+                        ? "border-rose-500/30 opacity-70 cursor-not-allowed bg-rose-500/5"
+                        : "border-border/80 hover:border-primary/60 hover:bg-accent/5 hover:shadow-xl active:scale-98 cursor-pointer"
+                    }`}
                   >
                     {/* Product Photo with Badge Overlays */}
                     <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-muted/50 mb-2 border border-border/40">
@@ -1872,7 +1922,11 @@ export function PosPage() {
                           {prod.sku}
                         </span>
                         {prod.badge && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500 text-white shadow-xs">
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs text-white ${
+                              prod.stock <= 0 ? "bg-rose-600" : "bg-amber-500"
+                            }`}
+                          >
                             {prod.badge}
                           </span>
                         )}
@@ -1880,8 +1934,12 @@ export function PosPage() {
 
                       {/* Bottom Overlay: Stock Count & Cart Quantity */}
                       <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
-                        {prod.stock <= 10 ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
+                        {prod.stock <= 0 ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-rose-600/95 backdrop-blur-xs text-white font-bold shadow-xs">
+                            {lang === "ar" ? "نفد من المخزن" : "Out of Stock"}
+                          </span>
+                        ) : prod.stock <= 10 ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
                             {lang === "ar" ? `متبقي: ${prod.stock}` : `Stock: ${prod.stock}`}
                           </span>
                         ) : (
@@ -1944,149 +2002,145 @@ export function PosPage() {
         {/* ===================================================================== */}
         {/* RIGHT COLUMN: ACTIVE ORDER TICKET & TOTALS (4 or 5 Cols) */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-5 xl:col-span-4 bg-card rounded-3xl border border-border/80 shadow-xl flex flex-col overflow-hidden">
-          {/* 1. Ticket Header: Order Type & Customer */}
-          <div className="p-3.5 border-b border-border/70 space-y-3 bg-muted/20">
-            {/* Order Platform Selector: Direct / Talabat / Other App */}
-            <div className="space-y-1.5 p-2 rounded-2xl bg-card border border-border/80 shadow-xs">
-              <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground px-1">
-                <span className="flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-primary" />
-                  <span>{lang === "ar" ? "قناة الطلب / المنصة:" : "Order Platform:"}</span>
-                </span>
-                {orderPlatform !== "direct" && (
-                  <span className="text-[10px] text-orange-600 dark:text-orange-400 font-black px-1.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20">
-                    {lang === "ar" ? "تطبيق توصيل" : "Online Aggregator"}
+        <div className="lg:col-span-5 xl:col-span-4 bg-card rounded-3xl border border-border/80 shadow-xl flex flex-col min-h-0 h-full overflow-hidden">
+          {/* 1. Ticket Header: Compact Order Channel, Customer & Type Bar */}
+          <div className="p-2 sm:p-2.5 border-b border-border/70 space-y-1.5 bg-muted/20 shrink-0">
+            <div className="flex items-center justify-between gap-1.5">
+              {/* Customer Chip & Picker */}
+              <button
+                type="button"
+                onClick={() => setShowCustomerModal(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-card border border-border/70 hover:bg-muted text-xs font-bold text-foreground transition-all truncate flex-1 min-w-0 text-start group cursor-pointer shadow-2xs"
+                title={lang === "ar" ? "تغيير العميل" : "Change Customer"}
+              >
+                <User className="w-3.5 h-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
+                <div className="truncate leading-tight flex-1 min-w-0">
+                  <span className="truncate block font-bold text-[11px] text-foreground">
+                    {selectedCustomer.name}
                   </span>
-                )}
-              </div>
-
-              {/* 4 Main Choice Tabs: Direct, Talabat, Waffarha, Other App */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                {/* 1. Direct */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectPlatform("direct")}
-                  className={`py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-                    orderPlatform === "direct"
-                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-black shadow-xs ring-1 ring-emerald-500/20"
-                      : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span>🏪</span>
-                  <span>{lang === "ar" ? "مباشر" : "Direct"}</span>
-                </button>
-
-                {/* 2. Talabat */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectPlatform("talabat")}
-                  className={`py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-                    orderPlatform === "talabat"
-                      ? "bg-orange-500/20 border-orange-500/60 text-orange-800 dark:text-orange-300 font-black shadow-xs ring-1 ring-orange-500/40"
-                      : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span>🛵</span>
-                  <span>{lang === "ar" ? "طلبات" : "Talabat"}</span>
-                </button>
-
-                {/* 3. Waffarha */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectPlatform("waffarha")}
-                  className={`py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-                    orderPlatform === "waffarha"
-                      ? "bg-red-500/20 border-red-500/60 text-red-800 dark:text-red-300 font-black shadow-xs ring-1 ring-red-500/40"
-                      : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span>🎟️</span>
-                  <span>{lang === "ar" ? "وفرها" : "Waffarha"}</span>
-                </button>
-
-                {/* 4. Other App */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSelectPlatform(
-                      orderPlatform !== "direct" &&
-                        orderPlatform !== "talabat" &&
-                        orderPlatform !== "waffarha"
-                        ? orderPlatform
-                        : "other"
-                    )
-                  }
-                  className={`py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-                    orderPlatform !== "direct" &&
-                    orderPlatform !== "talabat" &&
-                    orderPlatform !== "waffarha"
-                      ? "bg-purple-500/20 border-purple-500/60 text-purple-800 dark:text-purple-300 font-black shadow-xs ring-1 ring-purple-500/40"
-                      : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  <span>📱</span>
-                  <span>{lang === "ar" ? "أخرى" : "Other"}</span>
-                </button>
-              </div>
-
-              {/* Specific Other App Picker */}
-              {orderPlatform !== "direct" &&
-                orderPlatform !== "talabat" &&
-                orderPlatform !== "waffarha" && (
-                <div className="pt-0.5">
-                  <select
-                    value={orderPlatform}
-                    onChange={(e) => handleSelectPlatform(e.target.value)}
-                    className="w-full px-2.5 py-1 text-xs rounded-xl border border-purple-500/40 bg-background font-bold text-foreground focus:outline-none"
-                  >
-                    <option value="other">📱 {lang === "ar" ? "تطبيق آخر (Other App)" : "Other App"}</option>
-                    <option value="jahez">🟡 {lang === "ar" ? "تطبيق جاهز (Jahez)" : "Jahez App"}</option>
-                    <option value="elmenus">🍔 {lang === "ar" ? "تطبيق المنيوز (Elmenus)" : "Elmenus"}</option>
-                    <option value="hungerstation">🥘 {lang === "ar" ? "هنقرستيشن (HungerStation)" : "HungerStation"}</option>
-                    <option value="noon">🛍️ {lang === "ar" ? "نون فود (Noon Food)" : "Noon Food"}</option>
-                    <option value="mrsool">🟢 {lang === "ar" ? "تطبيق مرسول (Mrsool)" : "Mrsool"}</option>
-                  </select>
+                  {selectedCustomer.phone && (
+                    <span className="text-[9px] text-muted-foreground font-mono block">
+                      {selectedCustomer.phone}
+                    </span>
+                  )}
                 </div>
-              )}
+                <span className="text-[10px] text-primary shrink-0 font-medium">
+                  {lang === "ar" ? "تغيير" : "Edit"}
+                </span>
+              </button>
 
-              {/* Order Reference / Coupon Code Number Input */}
-              {orderPlatform !== "direct" && (
-                <div className="pt-1 space-y-1">
-                  <div
-                    className={`flex items-center gap-1.5 p-1.5 rounded-xl border ${
-                      orderPlatform === "waffarha"
-                        ? "bg-red-500/10 border-red-500/30"
-                        : orderPlatform === "talabat"
-                        ? "bg-orange-500/10 border-orange-500/30"
-                        : "bg-purple-500/10 border-purple-500/30"
-                    }`}
-                  >
-                    <Tag
-                      className={`w-3.5 h-3.5 shrink-0 ${
-                        orderPlatform === "waffarha"
-                          ? "text-red-600"
-                          : orderPlatform === "talabat"
-                          ? "text-orange-600"
-                          : "text-purple-600"
-                      }`}
+              {/* Order Types 3-way toggle */}
+              <div className="flex items-center bg-muted/70 p-0.5 rounded-xl border border-border/60 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOrderType("takeaway")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
+                    orderType === "takeaway"
+                      ? "bg-card text-foreground shadow-2xs font-black"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={lang === "ar" ? "طلب سفري" : "Takeaway"}
+                >
+                  <ShoppingBag className="w-3 h-3 text-amber-500" />
+                  <span className="hidden sm:inline">{lang === "ar" ? "سفري" : "Takeaway"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("dine_in")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
+                    orderType === "dine_in"
+                      ? "bg-card text-foreground shadow-2xs font-black"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={lang === "ar" ? "طلب صالة" : "Dine-in"}
+                >
+                  <Utensils className="w-3 h-3 text-primary" />
+                  <span className="hidden sm:inline">{lang === "ar" ? "صالة" : "Dine-in"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("delivery")}
+                  className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
+                    orderType === "delivery"
+                      ? "bg-card text-foreground shadow-2xs font-black"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title={lang === "ar" ? "طلب توصيل" : "Delivery"}
+                >
+                  <Bike className="w-3 h-3 text-emerald-600" />
+                  <span className="hidden sm:inline">{lang === "ar" ? "توصيل" : "Delivery"}</span>
+                </button>
+              </div>
+
+              {/* Platform Selector */}
+              <div className="relative shrink-0">
+                <select
+                  value={orderPlatform}
+                  onChange={(e) => handleSelectPlatform(e.target.value)}
+                  className={`text-[11px] font-bold py-1 px-2 pe-6 rounded-xl border appearance-none focus:outline-none cursor-pointer transition-colors shadow-2xs ${
+                    orderPlatform === "talabat"
+                      ? "bg-orange-500/15 border-orange-500/40 text-orange-700 dark:text-orange-300"
+                      : orderPlatform === "waffarha"
+                      ? "bg-red-500/15 border-red-500/40 text-red-700 dark:text-red-300"
+                      : orderPlatform !== "direct"
+                      ? "bg-purple-500/15 border-purple-500/40 text-purple-700 dark:text-purple-300"
+                      : "bg-card border-border/70 text-foreground"
+                  }`}
+                >
+                  <option value="direct">🏪 {lang === "ar" ? "مباشر" : "Direct"}</option>
+                  <option value="talabat">🛵 {lang === "ar" ? "طلبات" : "Talabat"}</option>
+                  <option value="waffarha">🎟️ {lang === "ar" ? "وفرها" : "Waffarha"}</option>
+                  <option value="elmenus">🍔 {lang === "ar" ? "المنيوز" : "Elmenus"}</option>
+                  <option value="jahez">🟡 {lang === "ar" ? "جاهز" : "Jahez"}</option>
+                  <option value="hungerstation">🥘 {lang === "ar" ? "هنقرستيشن" : "HungerStation"}</option>
+                  <option value="noon">🛍️ {lang === "ar" ? "نون فود" : "Noon"}</option>
+                  <option value="mrsool">🟢 {lang === "ar" ? "مرسول" : "Mrsool"}</option>
+                  <option value="other">📱 {lang === "ar" ? "تطبيق آخر" : "Other App"}</option>
+                </select>
+                <ChevronDown className="w-3 h-3 absolute end-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+              </div>
+            </div>
+
+            {/* Dynamic Row for Table / Address / Coupon or Platform Ref */}
+            {(orderType === "dine_in" || orderType === "delivery" || orderPlatform !== "direct") && (
+              <div className="flex items-center gap-1.5 pt-0.5 animate-in fade-in duration-150">
+                {orderType === "dine_in" && (
+                  <div className="flex items-center gap-1.5 flex-1 bg-card px-2.5 py-1 rounded-xl border border-border/60 shadow-2xs">
+                    <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                      {lang === "ar" ? "طاولة:" : "Table:"}
+                    </span>
+                    <input
+                      type="text"
+                      value={tableNumber}
+                      onChange={(e) => setTableNumber(e.target.value)}
+                      placeholder="مثال: T-04"
+                      className="w-full text-xs font-bold bg-transparent border-none focus:outline-none text-foreground"
                     />
-                    <span
-                      className={`text-[11px] font-bold shrink-0 ${
-                        orderPlatform === "waffarha"
-                          ? "text-red-900 dark:text-red-300"
-                          : orderPlatform === "talabat"
-                          ? "text-orange-900 dark:text-orange-300"
-                          : "text-purple-900 dark:text-purple-300"
-                      }`}
-                    >
+                  </div>
+                )}
+
+                {orderType === "delivery" && (
+                  <div className="flex items-center gap-1.5 flex-1 bg-card px-2.5 py-1 rounded-xl border border-border/60 shadow-2xs">
+                    <span className="text-[10px] font-bold text-muted-foreground shrink-0">
+                      {lang === "ar" ? "العنوان:" : "Address:"}
+                    </span>
+                    <input
+                      type="text"
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value)}
+                      placeholder={lang === "ar" ? "عنوان التوصيل أو رقم الشقة..." : "Delivery address..."}
+                      className="w-full text-xs font-medium bg-transparent border-none focus:outline-none text-foreground"
+                    />
+                  </div>
+                )}
+
+                {orderPlatform !== "direct" && (
+                  <div className="flex items-center gap-1.5 flex-1 bg-card px-2.5 py-1 rounded-xl border border-border/60 shadow-2xs">
+                    <Tag className="w-3 h-3 text-primary shrink-0" />
+                    <span className="text-[10px] font-bold text-muted-foreground shrink-0">
                       {orderPlatform === "waffarha"
-                        ? lang === "ar"
-                          ? "كوبون وفرها:"
-                          : "Waffarha Coupon #:"
-                        : lang === "ar"
-                        ? "مرجع الطلب:"
-                        : "Order Ref #:"}
+                        ? lang === "ar" ? "كوبون:" : "Coupon:"
+                        : lang === "ar" ? "مرجع:" : "Ref #:"}
                     </span>
                     <input
                       type="text"
@@ -2094,198 +2148,96 @@ export function PosPage() {
                       onChange={(e) => setOrderRefNumber(e.target.value)}
                       placeholder={
                         orderPlatform === "waffarha"
-                          ? lang === "ar"
-                            ? "رقم قسيمة أو كود وفرها (مثال: WFR-78412)"
-                            : "Waffarha coupon/voucher (e.g. WFR-78412)"
+                          ? "WFR-78412"
                           : orderPlatform === "talabat"
-                          ? lang === "ar"
-                            ? "رقم طلب طلبات (مثال: TLB-89421)"
-                            : "Talabat Order # (e.g. TLB-89421)"
-                          : lang === "ar"
-                          ? "رقم مرجع الطلب بالتطبيق..."
-                          : "App order reference..."
+                          ? "TLB-89421"
+                          : "REF-001"
                       }
-                      className={`flex-1 min-w-0 px-2 py-0.5 text-xs rounded-lg border bg-background text-foreground font-mono font-bold focus:outline-none focus:ring-1 ${
-                        orderPlatform === "waffarha"
-                          ? "border-red-500/40 focus:ring-red-500"
-                          : orderPlatform === "talabat"
-                          ? "border-orange-500/40 focus:ring-orange-500"
-                          : "border-purple-500/40 focus:ring-purple-500"
-                      }`}
+                      className="w-full text-xs font-mono font-bold bg-transparent border-none focus:outline-none text-foreground"
                     />
                     {orderRefNumber && (
                       <button
                         type="button"
                         onClick={() => setOrderRefNumber("")}
                         className="text-[10px] text-muted-foreground hover:text-foreground px-1"
-                        title={lang === "ar" ? "مسح" : "Clear"}
                       >
                         ✕
                       </button>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Order Types 3-way toggle */}
-            <div className="grid grid-cols-3 gap-1 bg-muted/60 p-1 rounded-2xl border border-border/60">
-              <button
-                type="button"
-                onClick={() => setOrderType("takeaway")}
-                className={`py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  orderType === "takeaway"
-                    ? "bg-card text-foreground shadow-sm font-black"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <ShoppingBag className="w-3.5 h-3.5 text-amber-500" />
-                <span>{lang === "ar" ? "سفري" : "Takeaway"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType("dine_in")}
-                className={`py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  orderType === "dine_in"
-                    ? "bg-card text-foreground shadow-sm font-black"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Utensils className="w-3.5 h-3.5 text-primary" />
-                <span>{lang === "ar" ? "صالة" : "Dine-in"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType("delivery")}
-                className={`py-1.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  orderType === "delivery"
-                    ? "bg-card text-foreground shadow-sm font-black"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Bike className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{lang === "ar" ? "توصيل" : "Delivery"}</span>
-              </button>
-            </div>
-
-            {/* Customer Pill & Quick Picker */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-1 truncate">
-                <User className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="truncate leading-tight">
-                  <span className="text-xs font-bold block text-foreground truncate">
-                    {selectedCustomer.name}
-                  </span>
-                  {selectedCustomer.phone && (
-                    <span className="text-[10px] text-muted-foreground font-mono block">
-                      {selectedCustomer.phone}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowCustomerModal(true)}
-                className="text-[11px] font-bold text-primary hover:underline shrink-0"
-              >
-                {lang === "ar" ? "تغيير العميل" : "Change"}
-              </button>
-            </div>
-
-            {/* Table input if dine-in or address if delivery */}
-            {orderType === "dine_in" && (
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-[11px] font-bold text-muted-foreground">
-                  {lang === "ar" ? "رقم الطاولة:" : "Table #:"}
-                </span>
-                <input
-                  type="text"
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  placeholder="مثال: T-04"
-                  className="w-24 px-2 py-1 text-xs rounded-lg border border-border/80 bg-background text-center font-bold"
-                />
-              </div>
-            )}
-
-            {orderType === "delivery" && (
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
-                  value={deliveryNotes}
-                  onChange={(e) => setDeliveryNotes(e.target.value)}
-                  placeholder={lang === "ar" ? "عنوان التوصيل أو رقم الشقة..." : "Delivery address / apt..."}
-                  className="w-full px-2 py-1 text-xs rounded-lg border border-border/80 bg-background font-semibold"
-                />
+                )}
               </div>
             )}
           </div>
 
-          {/* 2. Ticket Items Scrollable Area */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {/* 2. Ticket Items Area - Primary Scrollable View (ALWAYS VISIBLE & PROMINENT) */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-2.5 space-y-1.5">
             {cart.map((item) => {
               const lineTotal = item.quantity * item.unitPrice;
               return (
                 <div
                   key={item.id}
-                  className="p-2.5 rounded-2xl border border-border/70 bg-card hover:bg-muted/30 transition-all flex flex-col gap-1.5"
+                  className="p-2 rounded-2xl border border-border/70 bg-card hover:bg-muted/30 transition-all flex items-center justify-between gap-2 shadow-2xs group"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {item.product.image && (
-                        <img
-                          src={item.product.image}
-                          alt={pick(item.product.name.ar, item.product.name.en)}
-                          className="w-10 h-10 rounded-xl object-cover shrink-0 border border-border/70 shadow-xs"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-black text-foreground block leading-tight truncate">
-                          {pick(item.product.name.ar, item.product.name.en)}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground block truncate">
-                          {money(item.unitPrice)} / {pick(item.product.unit.ar, item.product.unit.en)}
-                        </span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {item.product.image ? (
+                      <img
+                        src={item.product.image}
+                        alt={pick(item.product.name.ar, item.product.name.en)}
+                        className="w-9 h-9 rounded-xl object-cover shrink-0 border border-border/70 shadow-xs"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-sm shrink-0">
+                        🍬
                       </div>
-                    </div>
-
-                    <div className="text-end shrink-0">
-                      <span className="text-xs font-black text-foreground block font-mono">
-                        {money(lineTotal)}
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-black text-foreground block leading-tight truncate">
+                        {pick(item.product.name.ar, item.product.name.en)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block truncate font-mono">
+                        {money(item.unitPrice)} / {pick(item.product.unit.ar, item.product.unit.en)}
                       </span>
                     </div>
                   </div>
 
-                  {/* Quantity Stepper & Delete */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-xl border border-border/60">
+                  {/* Quantity Stepper & Price & Delete */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-xl border border-border/60">
                       <button
                         type="button"
                         onClick={() => handleUpdateQty(item.id, -1)}
-                        className="w-6 h-6 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors"
+                        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs"
+                        title={lang === "ar" ? "تقليل" : "Decrease"}
                       >
-                        <Minus className="w-3 h-3" />
+                        <Minus className="w-2.5 h-2.5" />
                       </button>
-                      <span className="w-8 text-center text-xs font-mono font-black text-foreground">
+                      <span className="w-7 text-center text-xs font-mono font-black text-foreground">
                         {item.quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleUpdateQty(item.id, 1)}
-                        className="w-6 h-6 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors"
+                        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs"
+                        title={lang === "ar" ? "زيادة" : "Increase"}
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-2.5 h-2.5" />
                       </button>
+                    </div>
+
+                    <div className="w-16 text-end">
+                      <span className="text-xs font-black text-[#16A34A] dark:text-emerald-400 block font-mono">
+                        {money(lineTotal)}
+                      </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                       title={lang === "ar" ? "حذف الصنف" : "Remove item"}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -2296,340 +2248,301 @@ export function PosPage() {
             })}
 
             {cart.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
-                <ShoppingCart className="w-12 h-12 stroke-[1.2] opacity-30 mb-2" />
-                <p className="text-xs font-bold">
+              <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-4 text-muted-foreground">
+                <ShoppingCart className="w-10 h-10 stroke-[1.2] opacity-30 mb-2" />
+                <p className="text-xs font-bold text-foreground">
                   {lang === "ar" ? "الفاتورة فارغة حالياً" : "Cart is currently empty"}
                 </p>
-                <span className="text-[11px] opacity-75 mt-0.5">
-                  {lang === "ar" ? "اضغط على أي صنف من القائمة لإضافته" : "Click any confectionery to add"}
+                <span className="text-[10px] text-muted-foreground mt-0.5">
+                  {lang === "ar" ? "اختر من قائمة الأصناف لإضافتها مباشرة" : "Click any confectionery to add to ticket"}
                 </span>
               </div>
             )}
           </div>
 
-          {/* 3. Ticket Totals & Calculations */}
-          <div className="p-3.5 border-t border-border/70 bg-muted/15 space-y-2">
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center justify-between text-muted-foreground font-semibold">
-                <span>{lang === "ar" ? "المجموع الفرعي:" : "Subtotal:"}</span>
-                <span className="font-mono">{money(subtotal)}</span>
+          {/* 3. Docked Checkout Panel (NO SCROLLBAR, NEVER PUSHED OFF-SCREEN) */}
+          <div className="p-2.5 sm:p-3 border-t border-border/70 bg-card/90 space-y-2 shrink-0 shadow-lg">
+            {/* Row 1: Summary Mini Breakdown & Quick Controls */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span>
+                  {lang === "ar" ? "الفرعي:" : "Sub:"}{" "}
+                  <strong className="font-mono text-foreground">{money(subtotal)}</strong>
+                </span>
+
+                {discountAmount > 0 && (
+                  <span className="text-rose-600 font-bold">
+                    {lang === "ar" ? `خصم (${discountPercent}%):` : `Disc (${discountPercent}%):`}{" "}
+                    <strong className="font-mono">-{money(discountAmount)}</strong>
+                  </span>
+                )}
+
+                {applyVat && (
+                  <span>
+                    {lang === "ar" ? "ضريبة 14%:" : "VAT:"}{" "}
+                    <strong className="font-mono text-foreground">+{money(vatAmount)}</strong>
+                  </span>
+                )}
+
+                {orderType === "delivery" && deliveryFee > 0 && (
+                  <span>
+                    {lang === "ar" ? "توصيل:" : "Delivery:"}{" "}
+                    <strong className="font-mono text-foreground">+{money(deliveryFee)}</strong>
+                  </span>
+                )}
               </div>
 
-              {discountAmount > 0 && (
-                <div className="flex items-center justify-between text-rose-600 font-bold">
-                  <span>{lang === "ar" ? `الخصم (${discountPercent}%):` : `Discount (${discountPercent}%):`}</span>
-                  <span className="font-mono">-{money(discountAmount)}</span>
-                </div>
-              )}
-
-              {applyVat && (
-                <div className="flex items-center justify-between text-muted-foreground font-semibold">
-                  <span>{lang === "ar" ? "ضريبة القيمة المضافة (14%):" : "VAT (14%):"}</span>
-                  <span className="font-mono">+{money(vatAmount)}</span>
-                </div>
-              )}
-
-              {orderType === "delivery" && deliveryFee > 0 && (
-                <div className="flex items-center justify-between text-muted-foreground font-semibold">
-                  <span>{lang === "ar" ? "خدمة التوصيل:" : "Delivery Fee:"}</span>
-                  <span className="font-mono">+{money(deliveryFee)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Discount & Tax Toggles */}
-            <div className="flex items-center justify-between pt-1 gap-2 border-t border-border/50 text-[11px]">
-              <div className="flex items-center gap-1.5">
+              {/* Toggles: Discount % & VAT & Clear */}
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => setDiscountPercent((prev) => (prev === 0 ? 10 : prev === 10 ? 20 : 0))}
-                  className={`px-2 py-0.5 rounded-lg border font-bold ${
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors ${
                     discountPercent > 0
                       ? "bg-rose-500/15 border-rose-500/40 text-rose-600"
-                      : "bg-card border-border/70 text-muted-foreground"
+                      : "bg-muted/50 border-border/70 text-muted-foreground hover:text-foreground"
                   }`}
+                  title={lang === "ar" ? "تطبيق نسبة خصم سريعة" : "Quick discount"}
                 >
-                  %{discountPercent > 0 ? discountPercent : lang === "ar" ? "خصم" : "Discount"}
+                  %{discountPercent > 0 ? discountPercent : lang === "ar" ? "خصم" : "Disc"}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setApplyVat((prev) => !prev)}
-                  className={`px-2 py-0.5 rounded-lg border font-bold ${
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors ${
                     applyVat
                       ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
-                      : "bg-card border-border/70 text-muted-foreground line-through"
+                      : "bg-muted/50 border-border/70 text-muted-foreground line-through"
                   }`}
+                  title={lang === "ar" ? "تفعيل أو إلغاء ضريبة القيمة المضافة" : "Toggle VAT"}
                 >
-                  {lang === "ar" ? "ضريبة 14%" : "VAT 14%"}
+                  14%
                 </button>
-              </div>
 
-              {cart.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearCart}
-                  className="text-muted-foreground hover:text-destructive text-[11px] font-bold"
-                >
-                  {lang === "ar" ? "مسح الكل (F9)" : "Clear (F9)"}
-                </button>
-              )}
+                {cart.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearCart}
+                    className="p-1 text-muted-foreground hover:text-destructive text-[10px] font-bold transition-colors cursor-pointer"
+                    title={lang === "ar" ? "مسح السلة (F9)" : "Clear (F9)"}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Massive Net Total Box */}
-            <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-emerald-600/10 to-teal-500/15 border border-emerald-500/30 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-black uppercase text-emerald-800 dark:text-emerald-300 block">
-                  {lang === "ar" ? "الإجمالي الصافي المطلوب" : "Total Net Payable"}
+            {/* Row 2: Sleek Payment Methods Row (Top 4 + More Modal Trigger) */}
+            <div className="grid grid-cols-5 gap-1">
+              {/* 1. Cash */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentMethod("cash");
+                  if (!tenderAmount || tenderAmount < finalTotal) setTenderAmount(finalTotal);
+                }}
+                className={`py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                  paymentMethod === "cash"
+                    ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-black shadow-xs ring-1 ring-emerald-500/30"
+                    : "border-border/70 bg-card hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span>💵</span>
+                <span className="text-[10px] truncate">{lang === "ar" ? "كاش (F4)" : "Cash"}</span>
+              </button>
+
+              {/* 2. Visa / Card */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("card")}
+                className={`py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                  paymentMethod === "card"
+                    ? "bg-blue-500/15 border-blue-500/50 text-blue-800 dark:text-blue-300 font-black shadow-xs ring-1 ring-blue-500/30"
+                    : "border-border/70 bg-card hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span>💳</span>
+                <span className="text-[10px] truncate">{lang === "ar" ? "فيزا (F5)" : "Card"}</span>
+              </button>
+
+              {/* 3. Instapay / Wallet */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("wallet")}
+                className={`py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                  paymentMethod === "wallet"
+                    ? "bg-purple-500/15 border-purple-500/50 text-purple-800 dark:text-purple-300 font-black shadow-xs ring-1 ring-purple-500/30"
+                    : "border-border/70 bg-card hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span>📱</span>
+                <span className="text-[10px] truncate">{lang === "ar" ? "محفظة (F6)" : "Wallet"}</span>
+              </button>
+
+              {/* 4. Waffarha Voucher */}
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("waffarha_voucher")}
+                className={`py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                  paymentMethod === "waffarha_voucher"
+                    ? "bg-rose-500/15 border-rose-500/50 text-rose-800 dark:text-rose-300 font-black shadow-xs ring-1 ring-rose-500/30"
+                    : "border-border/70 bg-card hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span>🎟️</span>
+                <span className="text-[10px] truncate">{lang === "ar" ? "وفرها (F7)" : "Voucher"}</span>
+              </button>
+
+              {/* 5. More Payment Methods & Split / Calculator Trigger */}
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(true)}
+                className="py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-dashed border-border/80 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                title={lang === "ar" ? "عرض جميع طرق الدفع والحاسبة" : "More methods / Calculator"}
+              >
+                <span>⋯</span>
+                <span className="text-[10px]">{lang === "ar" ? "المزيد" : "More"}</span>
+              </button>
+            </div>
+
+            {/* Row 2b: Inline Cash Tender / Change Mini Bar (Only when cash selected) */}
+            {paymentMethod === "cash" && finalTotal > 0 && (
+              <div className="flex items-center justify-between gap-1.5 p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs animate-in fade-in duration-150">
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    {lang === "ar" ? "المستلم:" : "Tender:"}
+                  </span>
+                  <input
+                    type="number"
+                    value={tenderAmount || ""}
+                    onChange={(e) => setTenderAmount(Number(e.target.value))}
+                    placeholder={String(finalTotal)}
+                    className="w-18 px-1.5 py-0.5 text-xs text-center font-mono font-bold rounded-lg border border-emerald-500/40 bg-background text-foreground"
+                  />
+                  <span className="text-[9px] text-muted-foreground">ج.م</span>
+                </div>
+
+                {/* Quick Add buttons */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setTenderAmount(finalTotal)}
+                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-background border hover:bg-muted"
+                  >
+                    {lang === "ar" ? "بالضبط" : "Exact"}
+                  </button>
+                  {[50, 100, 200, 500].map((b) => (
+                    <button
+                      type="button"
+                      key={b}
+                      onClick={() => setTenderAmount(b >= finalTotal ? b : finalTotal + b)}
+                      className="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-background border hover:bg-muted"
+                    >
+                      +{b}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-end shrink-0">
+                  <span className="text-[9px] text-muted-foreground block leading-none">
+                    {lang === "ar" ? "الباقي:" : "Change:"}
+                  </span>
+                  <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-400">
+                    {money(Math.max(0, (tenderAmount || finalTotal) - finalTotal))}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Row 2c: Inline Split Payment Bar (Only when split selected) */}
+            {paymentMethod === "split" && finalTotal > 0 && (
+              <div className="flex items-center justify-between gap-1.5 p-1.5 rounded-xl bg-teal-500/10 border border-teal-500/25 text-xs animate-in fade-in duration-150">
+                <span className="text-[10px] font-bold text-teal-800 dark:text-teal-300">
+                  {lang === "ar" ? "مجزأ:" : "Split:"}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1 flex-1">
+                  <span className="text-[10px]">💵</span>
+                  <input
+                    type="number"
+                    value={splitCashAmount || ""}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setSplitCashAmount(val);
+                      setSplitCardAmount(Math.max(0, finalTotal - val));
+                    }}
+                    placeholder="كاش"
+                    className="w-16 px-1 py-0.5 text-xs text-center font-mono font-bold rounded-lg border border-teal-500/40 bg-background"
+                  />
+                  <span className="text-[10px]">💳</span>
+                  <input
+                    type="number"
+                    value={splitCardAmount || ""}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setSplitCardAmount(val);
+                      setSplitCashAmount(Math.max(0, finalTotal - val));
+                    }}
+                    placeholder="فيزا"
+                    className="w-16 px-1 py-0.5 text-xs text-center font-mono font-bold rounded-lg border border-teal-500/40 bg-background"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const half = Math.round(finalTotal / 2);
+                    setSplitCashAmount(half);
+                    setSplitCardAmount(finalTotal - half);
+                  }}
+                  className="text-[9px] font-bold underline text-teal-700 dark:text-teal-300 shrink-0"
+                >
+                  50/50
+                </button>
+              </div>
+            )}
+
+            {/* Row 3: Grand Net Total & Pay Action Bar (Unified & High Impact) */}
+            <div className="flex items-stretch gap-2 pt-0.5">
+              {/* Grand Total Box */}
+              <div className="px-3 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-emerald-600/10 to-teal-500/15 border border-emerald-500/30 flex flex-col justify-center min-w-[130px] shrink-0">
+                <span className="text-[9px] font-black uppercase text-emerald-800 dark:text-emerald-300 block leading-tight">
+                  {lang === "ar" ? "الإجمالي الصافي" : "Total Net"}
+                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400 font-mono tracking-tight leading-none">
+                    {money(finalTotal)}
+                  </span>
+                </div>
+                <span className="text-[9px] text-muted-foreground leading-tight">
                   {cart.reduce((s, i) => s + i.quantity, 0)} {lang === "ar" ? "قطع / عبوات" : "items"}
                 </span>
               </div>
-              <span className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 font-mono tracking-tight">
-                {money(finalTotal)}
-              </span>
-            </div>
 
-            {/* Payment Method Quick Selector Directly on Cart Panel */}
-            <div className="space-y-1.5 pt-1 border-t border-border/60">
-              <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground px-0.5">
-                <span className="flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-primary" />
-                  <span>{lang === "ar" ? "طريقة الدفع والسداد:" : "Payment Method:"}</span>
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddPaymentModal(true)}
-                    className="flex items-center gap-1 text-[10px] font-black text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded-md transition-all cursor-pointer"
-                    title={lang === "ar" ? "إضافة طريقة دفع جديدة للنظام" : "Add custom payment method"}
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>{lang === "ar" ? "+ إضافة طريقة" : "+ Add Method"}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Methods Grid / Quick Selector */}
-              <div className="grid grid-cols-4 gap-1">
-                {paymentMethods.slice(0, 7).map((pm) => {
-                  const isSelected = paymentMethod === pm.id;
-                  return (
-                    <button
-                      key={pm.id}
-                      type="button"
-                      onClick={() => {
-                        setPaymentMethod(pm.id);
-                        if (pm.id === "cash" && (!tenderAmount || tenderAmount < finalTotal)) {
-                          setTenderAmount(finalTotal);
-                        } else if (pm.id === "split") {
-                          const half = Math.round(finalTotal / 2);
-                          setSplitCashAmount(half);
-                          setSplitCardAmount(finalTotal - half);
-                        }
-                      }}
-                      className={`py-1.5 px-1 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border transition-all cursor-pointer ${
-                        isSelected
-                          ? `${pm.badgeClass} ring-2 ring-primary/40 font-black shadow-xs scale-102`
-                          : "border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <span className="text-sm leading-none">{pm.icon}</span>
-                      <span className="text-[10px] leading-tight truncate max-w-full">
-                        {pick(pm.name.ar, pm.name.en)}
-                      </span>
-                      {pm.shortcut && (
-                        <span className="text-[8px] opacity-60 font-mono font-bold leading-none">
-                          {pm.shortcut}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* More / Custom Payment Methods Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(true)}
-                  className="py-1.5 px-1 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border border-dashed border-border/80 bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                  title={lang === "ar" ? "عرض جميع طرق الدفع والحاسبة" : "View all payment methods"}
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="text-[10px] leading-tight">
-                    {lang === "ar" ? "المزيد ⋯" : "More ⋯"}
-                  </span>
-                </button>
-              </div>
-
-              {/* Dynamic Context Box: 1. Cash Quick Tender Presets */}
-              {paymentMethod === "cash" && finalTotal > 0 && (
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5 text-xs animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-muted-foreground">
-                      {lang === "ar" ? "المستلم نقداً بالدرج:" : "Cash Tendered:"}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        value={tenderAmount || ""}
-                        onChange={(e) => setTenderAmount(Number(e.target.value))}
-                        placeholder={String(finalTotal)}
-                        className="w-20 px-2 py-0.5 text-xs text-center font-mono font-bold rounded-lg border border-emerald-500/40 bg-background"
-                      />
-                      <span className="text-[10px] text-muted-foreground">ج.م</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-emerald-500/20">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setTenderAmount(finalTotal)}
-                        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-background border hover:bg-muted"
-                      >
-                        {lang === "ar" ? "بالضبط" : "Exact"}
-                      </button>
-                      {[50, 100, 200, 500].map((b) => (
-                        <button
-                          type="button"
-                          key={b}
-                          onClick={() => setTenderAmount(b >= finalTotal ? b : finalTotal + b)}
-                          className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background border hover:bg-muted"
-                        >
-                          +{b}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="text-end">
-                      <span className="text-[10px] text-muted-foreground block">{lang === "ar" ? "الباقي للعميل:" : "Change:"}</span>
-                      <span className="font-mono font-black text-emerald-700 dark:text-emerald-400">
-                        {money(Math.max(0, (tenderAmount || finalTotal) - finalTotal))}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Context Box: 2. Split Payment (Cash + Card) */}
-              {paymentMethod === "split" && finalTotal > 0 && (
-                <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/30 space-y-2 text-xs animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-teal-900 dark:text-teal-200">
-                    <span className="flex items-center gap-1">
-                      <Split className="w-3.5 h-3.5 text-teal-600" />
-                      <span>{lang === "ar" ? "تقسيم الدفع (مجزأ):" : "Split Payment Breakdown:"}</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const half = Math.round(finalTotal / 2);
-                        setSplitCashAmount(half);
-                        setSplitCardAmount(finalTotal - half);
-                      }}
-                      className="text-[10px] text-teal-700 underline font-bold"
-                    >
-                      {lang === "ar" ? "مناصفة 50/50" : "50/50 Split"}
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
-                        <span>💵</span>
-                        <span>{lang === "ar" ? "المبلغ كاش:" : "Cash Part:"}</span>
-                      </label>
-                      <input
-                        type="number"
-                        value={splitCashAmount || ""}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSplitCashAmount(val);
-                          setSplitCardAmount(Math.max(0, finalTotal - val));
-                        }}
-                        className="w-full px-2 py-1 text-xs text-center font-mono font-bold rounded-lg border border-teal-500/40 bg-background"
-                      />
-                    </div>
-
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
-                        <span>💳</span>
-                        <span>{lang === "ar" ? "المبلغ فيزا:" : "Card Part:"}</span>
-                      </label>
-                      <input
-                        type="number"
-                        value={splitCardAmount || ""}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSplitCardAmount(val);
-                          setSplitCashAmount(Math.max(0, finalTotal - val));
-                        }}
-                        className="w-full px-2 py-1 text-xs text-center font-mono font-bold rounded-lg border border-teal-500/40 bg-background"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] pt-1 border-t border-teal-500/20 font-bold">
-                    <span>{lang === "ar" ? "الإجمالي الموزع:" : "Allocated Total:"}</span>
-                    <span
-                      className={`font-mono ${
-                        splitCashAmount + splitCardAmount === finalTotal
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-amber-600"
-                      }`}
-                    >
-                      {money(splitCashAmount + splitCardAmount)} / {money(finalTotal)}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Context Box: 3. Waffarha Voucher Code */}
-              {paymentMethod === "waffarha_voucher" && (
-                <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/30 space-y-1.5 text-xs animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-red-900 dark:text-red-200 flex items-center gap-1">
-                      <Tag className="w-3.5 h-3.5 text-red-600" />
-                      <span>{lang === "ar" ? "رقم قسيمة وفرها:" : "Waffarha Voucher Code:"}</span>
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">Waffarha.com</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={orderRefNumber}
-                    onChange={(e) => setOrderRefNumber(e.target.value)}
-                    placeholder="WFR-78900"
-                    className="w-full px-2.5 py-1 text-xs font-mono font-bold rounded-lg border border-red-500/40 bg-background text-start"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Actions: Hold Sale, Detailed Calc & Pay Buttons */}
-            <div className="grid grid-cols-12 gap-1.5 pt-1">
+              {/* Park Button */}
               <button
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleHoldTicket}
-                className="col-span-3 py-3 rounded-2xl border border-border/80 bg-card hover:bg-muted text-foreground text-xs font-black flex items-center justify-center gap-1 transition-all disabled:opacity-40 cursor-pointer"
+                className="px-2.5 py-2 rounded-2xl border border-border/80 bg-card hover:bg-muted text-foreground text-xs font-black flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-40 cursor-pointer shrink-0 shadow-2xs"
                 title={lang === "ar" ? "تعليق الطلب الحالي (F2)" : "Park current ticket (F2)"}
               >
-                <Pause className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>{lang === "ar" ? "تعليق (F2)" : "Hold"}</span>
+                <Pause className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-[9px]">{lang === "ar" ? "تعليق (F2)" : "Hold"}</span>
               </button>
 
+              {/* Open Calc / Modal */}
               <button
                 type="button"
                 disabled={cart.length === 0}
                 onClick={() => setShowPaymentModal(true)}
-                className="col-span-2 py-3 rounded-2xl border border-border/80 bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-black flex items-center justify-center transition-all disabled:opacity-40 cursor-pointer"
+                className="px-2 py-2 rounded-2xl border border-border/80 bg-card hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-black flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-40 cursor-pointer shrink-0 shadow-2xs"
                 title={lang === "ar" ? "فتح حاسبة وتفاصيل الدفع" : "Open payment calculator"}
               >
-                <Maximize2 className="w-4 h-4" />
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="text-[9px]">{lang === "ar" ? "حاسبة" : "Calc"}</span>
               </button>
 
+              {/* Primary Pay & Print Button */}
               <button
                 type="button"
                 disabled={cart.length === 0}
@@ -2640,15 +2553,15 @@ export function PosPage() {
                     handleCompletePayment();
                   }
                 }}
-                className="col-span-7 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/25 hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                className="flex-1 py-2 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 active:scale-98 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
               >
                 <span className="text-base shrink-0">
                   {paymentMethods.find((m) => m.id === paymentMethod)?.icon || "💵"}
                 </span>
                 <span className="truncate">
                   {lang === "ar"
-                    ? `دفع (${paymentMethod === "split" ? "مجزأ" : (paymentMethods.find((m) => m.id === paymentMethod)?.name.ar || "نقداً")}) وطباعة (F1)`
-                    : `Pay (${paymentMethod === "split" ? "Split" : (paymentMethods.find((m) => m.id === paymentMethod)?.name.en || "Cash")}) (F1)`}
+                    ? `سداد وطباعة (F1)`
+                    : `Pay & Print (F1)`}
                 </span>
               </button>
             </div>
@@ -3071,16 +2984,26 @@ export function PosPage() {
             {/* Authentic 80mm Receipt Content */}
             <div className="flex-1 overflow-y-auto p-5 font-mono text-black bg-white select-text space-y-3 text-xs leading-relaxed">
               {/* Receipt Header */}
-              <div className="text-center space-y-1 border-b border-dashed border-zinc-400 pb-3">
+              <div className="text-center space-y-1.5 border-b border-dashed border-zinc-400 pb-3">
+                <div className="flex justify-center mb-1">
+                  <img
+                    src={settings.logoUrl || "/wazeer-logo.png"}
+                    alt="وزير الحلو"
+                    className="h-12 w-auto max-w-[160px] object-contain"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                    }}
+                  />
+                </div>
                 <h2 className="text-base font-black tracking-tight font-sans">
-                  {settings.nameAr || "سلسلة حلويات وزير الحلو"}
+                  {settings.nameAr || "شركة وزير الحلو للحلويات والمواد الغذائية"}
                 </h2>
                 <p className="text-[11px] font-sans font-bold">Wazeer El-Helw Pastry & Desserts</p>
                 <p className="text-[10px]">
                   {lastCompletedOrder.branch.ar}
                 </p>
                 <p className="text-[10px] font-mono">
-                  Tel: {lastCompletedOrder.branch.phone}
+                  Tel: {lastCompletedOrder.branch.phone || "+20 100 112 0000"}
                 </p>
                 <p className="text-[9px] text-zinc-600">
                   ب.ض: 492-810-332 • س.ت: 89412
@@ -3127,25 +3050,23 @@ export function PosPage() {
 
               {/* Items Table */}
               <div className="space-y-1.5 border-b border-dashed border-zinc-400 pb-3">
-                <div className="flex justify-between text-[10px] font-bold border-b border-zinc-300 pb-1">
-                  <span>الصنف</span>
-                  <div className="flex gap-4">
-                    <span>الكمية</span>
-                    <span>الإجمالي</span>
-                  </div>
+                <div className="flex items-center justify-between text-[10px] font-bold border-b border-zinc-300 pb-1">
+                  <span className="flex-1 text-start">الصنف</span>
+                  <span className="w-14 text-center shrink-0">الكمية</span>
+                  <span className="w-20 text-end shrink-0">الإجمالي</span>
                 </div>
 
                 {lastCompletedOrder.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-[10px]">
-                    <span className="truncate max-w-[140px] font-sans font-bold">
+                  <div key={item.id} className="flex items-center justify-between text-[10px]">
+                    <span className="flex-1 text-start truncate pe-2 font-sans font-bold">
                       {pick(item.product.name.ar, item.product.name.en)}
                     </span>
-                    <div className="flex gap-4">
-                      <span>{item.quantity}</span>
-                      <span className="font-bold font-mono">
-                        {(item.quantity * item.unitPrice).toFixed(2)}
-                      </span>
-                    </div>
+                    <span className="w-14 text-center font-mono shrink-0">
+                      {item.quantity}
+                    </span>
+                    <span className="w-20 text-end font-bold font-mono shrink-0">
+                      {(item.quantity * item.unitPrice).toFixed(2)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -3210,19 +3131,30 @@ export function PosPage() {
                 </div>
               </div>
 
-              {/* ZATCA QR Code & Footer */}
+              {/* ZATCA / ETA Real Scannable QR Code & Footer */}
               <div className="text-center pt-2 space-y-2">
                 <div className="flex justify-center">
-                  <div className="p-2 border border-zinc-400 rounded-lg inline-block bg-white">
-                    <QrCode className="w-20 h-20 text-black stroke-[1.2]" />
+                  <div className="p-2 border border-zinc-400 rounded-xl inline-block bg-white shadow-2xs">
+                    <RealQrCode
+                      value={`مصلحة الضرائب المصرية | الفاتورة الإلكترونية\nالمورد: ${settings.nameAr || "شركة وزير الحلو للحلويات والمواد الغذائية"}\nرقم التسجيل: 492-810-332\nفاتورة: ${lastCompletedOrder.id}\nالتاريخ: ${lastCompletedOrder.date}\nالإجمالي: ${lastCompletedOrder.total.toFixed(2)} ج.م\nالضريبة: ${lastCompletedOrder.vat.toFixed(2)} ج.م\nالفرع: ${lastCompletedOrder.branch.ar}`}
+                      size={110}
+                      level="M"
+                      bordered={false}
+                      title={`فاتورة ضريبية إلكترونية معتمدة ${lastCompletedOrder.id}`}
+                    />
                   </div>
                 </div>
-                <p className="text-[10px] font-sans font-bold">
-                  شكراً لزيارتكم — وزير الحلو أصل الطعم الملكي!
-                </p>
-                <p className="text-[9px] text-zinc-500 font-mono">
-                  *** فاتورة ضريبية إلكترونية معتمدة ***
-                </p>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] font-sans font-black">
+                    شكراً لزيارتكم — وزير الحلو أصل الطعم الملكي!
+                  </p>
+                  <p className="text-[9px] text-zinc-600 font-mono">
+                    *** فاتورة ضريبية إلكترونية معتمدة (ETA E-Receipt) ***
+                  </p>
+                  <p className="text-[8px] text-zinc-400 font-mono">
+                    امسح الرمز للتحقق من صحة الفاتورة الضريبية
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -3265,7 +3197,7 @@ export function PosPage() {
               <div className="flex items-center gap-2">
                 <Pause className="w-4 h-4" />
                 <h3 className="font-bold text-sm">
-                  {lang === "ar" ? "الفواتير المعلقة" : "Parked Orders"} ({heldOrders.length})
+                  {lang === "ar" ? "الفواتير المعلقة" : "Parked Orders"} ({visibleHeldOrders.length})
                 </h3>
               </div>
               <button
@@ -3278,7 +3210,7 @@ export function PosPage() {
             </div>
 
             <div className="p-4 max-h-96 overflow-y-auto space-y-2">
-              {heldOrders.map((held) => (
+              {visibleHeldOrders.map((held) => (
                 <div
                   key={held.id}
                   className="p-3 rounded-2xl border border-border/80 bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-3"
@@ -3323,9 +3255,15 @@ export function PosPage() {
                 </div>
               ))}
 
-              {heldOrders.length === 0 && (
+              {visibleHeldOrders.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-xs font-bold">
-                  {lang === "ar" ? "لا توجد فواتير معلقة حالياً" : "No parked tickets found"}
+                  {lang === "ar"
+                    ? isCashierRole
+                      ? "لا توجد فواتير معلقة خاصة بك حالياً"
+                      : "لا توجد فواتير معلقة حالياً"
+                    : isCashierRole
+                    ? "No parked tickets for your shift"
+                    : "No parked tickets found"}
                 </div>
               )}
             </div>
@@ -3360,34 +3298,37 @@ export function PosPage() {
               </button>
             </div>
 
-            {/* Modal Tabs: My Shift vs All Branch Cashiers */}
-            <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShiftModalTab("my_shift")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  shiftModalTab === "my_shift"
-                    ? "bg-primary text-primary-foreground font-black shadow-xs"
-                    : "bg-card border border-border/70 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <span>{activeCashier.avatar}</span>
-                <span>{lang === "ar" ? `ورديتي (${pick(activeCashier.name.ar, activeCashier.name.en)})` : `My Shift (${pick(activeCashier.name.ar, activeCashier.name.en)})`}</span>
-              </button>
+            {/* Modal Tabs: My Shift vs All Branch Cashiers
+                Hidden for plain cashiers — they only see their own shift */}
+            {!isCashierRole && (
+              <div className="p-3 bg-muted/20 border-b border-border/70 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShiftModalTab("my_shift")}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    shiftModalTab === "my_shift"
+                      ? "bg-primary text-primary-foreground font-black shadow-xs"
+                      : "bg-card border border-border/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <span>{activeCashier.avatar}</span>
+                  <span>{lang === "ar" ? `ورديتي (${pick(activeCashier.name.ar, activeCashier.name.en)})` : `My Shift (${pick(activeCashier.name.ar, activeCashier.name.en)})`}</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setShiftModalTab("all_cashiers")}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  shiftModalTab === "all_cashiers"
-                    ? "bg-primary text-primary-foreground font-black shadow-xs"
-                    : "bg-card border border-border/70 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>{lang === "ar" ? "كاشيرات الفرع" : "All Branch Cashiers"}</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setShiftModalTab("all_cashiers")}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    shiftModalTab === "all_cashiers"
+                      ? "bg-primary text-primary-foreground font-black shadow-xs"
+                      : "bg-card border border-border/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{lang === "ar" ? "كاشيرات الفرع" : "All Branch Cashiers"}</span>
+                </button>
+              </div>
+            )}
 
             {/* Tab 1: Current Active User Shift */}
             {shiftModalTab === "my_shift" && (
@@ -3487,8 +3428,8 @@ export function PosPage() {
               </div>
             )}
 
-            {/* Tab 2: All Branch Cashiers Comparison */}
-            {shiftModalTab === "all_cashiers" && (
+            {/* Tab 2: All Branch Cashiers Comparison — managers/supervisors only */}
+            {shiftModalTab === "all_cashiers" && !isCashierRole && (
               <div className="p-4 space-y-3 overflow-y-auto">
                 <div className="text-xs text-muted-foreground">
                   {lang === "ar"
@@ -3656,6 +3597,14 @@ export function PosPage() {
                       <div
                         key={cashier.id}
                         onClick={() => {
+                          if (isCashierRole && !isCurrent) {
+                            toast.info(
+                              lang === "ar"
+                                ? `يرجى إدخال كود PIN للكاشير (${pick(cashier.name.ar, cashier.name.en)}) في الحقل بالأعلى للتبديل`
+                                : `Please enter PIN code above to switch to ${pick(cashier.name.en, cashier.name.ar)}`
+                            );
+                            return;
+                          }
                           setActiveCashier(cashier);
                           setShowCashierSwitchModal(false);
                           toast.success(
@@ -3691,28 +3640,39 @@ export function PosPage() {
                             </span>
                           ) : (
                             <span className="text-[10px] text-primary font-bold shrink-0 hover:underline">
-                              {lang === "ar" ? "اختيار ↵" : "Switch ↵"}
+                              {isCashierRole
+                                ? (lang === "ar" ? "🔒 بالرمز" : "🔒 PIN")
+                                : (lang === "ar" ? "اختيار ↵" : "Switch ↵")}
                             </span>
                           )}
                         </div>
 
-                        {/* Shift amounts & orders metrics */}
-                        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono">
-                          <span className="text-muted-foreground">
-                            {ordersCount} {lang === "ar" ? "طلب" : "orders"}
-                          </span>
-                          <span className="font-black text-emerald-600">
-                            {money(salesTotal)}
-                          </span>
-                        </div>
+                        {/* Shift amounts & orders metrics - only visible for own card or for supervisor/managers */}
+                        {(!isCashierRole || isCurrent) ? (
+                          <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] font-mono">
+                            <span className="text-muted-foreground">
+                              {ordersCount} {lang === "ar" ? "طلب" : "orders"}
+                            </span>
+                            <span className="font-black text-emerald-600">
+                              {money(salesTotal)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span>{lang === "ar" ? "كاشير مناوب" : "On Duty Cashier"}</span>
+                            <span className="font-mono text-[9px] bg-muted px-1.5 py-0.5 rounded font-bold">
+                              🔒 {lang === "ar" ? "محمي بالرمز" : "PIN Protected"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Add New Cashier Form Toggle */}
-              {!showNewCashierForm ? (
+              {/* Add New Cashier Form Toggle (Managers & Supervisors Only) */}
+              {!isCashierRole && (!showNewCashierForm ? (
                 <button
                   type="button"
                   onClick={() => setShowNewCashierForm(true)}
@@ -3845,7 +3805,7 @@ export function PosPage() {
                     {lang === "ar" ? "حفظ وتفعيل الكاشير فوراً" : "Save & Activate Cashier"}
                   </button>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
@@ -3863,10 +3823,13 @@ export function PosPage() {
                 <Receipt className="w-5 h-5" />
                 <div>
                   <h3 className="font-bold text-sm leading-tight">
-                    {lang === "ar" ? "سجل طلبات وفواتير الكاشير" : "Cashier Orders & Invoices Log"}
+                    {isCashierRole
+                      ? (lang === "ar" ? "سجل طلباتي في الوردية" : "My Shift Orders Log")
+                      : (lang === "ar" ? "سجل طلبات وفواتير الكاشير" : "Cashier Orders & Invoices Log")}
                   </h3>
                   <p className="text-[11px] opacity-85">
                     {pick(activeCashier.name.ar, activeCashier.name.en)} • 📍 {pick(selectedBranch.ar, selectedBranch.en)}
+                    {isCashierRole && ` • ${lang === "ar" ? "طلباتك الخاصة فقط" : "Your own orders only"}`}
                   </p>
                 </div>
               </div>
@@ -3882,31 +3845,41 @@ export function PosPage() {
             {/* Filter Mode & Search */}
             <div className="p-4 border-b border-border/70 space-y-3 bg-muted/20">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                {/* 2-Way View Filter */}
-                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/60">
-                  <button
-                    type="button"
-                    onClick={() => setOrdersViewMode("my_orders")}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                      ordersViewMode === "my_orders"
-                        ? "bg-primary text-primary-foreground font-black shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span>{lang === "ar" ? "طلباتي فقط" : "My Orders"}</span> ({myOrders.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrdersViewMode("all_branch")}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                      ordersViewMode === "all_branch"
-                        ? "bg-primary text-primary-foreground font-black shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span>{lang === "ar" ? "كل طلبات الفرع" : "All Branch Orders"}</span> ({branchOrders.length})
-                  </button>
-                </div>
+                {/* 2-Way View Filter / Cashier Badge */}
+                {isCashierRole ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+                    <Receipt className="w-3.5 h-3.5" />
+                    <span>{lang === "ar" ? "طلباتي فقط" : "My Orders Only"}</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-mono text-[10px] font-black">
+                      {myOrders.length}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => setOrdersViewMode("my_orders")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        ordersViewMode === "my_orders"
+                          ? "bg-primary text-primary-foreground font-black shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>{lang === "ar" ? "طلباتي فقط" : "My Orders"}</span> ({myOrders.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrdersViewMode("all_branch")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        ordersViewMode === "all_branch"
+                          ? "bg-primary text-primary-foreground font-black shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span>{lang === "ar" ? "كل طلبات الفرع" : "All Branch Orders"}</span> ({branchOrders.length})
+                    </button>
+                  </div>
+                )}
 
                 {/* Orders Search Input */}
                 <div className="relative min-w-52">
@@ -3923,7 +3896,7 @@ export function PosPage() {
 
               {/* Summary KPIs for Current Selection */}
               {(() => {
-                const currentList = ordersViewMode === "my_orders" ? myOrders : branchOrders;
+                const currentList = isCashierRole ? myOrders : (ordersViewMode === "my_orders" ? myOrders : branchOrders);
                 const totalSales = currentList.reduce((acc, o) => acc + o.total, 0);
                 const cashSales = currentList
                   .filter((o) => o.paymentMethod === "cash")
@@ -3936,7 +3909,7 @@ export function PosPage() {
                   <div className="grid grid-cols-3 gap-2.5 text-xs">
                     <div className="p-2.5 rounded-xl bg-card border border-border/70 text-center">
                       <span className="text-[10px] text-muted-foreground block">
-                        {ordersViewMode === "my_orders" ? (lang === "ar" ? "إجمالي مبيعاتي" : "My Total Sales") : (lang === "ar" ? "إجمالي مبيعات الفرع" : "Branch Total Sales")}
+                        {isCashierRole || ordersViewMode === "my_orders" ? (lang === "ar" ? "إجمالي مبيعاتي" : "My Total Sales") : (lang === "ar" ? "إجمالي مبيعات الفرع" : "Branch Total Sales")}
                       </span>
                       <span className="font-black text-emerald-600 font-mono text-sm block">
                         {money(totalSales)}
@@ -3968,7 +3941,7 @@ export function PosPage() {
             {/* Orders List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
               {(() => {
-                const baseList = ordersViewMode === "my_orders" ? myOrders : branchOrders;
+                const baseList = isCashierRole ? myOrders : (ordersViewMode === "my_orders" ? myOrders : branchOrders);
                 const q = ordersSearchQuery.toLowerCase().trim();
                 const filtered = baseList.filter((o) => {
                   if (!q) return true;

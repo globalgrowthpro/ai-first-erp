@@ -2726,7 +2726,7 @@ function EditPosModal({
 
     onSave({
       title: { ar: titleAr, en: titleEn || titleAr },
-      code: code ? code.toLowerCase() : undefined,
+      ...(code ? { code: code.toLowerCase() } : {}),
       departmentId,
       level,
     });

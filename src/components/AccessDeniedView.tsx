@@ -74,7 +74,7 @@ export function AccessDeniedView({
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {currentUser.allowedPages.map((page) => (
+            {currentUser.allowedPages.map((page: string) => (
               <span
                 key={page}
                 className="px-2 py-0.5 rounded-md bg-card border border-border/80 font-mono text-[11px] text-muted-foreground"

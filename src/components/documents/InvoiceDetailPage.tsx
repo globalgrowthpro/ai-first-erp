@@ -33,6 +33,7 @@ import { Btn, StatusPill } from "@/components/kit";
 import { useSalesStore, usePurchasesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
+import { RealQrCode } from "@/components/ui/qr-code";
 
 interface InvoiceDetailPageProps {
   docId: string;
@@ -382,8 +383,14 @@ export function InvoiceDetailPage({ docId, kind }: InvoiceDetailPageProps) {
         <div className="flex flex-col sm:flex-row items-start justify-between gap-6 pt-2">
           {/* QR Code compliance stamp */}
           <div className="flex items-center gap-4 p-4 rounded-xl border border-border/70 bg-muted/20 max-w-sm">
-            <div className="size-20 bg-white p-1.5 rounded-lg border border-border flex items-center justify-center shrink-0">
-              <QrCode className="size-full text-slate-900" />
+            <div className="size-20 bg-white p-1 rounded-lg border border-border flex items-center justify-center shrink-0 shadow-2xs">
+              <RealQrCode
+                value={`مصلحة الضرائب المصرية | الفاتورة الإلكترونية\nالمورد: ${pick("شركة وزير الحلو للحلويات والمواد الغذائية", "Wazeer El-Helw Pastry & Desserts")}\nرقم التسجيل: 492-810-332\nفاتورة: ${doc.id}\nالتاريخ: ${doc.date}\nالإجمالي: ${doc.amount} ج.م\nالضريبة: ${vatAmount} ج.م`}
+                size={68}
+                level="M"
+                bordered={false}
+                title={`فاتورة ضريبية إلكترونية معتمدة ${doc.id}`}
+              />
             </div>
             <div className="text-[11px] text-muted-foreground space-y-1">
               <p className="font-bold text-foreground">{pick("ختم الفاتورة الإلكترونية", "ZATCA / ETA QR Stamp")}</p>

@@ -948,6 +948,9 @@ export function InventoryImportModal({
         "الرصيد الافتتاحي": it.qty || 0,
         "حد إعادة الطلب": it.minStock || 10,
         "مادة خام (نعم/لا)": it.isRawMaterial ? "نعم" : "لا",
+        "المجموعة (Group)": it.group || "",
+        "عرض في POS (نعم/لا)": it.showOnPos === false ? "لا" : "نعم",
+        "رابط صورة المنتج (URL)": it.image || "",
         "القسم / العنبر": it.department || "",
         "التصنيف الفني": it.classification || "",
         "نوع الخامة": it.rawType || "",
@@ -956,8 +959,8 @@ export function InventoryImportModal({
       ws["!cols"] = [
         { wch: 18 }, { wch: 34 }, { wch: 30 }, { wch: 15 },
         { wch: 15 }, { wch: 14 }, { wch: 16 }, { wch: 16 },
-        { wch: 15 }, { wch: 14 }, { wch: 16 }, { wch: 22 },
-        { wch: 22 }, { wch: 22 }
+        { wch: 15 }, { wch: 14 }, { wch: 16 }, { wch: 18 },
+        { wch: 18 }, { wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 22 }
       ];
       XLSX.utils.book_append_sheet(wb, ws, "الأصناف_والمنتجات");
     } else if (activeTab === "bom") {
@@ -1094,6 +1097,9 @@ export function InventoryImportModal({
           "الرصيد الافتتاحي": 60,
           "حد إعادة الطلب": 20,
           "مادة خام (نعم/لا)": "لا",
+          "المجموعة (Group)": "كشري الحلو",
+          "عرض في POS (نعم/لا)": "نعم",
+          "رابط صورة المنتج (URL)": "https://example.com/koshary.jpg",
           "القسم": "قسم المعلبات",
         },
         {
@@ -1108,6 +1114,9 @@ export function InventoryImportModal({
           "الرصيد الافتتاحي": 25,
           "حد إعادة الطلب": 10,
           "مادة خام (نعم/لا)": "نعم",
+          "المجموعة (Group)": "",
+          "عرض في POS (نعم/لا)": "لا",
+          "رابط صورة المنتج (URL)": "",
           "القسم": "المخزن الرئيسي",
         },
       ];
@@ -1308,6 +1317,13 @@ export function InventoryImportModal({
         const qty = Number(r["الرصيد الافتتاحي"] || r["Qty"] || 0) || 50;
         const minStock = Number(r["حد إعادة الطلب"] || r["Min"] || 0) || 15;
         const isRaw = String(r["مادة خام (نعم/لا)"] || r["isRaw"] || "").includes("نعم");
+        const group = String(r["المجموعة (Group)"] || r["Group"] || "").trim() || undefined;
+        const showOnPos = !String(r["عرض في POS (نعم/لا)"] || r["ShowOnPOS"] || "نعم").includes("لا");
+        const image = String(r["رابط صورة المنتج (URL)"] || r["Image"] || "").trim() || undefined;
+        const skuNorm = sku.toUpperCase();
+
+        // Skip duplicates already in products list
+        if (products.some((p) => p.sku.toUpperCase() === skuNorm)) return null;
 
         return {
           sku,
@@ -1320,8 +1336,11 @@ export function InventoryImportModal({
           qty,
           minStock,
           isRawMaterial: isRaw,
+          group,
+          showOnPos,
+          image,
         };
-      });
+      }).filter(Boolean) as Omit<InventoryProduct, "id">[];
 
       onImportProducts(items);
     } else if (activeTab === "categories") {

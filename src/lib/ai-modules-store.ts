@@ -1,57 +1,55 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { aiModules as initialAiModules, type AiModuleItem } from "@/lib/demo-data";
 
-export interface AiModuleItem {
-  id: string;
-  code: string;
-  name: { ar: string; en: string };
-  description: { ar: string; en: string };
-  scope: "finance" | "sales" | "inventory" | "hr" | "security" | "manufacturing" | "logistics" | "customer_service" | "general";
-  isEnabled: boolean;
-  requiresApproval: boolean;
-  autoAction: boolean;
-  provider?: string;
-  model?: string;
-  apiKey?: string;
-  agentRole?: string;
-  roleLabel?: { ar: string; en: string };
-  systemPrompt?: string;
-  allowedTools?: string[];
-  temperature?: number;
-  status?: "active" | "idle" | "testing";
-  totalRuns?: number;
-}
+export type { AiModuleItem };
 
 export function useAiModulesStore() {
-  const [modules, setModules] = useState<AiModuleItem[]>([]);
+  const [modules, setModules] = useState<AiModuleItem[]>(initialAiModules);
   const [loading, setLoading] = useState(false);
 
   const fetchModules = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('ai_modules').select('*');
-    if (data) {
-      setModules(data.map((m: any) => ({
-        id: m.id,
-        code: m.code || `AI-${m.id.slice(0, 4)}`,
-        name: { ar: m.name_ar || '', en: m.name_en || '' },
-        description: { ar: m.description_ar || '', en: m.description_en || '' },
-        scope: (m.scope as any) || 'general',
-        isEnabled: m.is_enabled !== false,
-        requiresApproval: m.requires_approval !== false,
-        autoAction: !m.requires_approval,
-        provider: "openai",
-        model: "gpt-4o",
-        apiKey: "sk-...",
-        agentRole: "orchestrator",
-        roleLabel: { ar: 'مساعد', en: 'Assistant' },
-        systemPrompt: "You are a helpful assistant.",
-        allowedTools: [],
-        temperature: 0.7,
-        status: "active",
-        totalRuns: 0
-      })));
+    try {
+      const { data } = await supabase.from('ai_modules').select('*');
+      if (data && data.length > 0) {
+        const defaultFallback: AiModuleItem = initialAiModules[0] ?? {
+          id: "default",
+          name: { ar: "حافظ", en: "Hafez" },
+          provider: "openai",
+          model: "gpt-4o",
+          apiKey: "",
+          agentRole: "orchestrator",
+          roleLabel: { ar: "المنسق", en: "Orchestrator" },
+          systemPrompt: "",
+          allowedTools: [],
+          temperature: 0.2,
+          status: "active",
+          totalRuns: 0
+        };
+        setModules(data.map((m: any) => {
+          const fallback = initialAiModules.find(im => im.id === m.id) ?? defaultFallback;
+          return {
+            id: m.id,
+            name: { ar: m.name_ar || fallback.name.ar, en: m.name_en || fallback.name.en },
+            provider: (m.provider || fallback.provider) as AiModuleItem["provider"],
+            model: m.model || fallback.model,
+            apiKey: m.api_key || fallback.apiKey,
+            agentRole: (m.agent_role || fallback.agentRole) as AiModuleItem["agentRole"],
+            roleLabel: { ar: m.role_label_ar || fallback.roleLabel.ar, en: m.role_label_en || fallback.roleLabel.en },
+            systemPrompt: m.system_prompt || fallback.systemPrompt,
+            allowedTools: m.allowed_tools || fallback.allowedTools,
+            temperature: typeof m.temperature === 'number' ? m.temperature : fallback.temperature,
+            status: (m.status || (m.is_enabled ? 'active' : 'idle')) as AiModuleItem["status"],
+            totalRuns: m.total_runs || fallback.totalRuns || 0
+          };
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch AI modules from Supabase", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -59,40 +57,50 @@ export function useAiModulesStore() {
   }, [fetchModules]);
 
   const addModule = useCallback(async (module: Omit<AiModuleItem, "id">) => {
-    const { data } = await supabase.from('ai_modules').insert({
-      code: module.code,
-      name_ar: module.name.ar,
-      name_en: module.name.en,
-      description_ar: module.description.ar,
-      description_en: module.description.en,
-      scope: module.scope,
-      is_enabled: module.isEnabled,
-      requires_approval: module.requiresApproval,
-    }).select().single();
-    if (data) fetchModules();
-    return { ...module, id: data?.id || 'temp' } as AiModuleItem;
-  }, [fetchModules]);
+    const newMod: AiModuleItem = { ...module, id: `mod-${Date.now()}` };
+    setModules(prev => [newMod, ...prev]);
+    try {
+      await supabase.from('ai_modules').insert({
+        code: `AI-${newMod.id.slice(-4)}`,
+        name_ar: module.name.ar,
+        name_en: module.name.en,
+        description_ar: module.roleLabel.ar,
+        description_en: module.roleLabel.en,
+        scope: module.agentRole,
+        is_enabled: module.status === 'active',
+        requires_approval: true,
+      });
+    } catch (err) {
+      console.error("Failed to insert AI module into Supabase", err);
+    }
+    return newMod;
+  }, []);
 
   const updateModule = useCallback(async (id: string, updates: Partial<AiModuleItem>) => {
-    const payload: any = {};
-    if (updates.name?.ar !== undefined) payload.name_ar = updates.name.ar;
-    if (updates.name?.en !== undefined) payload.name_en = updates.name.en;
-    if (updates.description?.ar !== undefined) payload.description_ar = updates.description.ar;
-    if (updates.description?.en !== undefined) payload.description_en = updates.description.en;
-    if (updates.scope !== undefined) payload.scope = updates.scope;
-    if (updates.isEnabled !== undefined) payload.is_enabled = updates.isEnabled;
-    if (updates.requiresApproval !== undefined) payload.requires_approval = updates.requiresApproval;
+    setModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    try {
+      const payload: any = {};
+      if (updates.name?.ar !== undefined) payload.name_ar = updates.name.ar;
+      if (updates.name?.en !== undefined) payload.name_en = updates.name.en;
+      if (updates.status !== undefined) payload.is_enabled = updates.status === 'active';
+      if (updates.agentRole !== undefined) payload.scope = updates.agentRole;
 
-    if (Object.keys(payload).length > 0) {
-      await supabase.from('ai_modules').update(payload).eq('id', id);
+      if (Object.keys(payload).length > 0) {
+        await supabase.from('ai_modules').update(payload).eq('id', id);
+      }
+    } catch (err) {
+      console.error("Failed to update AI module in Supabase", err);
     }
-    fetchModules();
-  }, [fetchModules]);
+  }, []);
 
   const deleteModule = useCallback(async (id: string) => {
-    await supabase.from('ai_modules').delete().eq('id', id);
-    fetchModules();
-  }, [fetchModules]);
+    setModules(prev => prev.filter(m => m.id !== id));
+    try {
+      await supabase.from('ai_modules').delete().eq('id', id);
+    } catch (err) {
+      console.error("Failed to delete AI module from Supabase", err);
+    }
+  }, []);
 
   return {
     modules,

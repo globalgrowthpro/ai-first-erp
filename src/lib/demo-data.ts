@@ -683,7 +683,7 @@ export interface DepartmentItem {
   id: string;
   name: Bi;
   code: string;
-  manager?: Bi;
+  manager?: Bi | undefined;
   headcount: number;
 }
 
@@ -698,7 +698,7 @@ export const departments: DepartmentItem[] = [
 
 export interface PositionItem {
   id: string;
-  code?: string;
+  code?: string | undefined;
   title: Bi;
   departmentId: string;
   level: "c-level" | "manager" | "specialist" | "staff";

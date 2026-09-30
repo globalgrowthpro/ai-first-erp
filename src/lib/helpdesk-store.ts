@@ -49,7 +49,7 @@ export function useHelpdeskStore() {
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('helpdesk_tickets')
       .select(`
         *,
@@ -114,7 +114,7 @@ export function useHelpdeskStore() {
     setTickets((prev) => [newTicket, ...prev]);
 
     // DB Insert
-    await supabase.from('helpdesk_tickets').insert({
+    await (supabase as any).from('helpdesk_tickets').insert({
       ticket_number: tempTicketNumber,
       title: ticket.title,
       description: ticket.description,
@@ -151,7 +151,7 @@ export function useHelpdeskStore() {
     const updateData: any = { status: status as any };
     if (resolutionNotes !== undefined) updateData.resolution_notes = resolutionNotes;
     
-    await supabase.from('helpdesk_tickets').update(updateData).eq('id', id);
+    await (supabase as any).from('helpdesk_tickets').update(updateData).eq('id', id);
   }, []);
 
   const assignTicket = useCallback(async (id: string, assignee: string) => {
@@ -189,7 +189,7 @@ export function useHelpdeskStore() {
       )
     );
 
-    await supabase.from('helpdesk_ticket_responses').insert({
+    await (supabase as any).from('helpdesk_ticket_responses').insert({
       ticket_id: ticketId,
       message: response.message,
       is_internal: response.isInternal || false,
@@ -200,7 +200,7 @@ export function useHelpdeskStore() {
 
   const deleteTicket = useCallback(async (id: string) => {
     setTickets((prev) => prev.filter((t) => t.id !== id));
-    await supabase.from('helpdesk_tickets').delete().eq('id', id);
+    await (supabase as any).from('helpdesk_tickets').delete().eq('id', id);
   }, []);
 
   const resetToSeed = useCallback(() => {

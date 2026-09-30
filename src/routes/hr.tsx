@@ -433,8 +433,8 @@ function HrPage() {
           {activeTab === "payroll" && (
             <Btn
               variant="solid"
-              onClick={() => {
-                const run = generateMonthlyPayroll("2026-09");
+              onClick={async () => {
+                const run = await generateMonthlyPayroll("2026-09");
                 setSelectedPayrollRun(run);
               }}
               className="text-xs gap-1.5 bg-purple-600 hover:bg-purple-700 text-white"

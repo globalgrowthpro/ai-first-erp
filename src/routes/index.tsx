@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, Sparkles, Building2, ExternalLink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Sparkles, Building2, ExternalLink, Store, Receipt } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -14,6 +14,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, Btn } from "@/components/kit";
 import { approvals, insights, invoices, issues, kpis, salesTrend } from "@/lib/demo-data";
+import { usePosOrdersStore } from "@/lib/pos-orders-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const { t, pick, money, n } = useI18n();
+  const { orders: posOrders } = usePosOrdersStore();
 
   const chartData = salesTrend.map((d) => ({
     name: pick(d.day.ar, d.day.en),
@@ -205,52 +207,106 @@ function Dashboard() {
         </Panel>
       </div>
 
-      <Panel
-        title={t("recentInvoices")}
-        aside={
-          <Link to="/sales" className="text-xs font-bold uppercase text-primary underline">
-            {t("viewAll")}
-          </Link>
-        }
-      >
-        <DataTable head={[t("invoice"), t("customer"), t("date"), t("amount"), t("status")]}>
-          {invoices.slice(0, 5).map((inv) => (
-            <tr
-              key={inv.id}
-              className="hover:bg-secondary/70 transition-colors group cursor-pointer"
-            >
-              <Td className="num font-bold">
-                <Link
-                  to="/sales/$invoiceId"
-                  params={{ invoiceId: inv.id }}
-                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
-                  title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Live POS Orders Panel */}
+        <Panel
+          title={pick("آخر طلبات نقاط البيع (Live POS Activity)", "Live POS Terminal Orders")}
+          aside={
+            <Link to="/sales" className="text-xs font-bold uppercase text-primary hover:underline flex items-center gap-1">
+              <Store className="w-3.5 h-3.5 text-amber-500" />
+              <span>{pick("عرض الكل في المبيعات", "View in Sales")}</span>
+            </Link>
+          }
+        >
+          {posOrders.length > 0 ? (
+            <div className="space-y-2">
+              {posOrders.slice(0, 5).map((po) => (
+                <div
+                  key={po.id}
+                  className="p-3 rounded-xl border border-border/70 bg-card hover:bg-muted/40 transition-colors flex items-center justify-between gap-3 text-xs"
                 >
-                  <span>{inv.id}</span>
-                  <ExternalLink className="size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </Link>
-              </Td>
-              <Td>
-                <Link
-                  to="/sales/$invoiceId"
-                  params={{ invoiceId: inv.id }}
-                  className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
-                  title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
-                >
-                  <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                  <span>{pick(inv.party.ar, inv.party.en)}</span>
-                  <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </Link>
-              </Td>
-              <Td className="num text-muted-foreground">{inv.date}</Td>
-              <Td className="num font-semibold">{money(inv.amount)}</Td>
-              <Td>
-                <StatusPill status={inv.status} />
-              </Td>
-            </tr>
-          ))}
-        </DataTable>
-      </Panel>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shrink-0">
+                      <Store className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-black text-foreground">{po.orderNumber}</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-muted text-muted-foreground">
+                          📍 {pick(po.branchName.ar, po.branchName.en)}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        👨‍🍳 {po.cashierName} • {po.customerName}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-end shrink-0">
+                    <span className="font-mono font-black text-sm text-[#16A34A] dark:text-emerald-400 block">
+                      {money(po.total)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      {po.formattedDate.split(",")[1] || po.formattedDate}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-xs">
+              <Store className="w-8 h-8 mx-auto opacity-30 mb-1" />
+              <p>{pick("لا توجد طلبات نقاط بيع مسجلة حالياً", "No POS orders yet")}</p>
+            </div>
+          )}
+        </Panel>
+
+        {/* General Sales Invoices Panel */}
+        <Panel
+          title={t("recentInvoices")}
+          aside={
+            <Link to="/sales" className="text-xs font-bold uppercase text-primary hover:underline">
+              {t("viewAll")}
+            </Link>
+          }
+        >
+          <DataTable head={[t("invoice"), t("customer"), t("amount"), t("status")]}>
+            {invoices.slice(0, 5).map((inv) => (
+              <tr
+                key={inv.id}
+                className="hover:bg-secondary/70 transition-colors group cursor-pointer"
+              >
+                <Td className="num font-bold">
+                  <Link
+                    to="/sales/$invoiceId"
+                    params={{ invoiceId: inv.id }}
+                    className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                    title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
+                  >
+                    <span>{inv.id}</span>
+                    <ExternalLink className="size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </Link>
+                </Td>
+                <Td>
+                  <Link
+                    to="/sales/$invoiceId"
+                    params={{ invoiceId: inv.id }}
+                    className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                    title={pick("عرض تفاصيل وبنود الفاتورة", "View invoice details & items")}
+                  >
+                    <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <span className="truncate max-w-[120px] block">{pick(inv.party.ar, inv.party.en)}</span>
+                  </Link>
+                </Td>
+                <Td className="num font-semibold">{money(inv.amount)}</Td>
+                <Td>
+                  <StatusPill status={inv.status} />
+                </Td>
+              </tr>
+            ))}
+          </DataTable>
+        </Panel>
+      </div>
     </>
   );
 }

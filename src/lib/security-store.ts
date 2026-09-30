@@ -58,7 +58,7 @@ export function useSecurityStore() {
     const { data: existing } = (await supabase.from('company_settings').select('id').limit(1).maybeSingle()) as { data: any };
     
     if (existing?.id) {
-      await supabase.from('company_settings').update({ security_matrix: merged as any }).eq('id', existing.id);
+      await supabase.from('company_settings').update({ security_matrix: merged as any } as any).eq('id', existing.id);
     } else {
       await supabase.from('company_settings').insert({
         security_matrix: merged as any,

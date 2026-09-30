@@ -82,7 +82,7 @@ function Purchases() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
@@ -100,7 +100,7 @@ function Purchases() {
         }, {});
 
         let count = 0;
-        Object.entries(grouped).forEach(([poId, rows]) => {
+        for (const [poId, rows] of Object.entries(grouped)) {
           const firstRow = rows[0] || {};
           const rawSupplier = String(firstRow["المورد_Supplier"] || firstRow["العميل_Customer"] || firstRow["Supplier"] || "مورد عام").trim();
           const rawBranch = String(firstRow["الفرع_Branch"] || firstRow["Branch"] || "").trim();
@@ -143,7 +143,7 @@ function Purchases() {
             paymentMethod: rawPaymentMethod,
             items
           };
-          const created = addDocument(newDoc);
+          const created = await addDocument(newDoc);
           
           // Auto-create Dispatch Order
           addDispatchOrder({
@@ -155,7 +155,7 @@ function Purchases() {
             items: [],
           });
           count++;
-        });
+        }
 
         setImportMsg({ type: "success", text: pick(`تم استيراد ${count} أمر شراء بنجاح`, `Successfully imported ${count} purchase orders`) });
         setTimeout(() => setImportMsg(null), 4000);
@@ -173,18 +173,18 @@ function Purchases() {
     setFormOpen(true);
   };
 
-  const handleSave = (doc: Omit<BizDocument, "id"> & { id?: string }) => {
+  const handleSave = async (doc: Omit<BizDocument, "id"> & { id?: string }) => {
     if (editing) {
       updateDocument(editing.id, doc);
     } else {
-      const created = addDocument(doc);
+      const created = await addDocument(doc);
       // Auto-create Dispatch Order
       addDispatchOrder({
         date: created.date,
         branch: created.branch || { ar: "الفرع الرئيسي", en: "Main Branch" },
         linkedDoc: { type: "purchase", id: created.id },
         status: "draft",
-        totalItems: created.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+        totalItems: created.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
         items: [],
       });
     }

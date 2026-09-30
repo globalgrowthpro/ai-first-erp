@@ -170,6 +170,7 @@ export function HelpdeskManagement() {
           dot: "bg-amber-500",
         };
       case "low":
+      default:
         return {
           bg: "bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30",
           label: pick("منخفض", "Low"),
@@ -196,6 +197,7 @@ export function HelpdeskManagement() {
           label: pick("تم الحل بنجاح", "Resolved"),
         };
       case "closed":
+      default:
         return {
           bg: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30",
           label: pick("مغلقة ومؤرشفة", "Closed"),
@@ -216,6 +218,7 @@ export function HelpdeskManagement() {
       case "system_bug":
         return pick("أعطال النظام والشبكة", "System & Network");
       case "general_inquiry":
+      default:
         return pick("استفسارات وطلبات عامة", "General Inquiries");
     }
   };

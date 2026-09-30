@@ -25,7 +25,7 @@ interface PayrollProcessModalProps {
   onOpenChange: (open: boolean) => void;
   run: PayrollRun | null;
   onApprove: (id: string) => void;
-  onPostToGl: (id: string) => string;
+  onPostToGl: (id: string) => string | Promise<string>;
   onViewPayslip: (payslip: PayslipItem) => void;
 }
 
@@ -42,8 +42,8 @@ export function PayrollProcessModal({
 
   if (!run) return null;
 
-  const handlePostGl = () => {
-    const jeId = onPostToGl(run.id);
+  const handlePostGl = async () => {
+    const jeId = await onPostToGl(run.id);
     setPostedGlId(jeId);
   };
 

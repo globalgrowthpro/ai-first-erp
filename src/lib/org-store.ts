@@ -571,7 +571,6 @@ export function useOrgStore() {
             title_ar: pos.title.ar,
             title_en: pos.title.en || pos.title.ar,
             department_id: pos.departmentId || null,
-            level: pos.level || "staff",
           })
           .select()
           .single();
@@ -585,7 +584,7 @@ export function useOrgStore() {
                     id: data.id,
                     code: data.code || p.code,
                     title: { ar: data.title_ar, en: data.title_en },
-                    level: data.level || p.level,
+                    level: p.level,
                   }
                 : p
             )

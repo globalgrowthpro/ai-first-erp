@@ -25,7 +25,7 @@ export function useDispatchStore() {
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('dispatch_shipments')
       .select('*')
       .order('created_at', { ascending: false });
@@ -71,7 +71,7 @@ export function useDispatchStore() {
     setOrders((prev) => [newOrder, ...prev]);
 
     // Save to Supabase
-    await supabase.from('dispatch_shipments').insert({
+    await (supabase as any).from('dispatch_shipments').insert({
       tracking_number: id,
       origin_address: 'Main Warehouse',
       destination_address: order.branch?.en || 'Unknown',
@@ -94,19 +94,19 @@ export function useDispatchStore() {
     if (orderUpdate.totalItems) updateData.total_items = orderUpdate.totalItems;
     if (orderUpdate.items) updateData.items = orderUpdate.items as any;
 
-    await supabase.from('dispatch_shipments').update(updateData).eq('tracking_number', id);
+    await (supabase as any).from('dispatch_shipments').update(updateData).eq('tracking_number', id);
   }, []);
 
   const deleteOrder = useCallback(async (id: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== id));
-    await supabase.from('dispatch_shipments').delete().eq('tracking_number', id);
+    await (supabase as any).from('dispatch_shipments').delete().eq('tracking_number', id);
   }, []);
 
   const markStatus = useCallback(async (id: string, status: DispatchOrder["status"]) => {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
     
     const dbStatus = status === 'draft' ? 'pending' : (status === 'partial' ? 'processing' : status);
-    await supabase.from('dispatch_shipments').update({ status: dbStatus as any }).eq('tracking_number', id);
+    await (supabase as any).from('dispatch_shipments').update({ status: dbStatus as any }).eq('tracking_number', id);
   }, []);
 
   return {

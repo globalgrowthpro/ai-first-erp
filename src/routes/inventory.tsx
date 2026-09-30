@@ -12,6 +12,7 @@ import {
   Layers,
   ArrowUpRight,
   FileSpreadsheet,
+  Store,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader, KpiCard, Btn } from "@/components/kit";
@@ -20,6 +21,7 @@ import { useInventoryStore } from "@/lib/inventory-store";
 import { ProductsTab } from "@/components/inventory/ProductsTab";
 import { CategoriesTab } from "@/components/inventory/CategoriesTab";
 import { WarehousesTab } from "@/components/inventory/WarehousesTab";
+import { BranchesTab } from "@/components/inventory/BranchesTab";
 import { UnitsTab } from "@/components/inventory/UnitsTab";
 import { BomTab } from "@/components/inventory/BomTab";
 import {
@@ -50,7 +52,7 @@ export const Route = createFileRoute("/inventory")({
   component: InventoryPage,
 });
 
-type InventorySubTab = "products" | "categories" | "warehouses" | "units" | "bom";
+type InventorySubTab = "products" | "categories" | "warehouses" | "branches" | "units" | "bom";
 
 function InventoryPage() {
   const { t, pick, money, n, dir } = useI18n();
@@ -60,6 +62,7 @@ function InventoryPage() {
     products,
     categories,
     warehouses,
+    branches,
     units,
     boms,
     addProduct,
@@ -131,9 +134,15 @@ function InventoryPage() {
     },
     {
       id: "warehouses",
-      label: { ar: "المستودعات والفروع", en: "Warehouses & Branches" },
+      label: { ar: "المستودعات والمخازن", en: "Warehouses" },
       icon: Building2,
       badge: warehouses.length,
+    },
+    {
+      id: "branches",
+      label: { ar: "الفروع وتفاصيل الملكية", en: "Branches & Ownership" },
+      icon: Store,
+      badge: branches.length,
     },
     {
       id: "units",
@@ -165,20 +174,22 @@ function InventoryPage() {
         />
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Btn
-            variant="outline"
-            size="sm"
-            onClick={() => handleOpenImport(activeTab)}
-            className="gap-1.5 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-            <span>
-              {pick(
-                "استيراد من قالب جاهز / Excel",
-                "Import from Ready Template / Excel"
-              )}
-            </span>
-          </Btn>
+          {activeTab !== "branches" && (
+            <Btn
+              variant="outline"
+              size="sm"
+              onClick={() => handleOpenImport(activeTab as InventoryImportTarget)}
+              className="gap-1.5 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>
+                {pick(
+                  "استيراد من قالب جاهز / Excel",
+                  "Import from Ready Template / Excel"
+                )}
+              </span>
+            </Btn>
+          )}
 
           <Btn
             variant="outline"
@@ -186,12 +197,12 @@ function InventoryPage() {
             onClick={resetToSeed}
             className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             title={pick({
-              ar: "استعادة بيانات التجربة الأصلية لوزير الحلو",
-              en: "Reset to default Wazeer El-Helw data",
+              ar: "مزامنة وتحديث البيانات من قاعدة البيانات المباشرة",
+              en: "Sync live data from database",
             })}
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>{pick({ ar: "إعادة ضبط البيانات", en: "Reset Demo" })}</span>
+            <span>{pick({ ar: "تحديث قاعدة البيانات", en: "Sync Database" })}</span>
           </Btn>
         </div>
       </div>
@@ -328,6 +339,7 @@ function InventoryPage() {
             products={products}
             categories={categories}
             warehouses={warehouses}
+            branches={branches}
             units={units}
             onAddProduct={addProduct}
             onUpdateProduct={updateProduct}
@@ -355,6 +367,13 @@ function InventoryPage() {
             onUpdateWarehouse={updateWarehouse}
             onDeleteWarehouse={deleteWarehouse}
             onOpenImport={() => handleOpenImport("warehouses")}
+          />
+        )}
+
+        {activeTab === "branches" && (
+          <BranchesTab
+            branches={branches}
+            onRefresh={resetToSeed}
           />
         )}
 

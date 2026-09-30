@@ -14,6 +14,8 @@ export interface AppUser {
   allowedPages: string[];
 }
 
+export type DemoUser = AppUser;
+
 export const POS_CASHIER_ACCOUNT: AppUser = {
   id: "usr-pos-cashier",
   name: { ar: "كاشير نقطة البيع", en: "POS Cashier" },

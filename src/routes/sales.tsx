@@ -9,6 +9,9 @@ import { kpis } from "@/lib/demo-data";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
+import { AdminPosOrdersView } from "@/components/pos/AdminPosOrdersView";
+import { usePosOrdersStore } from "@/lib/pos-orders-store";
+import { FileText, ShoppingBag } from "lucide-react";
 
 export const Route = createFileRoute("/sales")({
   head: () => ({
@@ -36,6 +39,8 @@ function Sales() {
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [salesTab, setSalesTab] = useState<"pos_orders" | "all_invoices" | "commercial">("pos_orders");
+  const { metrics: posMetrics } = usePosOrdersStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const outstanding = documents.reduce((s, i) => s + i.balance, 0);
@@ -97,7 +102,7 @@ function Sales() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
@@ -115,7 +120,7 @@ function Sales() {
         }, {});
 
         let count = 0;
-        Object.entries(grouped).forEach(([invId, rows]) => {
+        for (const [invId, rows] of Object.entries(grouped)) {
           const firstRow = rows[0] || {};
           const rawCustomer = String(firstRow["العميل_Customer"] || firstRow["Customer"] || "عميل مبيعات").trim();
           const rawBranch = String(firstRow["الفرع_Branch"] || firstRow["Branch"] || "").trim();
@@ -158,7 +163,7 @@ function Sales() {
             paymentMethod: rawPaymentMethod,
             items
           };
-          const created = addDocument(newDoc);
+          const created = await addDocument(newDoc);
           
           // Auto-create Dispatch Order
           addDispatchOrder({
@@ -170,7 +175,7 @@ function Sales() {
             items: [],
           });
           count++;
-        });
+        }
 
         setImportMsg({ type: "success", text: pick(`تم استيراد ${count} فاتورة بنجاح`, `Successfully imported ${count} invoices`) });
         setTimeout(() => setImportMsg(null), 4000);
@@ -193,18 +198,18 @@ function Sales() {
     setFormOpen(true);
   };
 
-  const handleSave = (doc: Omit<BizDocument, "id"> & { id?: string }) => {
+  const handleSave = async (doc: Omit<BizDocument, "id"> & { id?: string }) => {
     if (editing) {
       updateDocument(editing.id, doc);
     } else {
-      const created = addDocument(doc);
+      const created = await addDocument(doc);
       // Auto-create Dispatch Order
       addDispatchOrder({
         date: created.date,
         branch: created.branch || { ar: "الفرع الرئيسي", en: "Main Branch" },
         linkedDoc: { type: "sales", id: created.id },
         status: "draft",
-        totalItems: created.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+        totalItems: created.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
         items: [],
       });
     }
@@ -282,111 +287,169 @@ function Sales() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label={t("kpi_sales")} value={money(total || kpis.sales)} delta={kpis.salesDelta} accent="primary" />
-        <KpiCard label={t("balance")} value={money(outstanding)} accent="gold" />
-        <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} accent="brand" />
+      {/* Sales Section Tabs */}
+      <div className="flex items-center gap-2 border-b border-border/80 pb-3 mb-4 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setSalesTab("pos_orders")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "pos_orders"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <Store className="w-4 h-4 text-amber-500" />
+          <span>{pick("فواتير وطلبات الكاشير (POS)", "POS Retail Orders")}</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-300 font-mono font-bold border border-amber-500/30">
+            {posMetrics?.totalCount ?? 0} {pick("طلب", "orders")}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSalesTab("all_invoices")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "all_invoices"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>{pick("فواتير المبيعات العامة", "General Sales Invoices")}</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-background/20 font-mono font-bold">
+            {documents.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSalesTab("commercial")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "commercial"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>{pick("فواتير الشركات والآجل (B2B)", "Commercial / B2B Invoices")}</span>
+        </button>
       </div>
 
-      <Panel title={t("recentInvoices")}>
-        <DataTable
-          head={[
-            t("invoice"),
-            t("customer"),
-            t("date"),
-            t("amount"),
-            t("balance"),
-            t("status"),
-            pick("إجراءات", "Actions"),
-          ]}
-        >
-          {documents.map((inv) => (
-            <tr
-              key={inv.id}
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest("button, a")) return;
-                navigate({ to: "/sales/$invoiceId", params: { invoiceId: inv.id } });
-              }}
-              className="hover:bg-secondary/70 cursor-pointer transition-colors group"
+      {/* View 1: POS Retail Orders */}
+      {salesTab === "pos_orders" && <AdminPosOrdersView />}
+
+      {/* View 2 & 3: Standard Invoices Table */}
+      {salesTab !== "pos_orders" && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <KpiCard label={t("kpi_sales")} value={money(total || kpis.sales)} delta={kpis.salesDelta} accent="primary" />
+            <KpiCard label={t("balance")} value={money(outstanding)} accent="gold" />
+            <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} accent="brand" />
+          </div>
+
+          <Panel title={salesTab === "commercial" ? pick("فواتير الشركات والعملاء التجاريين", "Commercial B2B Invoices") : t("recentInvoices")}>
+            <DataTable
+              head={[
+                t("invoice"),
+                t("customer"),
+                t("date"),
+                t("amount"),
+                t("balance"),
+                t("status"),
+                pick("إجراءات", "Actions"),
+              ]}
             >
-              <Td className="num font-bold">
-                <Link
-                  to="/sales/$invoiceId"
-                  params={{ invoiceId: inv.id }}
-                  className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
-                  title={pick("عرض تفاصيل الفاتورة وبنودها", "View invoice details & items")}
-                >
-                  <span>{inv.id}</span>
-                  <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
-                </Link>
-              </Td>
-              <Td>
-                <div className="space-y-0.5">
-                  <Link
-                    to="/sales/$invoiceId"
-                    params={{ invoiceId: inv.id }}
-                    className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
-                    title={pick("عرض تفاصيل الفاتورة والعميل", "View invoice & customer profile")}
+              {documents
+                .filter((inv) => (salesTab === "commercial" ? inv.balance > 0 || inv.status !== "paid" : true))
+                .map((inv) => (
+                  <tr
+                    key={inv.id}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button, a")) return;
+                      navigate({ to: "/sales/$invoiceId", params: { invoiceId: inv.id } });
+                    }}
+                    className="hover:bg-secondary/70 cursor-pointer transition-colors group"
                   >
-                    <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                    <span>{pick(inv.party.ar, inv.party.en)}</span>
-                    <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                  </Link>
-                  {inv.branch && (
-                    <span className="block text-[10px] text-muted-foreground font-medium">
-                      📍 {pick(inv.branch.ar, inv.branch.en)}
-                    </span>
-                  )}
-                </div>
-              </Td>
-              <Td className="num text-muted-foreground">{inv.date}</Td>
-              <Td className="num font-semibold">{money(inv.amount)}</Td>
-              <Td className="num">{money(inv.balance)}</Td>
-              <Td>
-                <StatusPill status={inv.status} />
-              </Td>
-              <Td>
-                <div className="flex items-center gap-1">
-                  <Link
-                    to="/sales/$invoiceId"
-                    params={{ invoiceId: inv.id }}
-                    title={pick("عرض بنود وتفاصيل الفاتورة", "View invoice details & items")}
-                    className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <Eye className="size-4" />
-                  </Link>
-                  {inv.status !== "paid" && (
-                    <button
-                      type="button"
-                      onClick={() => markPaid(inv.id)}
-                      title={pick("تسجيل تحصيل", "Mark paid")}
-                      className="p-1.5 rounded-md hover:bg-emerald-500/10 text-emerald-600"
-                    >
-                      <CheckCircle2 className="size-4" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => openEdit(inv)}
-                    title={pick("تعديل", "Edit")}
-                    className="p-1.5 rounded-md hover:bg-primary/10 text-primary"
-                  >
-                    <Edit2 className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(inv)}
-                    title={pick("حذف", "Delete")}
-                    className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
-              </Td>
-            </tr>
-          ))}
-        </DataTable>
-      </Panel>
+                    <Td className="num font-bold">
+                      <Link
+                        to="/sales/$invoiceId"
+                        params={{ invoiceId: inv.id }}
+                        className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                        title={pick("عرض تفاصيل الفاتورة وبنودها", "View invoice details & items")}
+                      >
+                        <span>{inv.id}</span>
+                        <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                      </Link>
+                    </Td>
+                    <Td>
+                      <div className="space-y-0.5">
+                        <Link
+                          to="/sales/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                          title={pick("عرض تفاصيل الفاتورة والعميل", "View invoice & customer profile")}
+                        >
+                          <Building2 className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                          <span>{pick(inv.party.ar, inv.party.en)}</span>
+                          <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </Link>
+                        {inv.branch && (
+                          <span className="block text-[10px] text-muted-foreground font-medium">
+                            📍 {pick(inv.branch.ar, inv.branch.en)}
+                          </span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="num text-muted-foreground">{inv.date}</Td>
+                    <Td className="num font-semibold">{money(inv.amount)}</Td>
+                    <Td className="num">{money(inv.balance)}</Td>
+                    <Td>
+                      <StatusPill status={inv.status} />
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-1">
+                        <Link
+                          to="/sales/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          title={pick("عرض بنود وتفاصيل الفاتورة", "View invoice details & items")}
+                          className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Eye className="size-4" />
+                        </Link>
+                        {inv.status !== "paid" && (
+                          <button
+                            type="button"
+                            onClick={() => markPaid(inv.id)}
+                            title={pick("تسجيل تحصيل", "Mark paid")}
+                            className="p-1.5 rounded-md hover:bg-emerald-500/10 text-emerald-600"
+                          >
+                            <CheckCircle2 className="size-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(inv)}
+                          title={pick("تعديل", "Edit")}
+                          className="p-1.5 rounded-md hover:bg-primary/10 text-primary"
+                        >
+                          <Edit2 className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(inv)}
+                          title={pick("حذف", "Delete")}
+                          className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
+            </DataTable>
+          </Panel>
+        </div>
+      )}
 
       <DocumentFormModal
         open={formOpen}
