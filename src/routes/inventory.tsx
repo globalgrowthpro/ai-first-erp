@@ -223,29 +223,29 @@ function InventoryPage() {
           </span>
         </div>
 
-        {/* Finished Products */}
+        {/* Branch Products */}
         <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
-            {pick({ ar: "أصناف الحلويات الجاهزة", en: "Finished Sweet SKUs" })}
+            {pick({ ar: "منتجات الفروع (Branch Products)", en: "Branch Products" })}
           </span>
           <div className="text-lg font-mono font-bold text-primary">
             {n(finishedProductsCount)}
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {pick({ ar: "جاهزة للبيع المباشر", en: "ready for retail sale" })}
+            {pick({ ar: "أصناف جاهزة للبيع المباشر بالفروع", en: "Ready for retail sale at branches" })}
           </span>
         </div>
 
-        {/* Raw Materials */}
+        {/* Factory Products */}
         <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
-            {pick({ ar: "خامات التصنيع والتغليف", en: "Raw Materials & Packaging" })}
+            {pick({ ar: "منتجات المصنع (Factory Products)", en: "Factory Products" })}
           </span>
           <div className="text-lg font-mono font-bold text-foreground">
             {n(rawMaterialsCount)}
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {pick({ ar: "ألبان، نوتيلا، كنافة، عبوات", en: "dairy, spreads, boxes" })}
+            {pick({ ar: "خامات وتصنيع المطبخ المركزي", en: "Factory & central kitchen supplies" })}
           </span>
         </div>
 
@@ -341,6 +341,7 @@ function InventoryPage() {
             warehouses={warehouses}
             branches={branches}
             units={units}
+            boms={boms}
             onAddProduct={addProduct}
             onUpdateProduct={updateProduct}
             onDeleteProduct={deleteProduct}

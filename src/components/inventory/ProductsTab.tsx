@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
@@ -33,6 +34,9 @@ import {
   type InventoryWarehouse,
   type InventoryUnit,
   type Branch,
+  type InventoryBom,
+  type ProductTechnicalType,
+  calculateBuildableQuantity,
   getCategoryStyle,
 } from "@/lib/inventory-store";
 
@@ -42,6 +46,7 @@ interface ProductsTabProps {
   warehouses: InventoryWarehouse[];
   units: InventoryUnit[];
   branches?: Branch[];
+  boms?: InventoryBom[];
   onAddProduct: (prod: Omit<InventoryProduct, "id">) => void;
   onUpdateProduct: (id: string, updates: Partial<InventoryProduct>) => void;
   onDeleteProduct: (id: string) => void;
@@ -54,6 +59,7 @@ export function ProductsTab({
   warehouses,
   units,
   branches = [],
+  boms = [],
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -66,6 +72,9 @@ export function ProductsTab({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("all");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [selectedProductType, setSelectedProductType] = useState<
+    "all" | "branch" | "factory" | "on_demand" | "raw" | "finished"
+  >("all");
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
   // Modal states
@@ -85,6 +94,7 @@ export function ProductsTab({
   const [qty, setQty] = useState(0);
   const [minStock, setMinStock] = useState(10);
   const [isRawMaterial, setIsRawMaterial] = useState(false);
+  const [technicalType, setTechnicalType] = useState<ProductTechnicalType>("ON_DEMAND_ASSEMBLY");
   const [group, setGroup] = useState("");
   const [branchId, setBranchId] = useState("");
   const [showOnPos, setShowOnPos] = useState(true);
@@ -200,9 +210,88 @@ export function ProductsTab({
     }
   }, [scanUrl, pick]);
 
+  const generateSkuForType = useCallback(
+    (type: "factory" | "branch", existingList = products) => {
+      const prefix = type === "factory" ? "FAC-" : "BRN-";
+      let maxNum = 1000;
+      for (const p of existingList) {
+        if (p.sku && p.sku.toUpperCase().startsWith(prefix)) {
+          const numPart = parseInt(p.sku.slice(prefix.length), 10);
+          if (!isNaN(numPart) && numPart > maxNum) {
+            maxNum = numPart;
+          }
+        }
+      }
+      let candidate = `${prefix}${maxNum + 1}`;
+      let counter = maxNum + 1;
+      while (existingList.some((p) => p.sku.toUpperCase() === candidate)) {
+        counter++;
+        candidate = `${prefix}${counter}`;
+      }
+      return candidate;
+    },
+    [products]
+  );
+
+  const handleTypeChange = (newIsRaw: boolean) => {
+    setIsRawMaterial(newIsRaw);
+    if (newIsRaw) {
+      setTechnicalType("SEMI_FINISHED");
+      setShowOnPos(false);
+      if (
+        !editingProduct ||
+        !sku ||
+        sku.startsWith("BRN-") ||
+        sku.startsWith("PROD-") ||
+        sku.startsWith("FAC-")
+      ) {
+        setSku(generateSkuForType("factory"));
+        setSkuError(null);
+      }
+    } else {
+      setTechnicalType("ON_DEMAND_ASSEMBLY");
+      setShowOnPos(true);
+      if (
+        !editingProduct ||
+        !sku ||
+        sku.startsWith("FAC-") ||
+        sku.startsWith("PROD-") ||
+        sku.startsWith("BRN-")
+      ) {
+        setSku(generateSkuForType("branch"));
+        setSkuError(null);
+      }
+    }
+  };
+
+  const handleTechnicalTypeChange = (newTech: ProductTechnicalType) => {
+    setTechnicalType(newTech);
+    if (newTech === "RAW_MATERIAL") {
+      setIsRawMaterial(true);
+      setShowOnPos(false);
+      setSku(generateSkuForType("factory"));
+    } else if (newTech === "SEMI_FINISHED") {
+      setIsRawMaterial(true);
+      setShowOnPos(false);
+      setSku(generateSkuForType("factory"));
+    } else if (newTech === "FINISHED") {
+      setIsRawMaterial(false);
+      setShowOnPos(true);
+      setSku(generateSkuForType("branch"));
+    } else {
+      // ON_DEMAND_ASSEMBLY
+      setIsRawMaterial(false);
+      setShowOnPos(true);
+      setSku(generateSkuForType("branch"));
+    }
+    setSkuError(null);
+  };
+
   const openAddModal = () => {
     setEditingProduct(null);
-    setSku(`PROD-${Math.floor(1000 + Math.random() * 9000)}`);
+    setIsRawMaterial(false);
+    setTechnicalType("ON_DEMAND_ASSEMBLY");
+    setSku(generateSkuForType("branch"));
     setNameAr("");
     setNameEn("");
     setCategoryId(categories[0]?.id || "");
@@ -212,7 +301,6 @@ export function ProductsTab({
     setSellingPrice(60);
     setQty(50);
     setMinStock(15);
-    setIsRawMaterial(false);
     setGroup("");
     setBranchId("");
     setShowOnPos(true);
@@ -235,11 +323,21 @@ export function ProductsTab({
     setCostPrice(p.costPrice);
     setSellingPrice(p.sellingPrice);
     setQty(p.qty);
-    setMinStock(p.minStock);
-    setIsRawMaterial(Boolean(p.isRawMaterial));
+    const isFactory = p.productType === "factory" || Boolean(p.isRawMaterial);
+    setIsRawMaterial(isFactory);
+    const techType: ProductTechnicalType =
+      p.technicalType ||
+      (p.isRawMaterial
+        ? "RAW_MATERIAL"
+        : p.productType === "factory"
+        ? "SEMI_FINISHED"
+        : p.sku === "BRN-1041"
+        ? "FINISHED"
+        : "ON_DEMAND_ASSEMBLY");
+    setTechnicalType(techType);
     setGroup(p.group || "");
     setBranchId(p.branchId || "");
-    setShowOnPos(p.showOnPos !== undefined ? p.showOnPos : !p.isRawMaterial);
+    setShowOnPos(p.showOnPos !== undefined ? p.showOnPos : !isFactory);
     setImageUrl(p.image || "");
     setImageSource("url");
     setScanStatus(p.image ? "safe" : "idle");
@@ -268,6 +366,12 @@ export function ProductsTab({
     }
     setSkuError(null);
 
+    const isRaw = technicalType === "RAW_MATERIAL";
+    const prodType: "factory" | "branch" =
+      technicalType === "SEMI_FINISHED" || technicalType === "RAW_MATERIAL" ? "factory" : "branch";
+    const isAssembly = technicalType === "ON_DEMAND_ASSEMBLY";
+    const trackInventory = technicalType !== "ON_DEMAND_ASSEMBLY";
+
     if (editingProduct) {
       onUpdateProduct(editingProduct.id, {
         sku: skuTrimmed,
@@ -279,7 +383,11 @@ export function ProductsTab({
         sellingPrice: Number(sellingPrice),
         qty: Number(qty),
         minStock: Number(minStock),
-        isRawMaterial,
+        isRawMaterial: isRaw,
+        productType: prodType,
+        technicalType,
+        isAssemblyProduct: isAssembly,
+        trackInventory,
         group: group || undefined,
         branchId: branchId || undefined,
         showOnPos,
@@ -296,7 +404,11 @@ export function ProductsTab({
         sellingPrice: Number(sellingPrice),
         qty: Number(qty),
         minStock: Number(minStock),
-        isRawMaterial,
+        isRawMaterial: isRaw,
+        productType: prodType,
+        technicalType,
+        isAssemblyProduct: isAssembly,
+        trackInventory,
         group: group || undefined,
         branchId: branchId || undefined,
         showOnPos,
@@ -320,6 +432,11 @@ export function ProductsTab({
     const q = searchQuery.trim().toLowerCase();
     return products.filter((p) => {
       if (showLowStockOnly && p.qty >= p.minStock) return false;
+      if (selectedProductType === "on_demand" && p.technicalType !== "ON_DEMAND_ASSEMBLY" && (p.isRawMaterial || p.productType === "factory")) return false;
+      if (selectedProductType === "factory" && (!p.isRawMaterial && p.productType !== "factory" && p.technicalType !== "SEMI_FINISHED")) return false;
+      if (selectedProductType === "branch" && (p.isRawMaterial || p.productType === "factory")) return false;
+      if (selectedProductType === "raw" && p.technicalType !== "RAW_MATERIAL" && !p.isRawMaterial) return false;
+      if (selectedProductType === "finished" && p.technicalType !== "FINISHED") return false;
       if (selectedCategory !== "all" && p.categoryId !== selectedCategory) return false;
       if (selectedWarehouse !== "all" && p.warehouseId !== selectedWarehouse) return false;
       if (selectedGroup !== "all" && p.group !== selectedGroup) return false;
@@ -331,7 +448,7 @@ export function ProductsTab({
         (p.group && p.group.toLowerCase().includes(q))
       );
     });
-  }, [products, searchQuery, selectedCategory, selectedWarehouse, selectedGroup, showLowStockOnly]);
+  }, [products, searchQuery, selectedCategory, selectedWarehouse, selectedGroup, selectedProductType, showLowStockOnly]);
 
   const {
     currentPage: productPage,
@@ -379,6 +496,19 @@ export function ProductsTab({
               </button>
             )}
           </div>
+
+          {/* Technical Type Filter */}
+          <select
+            value={selectedProductType}
+            onChange={(e) => setSelectedProductType(e.target.value as any)}
+            className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary cursor-pointer"
+          >
+            <option value="all">{pick("جميع الأصناف (الكل)", "All Products")}</option>
+            <option value="on_demand">{pick("⚡ تجميع عند الطلب بالفرع (On-Demand)", "⚡ Branch On-Demand Assembly")}</option>
+            <option value="factory">{pick("🏭 منتجات المصنع (نصف مصنعة)", "🏭 Factory Semi-Finished")}</option>
+            <option value="raw">{pick("📦 مواد خام ومستلزمات", "📦 Raw Materials & Packaging")}</option>
+            <option value="finished">{pick("🏷️ منتجات تامة جاهزة مخزنة", "🏷️ Stocked Finished Products")}</option>
+          </select>
 
           {/* Category Dropdown */}
           <select
@@ -531,11 +661,31 @@ export function ProductsTab({
                   <Td className="font-bold text-foreground">
                     <div>
                       <p>{pick(p.name.ar, p.name.en)}</p>
-                      {p.isRawMaterial && (
-                        <span className="inline-block rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-bold uppercase mt-0.5">
-                          {pick("مادة خام", "Raw Material")}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                        {p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+                        (!p.isRawMaterial && p.sku.startsWith("BRN-") && p.technicalType !== "FINISHED") ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
+                            <span>⚡</span>
+                            <span>{pick("تجميع عند الطلب بالفرع", "On-Demand Assembly")}</span>
+                          </span>
+                        ) : p.technicalType === "SEMI_FINISHED" ||
+                          (p.productType === "factory" && !p.isRawMaterial) ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
+                            <span>🏭</span>
+                            <span>{pick("منتج مصنع (نصف مصنع)", "Factory Semi-Finished")}</span>
+                          </span>
+                        ) : p.technicalType === "RAW_MATERIAL" || p.isRawMaterial ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
+                            <span>📦</span>
+                            <span>{pick("مادة خام أولية", "Raw Material")}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
+                            <span>🏷️</span>
+                            <span>{pick("منتج تام مخزن", "Stocked Finished")}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Td>
 
@@ -598,22 +748,77 @@ export function ProductsTab({
 
                   {/* Qty & Unit */}
                   <Td>
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn("num font-extrabold text-sm", isLow ? "text-destructive" : "text-foreground")}>
-                        {n(p.qty)}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground font-medium">
-                        {unit ? pick(unit.name.ar, unit.code) : ""}
-                      </span>
-                      {isLow && (
-                        <span className="ms-1 rounded bg-destructive/15 text-destructive border border-destructive/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
-                          {pick("ناقص", "Low")}
+                    {p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+                    (!p.isRawMaterial && p.sku.startsWith("BRN-") && p.technicalType !== "FINISHED") ? (
+                      (() => {
+                        const buildable = calculateBuildableQuantity(p, products, boms || []);
+                        const isZero = buildable.maxBuildable === 0;
+                        return (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-black shadow-2xs border",
+                                  isZero
+                                    ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                                    : "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                                )}
+                                title={
+                                  buildable.bottleneck
+                                    ? `${pick("المكون المقيد", "Limiting component")}: ${pick(buildable.bottleneck.componentName.ar, buildable.bottleneck.componentName.en)} (${pick("المتاح", "Avail")}: ${buildable.bottleneck.availableQty})`
+                                    : undefined
+                                }
+                              >
+                                <span>{isZero ? "⚠️" : "✨"}</span>
+                                <span>{pick("متاح للتجهيز", "Buildable")}:</span>
+                                <span className="font-mono text-sm underline decoration-dotted">{n(buildable.maxBuildable)}</span>
+                                <span className="text-[10px] font-normal">{unit ? pick(unit.name.ar, unit.code) : pick("وجبة", "units")}</span>
+                              </span>
+                            </div>
+                            {buildable.bottleneck && (
+                              <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">
+                                {isZero ? (
+                                  <span className="text-destructive font-medium">
+                                    {pick("نقص في", "Shortage in")}: {pick(buildable.bottleneck.componentName.ar, buildable.bottleneck.componentName.en)}
+                                  </span>
+                                ) : (
+                                  <span>
+                                    {pick("مقيد برصيد", "Constrained by")}: {pick(buildable.bottleneck.componentName.ar, buildable.bottleneck.componentName.en)}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                            <p className="text-[9px] text-purple-600/70 dark:text-purple-400/70 font-semibold">
+                              {pick("تجميع عند الطلب (بدون رصيد مسبق)", "On-Demand Assembly")}
+                            </p>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={cn(
+                              "num font-extrabold text-sm",
+                              isLow ? "text-destructive" : "text-foreground"
+                            )}
+                          >
+                            {n(p.qty)}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-medium">
+                            {unit ? pick(unit.name.ar, unit.code) : ""}
+                          </span>
+                          {isLow && (
+                            <span className="ms-1 rounded bg-destructive/15 text-destructive border border-destructive/30 px-1.5 py-0.2 text-[9px] font-bold uppercase">
+                              {pick("ناقص", "Low")}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {pick("حد الأمان", "Min")}: {n(p.minStock)}
                         </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {pick("حد الأمان", "Min")}: {n(p.minStock)}
-                    </span>
+                      </div>
+                    )}
                   </Td>
 
                   {/* Cost Price */}
@@ -799,24 +1004,98 @@ export function ProductsTab({
               </div>
 
               {/* Type toggle */}
-              <div className="shrink-0">
-                <p className="text-[9px] font-black uppercase text-muted-foreground mb-1 text-center tracking-widest">{pick("نوع الصنف","Item Type")}</p>
-                <div className="grid grid-cols-2 gap-1">
-                  {[
-                    { v: "finished", ar: "نهائي", en: "Finished", icon: "🏪" },
-                    { v: "raw", ar: "خام", en: "Raw", icon: "🌾" },
-                  ].map(opt => (
-                    <button key={opt.v} type="button" onClick={() => setIsRawMaterial(opt.v === "raw")}
-                      className={cn(
-                        "flex flex-col items-center gap-0.5 py-1.5 rounded-lg border text-[9px] font-bold transition-all",
-                        (isRawMaterial ? "raw" : "finished") === opt.v
-                          ? "bg-primary/15 border-primary/40 text-primary"
-                          : "bg-background border-border text-muted-foreground hover:bg-secondary"
-                      )}>
-                      <span>{opt.icon}</span>
-                      <span>{pick(opt.ar, opt.en)}</span>
-                    </button>
-                  ))}
+              <div className="shrink-0 space-y-2">
+                <div>
+                  <p className="text-[9px] font-black uppercase text-muted-foreground mb-1 text-center tracking-widest">{pick("جهة الإنتاج / التكويد","Production / Coding")}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { v: "factory", isRaw: true, ar: "منتج مصنع", en: "Factory Product", icon: "🏭", prefix: "FAC-" },
+                      { v: "branch", isRaw: false, ar: "منتج فرع", en: "Branch Product", icon: "🏪", prefix: "BRN-" },
+                    ].map(opt => {
+                      const isSelected = (isRawMaterial ? "factory" : "branch") === opt.v;
+                      return (
+                        <button key={opt.v} type="button" onClick={() => handleTypeChange(opt.isRaw)}
+                          className={cn(
+                            "flex flex-col items-center justify-center text-center gap-0.5 py-1.5 px-1 rounded-xl border text-[9px] font-bold transition-all cursor-pointer leading-tight",
+                            isSelected
+                              ? "bg-primary/15 border-primary/50 text-primary shadow-xs ring-1 ring-primary/25 font-black"
+                              : "bg-background border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          )}>
+                          <span className="text-sm">{opt.icon}</span>
+                          <span className="leading-tight">{pick(opt.ar, opt.en)}</span>
+                          <span className={cn(
+                            "text-[8px] font-mono font-extrabold px-1.5 py-0.2 rounded mt-0.5",
+                            isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                          )}>
+                            {opt.prefix}#
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Technical Classification (ERP Guide Standard) */}
+                <div>
+                  <p className="text-[9px] font-black uppercase text-muted-foreground mb-1 text-center tracking-widest">{pick("التصنيف الفني (دليل ERP)","Technical Type")}</p>
+                  <div className="space-y-1">
+                    {[
+                      {
+                        type: "ON_DEMAND_ASSEMBLY" as ProductTechnicalType,
+                        icon: "⚡",
+                        ar: "تجميع عند الطلب (فرع)",
+                        en: "On-Demand Assembly",
+                        descAr: "يُجمع عند طلب العميل دون رصيد مسبق",
+                        descEn: "Assembled upon sale order",
+                      },
+                      {
+                        type: "SEMI_FINISHED" as ProductTechnicalType,
+                        icon: "🏭",
+                        ar: "نصف مصنّع (مصنع)",
+                        en: "Semi-Finished",
+                        descAr: "ينتجه المصنع ويحوله للفروع",
+                        descEn: "Produced and transferred",
+                      },
+                      {
+                        type: "RAW_MATERIAL" as ProductTechnicalType,
+                        icon: "📦",
+                        ar: "مادة خام ومستلزمات",
+                        en: "Raw Material",
+                        descAr: "خامات مشتراة من الموردين",
+                        descEn: "Purchased raw items",
+                      },
+                      {
+                        type: "FINISHED" as ProductTechnicalType,
+                        icon: "🏷️",
+                        ar: "منتج تام جاهز مخزن",
+                        en: "Stocked Finished",
+                        descAr: "مخزن برصيد مادي تقليدي",
+                        descEn: "Standard stocked items",
+                      },
+                    ].map((opt) => {
+                      const isSel = technicalType === opt.type;
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          onClick={() => handleTechnicalTypeChange(opt.type)}
+                          className={cn(
+                            "w-full flex items-center gap-1.5 p-1.5 rounded-lg border text-start transition-all cursor-pointer",
+                            isSel
+                              ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30"
+                              : "bg-background/80 border-border/70 text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                          )}
+                        >
+                          <span className="text-xs shrink-0">{opt.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[9px] font-black leading-tight truncate">{pick(opt.ar, opt.en)}</p>
+                            <p className="text-[8px] text-muted-foreground leading-tight truncate">{pick(opt.descAr, opt.descEn)}</p>
+                          </div>
+                          {isSel && <Check className="size-2.5 text-primary shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -846,16 +1125,38 @@ export function ProductsTab({
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">
-                      {pick("كود SKU","SKU")} <span className="text-destructive">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-muted-foreground">
+                        {pick("كود SKU","SKU")} <span className="text-destructive">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = generateSkuForType(isRawMaterial ? "factory" : "branch");
+                          setSku(next);
+                          setSkuError(null);
+                        }}
+                        className="text-[9px] font-extrabold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                        title={pick("توليد كود تلقائي متسلسل", "Generate sequential SKU")}
+                      >
+                        <RotateCcw className="size-2.5" />
+                        <span>{isRawMaterial ? "FAC-#" : "BRN-#"}</span>
+                      </button>
+                    </div>
                     <input type="text" required value={sku}
-                      onChange={(e) => { setSku(e.target.value); setSkuError(null); }}
-                      placeholder="KSHR-LUX"
+                      onChange={(e) => { setSku(e.target.value.toUpperCase()); setSkuError(null); }}
+                      placeholder={isRawMaterial ? "FAC-1001" : "BRN-1001"}
                       className={cn(
-                        "w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs font-mono font-extrabold tracking-wider focus:outline-none focus:ring-1 focus:ring-primary transition-all",
+                        "w-full rounded-lg border bg-background px-2.5 py-1.5 text-xs font-mono font-extrabold tracking-wider focus:outline-none focus:ring-1 focus:ring-primary transition-all uppercase",
                         skuError ? "border-destructive bg-destructive/5" : "border-border hover:border-primary/40"
                       )} />
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[8.5px] text-muted-foreground font-semibold">
+                        {isRawMaterial
+                          ? pick("🏭 كود المصنع (يبدأ بـ FAC-)", "🏭 Factory SKU (starts with FAC-)")
+                          : pick("🏪 كود الفرع (يبدأ بـ BRN-)", "🏪 Branch SKU (starts with BRN-)")}
+                      </span>
+                    </div>
                     {skuError && <p className="mt-0.5 text-[9px] text-destructive font-bold">{skuError}</p>}
                   </div>
                   <div>

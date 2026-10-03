@@ -61,7 +61,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { partners as defaultCustomers } from "@/lib/demo-data";
-import { useInventoryStore } from "@/lib/inventory-store";
+import { useInventoryStore, calculateBuildableQuantity } from "@/lib/inventory-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -498,8 +498,15 @@ export function PosPage() {
   // Fullscreen Kiosk Mode
   const [isKioskMode, setIsKioskMode] = useState(false);
 
-  // Live Inventory Store (branches, products, categories all from DB)
-  const { products: inventoryProducts, categories: inventoryCategories, branches: dbBranches, adjustStock } = useInventoryStore();
+  // Live Inventory Store (branches, products, categories, boms all from DB)
+  const {
+    products: inventoryProducts,
+    categories: inventoryCategories,
+    branches: dbBranches,
+    boms: inventoryBoms,
+    adjustStock,
+    consumeAssemblyStock,
+  } = useInventoryStore();
 
   // Resolve active branch from live DB (locked — cashier cannot change it)
   const activeBranch = useMemo(() => {
@@ -818,11 +825,39 @@ export function PosPage() {
       const cat = inventoryCategories.find((c) => c.id === p.categoryId);
       const catName = cat ? cat.name.ar : (p.department || "أصناف عامة");
 
+      const buildableInfo = calculateBuildableQuantity(p, inventoryProducts, inventoryBoms || []);
+      const isAssembly =
+        p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+        Boolean(p.isAssemblyProduct) ||
+        (buildableInfo.hasBom && p.technicalType !== "FINISHED");
+
+      const effectiveStock = isAssembly ? buildableInfo.maxBuildable : p.qty;
+
       let badge: string | undefined = undefined;
-      if (p.qty <= 0) {
-        badge = lang === "ar" ? "نفد من المخزن" : "Out of Stock";
-      } else if (p.qty <= p.minStock) {
-        badge = lang === "ar" ? "كمية محدودة" : "Low Stock";
+      if (isAssembly) {
+        if (effectiveStock <= 0) {
+          const shortageName = buildableInfo.bottleneck
+            ? lang === "ar"
+              ? buildableInfo.bottleneck.componentName.ar
+              : buildableInfo.bottleneck.componentName.en
+            : "";
+          badge =
+            lang === "ar"
+              ? shortageName
+                ? `نقص: ${shortageName}`
+                : "مكونات غير كافية"
+              : shortageName
+              ? `Shortage: ${shortageName}`
+              : "Insufficient Components";
+        } else if (effectiveStock <= 10) {
+          badge = lang === "ar" ? `متاح للتجهيز: ${effectiveStock}` : `Buildable: ${effectiveStock}`;
+        }
+      } else {
+        if (effectiveStock <= 0) {
+          badge = lang === "ar" ? "نفد من المخزن" : "Out of Stock";
+        } else if (effectiveStock <= p.minStock) {
+          badge = lang === "ar" ? "كمية محدودة" : "Low Stock";
+        }
       }
 
       return {
@@ -831,14 +866,14 @@ export function PosPage() {
         name: p.name,
         category: catName,
         price: p.sellingPrice || p.costPrice || 0,
-        stock: p.qty,
+        stock: effectiveStock,
         unit: { ar: "علبة", en: "box" },
         badge,
         image: p.image || PRODUCT_IMAGE_MAP[p.sku] || "/products/rice-pistachio.jpg",
         colorTheme: getCategoryColorTheme(catName),
       };
     });
-  }, [inventoryProducts, inventoryCategories, activeBranch, lang]);
+  }, [inventoryProducts, inventoryCategories, inventoryBoms, activeBranch, lang]);
 
   // Dynamic Categories synced with inventory products
   const allPosCategories = useMemo(() => {
@@ -1266,7 +1301,7 @@ export function PosPage() {
   };
 
   // Complete Payment & Generate Invoice
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
     if (cart.length === 0) return;
 
     const orderId = `INV-POS-${Date.now().toString().slice(-6)}`;
@@ -1323,9 +1358,9 @@ export function PosPage() {
 
     addDocument(newInvoice);
 
-    // Deduct sold items from live inventory store
+    // Deduct sold items from live inventory store (supports on-demand assembly component deduction)
     for (const ci of cart) {
-      adjustStock(ci.product.sku, -ci.quantity);
+      await consumeAssemblyStock(ci.product.sku, ci.quantity, activeBranch?.id);
     }
 
     // Update Shift sales according to payment settlement

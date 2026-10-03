@@ -84,53 +84,53 @@ export interface ProductItem {
 
 export const products: ProductItem[] = [
   // عشاق الرز
-  { sku: "RICE-NUT", name: { ar: "رز بلبن نوتيلا", en: "Rice Pudding Nutella" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 120, min: 30, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 50 },
-  { sku: "RICE-NUTS", name: { ar: "رز بلبن مكسرات", en: "Rice Pudding Mixed Nuts" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 85, min: 25, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 55 },
-  { sku: "RICE-LOT", name: { ar: "رز بلبن لوتس", en: "Rice Pudding Lotus" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 95, min: 25, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 55 },
-  { sku: "RICE-PST", name: { ar: "رز بلبن بستاشيو", en: "Rice Pudding Pistachio" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 60, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 80 },
-  { sku: "RICE-WZR", name: { ar: "رز بلبن الوزير", en: "Rice Pudding Al-Wazeer" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 75, min: 25, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 80 },
-  { sku: "RICE-PLN", name: { ar: "رز بلبن ساده", en: "Plain Rice Pudding" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 180, min: 40, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 25 },
+  { sku: "BRN-1001", name: { ar: "رز بلبن نوتيلا", en: "Rice Pudding Nutella" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 120, min: 30, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 50 },
+  { sku: "BRN-1002", name: { ar: "رز بلبن مكسرات", en: "Rice Pudding Mixed Nuts" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 85, min: 25, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 55 },
+  { sku: "BRN-1003", name: { ar: "رز بلبن لوتس", en: "Rice Pudding Lotus" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 95, min: 25, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 55 },
+  { sku: "BRN-1004", name: { ar: "رز بلبن بستاشيو", en: "Rice Pudding Pistachio" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 60, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 80 },
+  { sku: "BRN-1005", name: { ar: "رز بلبن الوزير", en: "Rice Pudding Al-Wazeer" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 75, min: 25, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 80 },
+  { sku: "BRN-1006", name: { ar: "رز بلبن ساده", en: "Plain Rice Pudding" }, category: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 180, min: 40, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 25 },
 
   // الفتة
-  { sku: "FAT-WZR", name: { ar: "فتة ميكس الوزير", en: "Fatta Mix Al-Wazeer" }, category: { ar: "الفتة", en: "Fatta" }, qty: 45, min: 15, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 90 },
-  { sku: "FAT-NUT", name: { ar: "فتة نوتيلا", en: "Fatta Nutella" }, category: { ar: "الفتة", en: "Fatta" }, qty: 50, min: 15, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 90 },
-  { sku: "FAT-MNG", name: { ar: "فتة مانجا", en: "Fatta Mango" }, category: { ar: "الفتة", en: "Fatta" }, qty: 38, min: 15, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 90 },
-  { sku: "FAT-PST", name: { ar: "فتة بستاشيو", en: "Fatta Pistachio" }, category: { ar: "الفتة", en: "Fatta" }, qty: 8, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
+  { sku: "BRN-1007", name: { ar: "فتة ميكس الوزير", en: "Fatta Mix Al-Wazeer" }, category: { ar: "الفتة", en: "Fatta" }, qty: 45, min: 15, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 90 },
+  { sku: "BRN-1008", name: { ar: "فتة نوتيلا", en: "Fatta Nutella" }, category: { ar: "الفتة", en: "Fatta" }, qty: 50, min: 15, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 90 },
+  { sku: "BRN-1009", name: { ar: "فتة مانجا", en: "Fatta Mango" }, category: { ar: "الفتة", en: "Fatta" }, qty: 38, min: 15, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 90 },
+  { sku: "BRN-1010", name: { ar: "فتة بستاشيو", en: "Fatta Pistachio" }, category: { ar: "الفتة", en: "Fatta" }, qty: 8, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
 
   // دنيا الدلع والملوخيتو
-  { sku: "MDL-MNG", name: { ar: "مدلعة مانجو", en: "Medala'a Mango" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 65, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 75 },
-  { sku: "MDL-CRM", name: { ar: "مدلعة كراميل", en: "Medala'a Caramel" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 65 },
-  { sku: "MLK-WZR", name: { ar: "ملوخيتو سلانكاتية وزير", en: "Molokhito Wazeer" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 6, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
-  { sku: "MLK-NUT", name: { ar: "ملوخيتو نوتيلا", en: "Molokhito Nutella" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 42, min: 15, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 95 },
+  { sku: "BRN-1011", name: { ar: "مدلعة مانجو", en: "Medala'a Mango" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 65, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 75 },
+  { sku: "BRN-1012", name: { ar: "مدلعة كراميل", en: "Medala'a Caramel" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 65 },
+  { sku: "BRN-1013", name: { ar: "ملوخيتو سلانكاتية وزير", en: "Molokhito Wazeer" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 6, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
+  { sku: "BRN-1014", name: { ar: "ملوخيتو نوتيلا", en: "Molokhito Nutella" }, category: { ar: "دنيا الدلع", en: "Specialties" }, qty: 42, min: 15, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 95 },
 
   // الطواجن
-  { sku: "TJ-ALI", name: { ar: "طاجن ام علي قشطة مكسرات", en: "Om Ali Cream & Nuts" }, category: { ar: "الطواجن", en: "Hot Tajins" }, qty: 90, min: 25, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 70 },
-  { sku: "TJ-NUT", name: { ar: "طاجن نوتيلا", en: "Tajin Nutella" }, category: { ar: "الطواجن", en: "Hot Tajins" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 55 },
+  { sku: "BRN-1015", name: { ar: "طاجن ام علي قشطة مكسرات", en: "Om Ali Cream & Nuts" }, category: { ar: "الطواجن", en: "Hot Tajins" }, qty: 90, min: 25, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 70 },
+  { sku: "BRN-1016", name: { ar: "طاجن نوتيلا", en: "Tajin Nutella" }, category: { ar: "الطواجن", en: "Hot Tajins" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 55 },
 
   // شاورما الوزير
-  { sku: "SHW-NUT", name: { ar: "شاورما نوتيلا", en: "Sweet Shawarma Nutella" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 4, min: 12, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 115 },
-  { sku: "SHW-MIX", name: { ar: "شاورما ميكس", en: "Sweet Shawarma Mix" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 20, min: 10, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 125 },
-  { sku: "SHW-PST", name: { ar: "شاورما بستاشيو", en: "Sweet Shawarma Pistachio" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 18, min: 10, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 130 },
+  { sku: "BRN-1017", name: { ar: "شاورما نوتيلا", en: "Sweet Shawarma Nutella" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 4, min: 12, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 115 },
+  { sku: "BRN-1018", name: { ar: "شاورما ميكس", en: "Sweet Shawarma Mix" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 20, min: 10, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 125 },
+  { sku: "BRN-1019", name: { ar: "شاورما بستاشيو", en: "Sweet Shawarma Pistachio" }, category: { ar: "شاورما الوزير", en: "Sweet Shawarma" }, qty: 18, min: 10, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 130 },
 
   // كيك وتشييز
-  { sku: "CK-LND-KND", name: { ar: "كيكة لندن كيندر", en: "London Cake Kinder" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 30, min: 10, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 125 },
-  { sku: "CK-LND-NUT", name: { ar: "كيكة لندن نوتيلا", en: "London Cake Nutella" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 28, min: 10, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 125 },
-  { sku: "CHZ-PST", name: { ar: "تشيز طاخ بستاشيو", en: "Cheesecake Takh Pistachio" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 32, min: 10, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 95 },
+  { sku: "BRN-1020", name: { ar: "كيكة لندن كيندر", en: "London Cake Kinder" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 30, min: 10, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 125 },
+  { sku: "BRN-1021", name: { ar: "كيكة لندن نوتيلا", en: "London Cake Nutella" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 28, min: 10, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 125 },
+  { sku: "BRN-1022", name: { ar: "تشيز طاخ بستاشيو", en: "Cheesecake Takh Pistachio" }, category: { ar: "كيك وتشييز", en: "Cakes & Sweets" }, qty: 32, min: 10, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 95 },
 
   // كشري الحلو
-  { sku: "KSHR-LUX", name: { ar: "كشري حلو سوبر لوكس", en: "Sweet Koshary Super Luxe" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 64, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 100 },
-  { sku: "KSHR-KND", name: { ar: "كشري حلو كيندر", en: "Sweet Koshary Kinder" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 115, min: 30, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 80 },
-  { sku: "KSHR-PST", name: { ar: "كشري حلو بستاشيو", en: "Sweet Koshary Pistachio" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 58, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 95 },
-  { sku: "KSHR-NUT", name: { ar: "كشري حلو نوتيلا", en: "Sweet Koshary Nutella" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 88, min: 25, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 75 },
-  { sku: "KSHR-WZR", name: { ar: "كشري حلو ميكس الوزير", en: "Sweet Koshary Mix Al-Wazeer" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 80 },
+  { sku: "BRN-1024", name: { ar: "كشري حلو سوبر لوكس", en: "Sweet Koshary Super Luxe" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 64, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 100 },
+  { sku: "BRN-1025", name: { ar: "كشري حلو كيندر", en: "Sweet Koshary Kinder" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 115, min: 30, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 80 },
+  { sku: "BRN-1026", name: { ar: "كشري حلو بستاشيو", en: "Sweet Koshary Pistachio" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 58, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 95 },
+  { sku: "BRN-1027", name: { ar: "كشري حلو نوتيلا", en: "Sweet Koshary Nutella" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 88, min: 25, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 75 },
+  { sku: "BRN-1028", name: { ar: "كشري حلو ميكس الوزير", en: "Sweet Koshary Mix Al-Wazeer" }, category: { ar: "كشري الحلو", en: "Sweet Koshary" }, qty: 70, min: 20, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 80 },
 
   // القشطوطة
-  { sku: "KSH-PST", name: { ar: "قشطوطة بستاشيو", en: "Kashtouta Pistachio" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 85, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 90 },
-  { sku: "KSH-MSR", name: { ar: "قشطوطة مصر الجديدة", en: "Kashtouta Masr El-Gedida" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 110, min: 25, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 85 },
-  { sku: "KSH-NUT", name: { ar: "قشطوطة نوتيلا", en: "Kashtouta Nutella" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 95, min: 20, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 80 },
-  { sku: "KSH-MNG", name: { ar: "قشطوطة مانجو", en: "Kashtouta Mango" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 92, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 80 },
-  { sku: "KSH-RIC-NUT", name: { ar: "قشطوطة أرز باللبن نوتيلا", en: "Kashtouta Rice Pudding Nutella" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 74, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 80 },
-  { sku: "KSH-RIC-PST", name: { ar: "قشطوطة أرز باللبن بستاشيو", en: "Kashtouta Rice Pudding Pistachio" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 55, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
+  { sku: "BRN-1029", name: { ar: "قشطوطة بستاشيو", en: "Kashtouta Pistachio" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 85, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 90 },
+  { sku: "BRN-1030", name: { ar: "قشطوطة مصر الجديدة", en: "Kashtouta Masr El-Gedida" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 110, min: 25, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 85 },
+  { sku: "BRN-1031", name: { ar: "قشطوطة نوتيلا", en: "Kashtouta Nutella" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 95, min: 20, warehouse: { ar: "فرع المعادي", en: "Maadi Branch" }, price: 80 },
+  { sku: "BRN-1032", name: { ar: "قشطوطة مانجو", en: "Kashtouta Mango" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 92, min: 20, warehouse: { ar: "فرع التجمع", en: "Tagamoa Branch" }, price: 80 },
+  { sku: "BRN-1033", name: { ar: "قشطوطة أرز باللبن نوتيلا", en: "Kashtouta Rice Pudding Nutella" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 74, min: 20, warehouse: { ar: "فرع مصر الجديدة", en: "Heliopolis Branch" }, price: 80 },
+  { sku: "BRN-1034", name: { ar: "قشطوطة أرز باللبن بستاشيو", en: "Kashtouta Rice Pudding Pistachio" }, category: { ar: "القشطوطة", en: "Kashtouta" }, qty: 55, min: 15, warehouse: { ar: "المطبخ المركزي", en: "Central Kitchen" }, price: 95 },
 ];
 
 export const partners = [

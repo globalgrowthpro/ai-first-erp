@@ -54,6 +54,8 @@ export interface Branch {
   isActive: boolean;
 }
 
+export type ProductTechnicalType = "RAW_MATERIAL" | "SEMI_FINISHED" | "FINISHED" | "ON_DEMAND_ASSEMBLY";
+
 export interface InventoryProduct {
   id: string;
   sku: string;
@@ -67,6 +69,10 @@ export interface InventoryProduct {
   minStock: number;
   image?: string;
   isRawMaterial?: boolean;
+  productType?: "factory" | "branch";
+  technicalType?: ProductTechnicalType;
+  isAssemblyProduct?: boolean;
+  trackInventory?: boolean;
   department?: string;
   classification?: string;
   rawType?: string;
@@ -110,6 +116,94 @@ export interface InventoryBom {
   totalMaterialCost?: number;
   unitCost?: number;
   isSemiFinished?: boolean;
+}
+
+export interface ComponentAvailability {
+  componentId: string;
+  componentSku: string;
+  componentName: { ar: string; en: string };
+  requiredQty: number; // required quantity per 1 unit of finished product
+  availableQty: number; // on hand inventory in branch/warehouse
+  sufficient: boolean;
+  maxUnitsPossible: number;
+}
+
+export interface BuildableCalculation {
+  productId: string;
+  isAssembly: boolean;
+  maxBuildable: number;
+  hasBom: boolean;
+  bomId?: string;
+  bottleneck: ComponentAvailability | null;
+  components: ComponentAvailability[];
+}
+
+export function calculateBuildableQuantity(
+  product: InventoryProduct,
+  allProducts: InventoryProduct[],
+  boms: InventoryBom[]
+): BuildableCalculation {
+  const isAssembly = product.technicalType === "ON_DEMAND_ASSEMBLY" || Boolean(product.isAssemblyProduct);
+  const activeBom =
+    boms.find((b) => b.finishedProductId === product.id && b.status === "active") ||
+    boms.find((b) => b.finishedProductId === product.id);
+
+  if (!activeBom || !activeBom.components || activeBom.components.length === 0) {
+    return {
+      productId: product.id,
+      isAssembly,
+      maxBuildable: product.qty,
+      hasBom: false,
+      bottleneck: null,
+      components: [],
+    };
+  }
+
+  const outputYield = Number(activeBom.outputYield) > 0 ? Number(activeBom.outputYield) : 1;
+  const componentsAvailability: ComponentAvailability[] = [];
+  let minBuildable = Infinity;
+  let bottleneck: ComponentAvailability | null = null;
+
+  for (const cmp of activeBom.components) {
+    const cmpProd = allProducts.find(
+      (p) =>
+        p.id === cmp.componentProductId ||
+        p.id === cmp.rawMaterialProductId ||
+        p.sku === cmp.componentProductId
+    );
+    const requiredPerUnit = (Number(cmp.quantity) || 0) / outputYield;
+    const availableQty = cmpProd ? Math.max(0, cmpProd.qty) : 0;
+    const maxUnits = requiredPerUnit > 0 ? Math.floor(availableQty / requiredPerUnit) : Infinity;
+
+    const record: ComponentAvailability = {
+      componentId: cmp.componentProductId,
+      componentSku: cmpProd?.sku || "",
+      componentName: cmpProd?.name || { ar: "مكون غير معروف", en: "Unknown Component" },
+      requiredQty: requiredPerUnit,
+      availableQty,
+      sufficient: maxUnits >= 1,
+      maxUnitsPossible: maxUnits === Infinity ? 999999 : maxUnits,
+    };
+
+    componentsAvailability.push(record);
+
+    if (maxUnits < minBuildable) {
+      minBuildable = maxUnits;
+      bottleneck = record;
+    }
+  }
+
+  const finalBuildable = minBuildable === Infinity ? 0 : Math.max(0, minBuildable);
+
+  return {
+    productId: product.id,
+    isAssembly: true,
+    maxBuildable: finalBuildable,
+    hasBom: true,
+    bomId: activeBom.id,
+    bottleneck,
+    components: componentsAvailability,
+  };
 }
 
 export interface CategoryStyle {
@@ -258,6 +352,25 @@ async function fetchDatabaseState() {
     if (prodRes.data) {
       dbProducts = prodRes.data.map((p: any) => {
         const totalStock = stockMap.get(p.id) ?? 0;
+        const isRaw = Boolean(p.is_raw_material);
+        let technicalType: ProductTechnicalType = "ON_DEMAND_ASSEMBLY";
+        if (isRaw) {
+          technicalType = "RAW_MATERIAL";
+        } else if (p.product_group === "SEMI_FINISHED" || p.sku?.startsWith("FAC-")) {
+          technicalType = "SEMI_FINISHED";
+        } else if (p.product_group === "FINISHED" || p.sku === "BRN-1041") {
+          technicalType = "FINISHED";
+        } else if (p.product_group === "ON_DEMAND_ASSEMBLY") {
+          technicalType = "ON_DEMAND_ASSEMBLY";
+        } else {
+          technicalType = p.sku?.startsWith("BRN-") ? "ON_DEMAND_ASSEMBLY" : "FINISHED";
+        }
+
+        const isAssembly = technicalType === "ON_DEMAND_ASSEMBLY";
+        const trackInventory = technicalType !== "ON_DEMAND_ASSEMBLY";
+        const productType: "factory" | "branch" =
+          technicalType === "SEMI_FINISHED" || technicalType === "RAW_MATERIAL" ? "factory" : "branch";
+
         return {
           id: p.id,
           sku: p.sku,
@@ -270,11 +383,15 @@ async function fetchDatabaseState() {
           qty: Math.max(0, totalStock),
           minStock: Number(p.reorder_level || 10),
           image: p.image_url || undefined,
-          isRawMaterial: Boolean(p.is_raw_material),
+          isRawMaterial: isRaw,
+          productType,
+          technicalType,
+          isAssemblyProduct: isAssembly,
+          trackInventory,
           department: "",
           group: p.product_group || undefined,
           branchId: p.branch_id || undefined,
-          showOnPos: p.show_on_pos !== undefined ? Boolean(p.show_on_pos) : (p.is_raw_material ? false : true),
+          showOnPos: p.show_on_pos !== undefined ? Boolean(p.show_on_pos) : (isRaw ? false : true),
         };
       });
     }
@@ -590,6 +707,84 @@ export function useInventoryStore() {
     }
   }, []);
 
+  // On-Demand Assembly Stock Consumption (per Technical Guide Section 21 & Section 41)
+  const consumeAssemblyStock = useCallback(
+    async (productIdOrSku: string, saleQty: number, targetWarehouseId?: string) => {
+      const prod = dbProducts.find((p) => p.id === productIdOrSku || p.sku === productIdOrSku);
+      if (!prod) return;
+
+      const activeBom =
+        dbBoms.find((b) => b.finishedProductId === prod.id && b.status === "active") ||
+        dbBoms.find((b) => b.finishedProductId === prod.id);
+
+      const whId = targetWarehouseId || dbWarehouses[0]?.id;
+      if (!whId) return;
+
+      // If no active recipe or components, adjust standard finished product stock
+      if (!activeBom || !activeBom.components || activeBom.components.length === 0) {
+        await adjustStock(prod.id, -saleQty);
+        return;
+      }
+
+      const outputYield = Number(activeBom.outputYield) > 0 ? Number(activeBom.outputYield) : 1;
+
+      // Optimistically deduct components
+      const componentDeductions: { componentProduct: InventoryProduct; consumedQty: number }[] = [];
+
+      for (const cmp of activeBom.components) {
+        const cmpProd = dbProducts.find(
+          (p) =>
+            p.id === cmp.componentProductId ||
+            p.id === cmp.rawMaterialProductId ||
+            p.sku === cmp.componentProductId
+        );
+        if (!cmpProd) continue;
+
+        const consumedQty = ((Number(cmp.quantity) || 0) / outputYield) * saleQty;
+        componentDeductions.push({ componentProduct: cmpProd, consumedQty });
+
+        dbProducts = dbProducts.map((p) =>
+          p.id === cmpProd.id ? { ...p, qty: Math.max(0, p.qty - consumedQty) } : p
+        );
+      }
+      notify();
+
+      // Persist component deductions to Supabase
+      try {
+        for (const item of componentDeductions) {
+          const { data: currentStock } = await supabase
+            .from("stock_levels")
+            .select("quantity")
+            .eq("product_id", item.componentProduct.id)
+            .eq("warehouse_id", whId)
+            .maybeSingle();
+
+          const existingQty = currentStock ? Number(currentStock.quantity) : item.componentProduct.qty;
+          const nextQty = Math.max(0, existingQty - item.consumedQty);
+
+          await supabase.from("stock_levels").upsert({
+            product_id: item.componentProduct.id,
+            warehouse_id: whId,
+            quantity: nextQty,
+          });
+
+          await supabase.from("stock_moves").insert({
+            move_type: "out",
+            product_id: item.componentProduct.id,
+            from_warehouse_id: whId,
+            to_warehouse_id: null,
+            quantity: item.consumedQty,
+            unit_cost: item.componentProduct.costPrice,
+            reference: `POS-ASSEMBLY-${prod.sku}`,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to persist assembly component deductions:", err);
+      }
+    },
+    [adjustStock]
+  );
+
   const addBom = useCallback(async (bom: Omit<InventoryBom, "id">) => {
     const { data, error } = await supabase
       .from("boms")
@@ -660,6 +855,7 @@ export function useInventoryStore() {
     addProduct,
     updateProduct,
     adjustStock,
+    consumeAssemblyStock,
     deleteProduct,
     importProducts,
     addBom,

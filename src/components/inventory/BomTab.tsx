@@ -28,13 +28,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type {
-  InventoryBom,
-  InventoryProduct,
-  InventoryUnit,
-  InventoryWarehouse,
-  BomComponentItem,
-  BomStatus,
+import {
+  type InventoryBom,
+  type InventoryProduct,
+  type InventoryUnit,
+  type InventoryWarehouse,
+  type BomComponentItem,
+  type BomStatus,
+  calculateBuildableQuantity,
 } from "@/lib/inventory-store";
 
 interface BomTabProps {
@@ -551,6 +552,46 @@ export function BomTab({
                         </>
                       )}
                     </div>
+
+                    {/* Maximum Buildable Quantity & Limiting Bottleneck (Section 61 of Technical Guide) */}
+                    {summary.finishedProd && (() => {
+                      const buildable = calculateBuildableQuantity(summary.finishedProd, products, boms);
+                      const isZero = buildable.maxBuildable === 0;
+                      return (
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black border",
+                              isZero
+                                ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                                : "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                            )}
+                          >
+                            <span>{isZero ? "⚠️" : "⚡"}</span>
+                            <span>{pick({ ar: "متاح للتجهيز بالفرع:", en: "Buildable:" })}</span>
+                            <span className="font-mono underline font-extrabold">{n(buildable.maxBuildable)}</span>
+                            <span>{pick({ ar: "وجبة", en: "units" })}</span>
+                          </span>
+
+                          {buildable.bottleneck && (
+                            <span
+                              className="text-[10px] text-muted-foreground truncate max-w-[240px]"
+                              title={pick(buildable.bottleneck.componentName)}
+                            >
+                              {isZero ? (
+                                <span className="text-destructive font-semibold">
+                                  {pick({ ar: "نقص حرج في:", en: "Shortage:" })} {pick(buildable.bottleneck.componentName)}
+                                </span>
+                              ) : (
+                                <span>
+                                  {pick({ ar: "عنصر الاختناق:", en: "Bottleneck:" })} {pick(buildable.bottleneck.componentName)}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </Td>
 
                   {/* Batch Yield */}
@@ -674,11 +715,11 @@ export function BomTab({
       {/* Add / Edit BOM Modal */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent
-          className="max-w-3xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl"
+          className="w-[96vw] max-w-5xl sm:max-w-5xl lg:max-w-6xl max-h-[92vh] overflow-y-auto border border-border/80 shadow-2xl rounded-2xl p-6 sm:p-8"
           dir={dir}
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
               <ChefHat className="w-5 h-5 text-primary" />
               <span>
                 {editingBom
@@ -696,7 +737,7 @@ export function BomTab({
 
           <form onSubmit={handleSave} className="space-y-4 pt-2 text-xs">
             {/* Header info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-muted/30 border border-border/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/30 border border-border/60">
               {/* Code */}
               <div>
                 <label className="block font-medium mb-1 text-muted-foreground">
@@ -1168,7 +1209,7 @@ export function BomTab({
         onOpenChange={(open) => !open && setViewingBom(null)}
       >
         <DialogContent
-          className="max-w-2xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl"
+          className="w-[96vw] max-w-4xl sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto border border-border/80 shadow-2xl rounded-2xl p-6 sm:p-7"
           dir={dir}
         >
           {viewingBom && (() => {
