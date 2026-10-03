@@ -424,21 +424,37 @@ async function fetchDatabaseState() {
   }
 }
 
-// Subscribe to Supabase Realtime changes
-let realtimeSubscribed = false;
+// Subscribe to Supabase Realtime changes safely (HMR / Multi-import guarded)
 function initRealtime() {
-  if (realtimeSubscribed || typeof window === "undefined") return;
-  realtimeSubscribed = true;
+  if (typeof window === "undefined") return;
+  const win = window as any;
+  if (win.__inventory_realtime_subscribed__) return;
 
-  supabase
-    .channel("inventory_db_realtime")
-    .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchDatabaseState())
-    .on("postgres_changes", { event: "*", schema: "public", table: "stock_levels" }, () => fetchDatabaseState())
-    .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchDatabaseState())
-    .on("postgres_changes", { event: "*", schema: "public", table: "warehouses" }, () => fetchDatabaseState())
-    .on("postgres_changes", { event: "*", schema: "public", table: "units" }, () => fetchDatabaseState())
-    .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => fetchDatabaseState())
-    .subscribe();
+  try {
+    const existing = supabase.getChannels?.()?.find?.((ch: any) => ch.topic === "realtime:inventory_db_realtime");
+    if (existing) {
+      win.__inventory_realtime_subscribed__ = true;
+      return;
+    }
+
+    win.__inventory_realtime_subscribed__ = true;
+    const channel = supabase.channel("inventory_db_realtime");
+    channel
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stock_levels" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "warehouses" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "units" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "boms" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "bom_lines" }, () => fetchDatabaseState());
+
+    channel.subscribe((status: string, err?: any) => {
+      if (err) console.warn("Realtime subscription notice:", status, err);
+    });
+  } catch (err) {
+    console.warn("Realtime initialization skipped:", err);
+  }
 }
 
 // Initial trigger
