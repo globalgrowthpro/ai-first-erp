@@ -20,7 +20,7 @@ import {
   Building2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { DataTable, Td, Btn } from "@/components/kit";
+import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
 import {
   Dialog,
   DialogContent,
@@ -287,6 +287,12 @@ export function BomTab({
     });
   }, [boms, statusFilter, branchFilter, searchQuery, products]);
 
+  const {
+    currentPage: bomPage,
+    setCurrentPage: setBomPage,
+    paginatedItems: paginatedBoms,
+  } = usePagination(filteredBoms, 30);
+
   // Calculations for any BOM
   const calculateBomSummary = (bom: InventoryBom) => {
     const materialCost = bom.components.reduce(
@@ -493,7 +499,7 @@ export function BomTab({
               </td>
             </tr>
           ) : (
-            filteredBoms.map((bom) => {
+            paginatedBoms.map((bom) => {
               const summary = calculateBomSummary(bom);
               const outputUnit = units.find((u) => u.id === bom.outputUnitId);
 
@@ -656,6 +662,13 @@ export function BomTab({
             })
           )}
         </DataTable>
+        <TablePagination
+          currentPage={bomPage}
+          totalItems={filteredBoms.length}
+          pageSize={30}
+          onPageChange={setBomPage}
+          itemLabel={{ ar: "شجرة منتج", en: "Recipes" }}
+        />
       </div>
 
       {/* Add / Edit BOM Modal */}

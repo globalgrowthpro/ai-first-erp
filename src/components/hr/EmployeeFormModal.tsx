@@ -38,7 +38,7 @@ interface EmployeeFormModalProps {
   onOpenChange: (open: boolean) => void;
   editing: EmployeeRecord | null;
   suggestedCode?: string;
-  onSave: (data: Omit<EmployeeRecord, "id" | "code"> & { code?: string }) => void;
+  onSave: (data: Omit<EmployeeRecord, "id" | "code"> & { code?: string; grantErpAccess?: boolean; erpRole?: string; userId?: string | null }) => void;
 }
 
 export function EmployeeFormModal({
@@ -97,6 +97,10 @@ export function EmployeeFormModal({
   const [healthCertExpiry, setHealthCertExpiry] = useState("");
   const [healthCertStatus, setHealthCertStatus] = useState<HealthCertStatus>("valid");
 
+  // ERP System User Account Access
+  const [grantErpAccess, setGrantErpAccess] = useState(false);
+  const [erpRole, setErpRole] = useState("sales");
+
   useEffect(() => {
     if (!open) return;
     if (editing) {
@@ -138,6 +142,7 @@ export function EmployeeFormModal({
       setHealthCertExpiry(editing.healthCert.expiryDate);
       setHealthCertStatus(editing.healthCert.status);
       setAvatarUrl(editing.avatarUrl || getDefaultAvatar(editing.gender, editing.code));
+      setGrantErpAccess(Boolean(editing.userId));
     } else {
       const newCode = suggestedCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
       setCode(newCode);
@@ -178,6 +183,8 @@ export function EmployeeFormModal({
       setHealthCertNumber(`HC-2026-${Math.floor(1000 + Math.random() * 9000)}`);
       setHealthCertExpiry("2027-03-31");
       setHealthCertStatus("valid");
+      setGrantErpAccess(false);
+      setErpRole("sales");
       setActiveTab("personal");
     }
   }, [open, editing, suggestedCode]);
@@ -260,6 +267,9 @@ export function EmployeeFormModal({
         emergencyTotal: 6,
         emergencyUsed: 0,
       },
+      grantErpAccess,
+      erpRole,
+      userId: editing?.userId || null,
     });
 
     onOpenChange(false);
@@ -700,6 +710,69 @@ export function EmployeeFormModal({
                     <option value="terminated">منتهي خدمته (Terminated)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* ERP System Access (ربط بنظام المستخدمين) */}
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-4 text-primary" />
+                    <div>
+                      <div className="text-xs font-bold text-foreground">
+                        {pick("منح حساب دخول لنظام الـ ERP (System Access)", "Grant ERP System Login Access")}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {pick(
+                          "تفعيل حساب مستخدم مرتبط بهذا الموظف مع صلاحيات تشغيل الفروع أو الحسابات أو الإدارة",
+                          "Provision a linked user account with branch, accounting, or administrative permissions"
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={grantErpAccess}
+                      onChange={(e) => setGrantErpAccess(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+
+                {grantErpAccess && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-primary/20">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {pick("دور وصلاحيات المستخدم في النظام", "Assigned System Role")}
+                      </label>
+                      <select
+                        value={erpRole}
+                        onChange={(e) => setErpRole(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-medium"
+                      >
+                        <option value="sales">{pick("نقطة بيع ومبيعات الفروع (Cashier / POS)", "POS & Branch Sales")}</option>
+                        <option value="inventory_manager">{pick("أمين مخزن ومستودعات (Inventory Manager)", "Inventory Manager")}</option>
+                        <option value="accountant">{pick("محاسب ومراجع مالي (Accountant / Finance)", "Accountant / Finance")}</option>
+                        <option value="hr_manager">{pick("مدير موارد بشرية (HR Manager)", "HR Manager")}</option>
+                        <option value="branch_manager">{pick("مدير فرع / تشغيل (Branch Manager)", "Branch Manager")}</option>
+                        <option value="admin">{pick("مدير نظام بصلاحيات كاملة (System Administrator)", "System Administrator")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {pick("البريد الإلكتروني لتسجيل الدخول", "Login Email Address")}
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="emp@wazeer-elhelw.com"
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

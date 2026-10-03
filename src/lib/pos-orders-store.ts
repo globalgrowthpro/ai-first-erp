@@ -80,6 +80,46 @@ export const PAYMENT_METHOD_NAMES_MAP: Record<string, { ar: string; en: string; 
   valu: { ar: "تقسيط فاليو", en: "ValU BNPL", icon: "🛍️" },
 };
 
+export function formatOrderDateTimeEnglish(rawDate?: string | Date | number): string {
+  if (!rawDate) return "";
+  try {
+    let d: Date;
+    if (typeof rawDate === "string") {
+      const normalized = rawDate
+        .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit).toString())
+        .replace(/م/g, "PM")
+        .replace(/ص/g, "AM");
+      d = new Date(normalized);
+      if (isNaN(d.getTime())) {
+        d = new Date(rawDate);
+      }
+    } else {
+      d = new Date(rawDate);
+    }
+
+    if (isNaN(d.getTime())) {
+      return String(rawDate)
+        .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit).toString())
+        .replace(/م/g, "PM")
+        .replace(/ص/g, "AM");
+    }
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strHours = String(hours).padStart(2, "0");
+
+    return `${year}/${month}/${day}, ${strHours}:${minutes} ${ampm}`;
+  } catch {
+    return String(rawDate || "");
+  }
+}
+
 export function parseItemName(rawName: any, fallbackSku: string = "صنف حلوى"): { ar: string; en: string } {
   if (!rawName) return { ar: fallbackSku, en: fallbackSku };
   if (typeof rawName === "string") return { ar: rawName, en: rawName };
@@ -180,13 +220,7 @@ export function usePosOrdersStore() {
             changeAmount: Number(row.change_amount || 0),
             status: row.status || "completed",
             createdAt: row.created_at || new Date().toISOString(),
-            formattedDate: new Date(row.created_at || Date.now()).toLocaleString("ar-EG", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            formattedDate: formatOrderDateTimeEnglish(row.created_at || Date.now()),
             items,
           });
         }
@@ -240,8 +274,8 @@ export function usePosOrdersStore() {
                   tenderAmount: Number(p.tendered || p.total || 0),
                   changeAmount: Number(p.change || 0),
                   status: "completed",
-                  createdAt: new Date().toISOString(),
-                  formattedDate: p.date || new Date().toLocaleString("ar-EG"),
+                  createdAt: p.createdAt || new Date().toISOString(),
+                  formattedDate: formatOrderDateTimeEnglish(p.createdAt || p.date || Date.now()),
                   items,
                 };
               });

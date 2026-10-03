@@ -4,7 +4,7 @@ import { Plus, FileUp, Edit2, Trash2, CheckCircle2, Users, ExternalLink, Eye, Up
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td } from "@/components/kit";
+import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, TablePagination, usePagination } from "@/components/kit";
 import { kpis } from "@/lib/demo-data";
 import { usePurchasesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
@@ -37,6 +37,12 @@ function Purchases() {
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    currentPage: poPage,
+    setCurrentPage: setPoPage,
+    paginatedItems: paginatedPurchases,
+  } = usePagination(documents, 30);
 
   const total = documents.reduce((s, i) => s + i.amount, 0);
 
@@ -245,7 +251,7 @@ function Purchases() {
               pick("إجراءات", "Actions"),
             ]}
           >
-            {documents.map((po) => (
+            {paginatedPurchases.map((po) => (
               <tr
                 key={po.id}
                 onClick={(e) => {
@@ -333,6 +339,13 @@ function Purchases() {
               </tr>
             ))}
           </DataTable>
+          <TablePagination
+            currentPage={poPage}
+            totalItems={documents.length}
+            pageSize={30}
+            onPageChange={setPoPage}
+            itemLabel={{ ar: "أمر شراء", en: "Orders" }}
+          />
         </Panel>
 
         <Panel title={pick("وكيل المستندات", "Document Agent")} tone="ink">

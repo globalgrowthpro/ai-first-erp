@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td } from "@/components/kit";
+import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, TablePagination, usePagination } from "@/components/kit";
 import { kpis } from "@/lib/demo-data";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
@@ -43,8 +43,77 @@ function Sales() {
   const { metrics: posMetrics } = usePosOrdersStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const outstanding = documents.reduce((s, i) => s + i.balance, 0);
-  const total = documents.reduce((s, i) => s + i.amount, 0);
+  // Filters for Standard & Commercial Invoices
+  const [invSearch, setInvSearch] = useState("");
+  const [invDateFrom, setInvDateFrom] = useState("");
+  const [invDateTo, setInvDateTo] = useState("");
+  const [invStatus, setInvStatus] = useState("all");
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter((inv) => {
+      if (salesTab === "commercial" && !(inv.balance > 0 || inv.status !== "paid")) return false;
+      if (invStatus !== "all" && inv.status !== invStatus) return false;
+      if (invSearch.trim()) {
+        const q = invSearch.toLowerCase().trim();
+        const matchId = String(inv.id || "").toLowerCase().includes(q);
+        const matchParty = `${inv.party?.ar || ""} ${inv.party?.en || ""}`.toLowerCase().includes(q);
+        if (!matchId && !matchParty) return false;
+      }
+      if (invDateFrom && inv.date < invDateFrom) return false;
+      if (invDateTo && inv.date > invDateTo) return false;
+      return true;
+    });
+  }, [documents, salesTab, invStatus, invSearch, invDateFrom, invDateTo]);
+
+  const {
+    currentPage: invPage,
+    setCurrentPage: setInvPage,
+    paginatedItems: paginatedDocuments,
+  } = usePagination(filteredDocuments, 30);
+
+  const outstanding = filteredDocuments.reduce((s, i) => s + i.balance, 0);
+  const total = filteredDocuments.reduce((s, i) => s + i.amount, 0);
+
+  const handleExportInvoicesExcel = () => {
+    if (!filteredDocuments.length) {
+      alert(pick("لا توجد فواتير لتصديرها وفق الفلاتر الحالية", "No invoices matching current filters to export"));
+      return;
+    }
+
+    const exportRows = filteredDocuments.map((inv, idx) => ({
+      "م": idx + 1,
+      "رقم الفاتورة": inv.id,
+      "العميل": pick(inv.party.ar, inv.party.en),
+      "الفرع": inv.branch ? pick(inv.branch.ar, inv.branch.en) : "-",
+      "التاريخ": inv.date,
+      "قيمة الفاتورة (ج.م)": inv.amount,
+      "الرصيد المتبقي (ج.م)": inv.balance,
+      "حالة السداد":
+        inv.status === "paid"
+          ? "مسدد بالكامل"
+          : inv.status === "partial"
+          ? "مسدد جزئياً"
+          : inv.status === "overdue"
+          ? "متأخر"
+          : "مسودة",
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    ws["!cols"] = [
+      { wch: 5 },
+      { wch: 16 },
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, "فواتير_المبيعات");
+    const dateSuffix = invDateFrom || invDateTo ? `_من_${invDateFrom || "البداية"}_إلى_${invDateTo || "اليوم"}` : `_${new Date().toISOString().slice(0, 10)}`;
+    safeDownloadWorkbook(wb, `فواتير_المبيعات${dateSuffix}.xlsx`);
+  };
 
   const handleDownloadTemplate = () => {
     const sampleRows = [
@@ -237,6 +306,15 @@ function Sales() {
               <Upload className="size-4" />
               <span className="hidden sm:inline">{pick("استيراد", "Import")}</span>
             </Btn>
+            <Btn
+              variant="outline"
+              className="text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10"
+              onClick={handleExportInvoicesExcel}
+              title={pick("تصدير الفواتير إلى Excel", "Export Invoices to Excel")}
+            >
+              <FileSpreadsheet className="size-4" />
+              <span className="hidden sm:inline">{pick("تصدير Excel", "Export Excel")}</span>
+            </Btn>
             <Link to="/pos">
               <Btn className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold border-none shadow-sm shadow-amber-500/25">
                 <Store className="size-4" />
@@ -251,35 +329,6 @@ function Sales() {
         }
       />
 
-      {/* POS Quick Launcher Card */}
-      <div className="mb-4 relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/20 shrink-0">
-            <Store className="size-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              {pick("شاشة الكاشير ونقاط البيع السريعة (POS Terminal)", "High-Speed Retail POS Terminal")}
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                {pick("نشط ومحدث", "Ready")}
-              </span>
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {pick(
-                "بيع مباشر سريع للحلويات والمعارض، مسح باركود، فواتير حرارية 80mm، ربط ضريبي ZATCA/ETA، وحفظ تعليق الطلبات.",
-                "Fast confectionery & retail checkout, barcode scan ready, 80mm thermal receipts, tax QR, and order holding."
-              )}
-            </p>
-          </div>
-        </div>
-        <Link to="/pos" className="shrink-0">
-          <Btn className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
-            <Store className="size-4" />
-            {pick("فتح شاشة الكاشير", "Open Cashier")}
-          </Btn>
-        </Link>
-      </div>
-
       {importMsg && (
         <div className={`p-3 mb-4 rounded-lg text-sm font-bold flex items-center gap-2 ${importMsg.type === 'success' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-700 dark:text-rose-400'}`}>
           {importMsg.type === 'success' ? <CheckCircle2 className="size-4" /> : <AlertTriangle className="size-4" />}
@@ -292,15 +341,21 @@ function Sales() {
         <button
           type="button"
           onClick={() => setSalesTab("pos_orders")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             salesTab === "pos_orders"
               ? "bg-primary text-primary-foreground shadow-sm scale-102"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
         >
-          <Store className="w-4 h-4 text-amber-500" />
+          <Store className={`w-4 h-4 ${salesTab === "pos_orders" ? "text-amber-300" : "text-amber-500"}`} />
           <span>{pick("فواتير وطلبات الكاشير (POS)", "POS Retail Orders")}</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-600 dark:text-amber-300 font-mono font-bold border border-amber-500/30">
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black transition-all ${
+              salesTab === "pos_orders"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-black/10"
+                : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+            }`}
+          >
             {posMetrics?.totalCount ?? 0} {pick("طلب", "orders")}
           </span>
         </button>
@@ -308,7 +363,7 @@ function Sales() {
         <button
           type="button"
           onClick={() => setSalesTab("all_invoices")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             salesTab === "all_invoices"
               ? "bg-primary text-primary-foreground shadow-sm scale-102"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -316,15 +371,21 @@ function Sales() {
         >
           <FileText className="w-4 h-4" />
           <span>{pick("فواتير المبيعات العامة", "General Sales Invoices")}</span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] bg-background/20 font-mono font-bold">
-            {documents.length}
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black transition-all ${
+              salesTab === "all_invoices"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-black/10"
+                : "bg-muted text-muted-foreground border border-border/70"
+            }`}
+          >
+            {documents.length} {pick("فاتورة", "invoices")}
           </span>
         </button>
 
         <button
           type="button"
           onClick={() => setSalesTab("commercial")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             salesTab === "commercial"
               ? "bg-primary text-primary-foreground shadow-sm scale-102"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -332,6 +393,15 @@ function Sales() {
         >
           <Building2 className="w-4 h-4" />
           <span>{pick("فواتير الشركات والآجل (B2B)", "Commercial / B2B Invoices")}</span>
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black transition-all ${
+              salesTab === "commercial"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-black/10"
+                : "bg-muted text-muted-foreground border border-border/70"
+            }`}
+          >
+            {documents.filter((inv) => inv.balance > 0 || inv.status !== "paid").length} {pick("فاتورة", "invoices")}
+          </span>
         </button>
       </div>
 
@@ -347,7 +417,131 @@ function Sales() {
             <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} accent="brand" />
           </div>
 
-          <Panel title={salesTab === "commercial" ? pick("فواتير الشركات والعملاء التجاريين", "Commercial B2B Invoices") : t("recentInvoices")}>
+          {/* Filters Bar for Standard Invoices */}
+          <div className="p-3 bg-card rounded-2xl border border-border/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 w-full md:w-auto flex-1 flex-wrap">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={invSearch}
+                  onChange={(e) => setInvSearch(e.target.value)}
+                  placeholder={pick("بحث برقم الفاتورة أو اسم العميل...", "Search invoice # or customer...")}
+                  className="w-full ps-9 pe-8 py-2 text-xs font-semibold rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:border-primary shadow-xs"
+                />
+                {invSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setInvSearch("")}
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Status Select */}
+              <select
+                value={invStatus}
+                onChange={(e) => setInvStatus(e.target.value)}
+                className="text-xs font-bold py-2 px-3 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer shadow-xs"
+              >
+                <option value="all">{pick("كل حالات السداد", "All Payment Statuses")}</option>
+                <option value="paid">{pick("مسدد بالكامل", "Paid")}</option>
+                <option value="partial">{pick("مسدد جزئياً", "Partial")}</option>
+                <option value="overdue">{pick("متأخر", "Overdue")}</option>
+                <option value="draft">{pick("مسودة", "Draft")}</option>
+              </select>
+
+              {/* Date From & To */}
+              <div className="flex items-center gap-1.5 bg-background border border-border/70 rounded-xl px-2.5 py-1.5 shadow-xs text-xs">
+                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-[11px] font-bold text-muted-foreground">{pick("من", "From")}:</span>
+                <input
+                  type="date"
+                  value={invDateFrom}
+                  onChange={(e) => setInvDateFrom(e.target.value)}
+                  className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
+                />
+                <span className="text-muted-foreground/40 font-bold">|</span>
+                <span className="text-[11px] font-bold text-muted-foreground">{pick("إلى", "To")}:</span>
+                <input
+                  type="date"
+                  value={invDateTo}
+                  onChange={(e) => setInvDateTo(e.target.value)}
+                  className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
+                />
+                {(invDateFrom || invDateTo) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInvDateFrom("");
+                      setInvDateTo("");
+                    }}
+                    className="text-muted-foreground hover:text-foreground text-xs px-1"
+                    title={pick("مسح التاريخ", "Clear date")}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Reset */}
+              {(invSearch || invStatus !== "all" || invDateFrom || invDateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInvSearch("");
+                    setInvStatus("all");
+                    setInvDateFrom("");
+                    setInvDateTo("");
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{pick("إعادة ضبط", "Reset")}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Export Excel Button */}
+            <button
+              type="button"
+              onClick={handleExportInvoicesExcel}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer shrink-0"
+              title={pick("تصدير الفواتير المعروضة إلى ملف Excel", "Export filtered invoices to Excel")}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>{pick("تصدير إلى Excel", "Export to Excel")}</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-black">
+                {filteredDocuments.length}
+              </span>
+            </button>
+          </div>
+
+          <Panel
+            title={salesTab === "commercial" ? pick("فواتير الشركات والعملاء التجاريين", "Commercial B2B Invoices") : t("recentInvoices")}
+            aside={
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold hidden sm:inline">
+                  {pick(
+                    `المعروض: ${filteredDocuments.length} فاتورة (${money(total)})`,
+                    `Showing: ${filteredDocuments.length} invoices (${money(total)})`
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleExportInvoicesExcel}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-bold text-xs transition-colors cursor-pointer"
+                  title={pick("تصدير إلى ملف إكسيل", "Export to Excel")}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Excel</span>
+                </button>
+              </div>
+            }
+          >
             <DataTable
               head={[
                 t("invoice"),
@@ -359,8 +553,7 @@ function Sales() {
                 pick("إجراءات", "Actions"),
               ]}
             >
-              {documents
-                .filter((inv) => (salesTab === "commercial" ? inv.balance > 0 || inv.status !== "paid" : true))
+              {paginatedDocuments
                 .map((inv) => (
                   <tr
                     key={inv.id}
@@ -447,6 +640,13 @@ function Sales() {
                   </tr>
                 ))}
             </DataTable>
+            <TablePagination
+              currentPage={invPage}
+              totalItems={filteredDocuments.length}
+              pageSize={30}
+              onPageChange={setInvPage}
+              itemLabel={{ ar: "فاتورة", en: "Invoices" }}
+            />
           </Panel>
         </div>
       )}

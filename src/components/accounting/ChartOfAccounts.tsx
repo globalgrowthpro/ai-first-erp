@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -20,7 +20,7 @@ import {
   type AccountType,
   type NormalBalance,
 } from "@/lib/demo-data";
-import { useAccountsStore } from "@/lib/accounting-store";
+import { useAccountsStore, useJournalStore } from "@/lib/accounting-store";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -32,6 +32,7 @@ import {
 export function ChartOfAccounts() {
   const { t, pick, money, dir } = useI18n();
   const { accounts, addAccount, updateAccount, deleteAccount } = useAccountsStore();
+  const { entries: journalEntries } = useJournalStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"all" | AccountType>("all");
   const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set());
@@ -48,7 +49,84 @@ export function ChartOfAccounts() {
   const [newNormalBalance, setNewNormalBalance] = useState<NormalBalance>("debit");
   const [newBalance, setNewBalance] = useState<number>(0);
 
-  // Financial summary metrics
+  // Collect descendant codes for hierarchical rollup and deletion checks
+  const getDescendantCodes = useCallback((code: string): string[] => {
+    const result: string[] = [];
+    let changed = true;
+    const set = new Set<string>([code]);
+    while (changed) {
+      changed = false;
+      for (const a of accounts) {
+        if (a.parentId && set.has(a.parentId) && !set.has(a.code)) {
+          set.add(a.code);
+          result.push(a.code);
+          changed = true;
+        }
+      }
+    }
+    return result;
+  }, [accounts]);
+
+  // Activity map from real journal entries
+  const journalActivityMap = useMemo(() => {
+    const map = new Map<string, { debit: number; credit: number }>();
+    for (const j of journalEntries) {
+      const code = j.accountCode;
+      if (!code) continue;
+      const curr = map.get(code) || { debit: 0, credit: 0 };
+      curr.debit += Number(j.debit || 0);
+      curr.credit += Number(j.credit || 0);
+      map.set(code, curr);
+    }
+    return map;
+  }, [journalEntries]);
+
+  // Dynamically calculated real balances with parent hierarchical rollup
+  const accountBalances = useMemo(() => {
+    const balanceMap = new Map<string, number>();
+
+    // 1. Identify leaf accounts and calculate their individual balance
+    for (const acc of accounts) {
+      const isParentAccount = acc.isParent || accounts.some((c) => c.parentId === acc.code);
+      if (!isParentAccount) {
+        const base = Number(acc.balance || 0);
+        const activity = journalActivityMap.get(acc.code);
+        const isDebit = acc.normalBalance === "debit" || ["asset", "expense"].includes(acc.type);
+        const netJournal = activity
+          ? (isDebit ? activity.debit - activity.credit : activity.credit - activity.debit)
+          : 0;
+        balanceMap.set(acc.code, base + netJournal);
+      }
+    }
+
+    // 2. Parent accounts: calculate sum of all descendant leaf accounts
+    for (const acc of accounts) {
+      const isParentAccount = acc.isParent || accounts.some((c) => c.parentId === acc.code);
+      if (isParentAccount) {
+        const descendants = getDescendantCodes(acc.code);
+        let sum = 0;
+        let foundLeaves = false;
+
+        for (const descCode of descendants) {
+          const descAcc = accounts.find((a) => a.code === descCode);
+          if (descAcc) {
+            const isDescParent = descAcc.isParent || accounts.some((c) => c.parentId === descAcc.code);
+            if (!isDescParent) {
+              sum += balanceMap.get(descCode) ?? Number(descAcc.balance || 0);
+              foundLeaves = true;
+            }
+          }
+        }
+
+        // If parent has leaf descendants, roll up their sum; otherwise fall back to account's own balance
+        balanceMap.set(acc.code, foundLeaves ? sum : Number(acc.balance || 0));
+      }
+    }
+
+    return balanceMap;
+  }, [accounts, journalActivityMap, getDescendantCodes]);
+
+  // Financial summary metrics based on calculated hierarchical balances
   const summary = useMemo(() => {
     let assets = 0;
     let liabilities = 0;
@@ -58,16 +136,17 @@ export function ChartOfAccounts() {
 
     for (const acc of accounts) {
       if (acc.level === 1) {
-        if (acc.type === "asset") assets += acc.balance;
-        if (acc.type === "liability") liabilities += acc.balance;
-        if (acc.type === "equity") equity += acc.balance;
-        if (acc.type === "revenue") revenue += acc.balance;
-        if (acc.type === "expense") expenses += acc.balance;
+        const bal = accountBalances.get(acc.code) ?? acc.balance;
+        if (acc.type === "asset") assets += bal;
+        if (acc.type === "liability") liabilities += bal;
+        if (acc.type === "equity") equity += bal;
+        if (acc.type === "revenue") revenue += bal;
+        if (acc.type === "expense") expenses += bal;
       }
     }
     const netIncome = revenue - expenses;
     return { assets, liabilities, equity, netIncome };
-  }, [accounts]);
+  }, [accounts, accountBalances]);
 
   // Set of all parent codes
   const parentCodes = useMemo(() => {
@@ -158,24 +237,6 @@ export function ChartOfAccounts() {
     setNewNormalBalance(acc.normalBalance);
     setNewBalance(acc.balance);
     setIsAddModalOpen(true);
-  };
-
-  // Collect descendant codes for delete warning
-  const getDescendantCodes = (code: string): string[] => {
-    const result: string[] = [];
-    let changed = true;
-    const set = new Set<string>([code]);
-    while (changed) {
-      changed = false;
-      for (const a of accounts) {
-        if (a.parentId && set.has(a.parentId) && !set.has(a.code)) {
-          set.add(a.code);
-          result.push(a.code);
-          changed = true;
-        }
-      }
-    }
-    return result;
   };
 
   const handleConfirmDelete = () => {
@@ -393,6 +454,8 @@ export function ChartOfAccounts() {
                   const isParent = acc.isParent;
                   const isCollapsed = collapsedCodes.has(acc.code);
                   const indentLevel = acc.level - 1;
+                  const currentBal = accountBalances.get(acc.code) ?? acc.balance;
+                  const normalBal = acc.normalBalance || (["asset", "expense"].includes(acc.type) ? "debit" : "credit");
 
                   return (
                     <tr
@@ -462,17 +525,26 @@ export function ChartOfAccounts() {
                       </td>
 
                       {/* Normal Balance */}
-                      <td className="px-3 py-2.5 text-xs font-semibold uppercase text-muted-foreground">
-                        {t(acc.normalBalance)}
+                      <td className="px-3 py-2.5 text-xs font-semibold uppercase">
+                        <span
+                          className={cn(
+                            "inline-block rounded px-2 py-0.5 text-[10px] font-bold tracking-wider",
+                            normalBal === "debit"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
+                          )}
+                        >
+                          {t(normalBal)}
+                        </span>
                       </td>
 
                       {/* Current Balance */}
                       <td className={cn(
                         "px-3 py-2.5 text-end num font-bold",
-                        acc.balance < 0 ? "text-destructive" : "text-foreground",
-                        acc.level === 1 && "text-base font-extrabold",
+                        currentBal < 0 ? "text-destructive" : "text-foreground",
+                        acc.level === 1 ? "text-base font-extrabold text-primary" : acc.level === 2 ? "font-bold text-foreground" : "text-sm",
                       )}>
-                        {money(acc.balance)}
+                        {money(currentBal)}
                       </td>
 
                       {/* Status */}

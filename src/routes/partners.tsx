@@ -21,7 +21,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
+import { Btn, DataTable, KpiCard, PageHeader, Panel, Td, TablePagination, usePagination } from "@/components/kit";
 import {
   usePartnersStore,
   type Partner,
@@ -164,6 +164,12 @@ function PartnersPage() {
       return true;
     });
   }, [partners, activeFilter, searchQuery]);
+
+  const {
+    currentPage: partnerPage,
+    setCurrentPage: setPartnerPage,
+    paginatedItems: paginatedPartners,
+  } = usePagination(filteredPartners, 30);
 
   // If search.id is provided and partner is found, render the DEDICATED FULL DETAILS PAGE!
   if (search.id && activePartner) {
@@ -363,7 +369,7 @@ function PartnersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredPartners.map((p) => {
+                paginatedPartners.map((p) => {
                   const cleanPhone = p.phone.replace(/[^0-9]/g, "");
                   return (
                     <tr key={p.id} className="hover:bg-secondary/40 transition-colors">
@@ -521,6 +527,13 @@ function PartnersPage() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={partnerPage}
+          totalItems={filteredPartners.length}
+          pageSize={30}
+          onPageChange={setPartnerPage}
+          itemLabel={{ ar: "عميل ومورد", en: "Partners" }}
+        />
       </Panel>
 
       {/* Create / Edit Form Modal */}

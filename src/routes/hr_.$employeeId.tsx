@@ -210,7 +210,11 @@ function EmployeeDetailPage() {
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="font-mono text-xs text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">{emp.code}</span>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(emp.status)}`}>{statusLabel(emp.status, pick)}</span>
-              <span className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">{emp.gender === "male" ? pick("\u0630\u0643\u0631", "Male") : pick("\u0623\u0646\u062b\u0649", "Female")}</span>
+              <span className="text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">{emp.gender === "male" ? pick("ذكر", "Male") : pick("أنثى", "Female")}</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${emp.userId ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/25" : "bg-muted text-muted-foreground border border-border"}`}>
+                <ShieldCheck className="size-3" />
+                {emp.userId ? pick("مستخدم نظام ERP (حساب مفعّل)", "Linked ERP User") : pick("موظف شؤون فقط", "Personnel Only")}
+              </span>
             </div>
             <h1 className="text-2xl font-bold text-foreground truncate">{pick(emp.name.ar, emp.name.en)}</h1>
             <p className="text-sm text-muted-foreground mt-0.5">{pick(emp.positionName.ar, emp.positionName.en)}</p>

@@ -1,4 +1,5 @@
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { Btn } from "@/components/kit";
 import {
   Dialog,
@@ -24,7 +25,9 @@ import {
   MapPin,
   FileText,
   AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { type EmployeeRecord, getDefaultAvatar } from "@/lib/hr-store";
 
 interface EmployeeDetailModalProps {
@@ -122,6 +125,17 @@ export function EmployeeDetailModal({
                     ? pick("في إجازة", "On Leave")
                     : pick("تحت الاختبار", "Probation")}
                 </span>
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1",
+                    employee.userId
+                      ? "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                      : "bg-muted text-muted-foreground border border-border"
+                  )}
+                >
+                  <ShieldCheck className="size-3" />
+                  {employee.userId ? pick("مستخدم نظام ERP", "ERP User") : pick("موظف شؤون فقط", "HR Personnel Only")}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5 font-medium">
                 {pick(employee.positionName.ar, employee.positionName.en)}
@@ -205,6 +219,24 @@ export function EmployeeDetailModal({
               <div className="flex items-center justify-between py-1 border-b border-border/50">
                 <span className="text-muted-foreground">{pick("المدير المباشر:", "Supervisor:")}</span>
                 <span className="font-semibold">{employee.directManager}</span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-border/50">
+                <span className="text-muted-foreground">{pick("حساب دخول النظام:", "ERP Login Account:")}</span>
+                {employee.userId ? (
+                  <Link
+                    to="/settings"
+                    search={{ tab: "users" } as any}
+                    className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors"
+                    title={pick("إدارة المستخدم والصلاحيات في الإعدادات", "Manage user and permissions in Settings")}
+                  >
+                    <span>{pick("مستخدم نظام مفعّل", "Active System User")}</span>
+                    <ExternalLink className="size-3" />
+                  </Link>
+                ) : (
+                  <span className="font-mono text-[11px] font-medium px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    {pick("غير مرتبط بحساب مستخدم", "No Login Account")}
+                  </span>
+                )}
               </div>
               <div className="pt-2">
                 <p className="text-[11px] font-bold text-muted-foreground mb-1">

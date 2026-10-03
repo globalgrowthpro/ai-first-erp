@@ -20,7 +20,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { DataTable, Td, Btn } from "@/components/kit";
+import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
 import {
   Dialog,
   DialogContent,
@@ -152,6 +152,12 @@ export function WarehousesTab({
       );
     });
   }, [warehouses, selectedType, searchQuery]);
+
+  const {
+    currentPage: whPage,
+    setCurrentPage: setWhPage,
+    paginatedItems: paginatedWarehouses,
+  } = usePagination(filteredWarehouses, 30);
 
   // Type metadata
   const typeMeta: Record<
@@ -337,7 +343,7 @@ export function WarehousesTab({
               </td>
             </tr>
           ) : (
-            filteredWarehouses.map((wh) => {
+            paginatedWarehouses.map((wh) => {
               const meta = typeMeta[wh.type] || typeMeta.retail;
               const skuCount = getProductCount(wh.id);
               const isHigh = wh.capacityPercent >= 80;
@@ -488,6 +494,13 @@ export function WarehousesTab({
             })
           )}
         </DataTable>
+        <TablePagination
+          currentPage={whPage}
+          totalItems={filteredWarehouses.length}
+          pageSize={30}
+          onPageChange={setWhPage}
+          itemLabel={{ ar: "منشأة / فرع", en: "Facilities" }}
+        />
       </div>
 
       {/* Add / Edit Warehouse Dialog */}

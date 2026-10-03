@@ -36,7 +36,8 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
+import { cn } from "@/lib/utils";
+import { Btn, DataTable, KpiCard, PageHeader, Panel, Td, TablePagination, usePagination } from "@/components/kit";
 import {
   useHrStore,
   getDefaultAvatar,
@@ -57,6 +58,8 @@ import {
   exportEmployeesToExcel,
   exportAttendanceToExcel,
 } from "@/lib/excel-utils";
+import { useOrgStore } from "@/lib/org-store";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/hr")({
   head: () => ({
@@ -88,6 +91,8 @@ function HrPage() {
     leaves,
     payrollRuns,
     insights,
+    loading,
+    refreshHrData,
     addEmployee,
     updateEmployee,
     deleteEmployee,
@@ -101,6 +106,8 @@ function HrPage() {
     approvePayrollRun,
     postPayrollToGl,
   } = useHrStore();
+
+  const { users, addUser, updateUser: updateOrgUser } = useOrgStore();
 
   const [activeTab, setActiveTab] = useState<"employees" | "attendance" | "leaves" | "payroll" | "ai">("employees");
 
@@ -245,15 +252,52 @@ function HrPage() {
     });
   }, [attendance, attendanceDate, attendanceStatusFilter, attendanceShiftFilter, searchQuery]);
 
+  const {
+    currentPage: empPage,
+    setCurrentPage: setEmpPage,
+    paginatedItems: paginatedEmployees,
+  } = usePagination(filteredEmployees, 30);
+
+  const {
+    currentPage: attPage,
+    setCurrentPage: setAttPage,
+    paginatedItems: paginatedAttendance,
+  } = usePagination(filteredAttendance, 30);
+
+  const {
+    currentPage: leavePage,
+    setCurrentPage: setLeavePage,
+    paginatedItems: paginatedLeaves,
+  } = usePagination(leaves, 30);
+
+  const currentPayslips = useMemo(() => payrollRuns[0]?.payslips || [], [payrollRuns]);
+  const {
+    currentPage: payslipPage,
+    setCurrentPage: setPayslipPage,
+    paginatedItems: paginatedPayslips,
+  } = usePagination(currentPayslips, 30);
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t("nav_hr")}
-        subtitle={pick(
-          "إدارة شؤون الموظفين، الحضور والانصراف بالورديات، الإجازات، ومسير الرواتب الشهري المربوط بالدفاتر المحاسبية",
-          "Workforce management, shift attendance, leave requests workflow, and monthly payroll integrated with general ledger"
-        )}
-      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageHeader
+          title={t("nav_hr")}
+          subtitle={pick(
+            "إدارة شؤون الموظفين، الحضور والانصراف بالورديات، الإجازات، ومسير الرواتب الشهري المربوط بقاعدة البيانات والدفاتر المحاسبية",
+            "Workforce management, shift attendance, leave requests workflow, and monthly payroll synced with database and general ledger"
+          )}
+        />
+        <Btn
+          variant="outline"
+          onClick={() => refreshHrData()}
+          disabled={loading}
+          className="text-xs gap-1.5"
+          title={pick("مزامنة وجلب أحدث البيانات من قاعدة البيانات", "Sync and fetch latest data from database")}
+        >
+          <RotateCcw className={cn("size-3.5", loading && "animate-spin text-primary")} />
+          {loading ? pick("جارِ المزامنة...", "Syncing DB...") : pick("مزامنة قاعدة البيانات", "Sync Database")}
+        </Btn>
+      </div>
 
       {/* Top 4 KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -637,7 +681,7 @@ function HrPage() {
                 pick("الإجراءات", "Actions"),
               ]}
             >
-              {filteredEmployees.map((emp) => {
+              {paginatedEmployees.map((emp) => {
                 const totalGross =
                   emp.compensation.basicSalary +
                   emp.compensation.housingAllowance +
@@ -680,8 +724,17 @@ function HrPage() {
                           {emp.avatarInitials}
                         </div>
                         <div>
-                          <p className="font-bold text-foreground text-xs group-hover:text-primary transition-colors">
+                          <p className="font-bold text-foreground text-xs group-hover:text-primary transition-colors flex items-center gap-1.5">
                             {pick(emp.name.ar, emp.name.en)}
+                            {emp.userId && (
+                              <span
+                                title={pick("مرتبط بحساب مستخدم في النظام", "Linked to ERP System User Account")}
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20"
+                              >
+                                <ShieldCheck className="size-2.5" />
+                                {pick("حساب نظام", "ERP User")}
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {pick(emp.positionName.ar, emp.positionName.en)}
@@ -783,6 +836,13 @@ function HrPage() {
                 );
               })}
             </DataTable>
+            <TablePagination
+              currentPage={empPage}
+              totalItems={filteredEmployees.length}
+              pageSize={30}
+              onPageChange={setEmpPage}
+              itemLabel={{ ar: "موظف", en: "Employees" }}
+            />
           </Panel>
         </div>
       )}
@@ -870,7 +930,7 @@ function HrPage() {
                 pick("ملاحظات", "Notes"),
               ]}
             >
-              {filteredAttendance.map((rec) => (
+              {paginatedAttendance.map((rec) => (
                 <tr key={rec.id} className="hover:bg-secondary/50">
                   <Td className="font-mono font-bold text-xs">{rec.employeeCode}</Td>
                   <Td className="font-bold text-xs">{pick(rec.employeeName.ar, rec.employeeName.en)}</Td>
@@ -913,6 +973,13 @@ function HrPage() {
                 </tr>
               ))}
             </DataTable>
+            <TablePagination
+              currentPage={attPage}
+              totalItems={filteredAttendance.length}
+              pageSize={30}
+              onPageChange={setAttPage}
+              itemLabel={{ ar: "سجل حضور", en: "Attendance" }}
+            />
           </Panel>
         </div>
       )}
@@ -1013,7 +1080,7 @@ function HrPage() {
                 pick("المعتمد", "Approved By"),
               ]}
             >
-              {leaves.map((l) => (
+              {paginatedLeaves.map((l) => (
                 <tr key={l.id} className="hover:bg-secondary/50">
                   <Td className="font-mono text-xs">{l.employeeCode}</Td>
                   <Td className="font-bold text-xs">{pick(l.employeeName.ar, l.employeeName.en)}</Td>
@@ -1047,6 +1114,13 @@ function HrPage() {
                 </tr>
               ))}
             </DataTable>
+            <TablePagination
+              currentPage={leavePage}
+              totalItems={leaves.length}
+              pageSize={30}
+              onPageChange={setLeavePage}
+              itemLabel={{ ar: "طلب إجازة", en: "Leaves" }}
+            />
           </Panel>
         </div>
       )}
@@ -1136,7 +1210,7 @@ function HrPage() {
                 pick("قسيمة القبض", "Payslip"),
               ]}
             >
-              {payrollRuns[0]?.payslips.map((ps) => {
+              {paginatedPayslips.map((ps) => {
                 const allowances =
                   ps.housingAllowance +
                   ps.transportAllowance +
@@ -1168,6 +1242,13 @@ function HrPage() {
                 );
               })}
             </DataTable>
+            <TablePagination
+              currentPage={payslipPage}
+              totalItems={currentPayslips.length}
+              pageSize={30}
+              onPageChange={setPayslipPage}
+              itemLabel={{ ar: "قسيمة راتب", en: "Payslips" }}
+            />
           </Panel>
         </div>
       )}
@@ -1317,11 +1398,62 @@ function HrPage() {
         onOpenChange={setIsEmployeeFormOpen}
         editing={editingEmployee}
         suggestedCode={`EMP-${1000 + employees.length + 1}`}
-        onSave={(empData) => {
+        onSave={async (empData) => {
+          let linkedUserId = empData.userId || null;
+
+          if (empData.grantErpAccess) {
+            // Find existing user if already linked or matching email
+            const existingUser = users.find(
+              (u) =>
+                (linkedUserId && u.id === linkedUserId) ||
+                (u.email && empData.email && u.email.toLowerCase() === empData.email.toLowerCase())
+            );
+
+            if (existingUser) {
+              linkedUserId = existingUser.id;
+              await updateOrgUser(existingUser.id, {
+                employeeId: editingEmployee?.id,
+                employeeCode: empData.code,
+                role: (empData.erpRole as any) || existingUser.role,
+              });
+            } else {
+              const newId = crypto.randomUUID();
+              const createdUser = await addUser({
+                id: newId,
+                name: {
+                  ar: empData.name.ar,
+                  en: empData.name.en,
+                },
+                email: empData.email || `${(empData.code || "emp").toLowerCase()}@wazeer-elhelw.com`,
+                role: (empData.erpRole as any) || "sales",
+                status: "active",
+                departmentId: empData.departmentId,
+                positionId: empData.positionId,
+                branch: empData.branchName.ar,
+                lastActive: "الآن",
+                employeeId: editingEmployee?.id,
+                employeeCode: empData.code,
+              });
+              if (createdUser?.id) {
+                linkedUserId = createdUser.id;
+              }
+            }
+          }
+
+          const finalData = {
+            ...empData,
+            userId: linkedUserId,
+          };
+
           if (editingEmployee) {
-            updateEmployee(editingEmployee.id, empData);
+            updateEmployee(editingEmployee.id, finalData);
+            if (linkedUserId) {
+              try {
+                await supabase.from("employees").update({ user_id: linkedUserId }).eq("id", editingEmployee.id);
+              } catch (_) {}
+            }
           } else {
-            addEmployee(empData);
+            addEmployee(finalData);
           }
         }}
       />

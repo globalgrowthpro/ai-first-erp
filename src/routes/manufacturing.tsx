@@ -20,7 +20,7 @@ import {
   Check,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { Btn, KpiCard, PageHeader, Panel } from "@/components/kit";
+import { Btn, KpiCard, PageHeader, Panel, TablePagination, usePagination } from "@/components/kit";
 import {
   useManufacturingStore,
   type ManufacturingOrder,
@@ -103,6 +103,12 @@ function ManufacturingPage() {
       return true;
     });
   }, [orders, statusFilter, searchQuery]);
+
+  const {
+    currentPage: orderPage,
+    setCurrentPage: setOrderPage,
+    paginatedItems: paginatedOrders,
+  } = usePagination(filteredOrders, 30);
 
   return (
     <div className="space-y-6">
@@ -257,7 +263,7 @@ function ManufacturingPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredOrders.map((order) => {
+                    paginatedOrders.map((order) => {
                       return (
                         <tr key={order.id} className="hover:bg-secondary/40 transition-colors">
                           <td className="p-3 font-mono font-bold text-primary">
@@ -358,6 +364,13 @@ function ManufacturingPage() {
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              currentPage={orderPage}
+              totalItems={filteredOrders.length}
+              pageSize={30}
+              onPageChange={setOrderPage}
+              itemLabel={{ ar: "أمر تشغيل", en: "Orders" }}
+            />
           </Panel>
         </div>
       )}

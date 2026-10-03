@@ -33,6 +33,7 @@ import {
   UserCheck,
   LifeBuoy,
   Store,
+  Phone,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -50,6 +51,49 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+const ONLINE_TEAM_USERS = [
+  {
+    id: "usr-hafez",
+    name: { ar: "حافظ رحيم", en: "Hafez Rahim" },
+    role: { ar: "المدير العام (مسؤول النظام)", en: "General Manager (Admin)" },
+    initials: "HR",
+    avatarBg: "from-purple-600 via-indigo-600 to-blue-600",
+    statusText: { ar: "نشط الآن", en: "Active now" },
+  },
+  {
+    id: "usr-sara",
+    name: { ar: "سارة كمال", en: "Sara Kamal" },
+    role: { ar: "كاشير رئيسي — فرع الكوربة", en: "Lead Cashier — Korba" },
+    initials: "SK",
+    avatarBg: "from-emerald-600 to-teal-700",
+    statusText: { ar: "نقطة البيع متصلة", en: "POS Connected" },
+  },
+  {
+    id: "usr-ahmed",
+    name: { ar: "أحمد عز", en: "Ahmed Ezz" },
+    role: { ar: "مدير المشتريات والمستودعات", en: "Purchases & Inventory Lead" },
+    initials: "AE",
+    avatarBg: "from-blue-600 to-cyan-600",
+    statusText: { ar: "نشط الآن", en: "Active now" },
+  },
+  {
+    id: "usr-mahmoud",
+    name: { ar: "محمود حسن", en: "Mahmoud Hassan" },
+    role: { ar: "مدير المطبخ المركزي والتصنيع", en: "Central Kitchen Lead" },
+    initials: "MH",
+    avatarBg: "from-amber-600 to-orange-600",
+    statusText: { ar: "تشغيل خطوط الإنتاج", en: "In Production" },
+  },
+  {
+    id: "usr-ai",
+    name: { ar: "وكيل الذكاء الاصطناعي (AI Copilot)", en: "AI Copilot Agent" },
+    role: { ar: "مساعد التشغيل ومراقبة المنظومة", en: "Autonomous System Agent" },
+    initials: "✨",
+    avatarBg: "from-violet-600 via-fuchsia-600 to-pink-600",
+    statusText: { ar: "متاح 24/7", en: "24/7 Online" },
+  },
+];
 
 const erpNav = [
   { to: "/", key: "nav_dashboard", icon: LayoutDashboard },
@@ -345,7 +389,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header - Hidden on POS page to eliminate double header and provide dedicated POS terminal UI */}
         {!hasOnlyAiPermission && !isPosPage && (
-          <header className="sticky top-0 z-20 flex items-center gap-2.5 sm:gap-3 border-b border-border/70 bg-card/95 backdrop-blur px-4 py-3">
+          <header className="sticky top-0 z-20 flex items-center gap-2 sm:gap-2.5 border-b border-border/60 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none">
           <Link
             to={hasOnlyPosPermission ? "/pos" : "/"}
             className="w-32 shrink-0 lg:hidden"
@@ -354,7 +398,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <img
               src={companyLogo}
               alt={companyName}
-              className="h-9 w-full object-contain"
+              className="h-8 w-full object-contain"
             />
           </Link>
 
@@ -381,7 +425,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   : lang === "ar" ? "إظهار الشريط الجانبي" : "Show sidebar"
               }
               aria-pressed={sidebarVisible}
-              className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="hidden lg:inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 cursor-pointer"
             >
               {sidebarVisible ? (
                 <PanelLeftClose className="size-4" />
@@ -393,41 +437,45 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Protected Search Bar */}
           {!hasOnlyPosPermission && (
-            <div className="relative hidden sm:flex min-w-0 flex-1" ref={searchRef}>
-              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/80 bg-secondary/50 px-3.5 py-1.5 focus-within:border-primary focus-within:bg-card transition-colors">
-                <Search className="size-4 shrink-0 text-muted-foreground" />
+            <div className="relative hidden sm:flex min-w-0 flex-1 max-w-md" ref={searchRef}>
+              <label className="flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border/70 bg-secondary/35 px-3 hover:bg-secondary/60 focus-within:bg-card focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all duration-150 shadow-2xs">
+                <Search className="size-4 shrink-0 text-muted-foreground/75" />
                 <input
                   value={searchQuery}
                   onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setIsSearchOpen(true);
-                }}
-                onFocus={() => setIsSearchOpen(true)}
-                placeholder={t("search")}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </label>
-
-            {/* Protected Search Results Dropdown */}
-            {isSearchOpen && searchQuery.trim().length > 0 && (
-              <div
-                className={cn(
-                  "absolute top-full mt-2 w-full max-w-md rounded-xl border border-border/70 bg-card p-2 shadow-xl z-50 text-xs space-y-1",
-                  dir === "rtl" ? "right-0" : "left-0"
+                    setSearchQuery(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                  onFocus={() => setIsSearchOpen(true)}
+                  placeholder={pick("بحث في النظام، الشاشات، والفواتير...", "Search system, modules, records...")}
+                  className="min-w-0 flex-1 bg-transparent text-xs font-medium outline-none placeholder:text-muted-foreground/60 text-foreground"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                ) : (
+                  <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-muted-foreground/70 bg-card border border-border/60 rounded-md shadow-2xs">
+                    Ctrl K
+                  </kbd>
                 )}
-              >
-                <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
-                  {lang === "ar" ? "الصفحات المصرح بها" : "Authorized Modules"}
-                </div>
+              </label>
+
+              {/* Protected Search Results Dropdown */}
+              {isSearchOpen && searchQuery.trim().length > 0 && (
+                <div
+                  className={cn(
+                    "absolute top-full mt-2 w-full max-w-md rounded-2xl border border-border/80 bg-card/95 backdrop-blur-md p-2 shadow-2xl z-50 text-xs space-y-1 ring-1 ring-black/5",
+                    dir === "rtl" ? "right-0" : "left-0"
+                  )}
+                >
+                  <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground border-b border-border/40">
+                    {lang === "ar" ? "الصفحات المصرح بها" : "Authorized Modules"}
+                  </div>
                 {searchResults.length === 0 ? (
                   <div className="py-4 text-center text-muted-foreground text-xs">
                     {lang === "ar" ? "لا توجد نتائج مصرح بها" : "No authorized matches"}
@@ -459,22 +507,24 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-          {/* Notification Bell with Dropdown */}
-          <div className="relative ms-auto sm:ms-0" ref={notifDropdownRef}>
+          {/* Action Controls Group - Pushed to the Left Edge */}
+          <div className="flex items-center gap-1.5 sm:gap-2 ms-auto shrink-0">
+            {/* Notification Bell with Dropdown */}
+            <div className="relative" ref={notifDropdownRef}>
             <button
               onClick={() => setIsNotifOpen((prev) => !prev)}
               title={t("notifications")}
               aria-label={t("notifications")}
               className={cn(
-                "relative inline-flex items-center justify-center size-9 rounded-lg border transition-colors",
+                "relative inline-flex items-center justify-center size-9 rounded-xl border transition-all duration-150 active:scale-95 shadow-2xs hover:shadow-xs shrink-0 cursor-pointer",
                 isNotifOpen
-                  ? "bg-primary/10 border-primary text-primary"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "bg-secondary border-primary/50 text-primary ring-2 ring-primary/10"
+                  : "border-border/70 bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-border"
               )}
             >
               <Bell className="size-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -end-1 flex size-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-card animate-pulse">
+                <span className="absolute -top-1 -end-1 flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-gradient-to-r from-rose-500 to-rose-600 text-[9px] font-mono font-bold text-white shadow-xs ring-2 ring-card">
                   {unreadCount}
                 </span>
               )}
@@ -484,7 +534,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {isNotifOpen && (
               <div
                 className={cn(
-                  "absolute top-full mt-2 w-80 sm:w-96 rounded-xl border border-border/70 bg-card p-3 shadow-xl z-50 text-xs",
+                  "absolute top-full mt-2 w-80 sm:w-96 rounded-2xl border border-border/80 bg-card/95 backdrop-blur-md p-3.5 shadow-2xl z-50 text-xs ring-1 ring-black/5",
                   dir === "rtl" ? "left-0" : "right-0"
                 )}
               >
@@ -493,7 +543,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <Bell className="size-3.5 text-primary" />
                     <span>{t("notifications")}</span>
                     {unreadCount > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full bg-rose-500/10 text-rose-600 text-[10px] font-mono">
+                      <span className="px-1.5 py-0.2 rounded-full bg-rose-500/10 text-rose-600 text-[10px] font-mono font-bold">
                         {unreadCount}
                       </span>
                     )}
@@ -501,7 +551,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllAsRead}
-                      className="text-[11px] font-medium text-primary hover:underline"
+                      className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                     >
                       {t("markAllRead")}
                     </button>
@@ -519,7 +569,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                         key={item.id}
                         onClick={() => markItemAsRead(item.id)}
                         className={cn(
-                          "p-2.5 rounded-lg border transition-colors cursor-pointer space-y-1",
+                          "p-2.5 rounded-xl border transition-colors cursor-pointer space-y-1",
                           item.read
                             ? "bg-transparent border-transparent opacity-65 hover:bg-secondary/60"
                             : "bg-secondary/70 border-border/50 hover:bg-secondary"
@@ -558,7 +608,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/helpdesk"
               title={pick("مركز الدعم الفني والتذاكر", "Helpdesk & Support Tickets")}
-              className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-primary hover:bg-secondary transition-colors shrink-0"
+              className="inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-secondary/40 text-muted-foreground hover:text-primary hover:bg-secondary hover:border-primary/30 shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 shrink-0"
             >
               <LifeBuoy className="size-4" />
             </Link>
@@ -569,22 +619,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={toggle}
             title={t("lang")}
             aria-label={t("lang")}
-            className="inline-flex size-9 sm:size-auto items-center justify-center gap-1.5 rounded-lg border border-border bg-card p-2 sm:px-3 sm:py-1.5 text-xs font-bold uppercase hover:bg-secondary transition-colors shrink-0"
+            className="inline-flex h-9 sm:w-auto items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-secondary/40 px-2.5 sm:px-3 text-xs font-semibold text-foreground/85 hover:text-foreground hover:bg-secondary shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 shrink-0 cursor-pointer"
           >
-            <Languages className="size-4 shrink-0" />
-            <span className="hidden sm:inline">{t("lang")}</span>
+            <Languages className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="hidden sm:inline font-medium">{t("lang")}</span>
           </button>
 
-          {/* Ask AI Button (Only rendered if authorized) */}
+          {/* Ask AI Button (Refined with glowing accent and AI badge) */}
           {(isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes("/ai")) && (
             <Link
               to="/ai"
               className={cn(
-                "hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-bold uppercase text-primary-foreground shadow-sm hover:opacity-95 transition-all"
+                "hidden sm:inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-bold text-white transition-all duration-200 active:scale-95 shadow-sm shadow-primary/20 shrink-0",
+                "bg-gradient-to-r from-primary via-primary/95 to-crimson hover:from-primary/90 hover:to-crimson hover:shadow-md hover:shadow-primary/30 border border-white/20 ring-1 ring-primary/20 cursor-pointer"
               )}
             >
-              <Sparkles className="size-4" />
-              <span>{t("askAi")}</span>
+              <Sparkles className="size-3.5 text-amber-300 animate-pulse shrink-0" />
+              <span className="tracking-wide">{t("askAi")}</span>
+              <span className="inline-flex items-center px-1.5 py-0.2 rounded-md bg-white/20 text-[9px] font-mono font-black tracking-tight text-white">
+                AI
+              </span>
             </Link>
           )}
 
@@ -592,30 +646,40 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-1 text-xs hover:bg-secondary transition-colors"
+              className={cn(
+                "inline-flex items-center gap-2 h-9 rounded-xl border px-2.5 text-xs transition-all duration-150 cursor-pointer shrink-0 active:scale-98",
+                isUserMenuOpen
+                  ? "bg-secondary border-primary/40 ring-2 ring-primary/10 shadow-xs"
+                  : "bg-secondary/40 hover:bg-secondary border-border/70 hover:border-border text-foreground shadow-2xs hover:shadow-xs"
+              )}
               title={pick("تبديل الحساب التجريبي", "Switch Demo Account")}
             >
               <div
-                className={`size-6 rounded-lg bg-gradient-to-tr ${currentUser.avatarBg} text-white flex items-center justify-center font-bold text-[10px] shadow-sm`}
+                className={`size-6 rounded-lg bg-gradient-to-tr ${currentUser.avatarBg} text-white flex items-center justify-center font-bold text-[11px] shadow-xs ring-1 ring-white/20 shrink-0`}
               >
                 {currentUser.name.ar[0]}
               </div>
-              <div className="hidden md:block text-start leading-snug">
-                <p className="font-bold text-foreground text-[11px] truncate max-w-[140px]">
+              <div className="hidden md:flex flex-col text-start justify-center">
+                <p className="font-bold text-foreground text-[11px] leading-tight truncate max-w-[130px]">
                   {pick(currentUser.name.ar, currentUser.name.en)}
                 </p>
-                <p className="text-[9px] text-muted-foreground truncate max-w-[140px]">
+                <span className="text-[9px] text-muted-foreground font-medium leading-none truncate max-w-[130px] mt-0.5">
                   {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
-                </p>
+                </span>
               </div>
-              <ChevronDown className="size-3 text-muted-foreground" />
+              <ChevronDown
+                className={cn(
+                  "size-3 text-muted-foreground transition-transform duration-200 shrink-0",
+                  isUserMenuOpen && "rotate-180 text-foreground"
+                )}
+              />
             </button>
 
             {/* Dropdown Menu */}
             {isUserMenuOpen && (
               <div
                 className={cn(
-                  "absolute top-full mt-2 w-72 rounded-2xl border border-border/70 bg-card p-3 shadow-2xl z-50 text-xs space-y-2",
+                  "absolute top-full mt-2 w-72 rounded-2xl border border-border/80 bg-card/95 backdrop-blur-md p-3 shadow-2xl z-50 text-xs space-y-2 ring-1 ring-black/5",
                   dir === "rtl" ? "left-0" : "right-0"
                 )}
               >
@@ -643,7 +707,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                           setIsUserMenuOpen(false);
                         }}
                         className={cn(
-                          "w-full p-2 rounded-xl text-start flex items-center gap-2.5 transition-all",
+                          "w-full p-2 rounded-xl text-start flex items-center gap-2.5 transition-all cursor-pointer",
                           isSelected
                             ? "bg-primary/10 border border-primary/30"
                             : "hover:bg-secondary/70 border border-transparent"
@@ -699,15 +763,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          {/* Logout Icon Button */}
-          <button
-            onClick={() => setIsLogoutOpen(true)}
-            className="inline-flex items-center justify-center size-9 rounded-lg border border-border bg-card text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors"
-            title={t("logout")}
-            aria-label={t("logout")}
-          >
-            <LogOut className="size-4" />
-          </button>
+            {/* Logout Icon Button */}
+            <button
+              onClick={() => setIsLogoutOpen(true)}
+              className="inline-flex items-center justify-center size-9 rounded-xl border border-border/70 bg-secondary/40 text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 hover:border-rose-500/30 shadow-2xs hover:shadow-xs transition-all duration-150 active:scale-95 shrink-0 cursor-pointer"
+              title={t("logout")}
+              aria-label={t("logout")}
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </header>
         )}
 
@@ -743,9 +808,59 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-border bg-card px-6 py-4 text-xs text-muted-foreground">
-          {t("demoNote")} · Hafez Rahim · +20 100 741 9344
+        {/* Footer: Current Online Users & Developer Info */}
+        <footer
+          className={cn(
+            "border-t border-border/80 bg-card/60 backdrop-blur-md px-4 sm:px-6 py-2.5 text-xs text-muted-foreground flex flex-col items-center justify-between gap-3",
+            dir === "rtl" ? "sm:flex-row" : "sm:flex-row-reverse"
+          )}
+        >
+          {/* Online Users as Avatars (Renders on the Right side) */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[11px] font-semibold text-foreground/80">
+                {pick("المستخدمون المتصلون الآن (5):", "Online Users (5):")}
+              </span>
+            </div>
+
+            {/* Overlapping Avatars Stack */}
+            <div className="flex items-center -space-x-1.5 rtl:space-x-reverse">
+              {ONLINE_TEAM_USERS.map((user) => (
+                <div
+                  key={user.id}
+                  className="group relative"
+                  title={`${pick(user.name.ar, user.name.en)} • ${pick(user.role.ar, user.role.en)} (${pick(user.statusText.ar, user.statusText.en)})`}
+                >
+                  <div
+                    className={cn(
+                      "size-7 rounded-full bg-gradient-to-tr text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-card shadow-xs cursor-pointer transition-transform duration-150 group-hover:scale-120 group-hover:z-20",
+                      user.avatarBg
+                    )}
+                  >
+                    {user.initials}
+                  </div>
+                  <span className="absolute bottom-0 end-0 size-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Left Side: Name and Number */}
+          <div className="flex items-center gap-2 font-mono text-[11px] text-foreground/85" dir="ltr">
+            <span className="font-bold text-foreground">Hafez Rahim</span>
+            <span className="text-muted-foreground/40">•</span>
+            <a
+              href="tel:+201007419344"
+              className="text-primary hover:underline font-semibold tracking-tight transition-colors inline-flex items-center gap-1"
+            >
+              <Phone className="size-3 text-muted-foreground" />
+              <span>+20 100 741 9344</span>
+            </a>
+          </div>
         </footer>
       </div>
 

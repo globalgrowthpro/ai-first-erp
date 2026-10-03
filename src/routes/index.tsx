@@ -14,7 +14,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, Btn } from "@/components/kit";
 import { approvals, insights, invoices, issues, kpis, salesTrend } from "@/lib/demo-data";
-import { usePosOrdersStore } from "@/lib/pos-orders-store";
+import { usePosOrdersStore, formatOrderDateTimeEnglish } from "@/lib/pos-orders-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -246,8 +246,8 @@ function Dashboard() {
                     <span className="font-mono font-black text-sm text-[#16A34A] dark:text-emerald-400 block">
                       {money(po.total)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground block">
-                      {po.formattedDate.split(",")[1] || po.formattedDate}
+                    <span className="text-[10px] text-muted-foreground block font-mono" dir="ltr">
+                      {formatOrderDateTimeEnglish(po.createdAt || po.formattedDate).split(",")[1]?.trim() || formatOrderDateTimeEnglish(po.createdAt || po.formattedDate)}
                     </span>
                   </div>
                 </div>

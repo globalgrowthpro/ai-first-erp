@@ -10,12 +10,19 @@ import {
   Layers,
   Receipt,
   AlertTriangle,
+  FileSpreadsheet,
+  Calendar,
+  RotateCcw,
+  Filter,
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
-import { DataTable, KpiCard, Panel, Td } from "@/components/kit";
+import { DataTable, KpiCard, Panel, Td, TablePagination, usePagination } from "@/components/kit";
 import {
   usePosOrdersStore,
   type AdminPosOrder,
+  formatOrderDateTimeEnglish,
   BRANCH_NAMES_MAP,
   PLATFORM_NAMES_MAP,
   PAYMENT_METHOD_NAMES_MAP,
@@ -39,6 +46,69 @@ function safePickBranchName(branch: any, lang: "ar" | "en" = "ar"): string {
     return (lang === "ar" ? branch.ar : branch.en) || branch.ar || branch.en || "الفرع الرئيسي";
   }
   return String(branch);
+}
+
+// Date helper functions for POS orders
+function getOrderDateOnly(dateStr?: string): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
+function extractOrderDate(order: AdminPosOrder): string {
+  if (order.createdAt) {
+    const parsed = getOrderDateOnly(order.createdAt);
+    if (parsed) return parsed;
+  }
+  const dateStr = formatOrderDateTimeEnglish(order.createdAt || order.formattedDate);
+  if (dateStr) {
+    const match = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+    if (match && match[1] && match[2] && match[3]) {
+      return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+    }
+  }
+  return "";
+}
+
+function getTodayStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getYesterdayStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getDaysAgoStr(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getStartOfMonthStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}-01`;
 }
 
 // Internal Error Boundary to prevent any POS table render crash from taking down the page
@@ -96,13 +166,80 @@ function AdminPosOrdersInner() {
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
+  const [selectedOrderType, setSelectedOrderType] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
 
   // Selected order for thermal receipt preview modal
   const [activeReceiptOrder, setActiveReceiptOrder] = useState<AdminPosOrder | null>(null);
   // Selected order for detailed itemized modal
   const [activeDetailsOrder, setActiveDetailsOrder] = useState<AdminPosOrder | null>(null);
 
-  // Filtered orders list with safe fallbacks
+  // Quick date presets applicator
+  const handleApplyPreset = (preset: "all" | "today" | "yesterday" | "week" | "month") => {
+    setDatePreset(preset);
+    const today = getTodayStr();
+    if (preset === "all") {
+      setDateFrom("");
+      setDateTo("");
+    } else if (preset === "today") {
+      setDateFrom(today);
+      setDateTo(today);
+    } else if (preset === "yesterday") {
+      const yest = getYesterdayStr();
+      setDateFrom(yest);
+      setDateTo(yest);
+    } else if (preset === "week") {
+      setDateFrom(getDaysAgoStr(7));
+      setDateTo(today);
+    } else if (preset === "month") {
+      setDateFrom(getStartOfMonthStr());
+      setDateTo(today);
+    }
+  };
+
+  const handleCustomDateChange = (fromVal: string, toVal: string) => {
+    setDatePreset("custom");
+    setDateFrom(fromVal);
+    setDateTo(toVal);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedBranch("all");
+    setSelectedPlatform("all");
+    setSelectedPayment("all");
+    setSelectedOrderType("all");
+    setSelectedStatus("all");
+    setDateFrom("");
+    setDateTo("");
+    setDatePreset("all");
+  };
+
+  const isFiltered = Boolean(
+    searchQuery.trim() ||
+    selectedBranch !== "all" ||
+    selectedPlatform !== "all" ||
+    selectedPayment !== "all" ||
+    selectedOrderType !== "all" ||
+    selectedStatus !== "all" ||
+    dateFrom ||
+    dateTo
+  );
+
+  const activeFiltersCount = [
+    Boolean(searchQuery.trim()),
+    selectedBranch !== "all",
+    selectedPlatform !== "all",
+    selectedPayment !== "all",
+    selectedOrderType !== "all",
+    selectedStatus !== "all",
+    Boolean(dateFrom || dateTo),
+  ].filter(Boolean).length;
+
+  // Filtered orders list with safe fallbacks and date from/to matching
   const filteredOrders = useMemo(() => {
     return (orders || []).filter((o) => {
       if (!o) return false;
@@ -131,41 +268,247 @@ function AdminPosOrdersInner() {
       // 4. Payment method filter
       if (selectedPayment !== "all" && o.paymentMethod !== selectedPayment) return false;
 
+      // 5. Order Type filter (takeaway, dine_in, delivery)
+      if (selectedOrderType !== "all" && o.orderType !== selectedOrderType) return false;
+
+      // 6. Status filter (completed, paid, parked, cancelled)
+      if (selectedStatus !== "all" && o.status !== selectedStatus) return false;
+
+      // 7. Date range filter (from / to)
+      if (dateFrom || dateTo) {
+        const orderDate = extractOrderDate(o);
+        if (orderDate) {
+          if (dateFrom && orderDate < dateFrom) return false;
+          if (dateTo && orderDate > dateTo) return false;
+        }
+      }
+
       return true;
     });
-  }, [orders, searchQuery, selectedBranch, selectedPlatform, selectedPayment]);
+  }, [
+    orders,
+    searchQuery,
+    selectedBranch,
+    selectedPlatform,
+    selectedPayment,
+    selectedOrderType,
+    selectedStatus,
+    dateFrom,
+    dateTo,
+  ]);
+
+  const {
+    currentPage: posPage,
+    setCurrentPage: setPosPage,
+    paginatedItems: paginatedOrders,
+  } = usePagination(filteredOrders, 30);
+
+  // Recalculate KPIs dynamically for filtered result set
+  const filteredMetrics = useMemo(() => {
+    const totalCount = filteredOrders.length;
+    const totalSales = filteredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const avgTicket = totalCount > 0 ? Math.round(totalSales / totalCount) : 0;
+    const aggregatorOrders = filteredOrders.filter(
+      (o) => o.orderPlatform && o.orderPlatform !== "direct"
+    ).length;
+    const cashSales = filteredOrders
+      .filter((o) => o.paymentMethod === "cash")
+      .reduce((s, o) => s + (Number(o.total) || 0), 0);
+    const cardSales = filteredOrders
+      .filter((o) => o.paymentMethod === "card" || o.paymentMethod === "wallet")
+      .reduce((s, o) => s + (Number(o.total) || 0), 0);
+
+    return {
+      totalCount,
+      totalSales,
+      avgTicket,
+      aggregatorOrders,
+      cashSales,
+      cardSales,
+    };
+  }, [filteredOrders]);
+
+  const activeKpis = isFiltered ? filteredMetrics : (metrics || filteredMetrics);
+
+  // Full Export to Excel with 2 detailed worksheets
+  const handleExportToExcel = () => {
+    if (!filteredOrders.length) {
+      alert(pick("لا توجد طلبات لتصديرها وفق الفلاتر المحددة", "No orders to export matching current filters"));
+      return;
+    }
+
+    // Sheet 1: Orders summary ledger
+    const ordersData = filteredOrders.map((ord, idx) => {
+      const branchLabel = safePickBranchName(ord.branchName, lang);
+      const plat = PLATFORM_NAMES_MAP[ord.orderPlatform]?.ar || ord.orderPlatform;
+      const pay = PAYMENT_METHOD_NAMES_MAP[ord.paymentMethod]?.ar || ord.paymentMethod;
+      const itemsCount = (ord.items || []).reduce((s, it) => s + (Number(it.quantity) || 1), 0);
+      const itemsSummary = (ord.items || [])
+        .map((it) => `${safePickItemName(it.name, lang)} (${it.quantity})`)
+        .join("، ");
+      const orderTypeLabel =
+        ord.orderType === "takeaway"
+          ? "تيك أواي / سفري"
+          : ord.orderType === "dine_in"
+          ? `صالة محلي ${ord.tableNumber ? `(طاولة ${ord.tableNumber})` : ""}`
+          : ord.orderType === "delivery"
+          ? "توصيل منزلي"
+          : ord.orderType;
+
+      const orderDate = extractOrderDate(ord);
+      const formatted = formatOrderDateTimeEnglish(ord.createdAt || ord.formattedDate);
+      const timeStr = formatted.includes(",") ? formatted.split(",")[1]?.trim() || "" : "";
+
+      return {
+        "م": idx + 1,
+        "رقم الفاتورة": ord.orderNumber,
+        "رقم المرجع": ord.orderRefNumber || "-",
+        "التاريخ": orderDate || new Date().toISOString().slice(0, 10),
+        "الوقت": timeStr,
+        "الفرع": branchLabel,
+        "الكاشير": ord.cashierName || "كاشير مناوب",
+        "اسم العميل": ord.customerName || "عميل نقدي",
+        "هاتف العميل": ord.customerPhone || "-",
+        "المنصة / القناة": plat,
+        "نوع الطلب": orderTypeLabel,
+        "طريقة السداد": pay,
+        "عدد الأصناف": itemsCount,
+        "بيان الأصناف": itemsSummary,
+        "المجموع الفرعي (ج.م)": Number(ord.subtotal) || 0,
+        "قيمة الخصم (ج.م)": Number(ord.discountAmount) || 0,
+        "ضريبة القيمة المضافة (ج.م)": Number(ord.vatAmount) || 0,
+        "رسوم التوصيل (ج.م)": Number(ord.deliveryFee) || 0,
+        "الإجمالي النهائي (ج.م)": Number(ord.total) || 0,
+        "المبلغ المستلم (ج.م)": Number(ord.tenderAmount || ord.total || 0),
+        "المتبقي (ج.م)": Number(ord.changeAmount || 0),
+        "حالة الطلب":
+          ord.status === "completed"
+            ? "مكتمل"
+            : ord.status === "paid"
+            ? "مسدد"
+            : ord.status === "cancelled"
+            ? "ملغي"
+            : ord.status === "parked"
+            ? "معلق"
+            : ord.status,
+      };
+    });
+
+    // Sheet 2: Itemized breakdown for deep audit & analytics
+    const itemsData: any[] = [];
+    filteredOrders.forEach((ord) => {
+      const branchLabel = safePickBranchName(ord.branchName, lang);
+      const orderDate = extractOrderDate(ord) || new Date().toISOString().slice(0, 10);
+
+      (ord.items || []).forEach((it) => {
+        itemsData.push({
+          "رقم الفاتورة": ord.orderNumber,
+          "التاريخ": orderDate,
+          "الفرع": branchLabel,
+          "كود الصنف (SKU)": it.sku || "-",
+          "اسم الصنف": safePickItemName(it.name, lang),
+          "الكمية": it.quantity,
+          "سعر الوحدة (ج.م)": it.unitPrice,
+          "إجمالي الصنف (ج.م)": it.totalPrice,
+          "ملاحظات": it.notes || "-",
+        });
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+
+    const wsOrders = XLSX.utils.json_to_sheet(ordersData);
+    wsOrders["!cols"] = [
+      { wch: 5 },  // م
+      { wch: 14 }, // رقم الفاتورة
+      { wch: 12 }, // رقم المرجع
+      { wch: 12 }, // التاريخ
+      { wch: 10 }, // الوقت
+      { wch: 22 }, // الفرع
+      { wch: 16 }, // الكاشير
+      { wch: 18 }, // العميل
+      { wch: 14 }, // الهاتف
+      { wch: 18 }, // المنصة
+      { wch: 18 }, // نوع الطلب
+      { wch: 16 }, // طريقة السداد
+      { wch: 12 }, // عدد الأصناف
+      { wch: 38 }, // بيان الأصناف
+      { wch: 14 }, // المجموع الفرعي
+      { wch: 12 }, // الخصم
+      { wch: 16 }, // الضريبة
+      { wch: 14 }, // التوصيل
+      { wch: 18 }, // الإجمالي
+      { wch: 14 }, // المستلم
+      { wch: 12 }, // المتبقي
+      { wch: 12 }, // الحالة
+    ];
+    XLSX.utils.book_append_sheet(wb, wsOrders, "فواتير_نقاط_البيع");
+
+    if (itemsData.length > 0) {
+      const wsItems = XLSX.utils.json_to_sheet(itemsData);
+      wsItems["!cols"] = [
+        { wch: 14 }, // رقم الفاتورة
+        { wch: 12 }, // التاريخ
+        { wch: 22 }, // الفرع
+        { wch: 14 }, // SKU
+        { wch: 28 }, // اسم الصنف
+        { wch: 10 }, // الكمية
+        { wch: 14 }, // سعر الوحدة
+        { wch: 16 }, // إجمالي الصنف
+        { wch: 20 }, // ملاحظات
+      ];
+      XLSX.utils.book_append_sheet(wb, wsItems, "تفاصيل_الأصناف_المباعة");
+    }
+
+    const dateSuffix =
+      dateFrom || dateTo
+        ? `_من_${dateFrom || "البداية"}_إلى_${dateTo || "اليوم"}`
+        : `_${new Date().toISOString().slice(0, 10)}`;
+
+    const filename = `مبيعات_نقاط_البيع_POS${dateSuffix}.xlsx`;
+    safeDownloadWorkbook(wb, filename);
+  };
 
   return (
     <div className="space-y-4">
-      {/* 1. POS Retail Performance KPIs */}
+      {/* 1. POS Retail Performance KPIs (Updates dynamically with active date range & filters) */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label={pick("إجمالي مبيعات نقاط البيع", "Total POS Revenue")}
-          value={money(metrics?.totalSales || 0)}
+          label={
+            isFiltered
+              ? pick("إجمالي مبيعات الفترة المحددة", "Filtered POS Revenue")
+              : pick("إجمالي مبيعات نقاط البيع", "Total POS Revenue")
+          }
+          value={money(activeKpis?.totalSales || 0)}
           accent="brand"
         />
         <KpiCard
-          label={pick("عدد الطلبات المنفذة", "Completed POS Orders")}
-          value={`${metrics?.totalCount || 0} ${pick("طلب", "Orders")}`}
+          label={
+            isFiltered
+              ? pick("الطلبات المنفذة في الفترة", "Filtered Completed Orders")
+              : pick("عدد الطلبات المنفذة", "Completed POS Orders")
+          }
+          value={`${activeKpis?.totalCount || 0} ${pick("طلب", "Orders")}`}
           accent="primary"
         />
         <KpiCard
           label={pick("متوسط الفاتورة (Average Ticket)", "Average Ticket")}
-          value={money(metrics?.avgTicket || 0)}
+          value={money(activeKpis?.avgTicket || 0)}
           accent="gold"
         />
         <KpiCard
           label={pick("طلبات تطبيقات التوصيل", "Aggregator Orders")}
-          value={`${metrics?.aggregatorOrders || 0} ${pick("طلب", "Orders")}`}
+          value={`${activeKpis?.aggregatorOrders || 0} ${pick("طلب", "Orders")}`}
           accent="ink"
         />
       </div>
 
-      {/* 2. Filter & Controls Bar */}
-      <div className="p-3 bg-card rounded-2xl border border-border/80 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 w-full md:w-auto flex-1 flex-wrap">
+      {/* 2. Comprehensive Filter & Controls Bar */}
+      <div className="p-3.5 bg-card rounded-2xl border border-border/80 shadow-xs space-y-3">
+        {/* Row 1: Search & Categorical Dropdowns */}
+        <div className="flex items-center gap-2 w-full flex-wrap">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -175,7 +518,7 @@ function AdminPosOrdersInner() {
                 "ابحث برقم الطلب، الكاشير، العميل أو الصنف...",
                 "Search order #, cashier, customer or sweet item..."
               )}
-              className="w-full ps-9 pe-8 py-2 text-xs font-semibold rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:border-primary"
+              className="w-full ps-9 pe-8 py-2 text-xs font-semibold rounded-xl border border-border/70 bg-background text-foreground focus:outline-none focus:border-primary shadow-xs"
             />
             {searchQuery && (
               <button
@@ -193,11 +536,11 @@ function AdminPosOrdersInner() {
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none"
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
             >
               <option value="all">📍 {pick("كل الفروع", "All Branches")}</option>
               {Object.entries(BRANCH_NAMES_MAP)
-                .filter(([k]) => !k.includes("-")) // Filter to primary codes for cleaner dropdown
+                .filter(([k]) => !k.includes("-"))
                 .map(([id, info]) => (
                   <option key={id} value={id}>
                     {pick(info.ar, info.en)}
@@ -212,7 +555,7 @@ function AdminPosOrdersInner() {
             <select
               value={selectedPlatform}
               onChange={(e) => setSelectedPlatform(e.target.value)}
-              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none"
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
             >
               <option value="all">🛵 {pick("كل القنوات والمنصات", "All Platforms")}</option>
               {Object.entries(PLATFORM_NAMES_MAP).map(([id, info]) => (
@@ -229,7 +572,7 @@ function AdminPosOrdersInner() {
             <select
               value={selectedPayment}
               onChange={(e) => setSelectedPayment(e.target.value)}
-              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none"
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
             >
               <option value="all">💳 {pick("كل طرق السداد", "All Payment Methods")}</option>
               {Object.entries(PAYMENT_METHOD_NAMES_MAP).map(([id, info]) => (
@@ -240,28 +583,217 @@ function AdminPosOrdersInner() {
             </select>
             <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>
-        </div>
 
-        {/* Right / End: Live Status & Refresh Button */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{pick("مزامنة حية للدرج (Realtime)", "Live DB Sync")}</span>
+          {/* Order Type Filter (Takeaway / Dine-in / Delivery) */}
+          <div className="relative">
+            <select
+              value={selectedOrderType}
+              onChange={(e) => setSelectedOrderType(e.target.value)}
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+            >
+              <option value="all">🛍️ {pick("كل أنواع الطلبات", "All Order Types")}</option>
+              <option value="takeaway">🛍️ {pick("سفري وتيك أواي", "Takeaway")}</option>
+              <option value="dine_in">🍽️ {pick("صالة ومحلي", "Dine-in")}</option>
+              <option value="delivery">🛵 {pick("توصيل منزلي", "Delivery")}</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>
 
-          <button
-            type="button"
-            onClick={refresh}
-            className="p-2 rounded-xl border border-border/70 hover:bg-muted text-foreground transition-colors cursor-pointer"
-            title={pick("تحديث البيانات", "Refresh data")}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </button>
+          {/* Status Filter */}
+          <div className="relative">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+            >
+              <option value="all">⚡ {pick("كل الحالات", "All Statuses")}</option>
+              <option value="completed">✅ {pick("مكتمل ومسدد", "Completed / Paid")}</option>
+              <option value="parked">⏳ {pick("معلق بالدرج", "Parked")}</option>
+              <option value="cancelled">❌ {pick("ملغي", "Cancelled")}</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+          </div>
+        </div>
+
+        {/* Row 2: Date Filters (From / To + Quick Presets) & Export to Excel */}
+        <div className="pt-2.5 border-t border-border/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          {/* Date Range Inputs & Presets */}
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-muted-foreground shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-primary" />
+              <span>{pick("الفترة:", "Date:")}</span>
+            </div>
+
+            {/* Quick Presets Pills */}
+            <div className="inline-flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/60">
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("all")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                  datePreset === "all" && !dateFrom && !dateTo
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {pick("الكل", "All")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("today")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                  datePreset === "today"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {pick("اليوم", "Today")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("yesterday")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                  datePreset === "yesterday"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {pick("أمس", "Yesterday")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("week")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                  datePreset === "week"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {pick("آخر 7 أيام", "Last 7 Days")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("month")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                  datePreset === "month"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {pick("هذا الشهر", "This Month")}
+              </button>
+            </div>
+
+            {/* Custom From & To Pickers */}
+            <div className="flex items-center gap-1.5 bg-background border border-border/70 rounded-xl px-2.5 py-1 shadow-xs">
+              <span className="text-[11px] font-bold text-muted-foreground">{pick("من", "From")}:</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => handleCustomDateChange(e.target.value, dateTo)}
+                className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
+              />
+              <span className="text-muted-foreground/40 font-bold">|</span>
+              <span className="text-[11px] font-bold text-muted-foreground">{pick("إلى", "To")}:</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => handleCustomDateChange(dateFrom, e.target.value)}
+                className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                    setDatePreset("all");
+                  }}
+                  className="text-muted-foreground hover:text-foreground text-xs px-1"
+                  title={pick("إلغاء تحديد التاريخ", "Clear date")}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Reset Filters Button */}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors cursor-pointer"
+                title={pick("إعادة ضبط جميع الفلاتر", "Reset all filters")}
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>{pick("إعادة ضبط", "Reset")}</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-destructive/20 text-[10px] font-mono">
+                  {activeFiltersCount}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* Prominent Export to Excel & Refresh Buttons */}
+          <div className="flex items-center gap-2 shrink-0 ms-auto">
+            <button
+              type="button"
+              onClick={refresh}
+              className="p-2 rounded-xl border border-border/70 hover:bg-muted text-foreground transition-colors cursor-pointer shadow-xs bg-background"
+              title={pick("تحديث البيانات", "Refresh data")}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportToExcel}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer active:scale-98"
+              title={pick(
+                "تصدير جميع الفواتير المطابقة للبحث والفلاتر إلى ملف إكسيل شامل",
+                "Export all filtered orders to a multi-sheet Excel file"
+              )}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>{pick("تصدير إلى Excel", "Export to Excel")}</span>
+              <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] font-mono font-black">
+                {filteredOrders.length}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 3. Orders Table */}
-      <Panel title={pick("سجل فواتير وطلبات نقاط البيع", "POS Terminal Orders Ledger")}>
+      <Panel
+        title={pick("سجل فواتير وطلبات نقاط البيع", "POS Terminal Orders Ledger")}
+        aside={
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-semibold hidden sm:inline">
+              {pick(
+                `المعروض: ${filteredOrders.length} طلب (${money(activeKpis?.totalSales || 0)})`,
+                `Showing: ${filteredOrders.length} orders (${money(activeKpis?.totalSales || 0)})`
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={refresh}
+              className="p-1 rounded-lg border border-border/70 hover:bg-muted text-foreground transition-colors cursor-pointer"
+              title={pick("تحديث البيانات", "Refresh data")}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <button
+              type="button"
+              onClick={handleExportToExcel}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-bold text-xs transition-colors cursor-pointer"
+              title={pick("تصدير إلى ملف إكسيل", "Export to Excel")}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Excel</span>
+            </button>
+          </div>
+        }
+      >
         <DataTable
           head={[
             pick("رقم الفاتورة", "Order #"),
@@ -275,7 +807,7 @@ function AdminPosOrdersInner() {
             pick("إجراءات", "Actions"),
           ]}
         >
-          {filteredOrders.map((ord) => {
+          {paginatedOrders.map((ord) => {
             const plat = PLATFORM_NAMES_MAP[ord.orderPlatform] || { ar: ord.orderPlatform, en: ord.orderPlatform, icon: "📱" };
             const pay = PAYMENT_METHOD_NAMES_MAP[ord.paymentMethod] || { ar: ord.paymentMethod, en: ord.paymentMethod, icon: "💳" };
             const itemsList = ord.items || [];
@@ -382,8 +914,25 @@ function AdminPosOrdersInner() {
                 </Td>
 
                 {/* Date & Time */}
-                <Td className="num text-muted-foreground text-[11px]">
-                  {ord.formattedDate}
+                <Td>
+                  {(() => {
+                    const dtStr = formatOrderDateTimeEnglish(ord.createdAt || ord.formattedDate);
+                    const [dPart, tPart] = dtStr.includes(",")
+                      ? dtStr.split(",").map((s) => s.trim())
+                      : [dtStr, ""];
+                    return (
+                      <div className="flex flex-col font-mono text-start leading-tight" dir="ltr">
+                        <span className="font-semibold text-foreground text-[11px] whitespace-nowrap">
+                          {dPart}
+                        </span>
+                        {tPart && (
+                          <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap mt-0.5">
+                            {tPart}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Td>
 
                 {/* Actions: Thermal Receipt & Details */}
@@ -414,6 +963,14 @@ function AdminPosOrdersInner() {
             );
           })}
         </DataTable>
+
+        <TablePagination
+          currentPage={posPage}
+          totalItems={filteredOrders.length}
+          pageSize={30}
+          onPageChange={setPosPage}
+          itemLabel={{ ar: "طلب نقاط بيع", en: "POS Orders" }}
+        />
 
         {filteredOrders.length === 0 && (
           <div className="p-8 text-center text-muted-foreground space-y-2">
@@ -484,9 +1041,20 @@ function AdminPosOrdersInner() {
                   <span>رقم الفاتورة:</span>
                   <span className="font-bold">{activeReceiptOrder.orderNumber}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-start">
                   <span>التاريخ والوقت:</span>
-                  <span>{activeReceiptOrder.formattedDate}</span>
+                  {(() => {
+                    const dtStr = formatOrderDateTimeEnglish(activeReceiptOrder.createdAt || activeReceiptOrder.formattedDate);
+                    const [dPart, tPart] = dtStr.includes(",")
+                      ? dtStr.split(",").map((s) => s.trim())
+                      : [dtStr, ""];
+                    return (
+                      <div className="font-mono text-end" dir="ltr">
+                        <span className="font-semibold block">{dPart}</span>
+                        {tPart && <span className="text-zinc-600 text-[9px] block">{tPart}</span>}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex justify-between">
                   <span>الكاشير:</span>
@@ -592,7 +1160,7 @@ function AdminPosOrdersInner() {
                 <div className="flex justify-center">
                   <div className="p-2 border border-zinc-400 rounded-xl inline-block bg-white shadow-2xs">
                     <RealQrCode
-                      value={`مصلحة الضرائب المصرية | الفاتورة الإلكترونية\nالمورد: ${settings.nameAr || "شركة وزير الحلو للحلويات والمواد الغذائية"}\nرقم التسجيل: 492-810-332\nفاتورة: ${activeReceiptOrder.orderNumber}\nالتاريخ: ${activeReceiptOrder.formattedDate}\nالإجمالي: ${(Number(activeReceiptOrder.total) || 0).toFixed(2)} ج.م\nالضريبة: ${(Number(activeReceiptOrder.vatAmount) || 0).toFixed(2)} ج.م\nالفرع: ${safePickBranchName(activeReceiptOrder.branchName, lang)}`}
+                      value={`مصلحة الضرائب المصرية | الفاتورة الإلكترونية\nالمورد: ${settings.nameAr || "شركة وزير الحلو للحلويات والمواد الغذائية"}\nرقم التسجيل: 492-810-332\nفاتورة: ${activeReceiptOrder.orderNumber}\nالتاريخ: ${formatOrderDateTimeEnglish(activeReceiptOrder.createdAt || activeReceiptOrder.formattedDate)}\nالإجمالي: ${(Number(activeReceiptOrder.total) || 0).toFixed(2)} ج.م\nالضريبة: ${(Number(activeReceiptOrder.vatAmount) || 0).toFixed(2)} ج.م\nالفرع: ${safePickBranchName(activeReceiptOrder.branchName, lang)}`}
                       size={110}
                       level="M"
                       bordered={false}

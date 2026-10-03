@@ -18,7 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { DataTable, Td, Btn } from "@/components/kit";
+import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
 import {
   Dialog,
   DialogContent,
@@ -333,6 +333,12 @@ export function ProductsTab({
     });
   }, [products, searchQuery, selectedCategory, selectedWarehouse, selectedGroup, showLowStockOnly]);
 
+  const {
+    currentPage: productPage,
+    setCurrentPage: setProductPage,
+    paginatedItems: paginatedProducts,
+  } = usePagination(filteredProducts, 30);
+
   const lowStockCount = useMemo(() => products.filter((p) => p.qty < p.minStock).length, [products]);
 
   return (
@@ -489,7 +495,7 @@ export function ProductsTab({
               </td>
             </tr>
           ) : (
-            filteredProducts.map((p) => {
+            paginatedProducts.map((p) => {
               const cat = categories.find((c) => c.id === p.categoryId);
               const wh = warehouses.find((w) => w.id === p.warehouseId);
               const unit = units.find((u) => u.id === p.unitId);
@@ -658,6 +664,13 @@ export function ProductsTab({
             })
           )}
         </DataTable>
+        <TablePagination
+          currentPage={productPage}
+          totalItems={filteredProducts.length}
+          pageSize={30}
+          onPageChange={setProductPage}
+          itemLabel={{ ar: "صنف", en: "Products" }}
+        />
       </div>
 
       {/* ─── Add / Edit Product Modal ─── */}

@@ -18,7 +18,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, Td } from "@/components/kit";
+import { Btn, DataTable, KpiCard, PageHeader, Panel, Td, TablePagination, usePagination } from "@/components/kit";
 import {
   useAuditStore,
   type AuditEntry,
@@ -91,6 +91,12 @@ function AuditPage() {
       return true;
     });
   }, [logs, resultFilter, actorFilter, categoryFilter, searchQuery]);
+
+  const {
+    currentPage: auditPage,
+    setCurrentPage: setAuditPage,
+    paginatedItems: paginatedLogs,
+  } = usePagination(filteredLogs, 30);
 
   const handleExportJson = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
@@ -240,7 +246,7 @@ function AuditPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((entry) => (
+                paginatedLogs.map((entry) => (
                   <tr
                     key={entry.id}
                     onClick={() => setSelectedEntryForPayload(entry)}
@@ -335,6 +341,13 @@ function AuditPage() {
             </tbody>
           </table>
         </div>
+        <TablePagination
+          currentPage={auditPage}
+          totalItems={filteredLogs.length}
+          pageSize={30}
+          onPageChange={setAuditPage}
+          itemLabel={{ ar: "سجل", en: "Logs" }}
+        />
       </Panel>
 
       {/* Payload Inspector Modal */}

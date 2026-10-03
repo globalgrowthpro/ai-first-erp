@@ -68,6 +68,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealQrCode } from "@/components/ui/qr-code";
+import { formatOrderDateTimeEnglish } from "@/lib/pos-orders-store";
 
 export const Route = createFileRoute("/pos")({
   head: () => ({
@@ -673,13 +674,7 @@ export function PosPage() {
 
           return {
             id: o.order_number || o.id,
-            date: new Date(o.created_at).toLocaleString(lang === "ar" ? "ar-EG" : "en-US", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            date: formatOrderDateTimeEnglish(o.created_at),
             branch: br,
             cashierId: o.cashier_id,
             cashierName: o.cashier_name,
@@ -716,7 +711,7 @@ export function PosPage() {
           for (const s of shiftsData) {
             next[s.cashier_id] = {
               shiftNumber: s.shift_number,
-              openedAt: new Date(s.opened_at).toLocaleTimeString(lang === "ar" ? "ar-EG" : "en-US", {
+              openedAt: new Date(s.opened_at).toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
               }),
@@ -1229,7 +1224,7 @@ export function PosPage() {
     const newHeld: HeldOrder = {
       id: `HELD-${Date.now()}`,
       orderNumber: `#POS-${Date.now().toString().slice(-4)}`,
-      timestamp: new Date().toLocaleTimeString(lang === "ar" ? "ar-EG" : "en-US", {
+      timestamp: new Date().toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
       }),
@@ -1376,14 +1371,7 @@ export function PosPage() {
     // Record completed order for receipt and history
     const completedOrderRecord: PosCompletedOrder = {
       id: orderId,
-      date: new Date().toLocaleString(lang === "ar" ? "ar-EG" : "en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
+      date: formatOrderDateTimeEnglish(new Date()),
       branch: selectedBranch,
       cashierId: activeCashier.id,
       cashierName: activeCashierDisplayName,
@@ -3016,9 +3004,20 @@ export function PosPage() {
                   <span>رقم الفاتورة:</span>
                   <span className="font-bold">{lastCompletedOrder.id}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-start">
                   <span>التاريخ والوقت:</span>
-                  <span>{lastCompletedOrder.date}</span>
+                  {(() => {
+                    const dtStr = formatOrderDateTimeEnglish(lastCompletedOrder.date);
+                    const [dPart, tPart] = dtStr.includes(",")
+                      ? dtStr.split(",").map((s) => s.trim())
+                      : [dtStr, ""];
+                    return (
+                      <div className="font-mono text-end" dir="ltr">
+                        <span className="font-semibold block">{dPart}</span>
+                        {tPart && <span className="text-zinc-600 text-[9px] block">{tPart}</span>}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex justify-between">
                   <span>الكاشير:</span>

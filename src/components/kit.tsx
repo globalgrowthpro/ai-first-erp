@@ -327,3 +327,6 @@ export function DataTable({
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
   return <td className={cn("px-3 py-3", className)}>{children}</td>;
 }
+
+export { TablePagination, usePagination } from "@/components/ui/TablePagination";
+export type { TablePaginationProps } from "@/components/ui/TablePagination";

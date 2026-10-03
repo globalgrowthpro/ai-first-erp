@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
 import { CURRENT_USER_ID, setSidebarVisible } from "@/lib/ui-prefs";
 import { useOrgStore } from "@/lib/org-store";
+import { useHrStore } from "@/lib/hr-store";
+import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 import { toast } from "sonner";
 import {
@@ -13,6 +16,7 @@ import {
   type RoleItem,
 } from "@/lib/demo-data";
 import {
+  User,
   Users,
   UserPlus,
   Building2,
@@ -214,6 +218,43 @@ export function UsersManagement() {
     });
   }, [usersList, searchQuery, deptFilter]);
 
+  const { employees, updateEmployee } = useHrStore();
+  const [selectedLinkedEmployeeId, setSelectedLinkedEmployeeId] = useState<string>("");
+
+  const handleSelectEmployeeForUser = (empId: string) => {
+    setSelectedLinkedEmployeeId(empId);
+    if (!empId) return;
+    const emp = employees.find((e) => e.id === empId);
+    if (!emp) return;
+
+    const matchedDept = deptList.find(
+      (d) => d.id === emp.departmentId || d.name.ar === emp.departmentName.ar || d.name.en === emp.departmentName.en
+    );
+    const matchedPos = posList.find(
+      (p) => p.id === emp.positionId || p.title.ar === emp.positionName.ar || p.title.en === emp.positionName.en
+    );
+
+    let suggestedRole: UserItem["role"] = "sales";
+    const posTitle = (emp.positionName.ar + " " + emp.positionName.en).toLowerCase();
+    if (posTitle.includes("مدير عام") || posTitle.includes("owner") || posTitle.includes("gm")) suggestedRole = "admin";
+    else if (posTitle.includes("مالي") || posTitle.includes("cfo") || posTitle.includes("حسابات")) suggestedRole = "accountant";
+    else if (posTitle.includes("فرع") || posTitle.includes("branch")) suggestedRole = "branch_manager";
+    else if (posTitle.includes("شيف") || posTitle.includes("chef") || posTitle.includes("مطبخ")) suggestedRole = "chef";
+    else if (posTitle.includes("كاشير") || posTitle.includes("cashier")) suggestedRole = "pos_cashier";
+    else if (posTitle.includes("مخزن") || posTitle.includes("storekeeper") || posTitle.includes("supply")) suggestedRole = "warehouse";
+    else if (posTitle.includes("مراج") || posTitle.includes("audit") || posTitle.includes("جودة")) suggestedRole = "auditor";
+
+    setNewUser((prev) => ({
+      ...prev,
+      nameAr: emp.name.ar,
+      nameEn: emp.name.en,
+      email: emp.email,
+      departmentId: matchedDept?.id || prev.departmentId,
+      positionId: matchedPos?.id || prev.positionId,
+      role: suggestedRole,
+    }));
+  };
+
   // Handle Add User
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,11 +272,22 @@ export function UsersManagement() {
       status: newUser.status,
       lastActive: lang === "ar" ? "تمت إضافته الآن" : "Just created",
       sidebarVisible: newUser.sidebarVisible,
+      employeeId: selectedLinkedEmployeeId || undefined,
+      employeeCode: employees.find((e) => e.id === selectedLinkedEmployeeId)?.code,
     };
 
     addUser(user);
+    if (selectedLinkedEmployeeId) {
+      updateEmployee(selectedLinkedEmployeeId, { userId: user.id });
+      supabase
+        .from("employees")
+        .update({ user_id: user.id } as any)
+        .eq("id", selectedLinkedEmployeeId)
+        .then();
+    }
     toast.success(lang === "ar" ? "تمت إضافة المستخدم بنجاح" : "User added successfully");
     setShowAddUserModal(false);
+    setSelectedLinkedEmployeeId("");
     setNewUser({
       nameAr: "",
       nameEn: "",
@@ -628,6 +680,7 @@ export function UsersManagement() {
               <thead>
                 <tr className="bg-muted/40 border-b border-border/70 text-muted-foreground uppercase font-bold text-start">
                   <th className="p-3 text-start">{t("user")}</th>
+                  <th className="p-3 text-start">{lang === "ar" ? "الملف الوظيفي (HR)" : "HR Dossier"}</th>
                   <th className="p-3 text-start">{t("departments")}</th>
                   <th className="p-3 text-start">{t("positions")}</th>
                   <th className="p-3 text-start">{t("roles")}</th>
@@ -642,6 +695,9 @@ export function UsersManagement() {
                 {filteredUsers.map((user) => {
                   const dept = deptList.find((d) => d.id === user.departmentId);
                   const pos = posList.find((p) => p.id === user.positionId);
+                  const matchedEmp = employees.find(
+                    (e) => (user.employeeId && e.id === user.employeeId) || e.userId === user.id || (e.email && e.email.toLowerCase() === user.email.toLowerCase())
+                  );
 
                   return (
                     <tr key={user.id} className="hover:bg-muted/30 transition-colors">
@@ -658,6 +714,25 @@ export function UsersManagement() {
                             <p className="text-[11px] text-muted-foreground font-mono">{user.email}</p>
                           </div>
                         </div>
+                      </td>
+
+                      {/* Linked HR Employee Dossier */}
+                      <td className="p-3">
+                        {matchedEmp ? (
+                          <Link
+                            to="/hr/$employeeId"
+                            params={{ employeeId: matchedEmp.id }}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/25 hover:bg-purple-500/20 font-bold text-[11px] transition-all group"
+                            title={pick("فتح الملف الوظيفي بالكامل في الموارد البشرية", "Open full personnel dossier in HR")}
+                          >
+                            <User className="size-3 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                            <span className="font-mono">{matchedEmp.code}</span>
+                          </Link>
+                        ) : (
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] text-muted-foreground bg-muted font-medium">
+                            {pick("غير مرتبط", "Unlinked")}
+                          </span>
+                        )}
                       </td>
 
                       {/* Department */}
@@ -1233,6 +1308,31 @@ export function UsersManagement() {
             </div>
 
             <form onSubmit={handleCreateUser} className="p-6 space-y-6">
+              {/* Link to HR Employee Picker */}
+              <div className="p-3 bg-primary/5 border border-primary/30 rounded-xl space-y-1.5">
+                <label className="block text-xs font-bold uppercase text-primary flex items-center gap-1.5">
+                  <User className="size-4" />
+                  {lang === "ar" ? "ربط بملف موظف من سجل الموارد البشرية (HR)" : "Link to HR Employee Record"}
+                </label>
+                <select
+                  value={selectedLinkedEmployeeId}
+                  onChange={(e) => handleSelectEmployeeForUser(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-primary/40 bg-background font-semibold text-foreground focus:border-primary focus:outline-none"
+                >
+                  <option value="">{lang === "ar" ? "— إنشاء مستخدم مستقل (غير مرتبط بموظف) —" : "— Standalone User (Unlinked) —"}</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.code} — {pick(emp.name.ar, emp.name.en)} ({pick(emp.positionName.ar, emp.positionName.en)})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted-foreground">
+                  {lang === "ar"
+                    ? "اختيار الموظف سيقوم بملء الاسم والبريد والقسم والمسمى وتعيين الصلاحيات تلقائياً"
+                    : "Selecting an employee will auto-fill name, email, department, position, and suggested role"}
+                </p>
+              </div>
+
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

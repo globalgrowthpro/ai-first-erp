@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Truck, Plus, Eye, Edit2, Trash2, ReceiptText, ShoppingCart } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { PageHeader, Panel, DataTable, Td, StatusPill, Btn } from "@/components/kit";
+import { PageHeader, Panel, DataTable, Td, StatusPill, Btn, TablePagination, usePagination } from "@/components/kit";
 import { useDispatchStore, type DispatchOrder } from "@/lib/dispatch-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -25,6 +25,12 @@ function DispatchPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const activeOrder = editing ? orders.find(o => o.id === editing.id) || editing : null;
+
+  const {
+    currentPage: dispatchPage,
+    setCurrentPage: setDispatchPage,
+    paginatedItems: paginatedDispatchOrders,
+  } = usePagination(orders, 30);
 
 
 
@@ -53,7 +59,7 @@ function DispatchPage() {
             pick("إجراءات", "Actions"),
           ]}
         >
-          {orders.map((order) => (
+          {paginatedDispatchOrders.map((order) => (
             <tr key={order.id} className="hover:bg-secondary/70 transition-colors">
               <Td className="num font-bold text-primary">{order.id}</Td>
               <Td>
@@ -103,6 +109,13 @@ function DispatchPage() {
             </tr>
           )}
         </DataTable>
+        <TablePagination
+          currentPage={dispatchPage}
+          totalItems={orders.length}
+          pageSize={30}
+          onPageChange={setDispatchPage}
+          itemLabel={{ ar: "أمر تحميل", en: "Orders" }}
+        />
       </Panel>
 
       {/* Form Modal */}
