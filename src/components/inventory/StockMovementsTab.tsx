@@ -171,7 +171,7 @@ export function StockMovementsTab({
         deltaQty: number;
         actionLabel: { ar: string; en: string };
         actionType: "order" | "cancel" | "in" | "out" | "transfer" | "adjustment";
-        reason: string;
+        reason: { ar: string; en: string };
       }
     >();
 
@@ -196,7 +196,7 @@ export function StockMovementsTab({
           const isDown = refLower.includes("deficit") || (!m.toWarehouseId && m.fromWarehouseId);
           return isDown ? -Math.abs(m.quantity) : Math.abs(m.quantity);
         }
-        return 0; // transfer across entire company
+        return 0; // transfer across company inventory
       });
 
       const totalDelta = deltas.reduce((s, d) => s + d, 0);
@@ -215,28 +215,62 @@ export function StockMovementsTab({
 
         let actionLabel = { ar: "طلب جديد", en: "New Order" };
         let actionType: "order" | "cancel" | "in" | "out" | "transfer" | "adjustment" = "order";
-        let reason = m.notes || (m.reference ? `Stock deducted for order item: ${m.reference}` : "Stock deducted for order item");
+        let reason: { ar: string; en: string };
+
+        const cleanRef = (m.reference || "")
+          .replace(/^(POS-SALE-|CANCEL-)/i, "")
+          .trim();
 
         if (refLower.includes("cancel") || notesLower.includes("cancel") || refLower.includes("refund")) {
           actionType = "cancel";
           actionLabel = { ar: "إلغاء طلب", en: "Cancelled Order" };
-          reason = m.notes || `Stock restored for cancelled order: ${m.reference || m.moveNo}`;
+          reason = {
+            ar: `استرجاع رصيد مخزني لطلب ملغي — ${cleanRef || m.moveNo}`,
+            en: `Stock restored for cancelled order — ${cleanRef || m.moveNo}`,
+          };
         } else if (m.moveType === "in" || refLower.includes("purchase") || refLower.includes("inbound")) {
           actionType = "in";
-          actionLabel = { ar: "توريد مخزني", en: "Stock Inbound" };
-          reason = m.notes || (m.reference ? `Stock added via supplier receipt: ${m.reference}` : "Stock added via purchase receipt");
+          actionLabel = { ar: "توريد مخزني", en: "Inbound Supply" };
+          reason = {
+            ar: `توريد واستلام بضاعة للمستودع — إذن توريد #${cleanRef || m.moveNo}`,
+            en: `Supplier inbound purchase delivery — PO #${cleanRef || m.moveNo}`,
+          };
         } else if (m.moveType === "transfer") {
           actionType = "transfer";
           actionLabel = { ar: "تحويل فرعي", en: "Branch Transfer" };
-          reason = m.notes || `Transfer between facilities: ${m.fromWarehouseName?.ar || ""} ➔ ${m.toWarehouseName?.ar || ""}`;
+          const fromWh = m.fromWarehouseName?.ar || "المستودع الرئيسي";
+          const toWh = m.toWarehouseName?.ar || "الفرع";
+          reason = {
+            ar: `تحويل مخزني بين الفروع: من ${fromWh} إلى ${toWh} (${cleanRef || m.moveNo})`,
+            en: `Inter-facility transfer: ${m.fromWarehouseName?.en || "Main WH"} ➔ ${m.toWarehouseName?.en || "Branch"} (${cleanRef || m.moveNo})`,
+          };
         } else if (m.moveType === "adjustment") {
           actionType = "adjustment";
           actionLabel = { ar: "تسوية جردية", en: "Stock Adjustment" };
-          reason = m.notes || `Inventory audit adjustment: ${m.reference || m.moveNo}`;
+          reason = {
+            ar: `تسوية جردية دورية معتمدة — إذن رقم #${cleanRef || m.moveNo}`,
+            en: `Approved stock audit adjustment — Ref #${cleanRef || m.moveNo}`,
+          };
         } else {
           actionType = "order";
           actionLabel = { ar: "طلب جديد", en: "New Order" };
-          reason = m.notes || "Stock deducted for order item";
+          if (cleanRef && cleanRef !== "POS-SALE") {
+            reason = {
+              ar: `صرف مبيعات نقاط البيع — فاتورة رقم #${cleanRef}`,
+              en: `POS sale deduction — Invoice #${cleanRef}`,
+            };
+          } else {
+            const wh = m.fromWarehouseName?.ar ? ` (${m.fromWarehouseName.ar})` : "";
+            reason = {
+              ar: `صرف مبيعات نقاط البيع${wh}`,
+              en: `POS sale deduction${m.fromWarehouseName?.en ? ` (${m.fromWarehouseName.en})` : ""}`,
+            };
+          }
+        }
+
+        // If custom user notes were manually entered (not generic debug text)
+        if (m.notes && !m.notes.toLowerCase().includes("stock deducted")) {
+          reason = { ar: m.notes, en: m.notes };
         }
 
         map.set(m.id, {
@@ -298,7 +332,9 @@ export function StockMovementsTab({
         const matchNameAr = m.productName.ar.toLowerCase().includes(q);
         const matchNameEn = m.productName.en.toLowerCase().includes(q);
         const matchRef = (m.reference || "").toLowerCase().includes(q);
-        const matchReason = (enriched?.reason || "").toLowerCase().includes(q);
+        const matchReason =
+          Boolean(enriched?.reason?.ar?.toLowerCase().includes(q)) ||
+          Boolean(enriched?.reason?.en?.toLowerCase().includes(q));
 
         return (
           matchNo ||
@@ -412,7 +448,7 @@ export function StockMovementsTab({
         "التغيير": enriched ? (enriched.deltaQty > 0 ? `+${enriched.deltaQty}` : `${enriched.deltaQty}`) : m.quantity,
         "قبل": enriched?.beforeQty ?? "-",
         "بعد": enriched?.afterQty ?? "-",
-        "السبب / البيان": enriched?.reason || m.reference || "-",
+        "السبب / البيان": enriched?.reason ? pick(enriched.reason) : (m.reference || "-"),
         "رقم الحركة": m.moveNo,
       };
     });
@@ -625,7 +661,7 @@ export function StockMovementsTab({
                             </>
                           ) : enriched?.actionType === "cancel" ? (
                             <>
-                              <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <RotateCcw className="w-4 h-4 text-emerald-500 shrink-0" />
                               <span className="text-foreground">
                                 {pick({ ar: "إلغاء طلب", en: "Cancelled Order" })}
                               </span>
@@ -658,15 +694,20 @@ export function StockMovementsTab({
                       {/* 4. التغيير */}
                       <td className="py-4 px-5 text-center font-mono font-bold text-sm whitespace-nowrap">
                         {isNegative ? (
-                          <span className="text-rose-500">
-                            {Math.abs(delta)}-
+                          <span className="text-rose-500 inline-flex items-center justify-center font-bold" dir="ltr">
+                            -{Math.abs(delta)}
                           </span>
                         ) : isPositive ? (
-                          <span className="text-emerald-500">
-                            {Math.abs(delta)}+
+                          <span className="text-emerald-500 inline-flex items-center justify-center font-bold" dir="ltr">
+                            +{Math.abs(delta)}
+                          </span>
+                        ) : m.moveType === "transfer" ? (
+                          <span className="text-purple-600 dark:text-purple-400 inline-flex items-center justify-center gap-1 font-semibold" dir="ltr">
+                            <span>⇄</span>
+                            <span>{m.quantity}</span>
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">0</span>
+                          <span className="text-muted-foreground" dir="ltr">0</span>
                         )}
                       </td>
 
@@ -682,8 +723,11 @@ export function StockMovementsTab({
 
                       {/* 7. السبب */}
                       <td className="py-4 px-5 text-muted-foreground text-xs max-w-xs font-normal">
-                        <span className="line-clamp-2" title={enriched?.reason || m.notes || m.reference}>
-                          {enriched?.reason || m.notes || m.reference || "Stock movement transaction"}
+                        <span
+                          className="line-clamp-2 leading-relaxed"
+                          title={pick(enriched?.reason || { ar: m.reference || "صرف مبيعات نقاط البيع", en: m.reference || "POS sale deduction" })}
+                        >
+                          {pick(enriched?.reason || { ar: m.reference || "صرف مبيعات نقاط البيع", en: m.reference || "POS sale deduction" })}
                         </span>
                       </td>
                     </tr>
@@ -990,12 +1034,20 @@ export function StockMovementsTab({
                 </div>
               </div>
 
-              {selectedVoucher.notes && (
-                <div className="p-3 rounded-xl bg-muted/20 border border-border/40 text-xs">
-                  <strong className="text-foreground">{pick({ ar: "السبب / البيان:", en: "Reason:" })}</strong>{" "}
-                  <span className="text-muted-foreground">{selectedVoucher.notes}</span>
+              <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/40 text-xs flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <strong className="text-foreground">{pick({ ar: "السبب / البيان المعتمد:", en: "Movement Memo & Ref:" })}</strong>
+                  <span className="font-mono text-muted-foreground">{selectedVoucher.reference || selectedVoucher.moveNo}</span>
                 </div>
-              )}
+                <div className="text-muted-foreground leading-relaxed">
+                  {pick(
+                    enrichedMovementsMap.get(selectedVoucher.id)?.reason || {
+                      ar: selectedVoucher.notes || selectedVoucher.reference || "حركة مخزنية معتمدة",
+                      en: selectedVoucher.notes || selectedVoucher.reference || "Approved movement",
+                    }
+                  )}
+                </div>
+              </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
                 <Btn
