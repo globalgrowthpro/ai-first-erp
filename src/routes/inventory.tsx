@@ -159,37 +159,37 @@ function InventoryPage() {
     },
     {
       id: "stock_movements",
-      label: { ar: "حركات المخزون وسجل التحويلات", en: "Stock Movements & Ledger" },
+      label: { ar: "حركات المخزون", en: "Stock Movements" },
       icon: ArrowLeftRight,
       badge: stockMoves.length,
     },
     {
       id: "warehouses",
-      label: { ar: "المستودعات والمخازن", en: "Warehouses" },
+      label: { ar: "المستودعات", en: "Warehouses" },
       icon: Building2,
       badge: warehouses.length,
     },
     {
       id: "branches",
-      label: { ar: "الفروع وتفاصيل الملكية", en: "Branches & Ownership" },
+      label: { ar: "الفروع والملكيات", en: "Branches" },
       icon: Store,
       badge: branches.length,
     },
     {
       id: "categories",
-      label: { ar: "تصنيفات الأصناف", en: "Categories" },
+      label: { ar: "التصنيفات", en: "Categories" },
       icon: Tag,
       badge: categories.length,
     },
     {
       id: "units",
-      label: { ar: "وحدات القياس", en: "Units of Measure" },
+      label: { ar: "وحدات القياس", en: "Units" },
       icon: Scale,
       badge: units.length,
     },
     {
       id: "bom",
-      label: { ar: "شجرة المنتج والوصفات (BOM)", en: "Bill of Materials (BOM)" },
+      label: { ar: "الوصفات (BOM)", en: "Recipes (BOM)" },
       icon: ChefHat,
       badge: boms.length,
     },
@@ -375,9 +375,9 @@ function InventoryPage() {
         </div>
       </div>
 
-      {/* Sub-module Tabs Strip - Wrapped & Highly Visible */}
-      <div className="surface-panel rounded-2xl p-2 shadow-sm border border-border/60">
-        <div className="flex flex-wrap items-center gap-1.5">
+      {/* Sub-module Tabs Strip - Single Clean Row (No 2nd Line) */}
+      <div className="surface-panel rounded-2xl p-1.5 shadow-sm border border-border/60 overflow-hidden">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar whitespace-nowrap">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const isStockMove = tab.id === "stock_movements";
@@ -386,7 +386,7 @@ function InventoryPage() {
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : isStockMove
@@ -394,12 +394,12 @@ function InventoryPage() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
               >
-                <tab.icon className={cn("w-4 h-4 shrink-0", isStockMove && !isActive && "text-primary")} />
+                <tab.icon className={cn("w-3.5 h-3.5 shrink-0", isStockMove && !isActive && "text-primary")} />
                 <span>{pick(tab.label)}</span>
                 {tab.badge !== undefined && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.5 text-[10px] rounded-full font-mono font-medium",
+                      "px-1.5 py-0.2 text-[10px] rounded-full font-mono font-medium",
                       isActive
                         ? "bg-primary-foreground/20 text-primary-foreground"
                         : isStockMove
