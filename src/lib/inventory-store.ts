@@ -18,20 +18,20 @@ export interface StockMovementRecord {
   productId: string;
   productName: { ar: string; en: string };
   productSku: string;
-  categoryName?: { ar: string; en: string };
-  fromWarehouseId?: string | null;
-  fromWarehouseName?: { ar: string; en: string };
-  toWarehouseId?: string | null;
-  toWarehouseName?: { ar: string; en: string };
+  categoryName?: { ar: string; en: string } | undefined;
+  fromWarehouseId?: string | null | undefined;
+  fromWarehouseName?: { ar: string; en: string } | undefined;
+  toWarehouseId?: string | null | undefined;
+  toWarehouseName?: { ar: string; en: string } | undefined;
   quantity: number;
   unitCost: number;
   totalCost: number;
   reference: string;
-  notes?: string;
+  notes?: string | undefined;
   movedAt: string;
   createdAt: string;
-  createdBy?: string | null;
-  unitName?: { ar: string; en: string };
+  createdBy?: string | null | undefined;
+  unitName?: { ar: string; en: string } | undefined;
 }
 
 export interface NewStockMovePayload {
