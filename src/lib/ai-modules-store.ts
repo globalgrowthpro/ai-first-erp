@@ -16,8 +16,9 @@ const FALLBACK_GEMINI_KEY = (() => {
 })();
 
 export const DEFAULT_GEMINI_KEY =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY) ||
-  FALLBACK_GEMINI_KEY;
+  (typeof import.meta !== "undefined" && (import.meta.env as Record<string, string | undefined>)?.[
+    "VITE_GEMINI_API_KEY"
+  ]) || FALLBACK_GEMINI_KEY;
 
 function getInitialModules(): AiModuleItem[] {
   if (typeof window === "undefined") return initialAiModules;
