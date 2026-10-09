@@ -38,12 +38,12 @@ export interface NewStockMovePayload {
   moveType: StockMoveType;
   productId: string;
   quantity: number;
-  fromWarehouseId?: string | null;
-  toWarehouseId?: string | null;
-  unitCost?: number;
-  reference?: string;
-  notes?: string;
-  movedAt?: string;
+  fromWarehouseId?: string | null | undefined;
+  toWarehouseId?: string | null | undefined;
+  unitCost?: number | undefined;
+  reference?: string | undefined;
+  notes?: string | undefined;
+  movedAt?: string | undefined;
 }
 
 

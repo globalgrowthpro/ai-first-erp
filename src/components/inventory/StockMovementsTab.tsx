@@ -204,7 +204,8 @@ export function StockMovementsTab({
 
       for (let i = 0; i < sortedAsc.length; i++) {
         const m = sortedAsc[i];
-        const delta = deltas[i];
+        if (!m) continue;
+        const delta = deltas[i] ?? 0;
         const before = running;
         const after = Math.max(0, running + delta);
         running = after;
@@ -315,10 +316,10 @@ export function StockMovementsTab({
 
   // Pagination
   const {
-    page,
+    currentPage,
+    setCurrentPage,
     pageSize,
-    setPage,
-    setPageSize,
+    totalItems,
     totalPages,
     paginatedItems: paginatedMovements,
   } = usePagination(filteredMovements, 20);
@@ -703,11 +704,10 @@ export function StockMovementsTab({
           </div>
 
           <TablePagination
-            page={page}
+            currentPage={currentPage}
+            totalItems={totalItems}
             pageSize={pageSize}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
+            onPageChange={setCurrentPage}
           />
         </div>
       </div>
