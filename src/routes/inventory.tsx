@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
   FileSpreadsheet,
   Store,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader, KpiCard, Btn } from "@/components/kit";
@@ -24,6 +25,7 @@ import { WarehousesTab } from "@/components/inventory/WarehousesTab";
 import { BranchesTab } from "@/components/inventory/BranchesTab";
 import { UnitsTab } from "@/components/inventory/UnitsTab";
 import { BomTab } from "@/components/inventory/BomTab";
+import { StockMovementsTab } from "@/components/inventory/StockMovementsTab";
 import {
   InventoryImportModal,
   type InventoryImportTarget,
@@ -52,7 +54,7 @@ export const Route = createFileRoute("/inventory")({
   component: InventoryPage,
 });
 
-type InventorySubTab = "products" | "categories" | "warehouses" | "branches" | "units" | "bom";
+type InventorySubTab = "products" | "categories" | "warehouses" | "branches" | "units" | "bom" | "stock_movements";
 
 function InventoryPage() {
   const { t, pick, money, n, dir } = useI18n();
@@ -65,6 +67,9 @@ function InventoryPage() {
     branches,
     units,
     boms,
+    stockMoves,
+    recordStockMove,
+    refreshStockMoves,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -155,6 +160,12 @@ function InventoryPage() {
       label: { ar: "شجرة المنتج والوصفات (BOM)", en: "Bill of Materials (BOM)" },
       icon: ChefHat,
       badge: boms.length,
+    },
+    {
+      id: "stock_movements",
+      label: { ar: "حركات المخزون وسجل التحويلات", en: "Stock Movements & Ledger" },
+      icon: ArrowLeftRight,
+      badge: stockMoves.length,
     },
   ];
 
@@ -399,6 +410,16 @@ function InventoryPage() {
             onUpdateBom={updateBom}
             onDeleteBom={deleteBom}
             onOpenImport={() => handleOpenImport("bom")}
+          />
+        )}
+
+        {activeTab === "stock_movements" && (
+          <StockMovementsTab
+            movements={stockMoves}
+            products={products}
+            warehouses={warehouses}
+            onRecordMove={recordStockMove}
+            onRefresh={refreshStockMoves}
           />
         )}
       </div>

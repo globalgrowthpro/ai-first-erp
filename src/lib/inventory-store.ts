@@ -9,6 +9,43 @@ export type CategoryType = "finished" | "raw" | "packaging" | "semi_finished";
 export type WarehouseType = "kitchen" | "retail" | "cold_storage" | "dry_storage";
 export type UnitCategory = "weight" | "volume" | "count" | "packaging";
 export type BomStatus = "active" | "draft" | "archived";
+export type StockMoveType = "in" | "out" | "transfer" | "adjustment";
+
+export interface StockMovementRecord {
+  id: string;
+  moveNo: string;
+  moveType: StockMoveType;
+  productId: string;
+  productName: { ar: string; en: string };
+  productSku: string;
+  categoryName?: { ar: string; en: string };
+  fromWarehouseId?: string | null;
+  fromWarehouseName?: { ar: string; en: string };
+  toWarehouseId?: string | null;
+  toWarehouseName?: { ar: string; en: string };
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  reference: string;
+  notes?: string;
+  movedAt: string;
+  createdAt: string;
+  createdBy?: string | null;
+  unitName?: { ar: string; en: string };
+}
+
+export interface NewStockMovePayload {
+  moveType: StockMoveType;
+  productId: string;
+  quantity: number;
+  fromWarehouseId?: string | null;
+  toWarehouseId?: string | null;
+  unitCost?: number;
+  reference?: string;
+  notes?: string;
+  movedAt?: string;
+}
+
 
 export interface InventoryCategory {
   id: string;
@@ -262,6 +299,7 @@ let dbUnits: InventoryUnit[] = [];
 let dbProducts: InventoryProduct[] = [];
 let dbBoms: InventoryBom[] = [];
 let dbBranches: Branch[] = [];
+let dbStockMoves: StockMovementRecord[] = [];
 let isLoadedFromDb = false;
 
 const listeners = new Set<() => void>();
@@ -279,7 +317,7 @@ function notify() {
 // Fetch all live records directly from Supabase Database
 async function fetchDatabaseState() {
   try {
-    const [catRes, whRes, unRes, prodRes, stockRes, bomRes, branchRes] = await Promise.all([
+    const [catRes, whRes, unRes, prodRes, stockRes, bomRes, branchRes, movesRes] = await Promise.all([
       supabase.from("categories").select("*").order("name_ar"),
       supabase.from("warehouses").select("*").order("name_ar"),
       supabase.from("units").select("*").order("name_ar"),
@@ -287,6 +325,7 @@ async function fetchDatabaseState() {
       supabase.from("stock_levels").select("*"),
       supabase.from("boms").select("*, bom_lines(*)"),
       supabase.from("branches").select("*").order("name_ar"),
+      supabase.from("stock_moves").select("*").order("moved_at", { ascending: false }).limit(500),
     ]);
 
     if (branchRes.data) {
@@ -417,6 +456,41 @@ async function fetchDatabaseState() {
       }));
     }
 
+    if (movesRes?.data) {
+      dbStockMoves = movesRes.data.map((m: any) => {
+        const prod = dbProducts.find((p) => p.id === m.product_id);
+        const fromWh = dbWarehouses.find((w) => w.id === m.from_warehouse_id);
+        const toWh = dbWarehouses.find((w) => w.id === m.to_warehouse_id);
+        const unit = prod ? dbUnits.find((u) => u.id === prod.unitId) : undefined;
+        const cat = prod ? dbCategories.find((c) => c.id === prod.categoryId) : undefined;
+        const qty = Number(m.quantity || 0);
+        const unitCost = Number(m.unit_cost !== null && m.unit_cost !== undefined ? m.unit_cost : prod?.costPrice || 0);
+
+        return {
+          id: m.id,
+          moveNo: m.move_no || `SM-${m.id.slice(0, 8).toUpperCase()}`,
+          moveType: (m.move_type as StockMoveType) || "adjustment",
+          productId: m.product_id,
+          productName: prod ? prod.name : { ar: "صنف غير معروف", en: "Unknown Product" },
+          productSku: prod?.sku || "SKU-N/A",
+          categoryName: cat?.name,
+          fromWarehouseId: m.from_warehouse_id,
+          fromWarehouseName: fromWh?.name,
+          toWarehouseId: m.to_warehouse_id,
+          toWarehouseName: toWh?.name,
+          quantity: qty,
+          unitCost,
+          totalCost: qty * unitCost,
+          reference: m.reference || "N/A",
+          notes: m.notes || undefined,
+          movedAt: m.moved_at || m.created_at || new Date().toISOString(),
+          createdAt: m.created_at || m.moved_at || new Date().toISOString(),
+          createdBy: m.created_by,
+          unitName: unit?.name,
+        };
+      });
+    }
+
     isLoadedFromDb = true;
     notify();
   } catch (err) {
@@ -447,7 +521,8 @@ function initRealtime() {
       .on("postgres_changes", { event: "*", schema: "public", table: "units" }, () => fetchDatabaseState())
       .on("postgres_changes", { event: "*", schema: "public", table: "branches" }, () => fetchDatabaseState())
       .on("postgres_changes", { event: "*", schema: "public", table: "boms" }, () => fetchDatabaseState())
-      .on("postgres_changes", { event: "*", schema: "public", table: "bom_lines" }, () => fetchDatabaseState());
+      .on("postgres_changes", { event: "*", schema: "public", table: "bom_lines" }, () => fetchDatabaseState())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stock_moves" }, () => fetchDatabaseState());
 
     channel.subscribe((status: string, err?: any) => {
       if (err) console.warn("Realtime subscription notice:", status, err);
@@ -848,6 +923,58 @@ export function useInventoryStore() {
   const importUnits = useCallback(() => 0, []);
   const importBoms = useCallback(() => 0, []);
 
+  const recordStockMove = useCallback(
+    async (payload: NewStockMovePayload) => {
+      const prod = dbProducts.find((p) => p.id === payload.productId || p.sku === payload.productId);
+      const qty = Math.abs(Number(payload.quantity) || 0);
+      if (!prod || qty <= 0) {
+        throw new Error("Invalid product or quantity");
+      }
+
+      const cost = payload.unitCost !== undefined ? Number(payload.unitCost) : prod.costPrice;
+      const moveDate = payload.movedAt || new Date().toISOString();
+      const moveYear = new Date(moveDate).getFullYear();
+      const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+      const generatedMoveNo = `SM-${moveYear}-${randomSuffix}`;
+      const defaultRef =
+        payload.moveType === "transfer"
+          ? "TRANSFER"
+          : payload.moveType === "in"
+          ? "INBOUND"
+          : payload.moveType === "out"
+          ? "OUTBOUND"
+          : "ADJUSTMENT";
+      const reference = payload.reference?.trim() || defaultRef;
+
+      // Insert directly into Supabase stock_moves table
+      const { data, error } = await supabase
+        .from("stock_moves")
+        .insert({
+          move_no: generatedMoveNo,
+          move_type: payload.moveType,
+          product_id: prod.id,
+          from_warehouse_id: payload.fromWarehouseId || null,
+          to_warehouse_id: payload.toWarehouseId || null,
+          quantity: qty,
+          unit_cost: cost,
+          reference: reference,
+          moved_at: moveDate,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Failed to insert stock move to Supabase:", error);
+        throw error;
+      }
+
+      // Refresh store state to reflect the move and updated stock levels
+      await fetchDatabaseState();
+      return data;
+    },
+    []
+  );
+
   return {
     categories: dbCategories,
     warehouses: dbWarehouses,
@@ -855,6 +982,9 @@ export function useInventoryStore() {
     units: dbUnits,
     products: dbProducts,
     boms: dbBoms,
+    stockMoves: dbStockMoves,
+    recordStockMove,
+    refreshStockMoves: fetchDatabaseState,
     loading,
     addCategory,
     updateCategory,
