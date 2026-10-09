@@ -54,3 +54,35 @@ export function formatDateOnly(raw: string | Date | null | undefined): string {
     return String(raw).slice(0, 10);
   }
 }
+
+const AR_MONTHS = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
+
+export function formatMovementDateArabic(raw: string | Date | null | undefined): string {
+  if (!raw) return "-";
+  try {
+    const d = typeof raw === "string" ? new Date(raw) : raw;
+    if (isNaN(d.getTime())) return String(raw);
+    const day = d.getDate();
+    const month = AR_MONTHS[d.getMonth()] || "";
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day} ${month} ${year} ${hours}:${minutes}`;
+  } catch {
+    return String(raw);
+  }
+}
+

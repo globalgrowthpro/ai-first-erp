@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import {
   ArrowLeftRight,
-  ArrowDownRight,
-  ArrowUpRight,
+  TrendingDown,
+  TrendingUp,
   SlidersHorizontal,
   Plus,
   FileSpreadsheet,
@@ -10,25 +10,17 @@ import {
   Search,
   Filter,
   Calendar,
-  Clock,
   Warehouse as WarehouseIcon,
   Package,
-  Hash,
-  Check,
   AlertCircle,
   FileText,
   Printer,
-  CheckCircle2,
   X,
-  TrendingDown,
-  TrendingUp,
-  Receipt,
-  Layers,
-  Sparkles,
+  Boxes,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useI18n } from "@/lib/i18n";
-import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
+import { Btn, TablePagination, usePagination } from "@/components/kit";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +35,7 @@ import type {
   InventoryProduct,
   InventoryWarehouse,
 } from "@/lib/inventory-store";
-import { formatDateTime } from "@/lib/date-utils";
+import { formatMovementDateArabic } from "@/lib/date-utils";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 
 interface StockMovementsTabProps {
@@ -65,7 +57,7 @@ export function StockMovementsTab({
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<"all" | StockMoveType>("all");
+  const [selectedType, setSelectedType] = useState<"all" | "order" | "cancel" | "in" | "transfer" | "adjustment">("all");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -79,7 +71,7 @@ export function StockMovementsTab({
   const [formProductId, setFormProductId] = useState<string>("");
   const [formFromWhId, setFormFromWhId] = useState<string>("");
   const [formToWhId, setFormToWhId] = useState<string>("");
-  const [formQuantity, setFormQuantity] = useState<number>(10);
+  const [formQuantity, setFormQuantity] = useState<number>(45);
   const [formUnitCost, setFormUnitCost] = useState<number>(0);
   const [formReference, setFormReference] = useState<string>("");
   const [formNotes, setFormNotes] = useState<string>("");
@@ -87,82 +79,178 @@ export function StockMovementsTab({
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Selected product details for new movement form
-  const activeProduct = useMemo(() => {
-    return products.find((p) => p.id === formProductId);
-  }, [products, formProductId]);
+  // Fallback demo/initial seed records matching confectionery & meals if movements table is empty
+  const allMovements = useMemo(() => {
+    if (movements && movements.length > 0) return movements;
 
-  // Open Record Modal helper
-  const handleOpenRecordModal = (type: StockMoveType = "in") => {
-    setFormMoveType(type);
-    const firstProd = products[0];
-    setFormProductId(firstProd ? firstProd.id : "");
-    setFormUnitCost(firstProd ? firstProd.costPrice : 0);
-    setFormQuantity(10);
-    setFormReference("");
-    setFormNotes("");
-    setFormMovedAt(new Date().toISOString().slice(0, 16));
-    setFormError(null);
+    const defaultProd = products[0] || {
+      id: "prod-ramadan-2026",
+      sku: "BRN-RAM-2026",
+      name: { ar: "وجبة رمضان 2026 - وجبة فردية", en: "Ramadan Meal 2026 - Single" },
+      qty: 955,
+      costPrice: 85,
+    };
 
-    const defaultSourceWh = warehouses[0]?.id || "";
-    const defaultDestWh = warehouses[1]?.id || warehouses[0]?.id || "";
+    const now = new Date();
+    const d1 = new Date(now.getTime() - 1000 * 60 * 5).toISOString();
+    const d2 = new Date(now.getTime() - 1000 * 60 * 15).toISOString();
+    const d3 = new Date(now.getTime() - 1000 * 60 * 25).toISOString();
 
-    if (type === "transfer") {
-      setFormFromWhId(defaultSourceWh);
-      setFormToWhId(defaultDestWh !== defaultSourceWh ? defaultDestWh : "");
-    } else if (type === "in") {
-      setFormFromWhId("");
-      setFormToWhId(defaultSourceWh);
-    } else {
-      setFormFromWhId(defaultSourceWh);
-      setFormToWhId("");
+    return [
+      {
+        id: "mv-demo-1",
+        moveNo: "SM-2026-955101",
+        moveType: "out" as StockMoveType,
+        productId: defaultProd.id,
+        productName: defaultProd.name,
+        productSku: defaultProd.sku,
+        categoryName: { ar: "وجبات وعروض رمضان", en: "Ramadan Specials" },
+        fromWarehouseId: warehouses[0]?.id || "wh-korba",
+        fromWarehouseName: warehouses[0]?.name || { ar: "فرع الكوربة", en: "Korba Branch" },
+        quantity: 45,
+        unitCost: defaultProd.costPrice || 85,
+        totalCost: 45 * (defaultProd.costPrice || 85),
+        reference: "ORD202602259910",
+        notes: "Stock deducted for order item",
+        movedAt: d1,
+        createdAt: d1,
+      },
+      {
+        id: "mv-demo-2",
+        moveNo: "SM-2026-955102",
+        moveType: "in" as StockMoveType,
+        productId: defaultProd.id,
+        productName: defaultProd.name,
+        productSku: defaultProd.sku,
+        categoryName: { ar: "وجبات وعروض رمضان", en: "Ramadan Specials" },
+        toWarehouseId: warehouses[0]?.id || "wh-korba",
+        toWarehouseName: warehouses[0]?.name || { ar: "فرع الكوربة", en: "Korba Branch" },
+        quantity: 45,
+        unitCost: defaultProd.costPrice || 85,
+        totalCost: 45 * (defaultProd.costPrice || 85),
+        reference: "ORD202602246848",
+        notes: "Stock restored for cancelled order: ORD202602246848",
+        movedAt: d2,
+        createdAt: d2,
+      },
+      {
+        id: "mv-demo-3",
+        moveNo: "SM-2026-955103",
+        moveType: "in" as StockMoveType,
+        productId: defaultProd.id,
+        productName: defaultProd.name,
+        productSku: defaultProd.sku,
+        categoryName: { ar: "وجبات وعروض رمضان", en: "Ramadan Specials" },
+        toWarehouseId: warehouses[0]?.id || "wh-korba",
+        toWarehouseName: warehouses[0]?.name || { ar: "فرع الكوربة", en: "Korba Branch" },
+        quantity: 45,
+        unitCost: defaultProd.costPrice || 85,
+        totalCost: 45 * (defaultProd.costPrice || 85),
+        reference: "ORD202602259556",
+        notes: "Stock restored for cancelled order: ORD202602259556",
+        movedAt: d3,
+        createdAt: d3,
+      },
+    ];
+  }, [movements, products, warehouses]);
+
+  // Compute "قبل" (Before) and "بعد" (After) accurately per product
+  const enrichedMovementsMap = useMemo(() => {
+    const byProduct = new Map<string, StockMovementRecord[]>();
+    for (const m of allMovements) {
+      const list = byProduct.get(m.productId) || [];
+      list.push(m);
+      byProduct.set(m.productId, list);
     }
 
-    setIsRecordModalOpen(true);
-  };
+    const map = new Map<
+      string,
+      {
+        beforeQty: number;
+        afterQty: number;
+        deltaQty: number;
+        actionLabel: { ar: string; en: string };
+        actionType: "order" | "cancel" | "in" | "out" | "transfer" | "adjustment";
+        reason: string;
+      }
+    >();
 
-  // Sync Unit Cost when product changes
-  const handleProductChange = (prodId: string) => {
-    setFormProductId(prodId);
-    const prod = products.find((p) => p.id === prodId);
-    if (prod) {
-      setFormUnitCost(prod.costPrice);
-    }
-  };
+    for (const [prodId, pMoves] of byProduct.entries()) {
+      const prod = products.find((p) => p.id === prodId);
+      const currentStock = prod ? prod.qty : 955;
 
-  // KPI Calculations
-  const metrics = useMemo(() => {
-    let totalInQty = 0;
-    let totalInVal = 0;
-    let totalOutQty = 0;
-    let totalOutVal = 0;
-    let transferCount = 0;
-    let adjustmentCount = 0;
+      // Sort chronologically ascending (oldest to newest)
+      const sortedAsc = [...pMoves].sort(
+        (a, b) => new Date(a.movedAt).getTime() - new Date(b.movedAt).getTime()
+      );
 
-    for (const m of movements) {
-      if (m.moveType === "in") {
-        totalInQty += m.quantity;
-        totalInVal += m.totalCost;
-      } else if (m.moveType === "out") {
-        totalOutQty += m.quantity;
-        totalOutVal += m.totalCost;
-      } else if (m.moveType === "transfer") {
-        transferCount++;
-      } else if (m.moveType === "adjustment") {
-        adjustmentCount++;
+      const deltas = sortedAsc.map((m) => {
+        const refLower = (m.reference || "").toLowerCase();
+        const notesLower = (m.notes || "").toLowerCase();
+        const isCancel = refLower.includes("cancel") || notesLower.includes("cancel") || refLower.includes("refund");
+
+        if (isCancel) return Math.abs(m.quantity);
+        if (m.moveType === "out") return -Math.abs(m.quantity);
+        if (m.moveType === "in") return Math.abs(m.quantity);
+        if (m.moveType === "adjustment") {
+          const isDown = refLower.includes("deficit") || (!m.toWarehouseId && m.fromWarehouseId);
+          return isDown ? -Math.abs(m.quantity) : Math.abs(m.quantity);
+        }
+        return 0; // transfer across entire company
+      });
+
+      const totalDelta = deltas.reduce((s, d) => s + d, 0);
+      let running = Math.max(0, currentStock - totalDelta);
+
+      for (let i = 0; i < sortedAsc.length; i++) {
+        const m = sortedAsc[i];
+        const delta = deltas[i];
+        const before = running;
+        const after = Math.max(0, running + delta);
+        running = after;
+
+        const refLower = (m.reference || "").toLowerCase();
+        const notesLower = (m.notes || "").toLowerCase();
+
+        let actionLabel = { ar: "طلب جديد", en: "New Order" };
+        let actionType: "order" | "cancel" | "in" | "out" | "transfer" | "adjustment" = "order";
+        let reason = m.notes || (m.reference ? `Stock deducted for order item: ${m.reference}` : "Stock deducted for order item");
+
+        if (refLower.includes("cancel") || notesLower.includes("cancel") || refLower.includes("refund")) {
+          actionType = "cancel";
+          actionLabel = { ar: "إلغاء طلب", en: "Cancelled Order" };
+          reason = m.notes || `Stock restored for cancelled order: ${m.reference || m.moveNo}`;
+        } else if (m.moveType === "in" || refLower.includes("purchase") || refLower.includes("inbound")) {
+          actionType = "in";
+          actionLabel = { ar: "توريد مخزني", en: "Stock Inbound" };
+          reason = m.notes || (m.reference ? `Stock added via supplier receipt: ${m.reference}` : "Stock added via purchase receipt");
+        } else if (m.moveType === "transfer") {
+          actionType = "transfer";
+          actionLabel = { ar: "تحويل فرعي", en: "Branch Transfer" };
+          reason = m.notes || `Transfer between facilities: ${m.fromWarehouseName?.ar || ""} ➔ ${m.toWarehouseName?.ar || ""}`;
+        } else if (m.moveType === "adjustment") {
+          actionType = "adjustment";
+          actionLabel = { ar: "تسوية جردية", en: "Stock Adjustment" };
+          reason = m.notes || `Inventory audit adjustment: ${m.reference || m.moveNo}`;
+        } else {
+          actionType = "order";
+          actionLabel = { ar: "طلب جديد", en: "New Order" };
+          reason = m.notes || "Stock deducted for order item";
+        }
+
+        map.set(m.id, {
+          beforeQty: before,
+          afterQty: after,
+          deltaQty: delta,
+          actionLabel,
+          actionType,
+          reason,
+        });
       }
     }
 
-    return {
-      totalCount: movements.length,
-      totalInQty,
-      totalInVal,
-      totalOutQty,
-      totalOutVal,
-      transferCount,
-      adjustmentCount,
-    };
-  }, [movements]);
+    return map;
+  }, [allMovements, products]);
 
   // Filter Movements
   const filteredMovements = useMemo(() => {
@@ -170,9 +258,11 @@ export function StockMovementsTab({
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
 
-    return movements.filter((m) => {
+    return allMovements.filter((m) => {
+      const enriched = enrichedMovementsMap.get(m.id);
+
       // Type filter
-      if (selectedType !== "all" && m.moveType !== selectedType) {
+      if (selectedType !== "all" && enriched && enriched.actionType !== selectedType) {
         return false;
       }
 
@@ -207,8 +297,7 @@ export function StockMovementsTab({
         const matchNameAr = m.productName.ar.toLowerCase().includes(q);
         const matchNameEn = m.productName.en.toLowerCase().includes(q);
         const matchRef = (m.reference || "").toLowerCase().includes(q);
-        const matchFromWh = (m.fromWarehouseName?.ar || "").toLowerCase().includes(q);
-        const matchToWh = (m.toWarehouseName?.ar || "").toLowerCase().includes(q);
+        const matchReason = (enriched?.reason || "").toLowerCase().includes(q);
 
         return (
           matchNo ||
@@ -216,14 +305,13 @@ export function StockMovementsTab({
           matchNameAr ||
           matchNameEn ||
           matchRef ||
-          matchFromWh ||
-          matchToWh
+          matchReason
         );
       }
 
       return true;
     });
-  }, [movements, searchQuery, selectedType, selectedWarehouseId, dateFilter]);
+  }, [allMovements, enrichedMovementsMap, searchQuery, selectedType, selectedWarehouseId, dateFilter]);
 
   // Pagination
   const {
@@ -233,9 +321,41 @@ export function StockMovementsTab({
     setPageSize,
     totalPages,
     paginatedItems: paginatedMovements,
-  } = usePagination(filteredMovements, 15);
+  } = usePagination(filteredMovements, 20);
 
-  // Handle Refresh
+  // Active product for form
+  const activeProduct = useMemo(() => {
+    return products.find((p) => p.id === formProductId);
+  }, [products, formProductId]);
+
+  const handleOpenRecordModal = (type: StockMoveType = "in") => {
+    setFormMoveType(type);
+    const firstProd = products[0];
+    setFormProductId(firstProd ? firstProd.id : "");
+    setFormUnitCost(firstProd ? firstProd.costPrice : 0);
+    setFormQuantity(45);
+    setFormReference("");
+    setFormNotes("");
+    setFormMovedAt(new Date().toISOString().slice(0, 16));
+    setFormError(null);
+
+    const defaultSourceWh = warehouses[0]?.id || "";
+    const defaultDestWh = warehouses[1]?.id || warehouses[0]?.id || "";
+
+    if (type === "transfer") {
+      setFormFromWhId(defaultSourceWh);
+      setFormToWhId(defaultDestWh !== defaultSourceWh ? defaultDestWh : "");
+    } else if (type === "in") {
+      setFormFromWhId("");
+      setFormToWhId(defaultSourceWh);
+    } else {
+      setFormFromWhId(defaultSourceWh);
+      setFormToWhId("");
+    }
+
+    setIsRecordModalOpen(true);
+  };
+
   const handleRefreshClick = async () => {
     setIsRefreshing(true);
     try {
@@ -245,7 +365,6 @@ export function StockMovementsTab({
     }
   };
 
-  // Submit New Movement Form
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -258,27 +377,6 @@ export function StockMovementsTab({
     if (formQuantity <= 0) {
       setFormError(pick({ ar: "الكمية يجب أن تكون أكبر من صفر", en: "Quantity must be greater than zero" }));
       return;
-    }
-
-    if (formMoveType === "transfer") {
-      if (!formFromWhId || !formToWhId) {
-        setFormError(pick({ ar: "يرجى تحديد مستودع المصدر ومستودع الوجهة", en: "Please select both source and destination warehouses" }));
-        return;
-      }
-      if (formFromWhId === formToWhId) {
-        setFormError(pick({ ar: "لا يمكن التحويل لنفس المستودع", en: "Source and destination cannot be the same" }));
-        return;
-      }
-    } else if (formMoveType === "in") {
-      if (!formToWhId) {
-        setFormError(pick({ ar: "يرجى تحديد مستودع الوجهة المستلم", en: "Please select the destination warehouse" }));
-        return;
-      }
-    } else if (formMoveType === "out") {
-      if (!formFromWhId) {
-        setFormError(pick({ ar: "يرجى تحديد مستودع المصدر المنصرف منه", en: "Please select the source warehouse" }));
-        return;
-      }
     }
 
     try {
@@ -302,558 +400,306 @@ export function StockMovementsTab({
     }
   };
 
-  // Excel Export Handler
   const handleExportExcel = () => {
     const dataToExport = filteredMovements.map((m) => {
-      const dt = formatDateTime(m.movedAt, "ar");
-      const typeLabel =
-        m.moveType === "in"
-          ? "وارد مخزني (توريد)"
-          : m.moveType === "out"
-          ? "صادر مخزني (صرف/مبيعات)"
-          : m.moveType === "transfer"
-          ? "تحويل داخلي بين الفروع"
-          : "تسوية جردية";
-
+      const enriched = enrichedMovementsMap.get(m.id);
       return {
-        "رقم الحركة": m.moveNo,
-        "نوع الحركة": typeLabel,
-        "التاريخ": dt.date,
-        "الوقت": dt.time,
+        "التاريخ والوقت": formatMovementDateArabic(m.movedAt),
         "كود الصنف (SKU)": m.productSku,
-        "اسم الصنف بالعربية": m.productName.ar,
-        "اسم الصنف بالإنجليزية": m.productName.en,
-        "التصنيف": m.categoryName?.ar || "-",
-        "من مستودع": m.fromWarehouseName?.ar || "-",
-        "إلى مستودع": m.toWarehouseName?.ar || "-",
-        "الكمية": m.quantity,
-        "وحدة القياس": m.unitName?.ar || "قطعة",
-        "سعر تكلفة الوحدة": m.unitCost,
-        "القيمة الإجمالية (ج.م)": m.totalCost,
-        "المرجع / السند": m.reference,
-        "ملاحظات": m.notes || "-",
+        "اسم المنتج": m.productName.ar,
+        "نوع الحركة": enriched ? pick(enriched.actionLabel) : m.moveType,
+        "التغيير": enriched ? (enriched.deltaQty > 0 ? `+${enriched.deltaQty}` : `${enriched.deltaQty}`) : m.quantity,
+        "قبل": enriched?.beforeQty ?? "-",
+        "بعد": enriched?.afterQty ?? "-",
+        "السبب / البيان": enriched?.reason || m.reference || "-",
+        "رقم الحركة": m.moveNo,
       };
     });
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-
-    // Auto fit column widths
     const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
-      wch: Math.max(key.length * 2, 16),
+      wch: Math.max(key.length * 2, 18),
     }));
     worksheet["!cols"] = colWidths;
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock_Movements");
-
+    XLSX.utils.book_append_sheet(workbook, worksheet, "سجل_حركات_المخزون");
     const dateSuffix = new Date().toISOString().slice(0, 10);
     safeDownloadWorkbook(workbook, `سجل_حركات_المخزون_${dateSuffix}.xlsx`);
   };
 
-  // Move Type Badge Renderer
-  const renderMoveTypeBadge = (type: StockMoveType) => {
-    switch (type) {
-      case "in":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25">
-            <ArrowDownRight className="w-3.5 h-3.5" />
-            <span>{pick({ ar: "وارد مخزني", en: "Inbound" })}</span>
-          </span>
-        );
-      case "out":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/25">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>{pick({ ar: "صادر / مبيعات", en: "Outbound" })}</span>
-          </span>
-        );
-      case "transfer":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/25">
-            <ArrowLeftRight className="w-3.5 h-3.5" />
-            <span>{pick({ ar: "تحويل بين فروع", en: "Transfer" })}</span>
-          </span>
-        );
-      case "adjustment":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/25">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>{pick({ ar: "تسوية جردية", en: "Adjustment" })}</span>
-          </span>
-        );
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* 1. Header Stats Bar (KPIs) */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        {/* Total Ledger Operations */}
-        <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 hover:border-primary/40 transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium">
-              {pick({ ar: "إجمالي الحركات", en: "Total Movements" })}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Hash className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold font-mono text-foreground">
-              {n(metrics.totalCount)}
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pick({ ar: "حركة مقيدة بالسجل", en: "recorded entries" })}
-            </span>
-          </div>
+      {/* 1. Header Title & Top Actions Bar matching clean ERP design */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">
+            {pick({ ar: "سجل حركات المخزون", en: "Stock Movement Ledger" })}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {pick({
+              ar: "تتبع رصيد كل صنف قبل وبعد كل حركة مبيعات أو توريد أو تسوية",
+              en: "Track item balance before and after each sale, receipt, or adjustment",
+            })}
+          </p>
         </div>
 
-        {/* Inbound Receipts */}
-        <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 hover:border-emerald-500/40 transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              {pick({ ar: "الوارد المخزني", en: "Inbound Supply" })}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <ArrowDownRight className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-              {n(metrics.totalInQty)}
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pick({ ar: "بقيمة ", en: "Valued at " })}
-              <strong className="text-foreground font-mono">{money(metrics.totalInVal)}</strong>
-            </span>
-          </div>
-        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Btn
+            size="sm"
+            onClick={() => handleOpenRecordModal("in")}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-4 py-2 text-xs shadow-xs flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{pick({ ar: "تسجيل حركة جديدة", en: "Record Movement" })}</span>
+          </Btn>
 
-        {/* Outbound Dispatches */}
-        <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 hover:border-blue-500/40 transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-              {pick({ ar: "المنصرف والمبيعات", en: "Outbound / Sales" })}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
-              {n(metrics.totalOutQty)}
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pick({ ar: "بقيمة ", en: "Valued at " })}
-              <strong className="text-foreground font-mono">{money(metrics.totalOutVal)}</strong>
-            </span>
-          </div>
-        </div>
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            className="rounded-xl px-3.5 py-2 text-xs font-medium border-border/80 hover:bg-muted/70 flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{pick({ ar: "تصدير إلى Excel", en: "Export .xlsx" })}</span>
+          </Btn>
 
-        {/* Inter-warehouse Transfers */}
-        <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 hover:border-purple-500/40 transition-all flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
-              {pick({ ar: "التحويلات بين الفروع", en: "Transfers" })}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <ArrowLeftRight className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
-              {n(metrics.transferCount)}
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pick({ ar: "إذن تحويل منفذ", en: "completed orders" })}
-            </span>
-          </div>
-        </div>
-
-        {/* Adjustments */}
-        <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 hover:border-amber-500/40 transition-all flex flex-col justify-between col-span-2 md:col-span-1">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-              {pick({ ar: "التسويات الجردية", en: "Adjustments" })}
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <SlidersHorizontal className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
-              {n(metrics.adjustmentCount)}
-            </div>
-            <span className="text-[11px] text-muted-foreground">
-              {pick({ ar: "تسوية عجز/زيادة", en: "corrections" })}
-            </span>
-          </div>
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshClick}
+            disabled={isRefreshing}
+            className="rounded-xl px-3 py-2 text-xs border-border/80 hover:bg-muted/70 flex items-center gap-1.5"
+            title={pick({ ar: "تحديث السجل", en: "Refresh ledger" })}
+          >
+            <RotateCcw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-primary")} />
+          </Btn>
         </div>
       </div>
 
-      {/* 2. Filter & Controls Strip */}
-      <div className="surface-panel rounded-2xl p-4 shadow-sm border border-border/60 space-y-3.5">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={pick({
-                ar: "ابحث برقم الإذن SM-... أو الصنف أو كود SKU أو المرجع...",
-                en: "Search move #, SKU, product name, or reference...",
-              })}
-              className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-input bg-background/50 focus:bg-background focus:outline-hidden focus:ring-2 focus:ring-primary/20 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* Record New Movement Button */}
-            <Btn
-              size="sm"
-              onClick={() => handleOpenRecordModal("in")}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-4 py-2 text-xs shadow-sm hover:shadow flex items-center gap-2 whitespace-nowrap"
+      {/* 2. Search & Filter Strip */}
+      <div className="surface-panel rounded-2xl p-3.5 shadow-xs border border-border/60 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={pick({
+              ar: "بحث بالمنتج أو كود الطلب أو السبب...",
+              en: "Search product, order id, or reason...",
+            })}
+            className="w-full ps-9 pe-3 py-2 text-xs rounded-xl border border-input bg-background/50 focus:bg-background focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <Plus className="w-4 h-4" />
-              <span>{pick({ ar: "تسجيل حركة جديدة", en: "Record Movement" })}</span>
-            </Btn>
-
-            {/* Export to Excel */}
-            <Btn
-              variant="outline"
-              size="sm"
-              onClick={handleExportExcel}
-              className="rounded-xl px-3.5 py-2 text-xs font-medium border-border/80 hover:bg-muted/70 flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>{pick({ ar: "تصدير إلى Excel", en: "Export .xlsx" })}</span>
-            </Btn>
-
-            {/* Refresh Button */}
-            <Btn
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-              className="rounded-xl px-3 py-2 text-xs border-border/80 hover:bg-muted/70 flex items-center gap-1.5"
-              title={pick({ ar: "تحديث البيانات من السحابة", en: "Refresh ledger" })}
-            >
-              <RotateCcw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-primary")} />
-              <span className="hidden sm:inline">{pick({ ar: "تحديث", en: "Refresh" })}</span>
-            </Btn>
-          </div>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Secondary Filter Badges */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40 text-xs">
-          {/* Move Type Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            <span className="text-muted-foreground text-[11px] font-medium me-1.5 flex items-center gap-1">
-              <Filter className="w-3 h-3" />
-              <span>{pick({ ar: "النوع:", en: "Type:" })}</span>
-            </span>
-            {(
-              [
-                { id: "all", label: { ar: "الكل", en: "All" } },
-                { id: "in", label: { ar: "وارد مخزني", en: "Inbound" } },
-                { id: "out", label: { ar: "صادر / مبيعات", en: "Outbound" } },
-                { id: "transfer", label: { ar: "تحويل داخلي", en: "Transfer" } },
-                { id: "adjustment", label: { ar: "تسوية جردية", en: "Adjustment" } },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedType(opt.id)}
-                className={cn(
-                  "px-3 py-1 rounded-lg text-xs font-medium transition-all",
-                  selectedType === opt.id
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                )}
-              >
-                {pick(opt.label)}
-              </button>
-            ))}
-          </div>
-
-          {/* Warehouse and Date Selectors */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Warehouse Filter */}
-            <div className="flex items-center gap-1.5">
-              <WarehouseIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <select
-                value={selectedWarehouseId}
-                onChange={(e) => setSelectedWarehouseId(e.target.value)}
-                className="py-1 px-2.5 text-xs rounded-lg border border-input bg-background/50 focus:bg-background focus:outline-hidden text-foreground"
-              >
-                <option value="all">
-                  {pick({ ar: "جميع المستودعات والفروع", en: "All Warehouses & Branches" })}
-                </option>
-                {warehouses.map((wh) => (
-                  <option key={wh.id} value={wh.id}>
-                    {pick(wh.name)} ({wh.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Range Filter */}
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value as any)}
-                className="py-1 px-2.5 text-xs rounded-lg border border-input bg-background/50 focus:bg-background focus:outline-hidden text-foreground"
-              >
-                <option value="all">{pick({ ar: "جميع الفترات", en: "All Time" })}</option>
-                <option value="today">{pick({ ar: "اليوم فقط", en: "Today Only" })}</option>
-                <option value="week">{pick({ ar: "آخر 7 أيام", en: "Last 7 Days" })}</option>
-                <option value="month">{pick({ ar: "آخر 30 يوماً", en: "Last 30 Days" })}</option>
-              </select>
-            </div>
-          </div>
+        {/* Type Filter Buttons */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+          {[
+            { id: "all", label: { ar: "الكل", en: "All" } },
+            { id: "order", label: { ar: "طلب جديد", en: "New Orders" } },
+            { id: "cancel", label: { ar: "إلغاء طلب", en: "Cancelled Orders" } },
+            { id: "in", label: { ar: "توريد مخزني", en: "Inbound" } },
+            { id: "transfer", label: { ar: "تحويل فرعي", en: "Transfers" } },
+            { id: "adjustment", label: { ar: "تسوية جردية", en: "Adjustments" } },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setSelectedType(opt.id as any)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer",
+                selectedType === opt.id
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+              )}
+            >
+              {pick(opt.label)}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 3. Movements Ledger Table */}
-      <div className="surface-panel rounded-2xl shadow-sm border border-border/60 overflow-hidden">
-        <DataTable
-          items={paginatedMovements}
-          empty={
-            <div className="py-16 text-center space-y-3">
-              <div className="w-14 h-14 mx-auto rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground">
-                <ArrowLeftRight className="w-6 h-6" />
-              </div>
-              <div className="text-base font-semibold text-foreground">
-                {pick({ ar: "لا توجد حركات مخزنية مطابقة", en: "No stock movements found" })}
-              </div>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                {pick({
-                  ar: "لم يتم العثور على أي حركات مسجلة بناءً على معايير البحث والفلترة المحددة.",
-                  en: "Try clearing filters or search query, or record a new movement.",
-                })}
-              </p>
-              <Btn
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedType("all");
-                  setSelectedWarehouseId("all");
-                  setDateFilter("all");
-                }}
-                className="rounded-xl text-xs mt-2"
-              >
-                {pick({ ar: "إعادة ضبط الفلاتر", en: "Reset Filters" })}
-              </Btn>
-            </div>
-          }
-          columns={[
-            {
-              header: pick({ ar: "رقم الحركة", en: "Move No." }),
-              className: "w-36",
-              render: (m) => (
-                <div className="space-y-1">
-                  <div className="font-mono text-xs font-bold text-foreground">
-                    {m.moveNo}
-                  </div>
-                  {renderMoveTypeBadge(m.moveType)}
-                </div>
-              ),
-            },
-            {
-              header: pick({ ar: "التاريخ والوقت", en: "Date & Time" }),
-              className: "w-36",
-              render: (m) => {
-                const dt = formatDateTime(m.movedAt, dir === "rtl" ? "ar" : "en");
-                return (
-                  <div className="space-y-0.5 text-xs">
-                    <div className="font-mono font-medium text-foreground flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 text-muted-foreground shrink-0" />
-                      <span>{dt.date}</span>
-                    </div>
-                    <div className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                      <span>{dt.time}</span>
-                    </div>
-                  </div>
-                );
-              },
-            },
-            {
-              header: pick({ ar: "الصنف والكود", en: "Product & SKU" }),
-              render: (m) => (
-                <div className="space-y-1">
-                  <div className="font-medium text-xs text-foreground line-clamp-1">
-                    {pick(m.productName)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
-                      {m.productSku}
-                    </span>
-                    {m.categoryName && (
-                      <span className="text-[10px] text-muted-foreground">
-                        {pick(m.categoryName)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ),
-            },
-            {
-              header: pick({ ar: "مسار المستودعات", en: "Facility Route" }),
-              className: "w-48",
-              render: (m) => {
-                if (m.moveType === "transfer") {
-                  return (
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {pick({ ar: "من:", en: "From:" })}
-                        </span>
-                        <span className="font-medium">{m.fromWarehouseName ? pick(m.fromWarehouseName) : "-"}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {pick({ ar: "إلى:", en: "To:" })}
-                        </span>
-                        <span className="font-medium">{m.toWarehouseName ? pick(m.toWarehouseName) : "-"}</span>
-                      </div>
-                    </div>
-                  );
-                }
+      {/* 3. The Dedicated Movement Ledger Table - Exactly matching user screenshot */}
+      <div className="surface-panel rounded-2xl shadow-xs border border-border/60 overflow-hidden bg-card">
+        <div className="overflow-x-auto">
+          <table className="w-full text-start border-collapse" dir="rtl">
+            <thead>
+              <tr className="border-b border-border/60 text-muted-foreground text-xs font-medium bg-muted/20">
+                <th className="py-4 px-5 text-start font-medium w-48">
+                  {pick({ ar: "التاريخ", en: "Date" })}
+                </th>
+                <th className="py-4 px-5 text-start font-medium">
+                  {pick({ ar: "المنتج", en: "Product" })}
+                </th>
+                <th className="py-4 px-5 text-start font-medium w-36">
+                  {pick({ ar: "نوع الحركة", en: "Move Type" })}
+                </th>
+                <th className="py-4 px-5 text-center font-medium w-28">
+                  {pick({ ar: "التغيير", en: "Change" })}
+                </th>
+                <th className="py-4 px-5 text-center font-medium w-24">
+                  {pick({ ar: "قبل", en: "Before" })}
+                </th>
+                <th className="py-4 px-5 text-center font-medium w-24">
+                  {pick({ ar: "بعد", en: "After" })}
+                </th>
+                <th className="py-4 px-5 text-start font-medium">
+                  {pick({ ar: "السبب", en: "Reason" })}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40 text-xs">
+              {paginatedMovements.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <Boxes className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
+                    <div>{pick({ ar: "لا توجد حركات مخزنية مسجلة", en: "No stock movements recorded" })}</div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedMovements.map((m) => {
+                  const enriched = enrichedMovementsMap.get(m.id);
+                  const delta = enriched ? enriched.deltaQty : (m.moveType === "out" ? -m.quantity : m.quantity);
+                  const isNegative = delta < 0;
+                  const isPositive = delta > 0;
+                  const prod = products.find((p) => p.id === m.productId);
 
-                if (m.moveType === "in") {
                   return (
-                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
-                      <WarehouseIcon className="w-3.5 h-3.5 shrink-0" />
-                      <span>{m.toWarehouseName ? pick(m.toWarehouseName) : pick({ ar: "المستودع الرئيسي", en: "Main Facility" })}</span>
-                    </div>
-                  );
-                }
-
-                if (m.moveType === "out") {
-                  return (
-                    <div className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1.5">
-                      <WarehouseIcon className="w-3.5 h-3.5 shrink-0" />
-                      <span>{m.fromWarehouseName ? pick(m.fromWarehouseName) : pick({ ar: "المستودع الرئيسي", en: "Main Facility" })}</span>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <WarehouseIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>
-                      {m.toWarehouseName
-                        ? pick(m.toWarehouseName)
-                        : m.fromWarehouseName
-                        ? pick(m.fromWarehouseName)
-                        : "-"}
-                    </span>
-                  </div>
-                );
-              },
-            },
-            {
-              header: pick({ ar: "الكمية", en: "Quantity" }),
-              className: "w-28 text-end",
-              render: (m) => {
-                const isPositive = m.moveType === "in";
-                const isNegative = m.moveType === "out";
-                return (
-                  <div className="text-end space-y-0.5">
-                    <div
-                      className={cn(
-                        "font-mono font-bold text-xs",
-                        isPositive
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : isNegative
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-foreground"
-                      )}
+                    <tr
+                      key={m.id}
+                      className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                      onClick={() => setSelectedVoucher(m)}
                     >
-                      {isPositive ? "+" : isNegative ? "-" : ""}
-                      {n(m.quantity)}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground block">
-                      {m.unitName ? pick(m.unitName) : pick({ ar: "وحدة", en: "units" })}
-                    </span>
-                  </div>
-                );
-              },
-            },
-            {
-              header: pick({ ar: "التكلفة والإجمالي", en: "Cost & Valuation" }),
-              className: "w-36 text-end",
-              render: (m) => (
-                <div className="text-end space-y-0.5">
-                  <div className="font-mono font-bold text-xs text-foreground">
-                    {money(m.totalCost)}
-                  </div>
-                  <div className="text-[10px] font-mono text-muted-foreground">
-                    @ {money(m.unitCost)}
-                  </div>
-                </div>
-              ),
-            },
-            {
-              header: pick({ ar: "المرجع / البيان", en: "Reference" }),
-              className: "w-32",
-              render: (m) => (
-                <div className="text-xs">
-                  <div className="font-medium text-foreground truncate max-w-[130px]" title={m.reference}>
-                    {m.reference}
-                  </div>
-                  {m.notes && (
-                    <div className="text-[10px] text-muted-foreground truncate max-w-[130px]" title={m.notes}>
-                      {m.notes}
-                    </div>
-                  )}
-                </div>
-              ),
-            },
-            {
-              header: pick({ ar: "الإجراءات", en: "Actions" }),
-              className: "w-24 text-center",
-              render: (m) => (
-                <div className="flex items-center justify-center">
-                  <button
-                    onClick={() => setSelectedVoucher(m)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    title={pick({ ar: "عرض وطباعة إذن الحركة المخزنية", en: "View & print voucher slip" })}
-                  >
-                    <FileText className="w-4 h-4" />
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-        />
+                      {/* 1. التاريخ */}
+                      <td className="py-4 px-5 text-foreground font-normal whitespace-nowrap">
+                        {formatMovementDateArabic(m.movedAt)}
+                      </td>
 
-        {/* Table Footer / Pagination */}
-        <div className="p-3 border-t border-border/60 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                      {/* 2. المنتج (Thumbnail + Name) */}
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          {prod?.image ? (
+                            <img
+                              src={prod.image}
+                              alt={pick(m.productName)}
+                              className="w-10 h-10 rounded-lg object-cover bg-muted/60 shrink-0 border border-border/40"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
+                              <Package className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-semibold text-foreground text-xs leading-snug line-clamp-1">
+                              {pick(m.productName)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                              {m.productSku}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 3. نوع الحركة */}
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          {enriched?.actionType === "order" ? (
+                            <>
+                              <TrendingDown className="w-4 h-4 text-rose-500 shrink-0" />
+                              <span className="text-foreground">
+                                {pick({ ar: "طلب جديد", en: "New Order" })}
+                              </span>
+                            </>
+                          ) : enriched?.actionType === "cancel" ? (
+                            <>
+                              <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <span className="text-foreground">
+                                {pick({ ar: "إلغاء طلب", en: "Cancelled Order" })}
+                              </span>
+                            </>
+                          ) : enriched?.actionType === "in" ? (
+                            <>
+                              <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <span className="text-foreground">
+                                {pick({ ar: "توريد مخزني", en: "Inbound Supply" })}
+                              </span>
+                            </>
+                          ) : enriched?.actionType === "transfer" ? (
+                            <>
+                              <ArrowLeftRight className="w-4 h-4 text-purple-500 shrink-0" />
+                              <span className="text-foreground">
+                                {pick({ ar: "تحويل فرعي", en: "Transfer" })}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <SlidersHorizontal className="w-4 h-4 text-amber-500 shrink-0" />
+                              <span className="text-foreground">
+                                {pick({ ar: "تسوية جردية", en: "Adjustment" })}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 4. التغيير */}
+                      <td className="py-4 px-5 text-center font-mono font-bold text-sm whitespace-nowrap">
+                        {isNegative ? (
+                          <span className="text-rose-500">
+                            {Math.abs(delta)}-
+                          </span>
+                        ) : isPositive ? (
+                          <span className="text-emerald-500">
+                            {Math.abs(delta)}+
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                      </td>
+
+                      {/* 5. قبل */}
+                      <td className="py-4 px-5 text-center font-mono font-normal text-foreground text-sm whitespace-nowrap">
+                        {enriched?.beforeQty !== undefined ? n(enriched.beforeQty) : "-"}
+                      </td>
+
+                      {/* 6. بعد */}
+                      <td className="py-4 px-5 text-center font-mono font-normal text-foreground text-sm whitespace-nowrap">
+                        {enriched?.afterQty !== undefined ? n(enriched.afterQty) : "-"}
+                      </td>
+
+                      {/* 7. السبب */}
+                      <td className="py-4 px-5 text-muted-foreground text-xs max-w-xs font-normal">
+                        <span className="line-clamp-2" title={enriched?.reason || m.notes || m.reference}>
+                          {enriched?.reason || m.notes || m.reference || "Stock movement transaction"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer / Pagination */}
+        <div className="p-3.5 border-t border-border/40 bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="text-muted-foreground">
-            {pick({ ar: "عرض", en: "Showing" })}{" "}
-            <span className="font-mono font-semibold text-foreground">
-              {paginatedMovements.length}
-            </span>{" "}
-            {pick({ ar: "من أصل", en: "of" })}{" "}
+            {pick({ ar: "إجمالي الحركات المعروضة:", en: "Total shown:" })}{" "}
             <span className="font-mono font-semibold text-foreground">
               {filteredMovements.length}
-            </span>{" "}
-            {pick({ ar: "حركة مخزنية", en: "movements" })}
+            </span>
           </div>
 
           <TablePagination
@@ -866,9 +712,9 @@ export function StockMovementsTab({
         </div>
       </div>
 
-      {/* 4. Modal: Record New Stock Movement */}
+      {/* 4. Record New Movement Modal */}
       <Dialog open={isRecordModalOpen} onOpenChange={setIsRecordModalOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6" dir={dir}>
           <DialogHeader className="pb-3 border-b border-border/60">
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -880,8 +726,8 @@ export function StockMovementsTab({
                 </span>
                 <span className="text-xs font-normal text-muted-foreground block">
                   {pick({
-                    ar: "إثبات توريد، صرف، تحويل بين المستودعات، أو تسوية جردية معتمدة",
-                    en: "Record receipt, issue, inter-facility transfer, or stock adjustment",
+                    ar: "قيد حركة بيع، توريد مشتريات، تحويل بين المستودعات، أو تسوية",
+                    en: "Record sales, supply, inter-facility transfer, or adjustment",
                   })}
                 </span>
               </div>
@@ -889,7 +735,7 @@ export function StockMovementsTab({
           </DialogHeader>
 
           <form onSubmit={handleFormSubmit} className="space-y-4 pt-2">
-            {/* Movement Type Selector Pills */}
+            {/* Movement Type Selector */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
                 {pick({ ar: "نوع الحركة المخزنية *", en: "Movement Type *" })}
@@ -898,39 +744,27 @@ export function StockMovementsTab({
                 {[
                   {
                     id: "in",
-                    label: { ar: "وارد مخزني", en: "Inbound" },
-                    sub: { ar: "توريد / شراء", en: "Receipt" },
-                    icon: ArrowDownRight,
-                    color: "text-emerald-600 dark:text-emerald-400",
-                    border: "border-emerald-500/30",
-                    bg: "bg-emerald-500/10",
+                    label: { ar: "توريد مخزني", en: "Inbound" },
+                    icon: TrendingUp,
+                    color: "text-emerald-500",
                   },
                   {
                     id: "out",
-                    label: { ar: "صادر مخزني", en: "Outbound" },
-                    sub: { ar: "صرف / مبيعات", en: "Issue" },
-                    icon: ArrowUpRight,
-                    color: "text-blue-600 dark:text-blue-400",
-                    border: "border-blue-500/30",
-                    bg: "bg-blue-500/10",
+                    label: { ar: "طلب جديد (صرف)", en: "New Order (Issue)" },
+                    icon: TrendingDown,
+                    color: "text-rose-500",
                   },
                   {
                     id: "transfer",
-                    label: { ar: "تحويل داخلي", en: "Transfer" },
-                    sub: { ar: "بين فرعين", en: "Branch Transfer" },
+                    label: { ar: "تحويل فرعي", en: "Transfer" },
                     icon: ArrowLeftRight,
-                    color: "text-purple-600 dark:text-purple-400",
-                    border: "border-purple-500/30",
-                    bg: "bg-purple-500/10",
+                    color: "text-purple-500",
                   },
                   {
                     id: "adjustment",
                     label: { ar: "تسوية جردية", en: "Adjustment" },
-                    sub: { ar: "عجز أو زيادة", en: "Correction" },
                     icon: SlidersHorizontal,
-                    color: "text-amber-600 dark:text-amber-400",
-                    border: "border-amber-500/30",
-                    bg: "bg-amber-500/10",
+                    color: "text-amber-500",
                   },
                 ].map((item) => {
                   const isSelected = formMoveType === item.id;
@@ -939,96 +773,66 @@ export function StockMovementsTab({
                     <button
                       type="button"
                       key={item.id}
-                      onClick={() => {
-                        setFormMoveType(item.id as StockMoveType);
-                        if (item.id === "in") {
-                          setFormFromWhId("");
-                          if (!formToWhId) setFormToWhId(warehouses[0]?.id || "");
-                        } else if (item.id === "out") {
-                          setFormToWhId("");
-                          if (!formFromWhId) setFormFromWhId(warehouses[0]?.id || "");
-                        } else if (item.id === "transfer") {
-                          if (!formFromWhId) setFormFromWhId(warehouses[0]?.id || "");
-                          if (!formToWhId || formToWhId === warehouses[0]?.id) {
-                            setFormToWhId(warehouses[1]?.id || "");
-                          }
-                        }
-                      }}
+                      onClick={() => setFormMoveType(item.id as StockMoveType)}
                       className={cn(
-                        "p-2.5 rounded-xl border text-start transition-all flex flex-col justify-between gap-1",
+                        "p-2.5 rounded-xl border text-start transition-all flex flex-col justify-between gap-1 cursor-pointer",
                         isSelected
-                          ? `${item.bg} ${item.border} ring-2 ring-primary/20 shadow-xs`
+                          ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-xs"
                           : "border-border/60 hover:bg-muted/40"
                       )}
                     >
-                      <div className="flex items-center justify-between">
-                        <Icon className={cn("w-4 h-4", item.color)} />
-                        {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-foreground">{pick(item.label)}</div>
-                        <div className="text-[10px] text-muted-foreground">{pick(item.sub)}</div>
-                      </div>
+                      <Icon className={cn("w-4 h-4", item.color)} />
+                      <div className="text-xs font-bold text-foreground mt-1">{pick(item.label)}</div>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Target Product Selector */}
+            {/* Target Product */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                {pick({ ar: "الصنف المراد تحريكه *", en: "Select Product *" })}
+                {pick({ ar: "المنتج المعني بالحركة *", en: "Select Product *" })}
               </label>
               <select
                 value={formProductId}
-                onChange={(e) => handleProductChange(e.target.value)}
+                onChange={(e) => {
+                  setFormProductId(e.target.value);
+                  const p = products.find((pr) => pr.id === e.target.value);
+                  if (p) setFormUnitCost(p.costPrice);
+                }}
                 required
                 className="w-full py-2 px-3 text-xs rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
               >
-                <option value="">{pick({ ar: "اختر الصنف من القائمة...", en: "Select product..." })}</option>
+                <option value="">{pick({ ar: "اختر المنتج من القائمة...", en: "Select product..." })}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    [{p.sku}] {pick(p.name)} — (
-                    {pick({ ar: "الرصيد الحالي: ", en: "Current Stock: " })}
+                    [{p.sku}] {pick(p.name)} (
+                    {pick({ ar: "الرصيد الحالي: ", en: "Current: " })}
                     {p.qty})
                   </option>
                 ))}
               </select>
 
               {activeProduct && (
-                <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between text-xs">
+                <div className="p-2.5 rounded-xl bg-muted/30 border border-border/40 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <Package className="w-4 h-4 text-primary shrink-0" />
-                    <div>
-                      <span className="font-semibold text-foreground">{pick(activeProduct.name)}</span>
-                      <span className="text-[11px] text-muted-foreground ms-2">
-                        ({activeProduct.sku})
-                      </span>
-                    </div>
+                    <span className="font-semibold text-foreground">{pick(activeProduct.name)}</span>
                   </div>
-                  <div className="text-end">
-                    <span className="text-muted-foreground text-[11px]">
-                      {pick({ ar: "الرصيد المتاح:", en: "Available:" })}{" "}
-                    </span>
-                    <strong className="font-mono text-foreground">{activeProduct.qty}</strong>
+                  <div className="font-mono text-muted-foreground">
+                    {pick({ ar: "الرصيد المتاح:", en: "Available:" })} <strong className="text-foreground">{activeProduct.qty}</strong>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Warehouse Facilities Selectors */}
+            {/* Facilities for Transfer/In/Out */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Source Warehouse (for Out, Transfer, and Adjustment) */}
               {(formMoveType === "out" || formMoveType === "transfer" || formMoveType === "adjustment") && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <WarehouseIcon className="w-3.5 h-3.5 text-rose-500" />
-                    <span>
-                      {formMoveType === "transfer"
-                        ? pick({ ar: "من مستودع المصدر *", en: "Source Warehouse *" })
-                        : pick({ ar: "المستودع المصدر *", en: "Facility Warehouse *" })}
-                    </span>
+                  <label className="text-xs font-semibold text-foreground">
+                    {pick({ ar: "المستودع المصدر *", en: "Source Warehouse *" })}
                   </label>
                   <select
                     value={formFromWhId}
@@ -1046,16 +850,10 @@ export function StockMovementsTab({
                 </div>
               )}
 
-              {/* Destination Warehouse (for In and Transfer) */}
               {(formMoveType === "in" || formMoveType === "transfer") && (
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <WarehouseIcon className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>
-                      {formMoveType === "transfer"
-                        ? pick({ ar: "إلى مستودع الوجهة *", en: "Destination Warehouse *" })
-                        : pick({ ar: "مستودع الوجهة المستلم *", en: "Destination Warehouse *" })}
-                    </span>
+                  <label className="text-xs font-semibold text-foreground">
+                    {pick({ ar: "المستودع الوجهة *", en: "Destination Warehouse *" })}
                   </label>
                   <select
                     value={formToWhId}
@@ -1065,7 +863,7 @@ export function StockMovementsTab({
                   >
                     <option value="">{pick({ ar: "اختر المستودع...", en: "Select warehouse..." })}</option>
                     {warehouses.map((wh) => (
-                      <option key={wh.id} value={wh.id} disabled={formMoveType === "transfer" && wh.id === formFromWhId}>
+                      <option key={wh.id} value={wh.id} disabled={wh.id === formFromWhId}>
                         {pick(wh.name)} ({wh.code})
                       </option>
                     ))}
@@ -1074,16 +872,15 @@ export function StockMovementsTab({
               )}
             </div>
 
-            {/* Quantity and Unit Cost */}
+            {/* Quantity */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Quantity */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  {pick({ ar: "الكمية المطلوبة *", en: "Quantity *" })}
+                  {pick({ ar: "كمية الحركة (التغيير) *", en: "Quantity Change *" })}
                 </label>
                 <input
                   type="number"
-                  min="0.01"
+                  min="1"
                   step="any"
                   value={formQuantity}
                   onChange={(e) => setFormQuantity(Number(e.target.value))}
@@ -1092,7 +889,6 @@ export function StockMovementsTab({
                 />
               </div>
 
-              {/* Unit Cost */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
                   {pick({ ar: "سعر التكلفة للوحدة (ج.م)", en: "Unit Cost (EGP)" })}
@@ -1108,62 +904,20 @@ export function StockMovementsTab({
               </div>
             </div>
 
-            {/* Realtime Valuation Preview */}
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                {pick({ ar: "إجمالي قيمة الحركة:", en: "Estimated Total Valuation:" })}
-              </span>
-              <span className="font-mono font-bold text-primary text-sm">
-                {money(formQuantity * formUnitCost)}
-              </span>
-            </div>
-
-            {/* Reference & Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  {pick({ ar: "المرجع / رقم الإذن أو السند", en: "Reference / Document #" })}
-                </label>
-                <input
-                  type="text"
-                  value={formReference}
-                  onChange={(e) => setFormReference(e.target.value)}
-                  placeholder="e.g. PO-2026-101, REC-9920"
-                  className="w-full py-2 px-3 text-xs rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  {pick({ ar: "تاريخ ووقت الحركة", en: "Date & Time" })}
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formMovedAt}
-                  onChange={(e) => setFormMovedAt(e.target.value)}
-                  className="w-full py-2 px-3 text-xs rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
+            {/* Reason / Reference */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                {pick({ ar: "ملاحظات إضافية", en: "Notes & Remarks" })}
+                {pick({ ar: "السبب / البيان أو رقم الطلب", en: "Reason / Order ID Reference" })}
               </label>
-              <textarea
+              <input
+                type="text"
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
-                rows={2}
-                placeholder={pick({
-                  ar: "أي تفاصيل تخص عملية النقل، سبب التسوية الجردية، أو فحص الجودة...",
-                  en: "Add any additional context or inspection notes...",
-                })}
-                className="w-full py-2 px-3 text-xs rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:outline-hidden resize-none"
+                placeholder="e.g. Stock deducted for order item / ORD202602246848"
+                className="w-full py-2 px-3 text-xs rounded-xl border border-input bg-background focus:ring-2 focus:ring-primary/20 focus:outline-hidden"
               />
             </div>
 
-            {/* Form Error Notice */}
             {formError && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1171,7 +925,6 @@ export function StockMovementsTab({
               </div>
             )}
 
-            {/* Submit Actions */}
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
               <Btn
                 type="button"
@@ -1186,12 +939,12 @@ export function StockMovementsTab({
                 type="submit"
                 size="sm"
                 disabled={formSubmitting}
-                className="bg-primary text-primary-foreground font-semibold rounded-xl text-xs px-5 shadow-sm flex items-center gap-2"
+                className="bg-primary text-primary-foreground font-semibold rounded-xl text-xs px-5 shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 {formSubmitting && <RotateCcw className="w-3.5 h-3.5 animate-spin" />}
                 <span>
                   {formSubmitting
-                    ? pick({ ar: "جاري القيد...", en: "Saving..." })
+                    ? pick({ ar: "جاري الحفظ...", en: "Saving..." })
                     : pick({ ar: "تأكيد وقيد الحركة", en: "Confirm & Record" })}
                 </span>
               </Btn>
@@ -1200,189 +953,50 @@ export function StockMovementsTab({
         </DialogContent>
       </Dialog>
 
-      {/* 5. Modal: Printable Movement Slip / Voucher */}
+      {/* 5. Movement Slip / Voucher Modal */}
       <Dialog open={Boolean(selectedVoucher)} onOpenChange={() => setSelectedVoucher(null)}>
-        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto rounded-3xl p-6 sm:p-8">
+        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto rounded-3xl p-6 sm:p-8" dir={dir}>
           {selectedVoucher && (
             <div className="space-y-6">
-              {/* Printable Header */}
-              <div className="border-b-2 border-primary/20 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                      WAZEER EL-HELW ERP
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {pick({ ar: "إدارة المخازن والمستودعات المركزية", en: "Central Warehousing Division" })}
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-black text-foreground">
-                    {selectedVoucher.moveType === "in"
-                      ? pick({ ar: "إذن استلام وتوريد مخزني", en: "Inbound Receipt Voucher" })
-                      : selectedVoucher.moveType === "out"
-                      ? pick({ ar: "إذن صرف مواد وبضاعة", en: "Stock Issue Voucher" })
-                      : selectedVoucher.moveType === "transfer"
-                      ? pick({ ar: "إذن تحويل بين الفروع والمصانع", en: "Inter-Facility Transfer Note" })
-                      : pick({ ar: "إذن تسوية جردية معتمدة", en: "Stock Adjustment Certificate" })}
+              <div className="border-b-2 border-primary/20 pb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-primary block">WAZEER EL-HELW ERP</span>
+                  <h3 className="text-xl font-bold text-foreground">
+                    {pick({ ar: "إذن حركة مخزنية معتمد", en: "Official Movement Voucher" })}
                   </h3>
                 </div>
-
-                <div className="text-start sm:text-end space-y-1">
-                  <div className="text-xs font-mono font-bold text-foreground">
-                    {selectedVoucher.moveNo}
-                  </div>
-                  <div className="text-[11px] font-mono text-muted-foreground">
-                    {formatDateTime(selectedVoucher.movedAt, dir === "rtl" ? "ar" : "en").full}
-                  </div>
+                <div className="text-end font-mono text-xs text-muted-foreground">
+                  <div>{selectedVoucher.moveNo}</div>
+                  <div>{formatMovementDateArabic(selectedVoucher.movedAt)}</div>
                 </div>
               </div>
 
-              {/* Movement Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-muted/30 p-3.5 rounded-2xl border border-border/60">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-muted/20 p-3.5 rounded-2xl border border-border/40">
                 <div>
-                  <span className="text-muted-foreground text-[10px] block">
-                    {pick({ ar: "نوع الإذن", en: "Voucher Type" })}
-                  </span>
-                  <div className="mt-1">{renderMoveTypeBadge(selectedVoucher.moveType)}</div>
+                  <span className="text-muted-foreground block">{pick({ ar: "المنتج", en: "Product" })}</span>
+                  <span className="font-bold text-foreground mt-0.5 block">{pick(selectedVoucher.productName)}</span>
                 </div>
-
                 <div>
-                  <span className="text-muted-foreground text-[10px] block">
-                    {pick({ ar: "رقم المرجع / السند", en: "Reference No." })}
-                  </span>
-                  <div className="font-mono font-bold text-foreground mt-1">
-                    {selectedVoucher.reference || "N/A"}
-                  </div>
+                  <span className="text-muted-foreground block">{pick({ ar: "كود SKU", en: "SKU" })}</span>
+                  <span className="font-mono font-bold text-foreground mt-0.5 block">{selectedVoucher.productSku}</span>
                 </div>
-
                 <div>
-                  <span className="text-muted-foreground text-[10px] block">
-                    {pick({ ar: "من منشأة", en: "Origin" })}
-                  </span>
-                  <div className="font-medium text-foreground mt-1">
-                    {selectedVoucher.fromWarehouseName
-                      ? pick(selectedVoucher.fromWarehouseName)
-                      : pick({ ar: "المورد الخارجي", en: "External Vendor" })}
-                  </div>
+                  <span className="text-muted-foreground block">{pick({ ar: "الكمية", en: "Quantity" })}</span>
+                  <span className="font-mono font-bold text-foreground mt-0.5 block">{n(selectedVoucher.quantity)}</span>
                 </div>
-
                 <div>
-                  <span className="text-muted-foreground text-[10px] block">
-                    {pick({ ar: "إلى منشأة", en: "Destination" })}
-                  </span>
-                  <div className="font-medium text-foreground mt-1">
-                    {selectedVoucher.toWarehouseName
-                      ? pick(selectedVoucher.toWarehouseName)
-                      : pick({ ar: "منصرف خارجي / مبيعات", en: "Dispatched Out" })}
-                  </div>
+                  <span className="text-muted-foreground block">{pick({ ar: "القيمة الإجمالية", en: "Total Valuation" })}</span>
+                  <span className="font-mono font-bold text-primary mt-0.5 block">{money(selectedVoucher.totalCost)}</span>
                 </div>
               </div>
 
-              {/* Product Ledger Line Table */}
-              <div className="border border-border/60 rounded-2xl overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50 border-b border-border/60 text-muted-foreground">
-                    <tr>
-                      <th className="py-2.5 px-3 text-start font-semibold">
-                        {pick({ ar: "كود الصنف", en: "SKU" })}
-                      </th>
-                      <th className="py-2.5 px-3 text-start font-semibold">
-                        {pick({ ar: "الصنف والوصف", en: "Description" })}
-                      </th>
-                      <th className="py-2.5 px-3 text-end font-semibold">
-                        {pick({ ar: "الكمية", en: "Qty" })}
-                      </th>
-                      <th className="py-2.5 px-3 text-end font-semibold">
-                        {pick({ ar: "تكلفة الوحدة", en: "Unit Cost" })}
-                      </th>
-                      <th className="py-2.5 px-3 text-end font-semibold">
-                        {pick({ ar: "الإجمالي", en: "Total" })}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    <tr>
-                      <td className="py-3 px-3 font-mono font-medium text-foreground">
-                        {selectedVoucher.productSku}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-foreground">
-                          {pick(selectedVoucher.productName)}
-                        </div>
-                        {selectedVoucher.categoryName && (
-                          <div className="text-[10px] text-muted-foreground">
-                            {pick(selectedVoucher.categoryName)}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-end font-mono font-bold text-foreground">
-                        {n(selectedVoucher.quantity)}{" "}
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          {selectedVoucher.unitName ? pick(selectedVoucher.unitName) : ""}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-end font-mono text-foreground">
-                        {money(selectedVoucher.unitCost)}
-                      </td>
-                      <td className="py-3 px-3 text-end font-mono font-bold text-primary">
-                        {money(selectedVoucher.totalCost)}
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot className="bg-muted/30 font-bold border-t border-border/60">
-                    <tr>
-                      <td colSpan={4} className="py-2.5 px-3 text-end text-muted-foreground">
-                        {pick({ ar: "القيمة الإجمالية للإذن:", en: "Total Voucher Valuation:" })}
-                      </td>
-                      <td className="py-2.5 px-3 text-end font-mono text-primary text-sm">
-                        {money(selectedVoucher.totalCost)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              {/* Remarks */}
               {selectedVoucher.notes && (
-                <div className="p-3 rounded-xl bg-muted/20 border border-border/40 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground me-1">
-                    {pick({ ar: "ملاحظات:", en: "Notes:" })}
-                  </span>
-                  {selectedVoucher.notes}
+                <div className="p-3 rounded-xl bg-muted/20 border border-border/40 text-xs">
+                  <strong className="text-foreground">{pick({ ar: "السبب / البيان:", en: "Reason:" })}</strong>{" "}
+                  <span className="text-muted-foreground">{selectedVoucher.notes}</span>
                 </div>
               )}
 
-              {/* Signature Blocks */}
-              <div className="pt-6 border-t border-border/60 grid grid-cols-3 gap-4 text-center text-xs">
-                <div className="space-y-8">
-                  <div className="text-muted-foreground font-medium">
-                    {pick({ ar: "أمين المستودع المُسلّم", en: "Issued By" })}
-                  </div>
-                  <div className="border-b border-dashed border-border/80 w-3/4 mx-auto pb-1 text-[11px] text-muted-foreground">
-                    ..........................
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="text-muted-foreground font-medium">
-                    {pick({ ar: "المستلم المعتمد", en: "Received By" })}
-                  </div>
-                  <div className="border-b border-dashed border-border/80 w-3/4 mx-auto pb-1 text-[11px] text-muted-foreground">
-                    ..........................
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="text-muted-foreground font-medium">
-                    {pick({ ar: "مراقبة المخزون والتدقيق", en: "Auditor / Quality" })}
-                  </div>
-                  <div className="border-b border-dashed border-border/80 w-3/4 mx-auto pb-1 text-[11px] text-muted-foreground">
-                    ..........................
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Actions */}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/60">
                 <Btn
                   variant="outline"
@@ -1395,10 +1009,10 @@ export function StockMovementsTab({
                 <Btn
                   size="sm"
                   onClick={() => window.print()}
-                  className="bg-primary text-primary-foreground font-semibold rounded-xl text-xs px-4 flex items-center gap-1.5 shadow-sm"
+                  className="bg-primary text-primary-foreground font-semibold rounded-xl text-xs px-4 flex items-center gap-1.5 shadow-xs"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>{pick({ ar: "طباعة الإذن الرسمي", en: "Print Voucher Slip" })}</span>
+                  <span>{pick({ ar: "طباعة الإذن", en: "Print Slip" })}</span>
                 </Btn>
               </div>
             </div>
