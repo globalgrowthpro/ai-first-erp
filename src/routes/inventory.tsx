@@ -58,7 +58,33 @@ type InventorySubTab = "products" | "categories" | "warehouses" | "branches" | "
 
 function InventoryPage() {
   const { t, pick, money, n, dir } = useI18n();
-  const [activeTab, setActiveTab] = useState<InventorySubTab>("products");
+  const [activeTab, setActiveTab] = useState<InventorySubTab>(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("tab");
+      if (
+        p === "stock_movements" ||
+        p === "movements" ||
+        p === "products" ||
+        p === "categories" ||
+        p === "warehouses" ||
+        p === "branches" ||
+        p === "units" ||
+        p === "bom"
+      ) {
+        return p === "movements" ? "stock_movements" : (p as InventorySubTab);
+      }
+    }
+    return "products";
+  });
+
+  const handleTabChange = (tabId: InventorySubTab) => {
+    setActiveTab(tabId);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tabId);
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const {
     products,
@@ -132,10 +158,10 @@ function InventoryPage() {
       badge: products.length,
     },
     {
-      id: "categories",
-      label: { ar: "تصنيفات الأصناف", en: "Categories" },
-      icon: Tag,
-      badge: categories.length,
+      id: "stock_movements",
+      label: { ar: "حركات المخزون وسجل التحويلات", en: "Stock Movements & Ledger" },
+      icon: ArrowLeftRight,
+      badge: stockMoves.length,
     },
     {
       id: "warehouses",
@@ -150,6 +176,12 @@ function InventoryPage() {
       badge: branches.length,
     },
     {
+      id: "categories",
+      label: { ar: "تصنيفات الأصناف", en: "Categories" },
+      icon: Tag,
+      badge: categories.length,
+    },
+    {
       id: "units",
       label: { ar: "وحدات القياس", en: "Units of Measure" },
       icon: Scale,
@@ -160,12 +192,6 @@ function InventoryPage() {
       label: { ar: "شجرة المنتج والوصفات (BOM)", en: "Bill of Materials (BOM)" },
       icon: ChefHat,
       badge: boms.length,
-    },
-    {
-      id: "stock_movements",
-      label: { ar: "حركات المخزون وسجل التحويلات", en: "Stock Movements & Ledger" },
-      icon: ArrowLeftRight,
-      badge: stockMoves.length,
     },
   ];
 
@@ -179,13 +205,32 @@ function InventoryPage() {
             en: "Inventory & Production (BOM)",
           })}
           subtitle={pick({
-            ar: "المنتجات، التصنيفات، المستودعات، وحدات القياس، وشجرة مكونات الحلويات",
-            en: "Products, categories, facilities, units of measure, and sweet confectionery recipes",
+            ar: "المنتجات، حركات المخزون، المستودعات، وحدات القياس، وشجرة مكونات الحلويات",
+            en: "Products, stock movements, facilities, units of measure, and sweet confectionery recipes",
           })}
         />
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {activeTab !== "branches" && (
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {/* Quick Tab Jump to Stock Movements */}
+          <Btn
+            variant={activeTab === "stock_movements" ? "solid" : "outline"}
+            size="sm"
+            onClick={() => handleTabChange("stock_movements")}
+            className={cn(
+              "gap-1.5 text-xs font-bold shadow-xs cursor-pointer",
+              activeTab === "stock_movements"
+                ? "bg-primary text-primary-foreground"
+                : "border-primary/40 text-primary hover:bg-primary/10"
+            )}
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <span>{pick({ ar: "حركات المخزون", en: "Stock Movements" })}</span>
+            <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-primary/20 text-foreground font-mono">
+              {n(stockMoves.length)}
+            </span>
+          </Btn>
+
+          {activeTab !== "branches" && activeTab !== "stock_movements" && (
             <Btn
               variant="outline"
               size="sm"
@@ -219,7 +264,7 @@ function InventoryPage() {
       </div>
 
       {/* Global Inventory KPIs */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {/* Total Stock Value */}
         <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
@@ -234,29 +279,52 @@ function InventoryPage() {
           </span>
         </div>
 
+        {/* Stock Movements Card (Clickable to switch tab) */}
+        <button
+          type="button"
+          onClick={() => handleTabChange("stock_movements")}
+          className={cn(
+            "surface-panel rounded-xl p-4 shadow-sm space-y-1 text-start transition-all cursor-pointer border",
+            activeTab === "stock_movements"
+              ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+              : "border-border/60 hover:border-primary/40 hover:bg-muted/40"
+          )}
+        >
+          <span className="text-[11px] font-semibold text-primary flex items-center justify-between">
+            <span>{pick({ ar: "حركات المخزون", en: "Stock Movements" })}</span>
+            <ArrowLeftRight className="w-3.5 h-3.5 text-primary shrink-0" />
+          </span>
+          <div className="text-lg font-mono font-bold text-foreground">
+            {n(stockMoves.length)}
+          </div>
+          <span className="text-[10px] text-muted-foreground block">
+            {pick({ ar: "انقر لفتح سجل التحويلات والأذون", en: "Click to open movement ledger" })}
+          </span>
+        </button>
+
         {/* Branch Products */}
         <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
-            {pick({ ar: "منتجات الفروع (Branch Products)", en: "Branch Products" })}
+            {pick({ ar: "منتجات الفروع", en: "Branch Products" })}
           </span>
           <div className="text-lg font-mono font-bold text-primary">
             {n(finishedProductsCount)}
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {pick({ ar: "أصناف جاهزة للبيع المباشر بالفروع", en: "Ready for retail sale at branches" })}
+            {pick({ ar: "أصناف جاهزة للبيع المباشر", en: "Ready for retail sale" })}
           </span>
         </div>
 
         {/* Factory Products */}
         <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
-            {pick({ ar: "منتجات المصنع (Factory Products)", en: "Factory Products" })}
+            {pick({ ar: "منتجات المصنع", en: "Factory Products" })}
           </span>
           <div className="text-lg font-mono font-bold text-foreground">
             {n(rawMaterialsCount)}
           </div>
           <span className="text-[10px] text-muted-foreground block">
-            {pick({ ar: "خامات وتصنيع المطبخ المركزي", en: "Factory & central kitchen supplies" })}
+            {pick({ ar: "خامات وتصنيع المطبخ المركزي", en: "Factory & kitchen supplies" })}
           </span>
         </div>
 
@@ -293,7 +361,7 @@ function InventoryPage() {
         </div>
 
         {/* Active BOM Recipes */}
-        <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1 col-span-2 sm:col-span-1">
+        <div className="surface-panel rounded-xl p-4 shadow-sm space-y-1">
           <span className="text-[11px] font-medium text-muted-foreground block">
             {pick({ ar: "وصفات التصنيع (BOM)", en: "Active BOM Recipes" })}
           </span>
@@ -307,30 +375,35 @@ function InventoryPage() {
         </div>
       </div>
 
-      {/* Sub-module Tabs Strip */}
-      <div className="surface-panel rounded-xl p-1.5 shadow-sm">
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+      {/* Sub-module Tabs Strip - Wrapped & Highly Visible */}
+      <div className="surface-panel rounded-2xl p-2 shadow-sm border border-border/60">
+        <div className="flex flex-wrap items-center gap-1.5">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
+            const isStockMove = tab.id === "stock_movements";
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200",
+                  "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : isStockMove
+                    ? "text-primary hover:bg-primary/10 border border-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70"
                 )}
               >
-                <tab.icon className="w-4 h-4 shrink-0" />
+                <tab.icon className={cn("w-4 h-4 shrink-0", isStockMove && !isActive && "text-primary")} />
                 <span>{pick(tab.label)}</span>
                 {tab.badge !== undefined && (
                   <span
                     className={cn(
-                      "px-1.5 py-0.2 text-[10px] rounded-full font-mono font-medium",
+                      "px-1.5 py-0.5 text-[10px] rounded-full font-mono font-medium",
                       isActive
                         ? "bg-primary-foreground/20 text-primary-foreground"
+                        : isStockMove
+                        ? "bg-primary/15 text-primary"
                         : "bg-muted text-muted-foreground"
                     )}
                   >
