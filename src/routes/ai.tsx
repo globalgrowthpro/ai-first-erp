@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   MessageSquareText,
@@ -41,6 +41,10 @@ import { useSidebarVisible } from "@/lib/ui-prefs";
 import { RealQrCode } from "@/components/ui/qr-code";
 import { cn } from "@/lib/utils";
 import { useAiModulesStore, DEFAULT_GEMINI_KEY } from "@/lib/ai-modules-store";
+import { usePosOrdersStore } from "@/lib/pos-orders-store";
+import { useInventoryStore } from "@/lib/inventory-store";
+import { useHelpdeskStore } from "@/lib/helpdesk-store";
+import { usePartnersStore } from "@/lib/partners-store";
 
 export const Route = createFileRoute("/ai")({
   head: () => ({
@@ -131,8 +135,30 @@ interface ChatMessage {
   status?: "sent" | "delivered" | "read";
 }
 
+function formatActivityTime(isoString?: string | null): string {
+  if (!isoString) return "اليوم";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "اليوم";
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return diffMins <= 1 ? "الآن" : `${diffMins} دقيقة`;
+    if (diffHours < 24) {
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    if (diffDays === 1) return "أمس";
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  } catch {
+    return "اليوم";
+  }
+}
+
 // ==========================================
-// Mock Data for All 8 Activities
+// Fallback Reference Data
 // ==========================================
 
 const SAMPLE_DOCUMENTS: Record<string, DocumentData> = {
@@ -697,14 +723,365 @@ function AiWorkspacePage() {
     };
   }, [isAiUserMenuOpen]);
 
+  // Real ERP Stores
+  const { orders: posOrders } = usePosOrdersStore();
+  const { stockMoves } = useInventoryStore();
+  const { tickets: helpdeskTickets } = useHelpdeskStore();
+  const { partners } = usePartnersStore();
+  const { modules } = useAiModulesStore();
+
+  // Dynamically map real ERP activities, documents, and contextual chats
+  const { realActivities, realDocuments, realChats } = useMemo(() => {
+    const activities: ActivityItem[] = [];
+    const documents: Record<string, DocumentData> = {};
+    const chats: Record<string, ChatMessage[]> = {};
+
+    // 1. Real POS Invoices from Supabase
+    (posOrders || []).slice(0, 10).forEach((order) => {
+      const actId = `act-pos-${order.id}`;
+      const docId = `doc-pos-${order.id}`;
+      const branchLabel = pick(order.branchName.ar, order.branchName.en);
+      const isPaid = order.status === "completed" || order.status === "paid";
+
+      activities.push({
+        id: actId,
+        type: "invoice",
+        title: pick({ ar: `فاتورة ${order.orderNumber}`, en: `Invoice ${order.orderNumber}` }),
+        subtitle: `${order.customerName || pick("عميل نقدي", "Cash Client")} • ${branchLabel}`,
+        time: formatActivityTime(order.createdAt),
+        iconBg: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+        iconColor: "text-blue-600",
+        icon: FileText,
+        documentId: docId,
+      });
+
+      documents[docId] = {
+        id: docId,
+        category: "INVOICE",
+        categoryLabel: { ar: "فاتورة مبيعات معتمدة", en: "Sales Invoice" },
+        code: order.orderNumber,
+        title: `فاتورة ${order.orderNumber}`,
+        clientName: order.customerName || pick("عميل نقدي / صالة", "Cash Customer"),
+        clientEmail: order.customerPhone ? `tel:${order.customerPhone}` : "pos@wazeer-elhelw.com",
+        clientPhone: order.customerPhone || "+20 100 112 0000",
+        clientAddress: branchLabel,
+        partyLabel: { ar: "فرع الإصدار والبيع:", en: "Branch / Sales Point:" },
+        invoiceDate: order.formattedDate || new Date(order.createdAt).toLocaleDateString(),
+        dueDate: order.formattedDate || new Date(order.createdAt).toLocaleDateString(),
+        dateLabel: { ar: "تاريخ الفاتورة", en: "Invoice Date" },
+        dueDateLabel: { ar: "تاريخ السداد", en: "Payment Date" },
+        status: isPaid ? "Paid" : order.status,
+        statusTone: isPaid ? "emerald" : "blue",
+        items:
+          order.items && order.items.length > 0
+            ? order.items.map((it, idx) => ({
+                num: idx + 1,
+                description: pick(it.name.ar, it.name.en),
+                qty: it.quantity,
+                unitPrice: it.unitPrice,
+                total: it.totalPrice,
+              }))
+            : [
+                {
+                  num: 1,
+                  description: "طلب مبيعات حلويات وزير الحلو",
+                  qty: 1,
+                  unitPrice: order.total,
+                  total: order.total,
+                },
+              ],
+        subtotal: order.subtotal || order.total,
+        taxPercent: 14,
+        taxAmount: order.vatAmount || 0,
+        total: order.total,
+        notesTitle: { ar: "تفاصيل العملية ونقطة البيع", en: "POS Operation & Payment Details" },
+        notes: `الكاشير المناوب: ${order.cashierName} | الفرع: ${branchLabel} | طريقة الدفع: ${order.paymentMethodLabel || order.paymentMethod} | نوع الطلب: ${order.orderType}`,
+        companyName: "شركة وزير الحلو للحلويات والمواد الغذائية",
+        companyTagline: "حلويات ومواد غذائية وتوريدات فندقية",
+        companyWebsite: "www.wazeer-elhelw.com",
+      };
+
+      chats[actId] = [
+        {
+          id: `chat-${order.id}-1`,
+          sender: "client",
+          senderName: order.customerName || pick("العميل", "Customer"),
+          avatarText: (order.customerName || "C")[0],
+          text: pick({
+            ar: `مرحباً، أود مراجعة تفاصيل الفاتورة ${order.orderNumber} الصادرة من ${branchLabel}.`,
+            en: `Hello, I would like to verify details for invoice ${order.orderNumber} issued at ${branchLabel}.`,
+          }),
+          time: formatActivityTime(order.createdAt),
+        },
+        {
+          id: `chat-${order.id}-2`,
+          sender: "agent",
+          senderName: "وكيل مبيعات وزير الحلو",
+          text: pick({
+            ar: `أهلاً بك! الفاتورة ${order.orderNumber} مسجلة في النظام بقيمة $${order.total.toLocaleString()} وحالتها (${isPaid ? "مسددة بالكامل" : order.status})، تم إصدارها بواسطة ${order.cashierName}.`,
+            en: `Welcome! Invoice ${order.orderNumber} is recorded in the system for $${order.total.toLocaleString()} (Status: ${order.status}), issued by ${order.cashierName}.`,
+          }),
+          time: formatActivityTime(order.createdAt),
+          status: "delivered",
+        },
+      ];
+    });
+
+    // 2. Real Stock Movements from Supabase
+    (stockMoves || []).slice(0, 6).forEach((move) => {
+      const actId = `act-move-${move.id}`;
+      const docId = `doc-move-${move.id}`;
+      const prodName = pick(move.productName.ar, move.productName.en);
+      const fromWh = move.fromWarehouseName ? pick(move.fromWarehouseName.ar, move.fromWarehouseName.en) : "المستودع الرئيسي";
+      const toWh = move.toWarehouseName ? pick(move.toWarehouseName.ar, move.toWarehouseName.en) : "المطبخ المركزي";
+
+      activities.push({
+        id: actId,
+        type: "document",
+        title: pick({ ar: `حركة مخزنية ${move.moveNo}`, en: `Stock Move ${move.moveNo}` }),
+        subtitle: `${prodName} • ${move.quantity} وحدة`,
+        time: formatActivityTime(move.movedAt || move.createdAt),
+        iconBg: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        iconColor: "text-emerald-600",
+        icon: FileCheck,
+        documentId: docId,
+      });
+
+      documents[docId] = {
+        id: docId,
+        category: "STOCK MOVEMENT",
+        categoryLabel: { ar: "إذن حركة مخزنية معتمد", en: "Stock Movement Voucher" },
+        code: move.moveNo,
+        title: `حركة مخزنية ${move.moveNo}`,
+        clientName: fromWh,
+        clientEmail: "inventory@wazeer-elhelw.com",
+        clientPhone: "+20 100 112 0000",
+        clientAddress: `المسار: ${fromWh} ⬅ إلى ⬅ ${toWh}`,
+        partyLabel: { ar: "المستودع المصدر / الوجهة:", en: "Source / Destination:" },
+        invoiceDate: new Date(move.movedAt || move.createdAt).toLocaleDateString(),
+        dueDate: new Date(move.movedAt || move.createdAt).toLocaleDateString(),
+        dateLabel: { ar: "تاريخ الحركة", en: "Move Date" },
+        dueDateLabel: { ar: "تاريخ القيد", en: "Entry Date" },
+        status: "Approved",
+        statusTone: "emerald",
+        items: [
+          {
+            num: 1,
+            description: `${prodName} (كود: ${move.productSku})`,
+            qty: move.quantity,
+            unitPrice: move.unitCost,
+            total: move.totalCost,
+          },
+        ],
+        subtotal: move.totalCost,
+        total: move.totalCost,
+        notesTitle: { ar: "تقرير التدقيق المخزني والجرد", en: "Inventory Audit & Movement Log" },
+        notes: `نوع الحركة: ${move.moveType === "in" ? "وارد مخزني" : move.moveType === "out" ? "صرف مستودع" : move.moveType === "transfer" ? "تحويل بين فروع" : "تسوية جردية"} | مرجع القيد: ${move.reference || "N/A"} | ملاحظات أمين المخزن: ${move.notes || "فحص الجودة مطابق للمواصفات"}`,
+        companyName: "شركة وزير الحلو للحلويات والمواد الغذائية",
+        companyTagline: "إدارة المخازن والمستودعات وسلاسل الإمداد",
+        companyWebsite: "www.wazeer-elhelw.com",
+      };
+
+      chats[actId] = [
+        {
+          id: `chat-${move.id}-1`,
+          sender: "client",
+          senderName: "أمين المخزن",
+          avatarText: "م",
+          text: pick({
+            ar: `تم تسجيل إذن حركة المخزون رقم ${move.moveNo} للصنف ${prodName}. يرجى التحقق من القيد.`,
+            en: `Stock movement voucher ${move.moveNo} for item ${prodName} has been logged. Please verify.`,
+          }),
+          time: formatActivityTime(move.movedAt || move.createdAt),
+        },
+        {
+          id: `chat-${move.id}-2`,
+          sender: "agent",
+          senderName: "وكيل سلاسل الإمداد الذكي",
+          text: pick({
+            ar: `تم فحص الإذن ${move.moveNo} بنجاح. الكمية (${move.quantity} وحدة) بقيمة إجمالية $${move.totalCost.toLocaleString()} تم إثباتها في أرصدة المخازن بدقة.`,
+            en: `Movement voucher ${move.moveNo} verified. Quantity of ${move.quantity} units (Total: $${move.totalCost.toLocaleString()}) recorded successfully in inventory ledger.`,
+          }),
+          time: formatActivityTime(move.movedAt || move.createdAt),
+          status: "delivered",
+        },
+      ];
+    });
+
+    // 3. Real Helpdesk Tickets
+    (helpdeskTickets || []).slice(0, 4).forEach((ticket) => {
+      const actId = `act-tkt-${ticket.id}`;
+      const docId = `doc-tkt-${ticket.id}`;
+
+      activities.push({
+        id: actId,
+        type: "ticket",
+        title: `تذكرة #${ticket.ticketNumber}`,
+        subtitle: `${ticket.title} • ${ticket.branchOrLocation}`,
+        time: formatActivityTime(ticket.createdAt),
+        iconBg: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+        iconColor: "text-purple-600",
+        icon: MessageSquare,
+        documentId: docId,
+      });
+
+      documents[docId] = {
+        id: docId,
+        category: "SUPPORT TICKET",
+        categoryLabel: { ar: "تذكرة دعم فني", en: "Support Ticket" },
+        code: `TICKET #${ticket.ticketNumber}`,
+        title: ticket.title,
+        clientName: ticket.submitterName,
+        clientEmail: `${ticket.category}@wazeer-elhelw.com`,
+        clientPhone: ticket.submitterPhone || "+20 100 112 0000",
+        clientAddress: ticket.branchOrLocation,
+        partyLabel: { ar: "مقدم البلاغ والفرع:", en: "Reported By / Location:" },
+        invoiceDate: new Date(ticket.createdAt).toLocaleString(),
+        dueDate: "SLA: 2 Hours",
+        status: ticket.status === "resolved" ? "Resolved" : "Open",
+        statusTone: ticket.status === "resolved" ? "emerald" : "rose",
+        details: [
+          { label: "الأولوية", value: ticket.priority, badgeTone: ticket.priority === "urgent" ? "rose" : "amber" },
+          { label: "القسم / الفرع", value: ticket.branchOrLocation },
+          { label: "المسؤول المعين", value: ticket.assignedTo },
+        ],
+        notesTitle: { ar: "تفاصيل البلاغ والإجراءات", en: "Incident Details" },
+        notes: ticket.description,
+        companyName: "شركة وزير الحلو — مركز العمليات",
+        companyTagline: "فريق الدعم الفني وتكنولوجيا المعلومات",
+        companyWebsite: "www.wazeer-elhelw.com",
+      };
+
+      chats[actId] = [
+        {
+          id: `chat-${ticket.id}-1`,
+          sender: "client",
+          senderName: ticket.submitterName,
+          avatarText: (ticket.submitterName || "U")[0],
+          text: ticket.title,
+          time: formatActivityTime(ticket.createdAt),
+        },
+        {
+          id: `chat-${ticket.id}-2`,
+          sender: "agent",
+          senderName: "وكيل الدعم الفني الذكي",
+          text: `تم استلام التذكرة #${ticket.ticketNumber} وجاري متابعة حل العطل مع المهندس المعين ${ticket.assignedTo}.`,
+          time: formatActivityTime(ticket.createdAt),
+          status: "delivered",
+        },
+      ];
+    });
+
+    // 4. Real Partners
+    (partners || []).slice(0, 3).forEach((partner) => {
+      const actId = `act-part-${partner.id}`;
+      const docId = `doc-part-${partner.id}`;
+      const partnerName = pick(partner.name.ar, partner.name.en);
+
+      activities.push({
+        id: actId,
+        type: "registration",
+        title: pick({ ar: `تسجيل: ${partnerName}`, en: `Partner: ${partnerName}` }),
+        subtitle: `${partner.type === "customer" ? "عميل" : "مورد"} • ${partner.phone}`,
+        time: formatActivityTime(partner.createdAt),
+        iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+        iconColor: "text-amber-600",
+        icon: User,
+        documentId: docId,
+      });
+
+      documents[docId] = {
+        id: docId,
+        category: "PARTNER REGISTRATION",
+        categoryLabel: { ar: "بيانات شريك العمل المعتمدة", en: "Partner Profile" },
+        code: partner.code,
+        title: partnerName,
+        clientName: partnerName,
+        clientEmail: partner.email || "partner@wazeer-elhelw.com",
+        clientPhone: partner.phone || "+20 100 112 0000",
+        clientAddress: pick(partner.address.ar, partner.address.en),
+        invoiceDate: new Date(partner.createdAt).toLocaleDateString(),
+        status: partner.status === "active" ? "Active" : "Inactive",
+        statusTone: partner.status === "active" ? "emerald" : "amber",
+        details: [
+          { label: "كود الشريك", value: partner.code },
+          { label: "نوع الحساب", value: partner.type === "customer" ? "عميل تجاري" : "مورد معتمد" },
+          { label: "شروط السداد", value: partner.paymentTerms },
+          { label: "الحد الائتماني", value: `$${partner.creditLimit.toLocaleString()}` },
+          { label: "الرصيد الحالي", value: `$${partner.balance.toLocaleString()}` },
+        ],
+        notesTitle: { ar: "ملف الشراكة والائتمان", en: "Partnership & Credit Log" },
+        notes: `السجل التجاري والبطاقة الضريبية: ${partner.taxNumber || "مكتمل"} | جهة الاتصال: ${partner.contactPerson || "المسؤول المالي"}`,
+        companyName: "شركة وزير الحلو للحلويات والمواد الغذائية",
+        companyTagline: "إدارة علاقات العملاء والموردين",
+        companyWebsite: "www.wazeer-elhelw.com",
+      };
+
+      chats[actId] = [
+        {
+          id: `chat-${partner.id}-1`,
+          sender: "client",
+          senderName: partnerName,
+          avatarText: (partnerName || "P")[0],
+          text: `مرحباً، أود التأكد من اعتماد بيانات حسابنا التجاري والحد الائتماني.`,
+          time: formatActivityTime(partner.createdAt),
+        },
+        {
+          id: `chat-${partner.id}-2`,
+          sender: "agent",
+          senderName: "وكيل الحسابات والشركاء",
+          text: `أهلاً بك! تم اعتماد حساب ${partnerName} بنجاح مع حد ائتماني قدره $${partner.creditLimit.toLocaleString()} وشروط سداد ${partner.paymentTerms}.`,
+          time: formatActivityTime(partner.createdAt),
+          status: "delivered",
+        },
+      ];
+    });
+
+    if (activities.length === 0) {
+      return {
+        realActivities: INITIAL_ACTIVITIES,
+        realDocuments: SAMPLE_DOCUMENTS,
+        realChats: ACTIVITY_CHATS,
+      };
+    }
+
+    return {
+      realActivities: activities,
+      realDocuments: documents,
+      realChats: chats,
+    };
+  }, [posOrders, stockMoves, helpdeskTickets, partners, lang]);
+
   // State
-  const [selectedActivityId, setSelectedActivityId] = useState<string>("act-1");
-  const [selectedDocId, setSelectedDocId] = useState<string>("inv-4521");
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [selectedActivityId, setSelectedActivityId] = useState<string>("");
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [activeMobileTab, setActiveMobileTab] = useState<"activities" | "document" | "chat">("document");
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync selection to first activity on load
+  useEffect(() => {
+    if (realActivities.length > 0) {
+      const exists = realActivities.some((a) => a.id === selectedActivityId);
+      if (!selectedActivityId || !exists) {
+        const first = realActivities[0];
+        if (first) {
+          setSelectedActivityId(first.id);
+          if (first.documentId && realDocuments[first.documentId]) {
+            setSelectedDocId(first.documentId);
+          }
+          if (realChats[first.id]) {
+            setMessages(realChats[first.id]);
+          } else {
+            setMessages(INITIAL_MESSAGES);
+          }
+        }
+      }
+    }
+  }, [realActivities, selectedActivityId, realDocuments, realChats]);
 
   // Auto-scroll chat to bottom on new message
   useEffect(() => {
@@ -714,23 +1091,28 @@ function AiWorkspacePage() {
   }, [messages]);
 
   // Current active document
-  const currentDoc: DocumentData = SAMPLE_DOCUMENTS[selectedDocId] ?? SAMPLE_DOCUMENTS["inv-4521"]!;
+  const currentDoc: DocumentData =
+    realDocuments[selectedDocId] ??
+    (selectedDocId && SAMPLE_DOCUMENTS[selectedDocId]) ??
+    realDocuments[realActivities[0]?.documentId || ""] ??
+    SAMPLE_DOCUMENTS["inv-4521"]!;
 
   // Activity click handler
   const handleSelectActivity = (activity: ActivityItem) => {
     setSelectedActivityId(activity.id);
-    if (activity.documentId && SAMPLE_DOCUMENTS[activity.documentId]) {
+    if (activity.documentId && realDocuments[activity.documentId]) {
+      setSelectedDocId(activity.documentId);
+    } else if (activity.documentId && SAMPLE_DOCUMENTS[activity.documentId]) {
       setSelectedDocId(activity.documentId);
     }
-    if (ACTIVITY_CHATS[activity.id]) {
-      setMessages(ACTIVITY_CHATS[activity.id]!);
+    if (realChats[activity.id]) {
+      setMessages(realChats[activity.id]);
+    } else if (ACTIVITY_CHATS[activity.id]) {
+      setMessages(ACTIVITY_CHATS[activity.id]);
     }
     // If mobile, switch to document view
     setActiveMobileTab("document");
   };
-
-  const { modules } = useAiModulesStore();
-  const [isAiThinking, setIsAiThinking] = useState(false);
 
   // Send message handler with real AI model call & document context
   const handleSendMessage = async (e?: React.FormEvent) => {
@@ -1124,7 +1506,7 @@ ${docContextLines.join("\n")}
                 : "bg-muted text-muted-foreground"
             )}
           >
-            {INITIAL_ACTIVITIES.length}
+            {realActivities.length}
           </span>
         </button>
 
@@ -1221,7 +1603,7 @@ ${docContextLines.join("\n")}
 
           {/* Activities List */}
           <div className="flex-1 overflow-y-auto divide-y divide-border/40 p-2 space-y-1">
-            {INITIAL_ACTIVITIES.map((act) => {
+            {realActivities.map((act) => {
               const isSelected = selectedActivityId === act.id;
               const IconComp = act.icon;
               return (
