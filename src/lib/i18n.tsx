@@ -18,6 +18,7 @@ export const dict: Dict = {
   nav_dashboard: { ar: "لوحة التحكم", en: "Dashboard" },
   nav_ai: { ar: "مساحة الذكاء", en: "AI Workspace" },
   nav_pos: { ar: "شاشة الكاشير (POS)", en: "Point of Sale (POS)" },
+  nav_pos_shifts: { ar: "ورديات الكاشير والصندوق", en: "Cashier Shifts & Drawer" },
   nav_sales: { ar: "المبيعات", en: "Sales" },
   nav_purchases: { ar: "المشتريات", en: "Purchases" },
   nav_accounting: { ar: "الحسابات", en: "Accounting" },

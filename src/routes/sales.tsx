@@ -10,8 +10,9 @@ import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 import { AdminPosOrdersView } from "@/components/pos/AdminPosOrdersView";
+import { AdminPosShiftsView } from "@/components/pos/AdminPosShiftsView";
 import { usePosOrdersStore } from "@/lib/pos-orders-store";
-import { FileText, ShoppingBag } from "lucide-react";
+import { FileText, ShoppingBag, History } from "lucide-react";
 
 export const Route = createFileRoute("/sales")({
   head: () => ({
@@ -39,7 +40,7 @@ function Sales() {
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [salesTab, setSalesTab] = useState<"pos_orders" | "all_invoices" | "commercial">("pos_orders");
+  const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "all_invoices" | "commercial">("pos_orders");
   const { metrics: posMetrics } = usePosOrdersStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -362,6 +363,19 @@ function Sales() {
 
         <button
           type="button"
+          onClick={() => setSalesTab("pos_shifts")}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "pos_shifts"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <History className="w-4 h-4" />
+          <span>{pick("ورديات ونقدية الكاشير", "Cashier Shifts & Cash")}</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setSalesTab("all_invoices")}
           className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
             salesTab === "all_invoices"
@@ -408,8 +422,11 @@ function Sales() {
       {/* View 1: POS Retail Orders */}
       {salesTab === "pos_orders" && <AdminPosOrdersView />}
 
-      {/* View 2 & 3: Standard Invoices Table */}
-      {salesTab !== "pos_orders" && (
+      {/* View 2: Cashier Shifts & Drawer Ledger */}
+      {salesTab === "pos_shifts" && <AdminPosShiftsView />}
+
+      {/* View 3 & 4: Standard Invoices Table */}
+      {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <KpiCard label={t("kpi_sales")} value={money(total || kpis.sales)} delta={kpis.salesDelta} accent="primary" />

@@ -34,6 +34,7 @@ import {
   LifeBuoy,
   Store,
   Phone,
+  History,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -41,6 +42,8 @@ import { useSidebarVisible } from "@/lib/ui-prefs";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore, type AppUser } from "@/lib/auth-store";
 import { useHelpdeskStore } from "@/lib/helpdesk-store";
+import { useOnlinePresence } from "@/lib/presence-store";
+import { OnlineUsersModal } from "@/components/presence/OnlineUsersModal";
 import { LoginOverlay } from "@/components/auth/LoginOverlay";
 import { AccessDeniedView } from "./AccessDeniedView";
 import { cn } from "@/lib/utils";
@@ -52,53 +55,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const ONLINE_TEAM_USERS = [
-  {
-    id: "usr-hafez",
-    name: { ar: "حافظ رحيم", en: "Hafez Rahim" },
-    role: { ar: "المدير العام (مسؤول النظام)", en: "General Manager (Admin)" },
-    initials: "HR",
-    avatarBg: "from-purple-600 via-indigo-600 to-blue-600",
-    statusText: { ar: "نشط الآن", en: "Active now" },
-  },
-  {
-    id: "usr-sara",
-    name: { ar: "سارة كمال", en: "Sara Kamal" },
-    role: { ar: "كاشير رئيسي — فرع الكوربة", en: "Lead Cashier — Korba" },
-    initials: "SK",
-    avatarBg: "from-emerald-600 to-teal-700",
-    statusText: { ar: "نقطة البيع متصلة", en: "POS Connected" },
-  },
-  {
-    id: "usr-ahmed",
-    name: { ar: "أحمد عز", en: "Ahmed Ezz" },
-    role: { ar: "مدير المشتريات والمستودعات", en: "Purchases & Inventory Lead" },
-    initials: "AE",
-    avatarBg: "from-blue-600 to-cyan-600",
-    statusText: { ar: "نشط الآن", en: "Active now" },
-  },
-  {
-    id: "usr-mahmoud",
-    name: { ar: "محمود حسن", en: "Mahmoud Hassan" },
-    role: { ar: "مدير المطبخ المركزي والتصنيع", en: "Central Kitchen Lead" },
-    initials: "MH",
-    avatarBg: "from-amber-600 to-orange-600",
-    statusText: { ar: "تشغيل خطوط الإنتاج", en: "In Production" },
-  },
-  {
-    id: "usr-ai",
-    name: { ar: "وكيل الذكاء الاصطناعي (AI Copilot)", en: "AI Copilot Agent" },
-    role: { ar: "مساعد التشغيل ومراقبة المنظومة", en: "Autonomous System Agent" },
-    initials: "✨",
-    avatarBg: "from-violet-600 via-fuchsia-600 to-pink-600",
-    statusText: { ar: "متاح 24/7", en: "24/7 Online" },
-  },
-];
-
 const erpNav = [
   { to: "/", key: "nav_dashboard", icon: LayoutDashboard },
   { to: "/ai", key: "nav_ai", icon: Sparkles },
   { to: "/pos", key: "nav_pos", icon: Store },
+  { to: "/pos-shifts", key: "nav_pos_shifts", icon: History },
   { to: "/sales", key: "nav_sales", icon: ReceiptText },
   { to: "/purchases", key: "nav_purchases", icon: ShoppingCart },
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
@@ -229,6 +190,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     setAuthenticated,
   } = useAuthStore();
 
+  const { onlineUsers, totalCount } = useOnlinePresence();
+  const [isOnlineModalOpen, setIsOnlineModalOpen] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
@@ -267,9 +231,34 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isPageAllowed, currentUser.allowedPages, navigate]);
 
   // Notification state
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    INITIAL_NOTIFICATIONS
-  );
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("hafez_erp_notifications");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_NOTIFICATIONS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("hafez_erp_notifications", JSON.stringify(notifications));
+    } catch {}
+  }, [notifications]);
+
+  useEffect(() => {
+    const handleNewNotif = (e: Event) => {
+      const customEvent = e as CustomEvent<NotificationItem>;
+      if (customEvent.detail) {
+        setNotifications((prev) => [customEvent.detail, ...prev.filter((n) => n.id !== customEvent.detail.id)]);
+      }
+    };
+    window.addEventListener("hafez-system-notification", handleNewNotif);
+    return () => window.removeEventListener("hafez-system-notification", handleNewNotif);
+  }, []);
+
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -815,39 +804,55 @@ export function AppShell({ children }: { children: ReactNode }) {
             dir === "rtl" ? "sm:flex-row" : "sm:flex-row-reverse"
           )}
         >
-          {/* Online Users as Avatars (Renders on the Right side) */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[11px] font-semibold text-foreground/80">
-                {pick("المستخدمون المتصلون الآن (5):", "Online Users (5):")}
-              </span>
-            </div>
+          {/* Online Users as Avatars (Renders on the Right side) — Admin Only */}
+          {isAdmin ? (
+            <div
+              onClick={() => setIsOnlineModalOpen(true)}
+              className="flex items-center gap-3 cursor-pointer group/online px-2 py-1 rounded-xl transition-all hover:bg-secondary/80 border border-transparent hover:border-border/60"
+              title={pick(
+                "عرض قائمة وتفاصيل المستخدمين المتصلين لحظياً في المنظومة",
+                "Click to view live connected users & sessions"
+              )}
+            >
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[11px] font-semibold text-foreground/80 group-hover/online:text-primary transition-colors">
+                  {lang === "ar"
+                    ? `المستخدمون المتصلون الآن (${totalCount}):`
+                    : `Online Users (${totalCount}):`}
+                </span>
+              </div>
 
-            {/* Overlapping Avatars Stack */}
-            <div className="flex items-center -space-x-1.5 rtl:space-x-reverse">
-              {ONLINE_TEAM_USERS.map((user) => (
-                <div
-                  key={user.id}
-                  className="group relative"
-                  title={`${pick(user.name.ar, user.name.en)} • ${pick(user.role.ar, user.role.en)} (${pick(user.statusText.ar, user.statusText.en)})`}
-                >
-                  <div
-                    className={cn(
-                      "size-7 rounded-full bg-gradient-to-tr text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-card shadow-xs cursor-pointer transition-transform duration-150 group-hover:scale-120 group-hover:z-20",
-                      user.avatarBg
-                    )}
-                  >
-                    {user.initials}
-                  </div>
-                  <span className="absolute bottom-0 end-0 size-2 rounded-full bg-emerald-500 ring-1 ring-card" />
-                </div>
-              ))}
+              {/* Overlapping Avatars Stack */}
+              <div className="flex items-center -space-x-1.5 rtl:space-x-reverse">
+                {onlineUsers.map((user) => {
+                  const titleStr = `${user.name[lang]} • ${user.roleLabel[lang]} (${user.currentPathName[lang]})`;
+                  return (
+                    <div
+                      key={user.sessionId}
+                      className="group relative"
+                      title={titleStr}
+                    >
+                      <div
+                        className={cn(
+                          "size-7 rounded-full bg-gradient-to-tr text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-card shadow-xs cursor-pointer transition-transform duration-150 group-hover:scale-120 group-hover:z-20",
+                          user.avatarBg
+                        )}
+                      >
+                        {user.initials}
+                      </div>
+                      <span className="absolute bottom-0 end-0 size-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div />
+          )}
 
           {/* Left Side: Name and Number */}
           <div className="flex items-center gap-2 font-mono text-[11px] text-foreground/85" dir="ltr">
@@ -921,6 +926,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           }}
         />
       )}
+
+      {/* Realtime Online Users & Presence Dossier Modal */}
+      <OnlineUsersModal
+        open={isOnlineModalOpen}
+        onClose={() => setIsOnlineModalOpen(false)}
+        onlineUsers={onlineUsers}
+        onSwitchUser={() => setIsUserMenuOpen(true)}
+      />
     </div>
   );
 }

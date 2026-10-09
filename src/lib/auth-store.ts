@@ -49,7 +49,7 @@ export const DEFAULT_USER: AppUser = {
   avatarBg: "from-purple-600 to-indigo-700",
   description: { ar: "كامل صلاحيات النظام والتحكم", en: "Full administrative control" },
   allowedPages: [
-    "/", "/pos", "/sales", "/purchases", "/accounting", "/inventory",
+    "/", "/pos", "/pos-shifts", "/sales", "/purchases", "/accounting", "/inventory",
     "/manufacturing", "/dispatch", "/partners", "/hr", "/reports",
     "/audit", "/helpdesk", "/ai", "/ai-modules", "/settings"
   ],

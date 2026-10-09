@@ -55,6 +55,11 @@ export const BRANCH_NAMES_MAP: Record<string, { ar: string; en: string; phone?: 
   "2c606ea4-5cf6-4cb6-b749-32b3d8c7c8ce": { ar: "فرع الساحل الشمالي — مارينا", en: "North Coast — Marina Hub", phone: "+20 100 331 7788" },
   "27e6e065-8833-4143-9e7c-e545e53c2e80": { ar: "المطبخ المركزي — طلبات التوصيل", en: "Central Kitchen Delivery Hub", phone: "+20 100 112 0000" },
   "e5b441d4-266e-4fff-a192-424298b2888f": { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha", phone: "+20 100 771 9922" },
+  // Seed migration warehouse & branch UUIDs
+  "30000000-0000-0000-0000-000000000001": { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch", phone: "+20 100 455 2211" },
+  "30000000-0000-0000-0000-000000000002": { ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St. Branch", phone: "+20 100 882 3344" },
+  "30000000-0000-0000-0000-000000000003": { ar: "فرع التجمع الخامس — التسعين", en: "New Cairo — 90th St. Branch", phone: "+20 100 994 5566" },
+  "30000000-0000-0000-0000-000000000004": { ar: "مصنع العاشر والمطبخ المركزي", en: "Central Factory & Kitchen Hub", phone: "+20 100 112 0000" },
 };
 
 export const PLATFORM_NAMES_MAP: Record<string, { ar: string; en: string; icon: string }> = {

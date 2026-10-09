@@ -24,6 +24,7 @@ import {
   ChevronDown,
   User,
   Building2,
+  MapPin,
   Phone,
   Tag,
   Percent,
@@ -53,6 +54,10 @@ import {
   UserCheck,
   KeyRound,
   TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Send,
+  Bell,
   BarChart3,
   SlidersHorizontal,
   LogOut,
@@ -271,6 +276,22 @@ export interface CashierShiftData {
 
 export const INITIAL_CASHIER_SHIFTS: Record<string, CashierShiftData> = {};
 
+export function formatShortShiftId(id: string): string {
+  if (!id) return "";
+  const parts = id.split("-");
+  // If it's a long UUID chain like SHIFT-27E6E065-8833-4143-9E7C-E545E53C2E80-101
+  if (parts.length > 3) {
+    const prefix = parts[0] || "SHIFT";
+    const middle = parts[1]?.slice(0, 4)?.toUpperCase() || "";
+    const suffix = parts[parts.length - 1] || "";
+    return `${prefix}-${middle}-${suffix}`;
+  }
+  if (id.length > 18) {
+    return `${id.slice(0, 8)}…${id.slice(-4)}`;
+  }
+  return id;
+}
+
 
 // Delivery & Aggregator Platforms (طلبات، تطبيقات أخرى، مباشر)
 export interface OrderPlatform {
@@ -485,6 +506,7 @@ export const INITIAL_ORDERS_HISTORY: PosCompletedOrder[] = [];
 export function PosPage() {
   const { t, pick, money, lang, dir, toggle } = useI18n();
   const { settings } = useCompanySettings();
+  const currencySymbol = lang === "ar" ? "ج.م" : "EGP";
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const { addDocument, documents, nextCode } = useSalesStore();
@@ -552,39 +574,50 @@ export function PosPage() {
 
 
 
+  // Resolve Active Cashier User on this POS Terminal strictly from currentUser
+  // This guarantees that each logged-in cashier user has their own unique ID, orders, balance, and reports
+  const resolveCashierFromAuth = useCallback(
+    (user: typeof currentUser, branchId: string): PosCashierUser => {
+      if (user?.id) {
+        const cleanCode = user.id.replace(/\D/g, "").slice(-3) || "101";
+        const isAdmin = user.role === "admin";
+        return {
+          id: user.id,
+          branchId,
+          name: user.name || { ar: "كاشير مناوب", en: "Duty Cashier" },
+          code: cleanCode,
+          role: (isAdmin ? "branch_manager" : "cashier") as any,
+          roleLabel: user.roleLabel || { ar: "كاشير الفرع", en: "Branch Cashier" },
+          avatar: isAdmin ? "👑" : "👨‍🍳",
+          avatarBg: user.avatarBg,
+        };
+      }
+      try {
+        const savedId = localStorage.getItem("pos_terminal_active_cashier_id");
+        if (savedId) {
+          const found = POS_BRANCH_CASHIERS.find((c) => c.id === savedId);
+          if (found) return found;
+        }
+      } catch {}
+      return POS_BRANCH_CASHIERS[0]!;
+    },
+    []
+  );
+
   // Active Cashier User on this POS Terminal
   const [activeCashier, setActiveCashier] = useState<PosCashierUser>(() => {
-    try {
-      const savedId = localStorage.getItem("pos_terminal_active_cashier_id");
-      if (savedId) {
-        const found = POS_BRANCH_CASHIERS.find((c) => c.id === savedId);
-        if (found) return found;
-      }
-    } catch {}
-    return POS_BRANCH_CASHIERS[0]!;
+    return resolveCashierFromAuth(currentUser, selectedBranch.id);
   });
+
+  // Automatically keep activeCashier synced with authenticated user & branch
+  useEffect(() => {
+    if (currentUser?.id) {
+      setActiveCashier(resolveCashierFromAuth(currentUser, selectedBranch.id));
+    }
+  }, [currentUser, selectedBranch.id, resolveCashierFromAuth]);
 
   // Role-based access: cashiers only see their own shift, orders, and held tickets
   const isCashierRole = currentUser?.role === "pos_cashier" || activeCashier.role === "cashier";
-
-  // When branch changes, ensure activeCashier matches the selected branch
-  useEffect(() => {
-    try {
-      localStorage.setItem("pos_terminal_branch_id", selectedBranch.id);
-    } catch {}
-    if (activeCashier.branchId !== selectedBranch.id) {
-      const firstBranchCashier = branchCashiers[0] || {
-        id: `usr_${selectedBranch.id}_1`,
-        branchId: selectedBranch.id,
-        name: { ar: "كاشير مناوب", en: "Duty Cashier" },
-        code: "101",
-        role: "cashier" as const,
-        roleLabel: { ar: "كاشير الفرع", en: "Branch Cashier" },
-        avatar: "👨‍🍳",
-      };
-      setActiveCashier(firstBranchCashier);
-    }
-  }, [selectedBranch.id, branchCashiers]);
 
   // Persist active cashier
   useEffect(() => {
@@ -607,8 +640,11 @@ export function PosPage() {
     if (userShifts[activeCashier.id]) {
       return userShifts[activeCashier.id]!;
     }
+    const branchCode = selectedBranch.id.includes("-")
+      ? selectedBranch.id.split("-")[0]?.slice(0, 4).toUpperCase()
+      : selectedBranch.id.slice(0, 4).toUpperCase();
     return {
-      shiftNumber: `SHIFT-${selectedBranch.id.toUpperCase()}-${activeCashier.code}`,
+      shiftNumber: `SHIFT-${branchCode}-${activeCashier.code}`,
       openedAt: "09:00 ص",
       openingCash: 1000,
       totalSales: 0,
@@ -778,6 +814,307 @@ export function PosPage() {
     }
   }, [isCashierRole, shiftModalTab, ordersViewMode]);
 
+  // Blind Cash Drawer Count & Shift Reconciliation State
+  const [countedCashInput, setCountedCashInput] = useState<string>("");
+  const [countedCashNotes, setCountedCashNotes] = useState<string>("");
+  const [isSubmittingShiftClose, setIsSubmittingShiftClose] = useState<boolean>(false);
+  const [reconciledShifts, setReconciledShifts] = useState<
+    Record<
+      string,
+      {
+        isClosed: boolean;
+        closedAt: string;
+        expectedCash: number;
+        actualCash: number;
+        variance: number;
+        status: "balanced" | "surplus" | "shortage";
+        notes?: string;
+        snapshot: CashierShiftData;
+      }
+    >
+  >(() => {
+    try {
+      const stored = localStorage.getItem("pos_reconciled_shifts_history");
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return {};
+  });
+
+  const currentReconciliation = reconciledShifts[activeCashier.id] || null;
+
+  // Handle Confirm Shift Close: Blind reconciliation, variance calculation, and direct admin notification
+  const handleConfirmShiftClose = async () => {
+    const rawVal = countedCashInput.trim();
+    if (!rawVal || isNaN(Number(rawVal)) || Number(rawVal) < 0) {
+      toast.error(
+        lang === "ar"
+          ? "يرجى كتابة النقدية الفعلية الموجودة بالدرج (0 أو أكثر) لتأكيد الجرد"
+          : "Please enter your counted cash on hand (0 or more) to reconcile"
+      );
+      return;
+    }
+
+    const actualCash = Number(rawVal);
+    const expectedCash = activeShift.openingCash + activeShift.cashSales;
+    const variance = actualCash - expectedCash;
+    const status: "balanced" | "surplus" | "shortage" =
+      variance === 0 ? "balanced" : variance > 0 ? "surplus" : "shortage";
+
+    setIsSubmittingShiftClose(true);
+
+    try {
+      const activeCashierDisplayName = pick(activeCashier.name.ar, activeCashier.name.en);
+      const branchDisplayName = pick(selectedBranch.ar, selectedBranch.en);
+      const nowTimeStr = new Date().toLocaleTimeString("ar-EG", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // 1. Prepare Direct System Admin Notification (Hafez Rahim)
+      const adminNotifId = `shift-close-${activeShift.shiftNumber}-${Date.now()}`;
+      const adminNotifTitle = {
+        ar:
+          status === "shortage"
+            ? `🚨 عجز بصندوق كاشير (${money(Math.abs(variance))})`
+            : status === "surplus"
+            ? `⚠️ زيادة بصندوق كاشير (+${money(variance)})`
+            : `✅ إغلاق وردية كاشير متطابقة بالكامل (0 ج.م)`,
+        en:
+          status === "shortage"
+            ? `🚨 Cash Deficit on Drawer Close (-${money(Math.abs(variance))})`
+            : status === "surplus"
+            ? `⚠️ Cash Surplus on Drawer Close (+${money(variance)})`
+            : `✅ Shift Closed - Drawer Balanced (0 EGP)`,
+      };
+
+      const adminNotifDesc = {
+        ar: `أغلق الكاشير ${activeCashierDisplayName} (كود ${activeCashier.code}) ورديته بفرع ${branchDisplayName}. النقدية المتوقعة: ${money(expectedCash)} | المحصية فعلياً: ${money(actualCash)} | الفارق: ${
+          status === "shortage"
+            ? `عجز قدره ${money(Math.abs(variance))}`
+            : status === "surplus"
+            ? `زيادة قدرها ${money(variance)}`
+            : "مطابق تماماً بدون أي فارق"
+        }.${countedCashNotes ? ` ملاحظات الكاشير: ${countedCashNotes}` : ""}`,
+        en: `Cashier ${activeCashierDisplayName} (Code ${activeCashier.code}) closed shift at ${branchDisplayName}. Expected: ${money(expectedCash)} | Actual Counted: ${money(actualCash)} | Variance: ${
+          status === "shortage"
+            ? `Deficit ${money(Math.abs(variance))}`
+            : status === "surplus"
+            ? `Surplus ${money(variance)}`
+            : "Balanced (0 EGP)"
+        }.${countedCashNotes ? ` Notes: ${countedCashNotes}` : ""}`,
+      };
+
+      const adminNotificationItem = {
+        id: adminNotifId,
+        title: adminNotifTitle,
+        desc: adminNotifDesc,
+        time: { ar: "الآن", en: "Just now" },
+        type: (status === "shortage" ? "warning" : status === "surplus" ? "info" : "success") as
+          | "warning"
+          | "info"
+          | "success",
+        read: false,
+        reconciliationPayload: {
+          shiftNumber: activeShift.shiftNumber,
+          shortShiftNumber: formatShortShiftId(activeShift.shiftNumber),
+          cashierId: activeCashier.id,
+          cashierCode: activeCashier.code,
+          branchId: selectedBranch.id,
+          expectedCash,
+          actualCash,
+          variance,
+          status,
+          notes: countedCashNotes,
+        },
+      };
+
+      // 2. Dispatch event to AppShell & store in localStorage
+      try {
+        const storedNotifs = localStorage.getItem("hafez_erp_notifications");
+        const list = storedNotifs ? JSON.parse(storedNotifs) : [];
+        const nextList = [adminNotificationItem, ...list.filter((n: any) => n.id !== adminNotifId)];
+        localStorage.setItem("hafez_erp_notifications", JSON.stringify(nextList));
+      } catch {}
+
+      window.dispatchEvent(
+        new CustomEvent("hafez-system-notification", { detail: adminNotificationItem })
+      );
+
+      // 3. Insert into Supabase audit_log for permanent administrative trace
+      try {
+        await supabase.from("audit_log").insert({
+          action:
+            status === "shortage"
+              ? "SHIFT_CLOSE_SHORTAGE"
+              : status === "surplus"
+              ? "SHIFT_CLOSE_SURPLUS"
+              : "SHIFT_CLOSE_BALANCED",
+          actor_name: activeCashierDisplayName,
+          entity: "pos_shifts",
+          entity_id: activeShift.shiftNumber,
+          source: "human",
+          payload: {
+            cashier_id: activeCashier.id,
+            cashier_code: activeCashier.code,
+            cashier_name: activeCashierDisplayName,
+            branch_id: selectedBranch.id,
+            branch_name: branchDisplayName,
+            opening_cash: activeShift.openingCash,
+            cash_sales: activeShift.cashSales,
+            card_sales: activeShift.cardSales,
+            wallet_sales: activeShift.walletSales,
+            total_sales: activeShift.totalSales,
+            orders_count: activeShift.ordersCount,
+            expected_cash: expectedCash,
+            actual_cash: actualCash,
+            variance: variance,
+            status: status,
+            notes: countedCashNotes,
+            admin_notified: "Hafez Rahim (System Admin)",
+            closed_at: new Date().toISOString(),
+          },
+        });
+      } catch (err) {
+        console.error("Audit log error:", err);
+      }
+
+      // 4. Update Supabase pos_shifts table if exists
+      try {
+        const shortShift = formatShortShiftId(activeShift.shiftNumber);
+        const shiftCore = shortShift ? shortShift.replace(/^SHIFT-/, "") : "";
+        await supabase
+          .from("pos_shifts")
+          .update({
+            status: "closed",
+            closed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("shift_number", activeShift.shiftNumber);
+
+        if (shiftCore) {
+          await supabase
+            .from("pos_shifts")
+            .update({
+              status: "closed",
+              closed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .ilike("shift_number", `%${shiftCore}%`);
+        }
+      } catch (err) {
+        console.error("Shift update error:", err);
+      }
+
+      // 5. Update local reconciled shifts state with rich identifiers
+      const shortShiftNum = formatShortShiftId(activeShift.shiftNumber);
+      const reconciliationData = {
+        isClosed: true,
+        closedAt: nowTimeStr,
+        expectedCash,
+        actualCash,
+        variance,
+        status,
+        notes: countedCashNotes,
+        shiftNumber: activeShift.shiftNumber,
+        shortShiftNumber: shortShiftNum,
+        cashierId: activeCashier.id,
+        cashierCode: activeCashier.code,
+        cashierName: activeCashierDisplayName,
+        branchId: selectedBranch.id,
+        snapshot: { ...activeShift },
+      };
+
+      setReconciledShifts((prev) => {
+        const next = {
+          ...prev,
+          [activeCashier.id]: reconciliationData,
+          [activeShift.shiftNumber]: reconciliationData,
+          ...(shortShiftNum ? { [shortShiftNum]: reconciliationData } : {}),
+        };
+        try {
+          localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+
+      try {
+        window.dispatchEvent(
+          new CustomEvent("pos-shift-reconciled", { detail: reconciliationData })
+        );
+      } catch {}
+
+      // 6. Direct notification feedback to screen
+      if (status === "shortage") {
+        toast.error(
+          lang === "ar"
+            ? `⚠️ تم رصد عجز بالصندوق بقيمة ${money(Math.abs(variance))}، وتم إرسال إشعار فوري لمدير النظام (م. حافظ رحيم)!`
+            : `⚠️ Cash deficit of ${money(Math.abs(variance))} detected! Direct alert dispatched to System Admin.`
+        );
+      } else if (status === "surplus") {
+        toast.warning(
+          lang === "ar"
+            ? `ℹ️ تم رصد زيادة بالصندوق بقيمة ${money(variance)}، وتم إرسال إشعار فوري لمدير النظام (م. حافظ رحيم)!`
+            : `ℹ️ Cash surplus of ${money(variance)} recorded! Direct alert dispatched to System Admin.`
+        );
+      } else {
+        toast.success(
+          lang === "ar"
+            ? `✅ الصندوق مطابق تماماً بدون أي عجز أو زيادة! تم إغلاق الوردية وإخطار مدير النظام بنجاح.`
+            : `✅ Shift perfectly balanced! Drawer closed and System Admin notified.`
+        );
+      }
+    } finally {
+      setIsSubmittingShiftClose(false);
+    }
+  };
+
+  const handleStartNewShift = () => {
+    const branchPrefix = selectedBranch.id.includes("-")
+      ? selectedBranch.id.split("-")[0]?.slice(0, 4).toUpperCase()
+      : selectedBranch.id.slice(0, 4).toUpperCase();
+    const newShiftNumber = `SHIFT-${branchPrefix}-${activeCashier.code}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+    const newOpenedAt = new Date().toLocaleTimeString("ar-EG", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const resetShift: CashierShiftData = {
+      shiftNumber: newShiftNumber,
+      openedAt: newOpenedAt,
+      openingCash: 1000,
+      totalSales: 0,
+      cashSales: 0,
+      cardSales: 0,
+      walletSales: 0,
+      ordersCount: 0,
+    };
+
+    setUserShifts((prev) => {
+      const next = { ...prev, [activeCashier.id]: resetShift };
+      try {
+        localStorage.setItem("pos_cashier_shifts_data", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    setReconciledShifts((prev) => {
+      const next = { ...prev };
+      delete next[activeCashier.id];
+      try {
+        localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    setCountedCashInput("");
+    setCountedCashNotes("");
+    toast.success(
+      lang === "ar"
+        ? `تم فتح وردية جديدة بنجاح (رقم: ${newShiftNumber}) بعهدة افتتاحية 1,000 ج.م`
+        : `New shift opened successfully with 1,000 EGP float`
+    );
+  };
+
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway" | "delivery">("takeaway");
   const [tableNumber, setTableNumber] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
@@ -933,7 +1270,13 @@ export function PosPage() {
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
-  const [applyVat, setApplyVat] = useState(true);
+  const [applyVat, setApplyVat] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("pos_apply_vat_default");
+      if (saved !== null) return JSON.parse(saved);
+    } catch {}
+    return false; // Tax disabled by default
+  });
   const [deliveryFee, setDeliveryFee] = useState(0);
 
   // Parked / Held Tickets
@@ -1579,16 +1922,16 @@ export function PosPage() {
       {/* ========================================================================= */}
       {/* 1. PROFESSIONAL UNIFIED TERMINAL TOOLBAR */}
       {/* ========================================================================= */}
-      <header className="h-16 bg-card/95 backdrop-blur-md border-b border-border/70 px-3 sm:px-4 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs select-none">
+      <header className="h-16 bg-card/90 backdrop-blur-xl border-b border-border/80 px-3 sm:px-4 flex items-center justify-between gap-2 sm:gap-4 shadow-xs select-none">
         {/* Left / Start: Brand Identity & Branch Context */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <div className="flex items-center gap-2.5">
-            {/* Official Wazeer El-Helw Logo */}
-            <div className="h-10 px-2 py-1 rounded-xl bg-white border border-border/80 shadow-xs flex items-center justify-center shrink-0">
+            {/* Official Wazeer El-Helw Logo Container */}
+            <div className="h-10 px-2.5 py-1 rounded-xl bg-white dark:bg-card border border-border/70 shadow-2xs flex items-center justify-center shrink-0">
               <img
                 src={settings.logoUrl || "/wazeer-logo.png"}
                 alt="وزير الحلو"
-                className="h-7 w-auto max-w-[125px] object-contain"
+                className="h-7 w-auto max-w-[120px] object-contain"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
                 }}
@@ -1596,10 +1939,10 @@ export function PosPage() {
             </div>
             <div className="leading-tight hidden sm:block">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-xs text-[#2E1A6B] dark:text-purple-300 tracking-tight">
+                <span className="font-black text-xs text-foreground tracking-tight">
                   {lang === "ar" ? "وزير الحلو" : "Wazeer El-Helw"}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-[#E11D2E]/10 text-[#E11D2E] font-black border border-[#E11D2E]/30 shadow-2xs">
+                <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground font-black tracking-wider shadow-2xs">
                   POS
                 </span>
               </div>
@@ -1609,58 +1952,76 @@ export function PosPage() {
             </div>
           </div>
 
-          <div className="h-6 w-px bg-border/70 hidden md:block shrink-0" />
+          <div className="h-6 w-px bg-border/60 hidden md:block shrink-0" />
 
-          {/* Branch Indicator (Locked to terminal) */}
+          {/* Branch Indicator (Spacious & Clean) */}
           <div
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-border/60 bg-muted/30 text-foreground text-xs font-semibold shrink-0"
-            title={lang === "ar" ? "الفرع المخصص لنقطة البيع" : "Terminal Branch (Locked)"}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted/60 text-foreground text-xs font-semibold shrink-0 transition-colors"
+            title={lang === "ar" ? "الفرع المخصص لنقطة البيع (مقفل على المحطة)" : "Terminal Branch (Locked)"}
           >
-            <span className="text-[#E11D2E] text-xs">📍</span>
-            <span className="truncate max-w-[150px]">
+            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span className="truncate max-w-[200px] text-xs font-medium">
               {activeBranch
                 ? (lang === "ar" ? activeBranch.name.ar : activeBranch.name.en)
-                : (lang === "ar" ? "لا يوجد فرع" : "No Branch")}
+                : (lang === "ar" ? "المطبخ المركزي" : "Central Kitchen")}
             </span>
-            <Lock className="w-3 h-3 text-muted-foreground opacity-60 ms-0.5" />
+            <Lock className="w-3 h-3 text-muted-foreground opacity-50 ms-0.5 shrink-0" />
           </div>
         </div>
 
         {/* Center: Operational Actions Dock (Cashier, Shift, Orders & Parked) */}
-        <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/40 p-1 rounded-2xl border border-border/60 shrink-0">
-          {/* Active Cashier Pill */}
-          <button
-            type="button"
-            onClick={() => setShowCashierSwitchModal(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs group cursor-pointer"
-            title={lang === "ar" ? "بيانات الكاشير والتبديل" : "Cashier Details & Switch"}
+        <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/50 p-1 rounded-2xl border border-border/70 shadow-2xs shrink-0">
+          {/* Active Cashier Pill (Locked - Changing not allowed) */}
+          <div
+            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card border border-border/60 text-foreground text-xs font-bold shadow-2xs h-10 select-none"
+            title={lang === "ar" ? "الكاشير المسؤول عن المحطة (مقفل - غير مسموح بالتبديل)" : "Duty Cashier (Locked - Switch Disabled)"}
           >
-            <span className="text-base">{activeCashier.avatar}</span>
+            <span className="text-base p-0.5 bg-muted/40 rounded-lg shrink-0">{activeCashier.avatar}</span>
             <div className="text-start leading-tight hidden sm:block">
-              <span className="font-bold text-xs text-[#2E1A6B] dark:text-purple-300 group-hover:text-[#E11D2E] transition-colors block truncate max-w-[110px]">
+              <span className="font-bold text-xs text-foreground block truncate max-w-[110px]">
                 {pick(activeCashier.name.ar, activeCashier.name.en)}
               </span>
               <span className="text-[9px] text-muted-foreground font-medium block truncate max-w-[110px]">
                 {pick(activeCashier.roleLabel.ar, activeCashier.roleLabel.en)}
               </span>
             </div>
-          </button>
+            <Lock className="w-3 h-3 text-muted-foreground opacity-50 ms-0.5 shrink-0" />
+          </div>
 
-          {/* Shift Sales Pill */}
+          {/* Shift Status Pill */}
           <button
             type="button"
             onClick={() => {
               if (isCashierRole) setShiftModalTab("my_shift");
               setShowShiftModal(true);
             }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card hover:bg-muted/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group"
             title={lang === "ar" ? "تقرير الوردية وحركة الصندوق" : "Shift & Cash Drawer Summary"}
           >
-            <Clock className="w-3.5 h-3.5 text-[#FBBF24] shrink-0" />
-            <span className="text-[11px] text-muted-foreground hidden lg:inline">{lang === "ar" ? "الوردية:" : "Shift:"}</span>
-            <span className="font-mono text-xs font-black text-[#16A34A] dark:text-emerald-400">
-              {money(activeShift.totalSales)}
-            </span>
+            <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:rotate-12 transition-transform" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-foreground">
+                {lang === "ar" ? "الوردية" : "Shift"}
+              </span>
+              {currentReconciliation?.isClosed ? (
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[10px] font-black border border-blue-500/30 flex items-center gap-1">
+                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  {lang === "ar" ? "مغلقة" : "Closed"}
+                </span>
+              ) : isCashierRole ? (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-black border border-emerald-500/30 flex items-center gap-1.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                  </span>
+                  {lang === "ar" ? "نشطة" : "Active"}
+                </span>
+              ) : (
+                <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
+                  {money(activeShift.totalSales)}
+                </span>
+              )}
+            </div>
           </button>
 
           {/* My Orders Button */}
@@ -1670,12 +2031,12 @@ export function PosPage() {
               setOrdersViewMode("my_orders");
               setShowMyOrdersModal(true);
             }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card hover:bg-card/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card hover:bg-muted/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group"
             title={lang === "ar" ? "سجل طلباتي" : "My Orders"}
           >
-            <Receipt className="w-3.5 h-3.5 text-[#2E1A6B] dark:text-purple-400 shrink-0" />
-            <span className="text-[11px] hidden sm:inline">{lang === "ar" ? "طلباتي" : "Orders"}</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-[#2E1A6B]/10 text-[#2E1A6B] dark:bg-purple-500/20 dark:text-purple-300 font-mono text-[10px] font-black border border-[#2E1A6B]/20">
+            <Receipt className="w-3.5 h-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
+            <span className="text-xs hidden sm:inline">{lang === "ar" ? "طلباتي" : "Orders"}</span>
+            <span className="min-w-5 h-5 px-1.5 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-black border border-primary/20 flex items-center justify-center">
               {myOrders.length}
             </span>
           </button>
@@ -1684,20 +2045,20 @@ export function PosPage() {
           <button
             type="button"
             onClick={() => setShowHeldModal(true)}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border h-10 ${
               visibleHeldOrders.length > 0
-                ? "bg-[#FBBF24]/15 border-[#FBBF24]/50 text-amber-900 dark:text-amber-200 animate-pulse shadow-2xs"
-                : "bg-card hover:bg-card/80 border-border/60 text-muted-foreground hover:text-foreground shadow-2xs"
+                ? "bg-amber-500/15 border-amber-500/50 text-amber-900 dark:text-amber-200 animate-pulse shadow-xs"
+                : "bg-card hover:bg-muted/80 border-border/60 text-muted-foreground hover:text-foreground shadow-2xs"
             }`}
             title={lang === "ar" ? "الفواتير المعلقة" : "Parked Tickets"}
           >
             <Pause className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-[11px] hidden sm:inline">{lang === "ar" ? "المعلقات" : "Parked"}</span>
+            <span className="text-xs hidden sm:inline">{lang === "ar" ? "المعلقات" : "Parked"}</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] font-bold ${
+              className={`min-w-5 h-5 px-1.5 rounded-full font-mono text-[10px] font-black flex items-center justify-center ${
                 visibleHeldOrders.length > 0
-                  ? "bg-[#FBBF24] text-slate-950 font-black shadow-2xs"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                : "bg-muted text-muted-foreground"
               }`}
             >
               {visibleHeldOrders.length}
@@ -1709,14 +2070,14 @@ export function PosPage() {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Live Inventory Connected Status */}
           <div
-            className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground font-medium select-none"
+            className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border border-border/60 text-xs text-foreground font-semibold h-10 shadow-2xs select-none"
             title={lang === "ar" ? "المخزون متصل ومحدث بالأسعار والأرصدة" : "Live inventory synced with DB"}
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[11px]">
+            <span className="text-xs font-mono font-bold text-foreground">
               {lang === "ar" ? `${catalogProducts.length} صنف` : `${catalogProducts.length} items`}
             </span>
           </div>
@@ -1725,18 +2086,18 @@ export function PosPage() {
           <button
             type="button"
             onClick={toggle}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-foreground transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-foreground transition-all shadow-2xs cursor-pointer h-10"
             title={t("lang")}
           >
             <Languages className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-[11px] uppercase">{lang === "ar" ? "EN" : "عربي"}</span>
+            <span className="text-[11px] font-black uppercase font-mono">{lang === "ar" ? "EN" : "عربي"}</span>
           </button>
 
           {/* Fullscreen Kiosk Toggle */}
           <button
             type="button"
             onClick={() => setIsKioskMode((prev) => !prev)}
-            className="p-2 rounded-xl border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="size-10 rounded-xl border border-border/70 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all shadow-2xs flex items-center justify-center cursor-pointer"
             title={
               isKioskMode
                 ? lang === "ar" ? "الخروج من ملء الشاشة" : "Exit Fullscreen"
@@ -1750,11 +2111,11 @@ export function PosPage() {
           {!hasOnlyPosPermission && (
             <Link
               to="/"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-all shadow-2xs h-10"
               title={lang === "ar" ? "العودة للوحة تحكم النظام" : "Exit to ERP Dashboard"}
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px]">{lang === "ar" ? "لوحة التحكم" : "ERP"}</span>
+              <span className="text-xs">{lang === "ar" ? "لوحة التحكم" : "ERP"}</span>
             </Link>
           )}
 
@@ -1767,7 +2128,7 @@ export function PosPage() {
                 navigate({ to: "/" });
               }
             }}
-            className="p-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer"
+            className="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer"
             title={lang === "ar" ? "تسجيل الخروج وإغلاق المحطة" : "Log out / Exit Terminal"}
           >
             <LogOut className="w-4 h-4" />
@@ -2332,15 +2693,31 @@ export function PosPage() {
 
                 <button
                   type="button"
-                  onClick={() => setApplyVat((prev) => !prev)}
-                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors ${
+                  onClick={() => {
+                    setApplyVat((prev: boolean) => {
+                      const next = !prev;
+                      try {
+                        localStorage.setItem("pos_apply_vat_default", JSON.stringify(next));
+                      } catch {}
+                      return next;
+                    });
+                  }}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
                     applyVat
-                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
-                      : "bg-muted/50 border-border/70 text-muted-foreground line-through"
+                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-2xs"
+                      : "bg-muted/40 border-border/70 text-muted-foreground opacity-75 hover:opacity-100"
                   }`}
-                  title={lang === "ar" ? "تفعيل أو إلغاء ضريبة القيمة المضافة" : "Toggle VAT"}
+                  title={
+                    lang === "ar"
+                      ? applyVat
+                        ? "الضريبة مفعّلة (14%) — اضغط للإلغاء"
+                        : "الضريبة معطلة — اضغط لتفعيل ضريبة 14%"
+                      : applyVat
+                      ? "Tax enabled (14%) — click to disable"
+                      : "Tax disabled — click to enable 14%"
+                  }
                 >
-                  14%
+                  {applyVat ? (lang === "ar" ? "ضريبة 14%" : "VAT 14%") : (lang === "ar" ? "بدون ضريبة" : "No Tax")}
                 </button>
 
                 {cart.length > 0 && (
@@ -3367,6 +3744,7 @@ export function PosPage() {
             {/* Tab 1: Current Active User Shift */}
             {shiftModalTab === "my_shift" && (
               <div className="p-5 space-y-4 overflow-y-auto">
+                {/* Cashier Profile Header */}
                 <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl p-1 bg-card rounded-xl border border-border/60">{activeCashier.avatar}</span>
@@ -3379,86 +3757,310 @@ export function PosPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                    {lang === "ar" ? "وردية نشطة" : "Active Shift"}
-                  </span>
+                  {currentReconciliation?.isClosed ? (
+                    <span className="px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 text-[10px] font-black flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      {lang === "ar" ? "وردية مغلقة ومطابقة" : "Shift Closed & Audited"}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                      {lang === "ar" ? "وردية نشطة" : "Active Shift"}
+                    </span>
+                  )}
                 </div>
 
+                {/* Shift ID & Time */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="p-3 rounded-2xl bg-muted/30 border border-border/70">
                     <span className="text-muted-foreground block text-[10px]">
                       {lang === "ar" ? "رقم الوردية:" : "Shift ID:"}
                     </span>
-                    <span className="font-black font-mono">{activeShift.shiftNumber}</span>
+                    <span
+                      className="font-black font-mono text-xs tracking-tight"
+                      title={activeShift.shiftNumber}
+                    >
+                      {formatShortShiftId(activeShift.shiftNumber)}
+                    </span>
                   </div>
                   <div className="p-3 rounded-2xl bg-muted/30 border border-border/70">
                     <span className="text-muted-foreground block text-[10px]">
-                      {lang === "ar" ? "وقت البداية:" : "Started At:"}
+                      {currentReconciliation?.isClosed
+                        ? (lang === "ar" ? "وقت الإغلاق:" : "Closed At:")
+                        : (lang === "ar" ? "وقت البداية:" : "Started At:")}
                     </span>
-                    <span className="font-black font-mono">{activeShift.openedAt}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
-                    <span>{lang === "ar" ? "عهدة بداية الوردية (الافتتاحي):" : "Opening Cash Balance:"}</span>
-                    <span className="font-black font-mono">{money(activeShift.openingCash)}</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
-                    <span>{lang === "ar" ? "مبيعات نقدية (Cash):" : "Cash Sales:"}</span>
-                    <span className="font-black font-mono text-emerald-600">{money(activeShift.cashSales)}</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
-                    <span>{lang === "ar" ? "مبيعات شبكة وفيزا (Card):" : "Card POS Sales:"}</span>
-                    <span className="font-black font-mono text-blue-600">{money(activeShift.cardSales)}</span>
-                  </div>
-                  <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
-                    <span>{lang === "ar" ? "محافظ إلكترونية (Wallets):" : "Digital Wallets:"}</span>
-                    <span className="font-black font-mono text-purple-600">{money(activeShift.walletSales)}</span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-2xl bg-primary/10 border border-primary/30 font-black text-primary">
-                    <span>{lang === "ar" ? "إجمالي مبيعات ورديتي:" : "My Total Shift Sales:"}</span>
-                    <span className="font-mono text-sm">{money(activeShift.totalSales)} ({activeShift.ordersCount} {lang === "ar" ? "طلب" : "orders"})</span>
-                  </div>
-                  <div className="flex justify-between p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 font-black text-emerald-700 dark:text-emerald-300">
-                    <span>{lang === "ar" ? "النقدية الفعلية المتوقعة بدرج الكاشير:" : "Expected Cash in Drawer:"}</span>
-                    <span className="font-mono text-sm">
-                      {money(activeShift.openingCash + activeShift.cashSales)}
+                    <span className="font-black font-mono">
+                      {currentReconciliation?.isClosed ? currentReconciliation.closedAt : activeShift.openedAt}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast.success(
-                        lang === "ar"
-                          ? `تمت طباعة تقرير X-Report للكاشير ${pick(activeCashier.name.ar, activeCashier.name.en)} بنجاح`
-                          : `X-Report printed for cashier ${pick(activeCashier.name.ar, activeCashier.name.en)}`
-                      );
-                      setShowShiftModal(false);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-md cursor-pointer"
-                  >
-                    {lang === "ar" ? "طباعة ملخص الوردية (X-Report)" : "Print X-Report"}
-                  </button>
+                {/* ========================================================================= */}
+                {/* A. BEFORE CLOSING SHIFT: ENTER CASH ON HAND (HIDE BREAKDOWN) */}
+                {/* ========================================================================= */}
+                {!currentReconciliation?.isClosed ? (
+                  <div className="space-y-4">
+                    {/* Input: Write down Cash on Hand */}
+                    <div className="p-4 rounded-2xl bg-card border-2 border-primary/20 shadow-xs space-y-3">
+                      <div>
+                        <label className="block text-xs font-black text-foreground mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Banknote className="w-4 h-4 text-emerald-600" />
+                            {lang === "ar" ? "اكتب النقدية الفعلية الموجودة بالدرج الآن *" : "Write Down Cash on Hand in Drawer *"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-normal">
+                            {lang === "ar" ? "النقدية الفعلية" : "Actual Count"}
+                          </span>
+                        </label>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toast.info(
-                        lang === "ar"
-                          ? "تم تسجيل إغلاق الوردية وتصفية عهدة الكاشير"
-                          : "Shift closed and cash drawer reconciled"
-                      );
-                      setShowShiftModal(false);
-                    }}
-                    className="px-4 py-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-bold text-xs hover:bg-rose-500/20 cursor-pointer"
-                  >
-                    {lang === "ar" ? "تقفيل الوردية" : "Close Shift"}
-                  </button>
-                </div>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            value={countedCashInput}
+                            onChange={(e) => setCountedCashInput(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full text-2xl font-mono font-black py-3 ps-4 pe-20 rounded-xl bg-muted/20 border-2 border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-foreground text-start"
+                            autoFocus
+                          />
+                          <span className="absolute end-4 top-1/2 -translate-y-1/2 text-xs font-black text-muted-foreground font-mono">
+                            {currencySymbol}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Quick Denominations Helper */}
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block mb-1 font-bold">
+                          {lang === "ar" ? "إضافة سريعة للفئات النقدية بالدرج:" : "Quick Denominations:"}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[50, 100, 200, 500, 1000].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => {
+                                const current = Number(countedCashInput) || 0;
+                                setCountedCashInput(String(current + val));
+                              }}
+                              className="px-2.5 py-1 rounded-xl bg-muted/40 hover:bg-primary/10 hover:border-primary/40 border border-border/80 text-[11px] font-mono font-bold transition-all cursor-pointer"
+                            >
+                              +{val}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setCountedCashInput("")}
+                            className="px-2.5 py-1 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/20 text-[10px] font-bold transition-all cursor-pointer ms-auto"
+                          >
+                            {lang === "ar" ? "مسح" : "Clear"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Cashier Notes Input */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-muted-foreground mb-1">
+                          {lang === "ar" ? "ملاحظات أو مبررات الصندوق (اختياري):" : "Cashier Drawer Notes (Optional):"}
+                        </label>
+                        <input
+                          type="text"
+                          value={countedCashNotes}
+                          onChange={(e) => setCountedCashNotes(e.target.value)}
+                          placeholder={
+                            lang === "ar"
+                              ? "مثال: تم إيداع فكة من الخزينة، وجود عملات تالفة..."
+                              : "e.g. Added change float from safe, damaged notes..."
+                          }
+                          className="w-full text-xs py-2 px-3 rounded-xl bg-muted/20 border border-border/80 focus:border-primary focus:ring-2 focus:ring-primary/10 text-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Buttons: Confirm Shift Close */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={isSubmittingShiftClose}
+                        onClick={handleConfirmShiftClose}
+                        className="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>
+                          {isSubmittingShiftClose
+                            ? (lang === "ar" ? "جاري الفحص وإخطار الإدارة..." : "Auditing & Notifying Admin...")
+                            : (lang === "ar" ? "تأكيد جرد الصندوق وتقفيل الوردية" : "Confirm Count & Close Shift")}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowShiftModal(false)}
+                        className="px-4 py-3 rounded-xl border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-muted font-bold text-xs transition-all cursor-pointer"
+                      >
+                        {lang === "ar" ? "إلغاء والعودة" : "Cancel"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ========================================================================= */
+                  /* B. AFTER CLOSING SHIFT: REVEAL DETAILS, AUDIT VARIANCE & ADMIN NOTIFIED */
+                  /* ========================================================================= */
+                  <div className="space-y-4">
+                    {/* Discrepancy Status Card (Ups & Downs check) */}
+                    {currentReconciliation.status === "shortage" && (
+                      <div className="p-4 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-800 dark:text-rose-200 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 font-black text-xs text-rose-700 dark:text-rose-300">
+                            <TrendingDown className="w-4 h-4 text-rose-600" />
+                            {lang === "ar" ? "يوجد عجز نقدي بالصندوق (Down):" : "Cash Drawer Deficit (Shortage):"}
+                          </span>
+                          <span className="font-mono text-base font-black text-rose-600 dark:text-rose-400">
+                            -{money(Math.abs(currentReconciliation.variance))}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-rose-700/90 dark:text-rose-300/90 leading-relaxed">
+                          {lang === "ar"
+                            ? "🚨 تم رصد عجز نقدي! تم إرسال إشعار فوري لمدير النظام (م. حافظ رحيم) وتوثيق الواقعة في سجل العمليات الحساسة (Audit Log)."
+                            : "🚨 Cash deficit detected! Immediate notification dispatched to System Admin (Hafez Rahim) & logged in Audit Trail."}
+                        </p>
+                      </div>
+                    )}
+
+                    {currentReconciliation.status === "surplus" && (
+                      <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-800 dark:text-amber-200 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 font-black text-xs text-amber-700 dark:text-amber-300">
+                            <TrendingUp className="w-4 h-4 text-amber-600" />
+                            {lang === "ar" ? "توجد زيادة نقدية بالصندوق (Up):" : "Cash Drawer Surplus (Over):"}
+                          </span>
+                          <span className="font-mono text-base font-black text-amber-600 dark:text-amber-400">
+                            +{money(currentReconciliation.variance)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+                          {lang === "ar"
+                            ? "⚠️ تم رصد زيادة بالصندوق وتوريدها، وتم إرسال إشعار فوري لمدير النظام (م. حافظ رحيم) للتدقيق المالي."
+                            : "⚠️ Cash surplus recorded and remitted. Direct notification dispatched to System Admin for financial audit."}
+                        </p>
+                      </div>
+                    )}
+
+                    {currentReconciliation.status === "balanced" && (
+                      <div className="p-4 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 font-black text-xs text-emerald-700 dark:text-emerald-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            {lang === "ar" ? "الصندوق مطابق تماماً (Zero Variance):" : "Drawer Perfectly Balanced:"}
+                          </span>
+                          <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400">
+                            0.00 {currencySymbol}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700/90 dark:text-emerald-300/90 leading-relaxed">
+                          {lang === "ar"
+                            ? "✅ لا يوجد أي عجز أو زيادة. تم إغلاق الوردية بنجاح واعتماد المطابقة وإخطار مدير النظام."
+                            : "✅ No shortage or surplus detected. Shift closed and audited report dispatched to System Admin."}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Reconciliation Comparison Table */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-3 rounded-2xl bg-muted/30 border border-border/70">
+                        <span className="text-[10px] text-muted-foreground block">
+                          {lang === "ar" ? "النقدية المتوقعة سيستمياً:" : "Expected Cash in Drawer:"}
+                        </span>
+                        <span className="font-mono font-black text-sm text-foreground">
+                          {money(currentReconciliation.expectedCash)}
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-muted/30 border border-border/70">
+                        <span className="text-[10px] text-muted-foreground block">
+                          {lang === "ar" ? "النقدية الفعلية المحصية:" : "Counted Cash on Hand:"}
+                        </span>
+                        <span className="font-mono font-black text-sm text-foreground">
+                          {money(currentReconciliation.actualCash)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {currentReconciliation.notes && (
+                      <div className="p-2.5 rounded-xl bg-card border border-border/70 text-[11px] text-muted-foreground">
+                        <span className="font-bold text-foreground me-1">
+                          {lang === "ar" ? "ملاحظات الكاشير:" : "Cashier Notes:"}
+                        </span>
+                        {currentReconciliation.notes}
+                      </div>
+                    )}
+
+                    {/* Detailed Breakdown (Revealed after shift closing) */}
+                    <div className="space-y-2 text-xs pt-1">
+                      <div className="text-[11px] font-black text-muted-foreground">
+                        {lang === "ar" ? "تفاصيل مبيعات وحركة الصندوق بعد الإغلاق:" : "Post-Closing Sales & Drawer Breakdown:"}
+                      </div>
+                      <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
+                        <span>{lang === "ar" ? "عهدة بداية الوردية (الافتتاحي):" : "Opening Cash Balance:"}</span>
+                        <span className="font-black font-mono">{money(currentReconciliation.snapshot.openingCash)}</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
+                        <span>{lang === "ar" ? "مبيعات نقدية (Cash):" : "Cash Sales:"}</span>
+                        <span className="font-black font-mono text-emerald-600">{money(currentReconciliation.snapshot.cashSales)}</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
+                        <span>{lang === "ar" ? "مبيعات شبكة وفيزا (Card):" : "Card POS Sales:"}</span>
+                        <span className="font-black font-mono text-blue-600">{money(currentReconciliation.snapshot.cardSales)}</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-xl bg-card border border-border/70">
+                        <span>{lang === "ar" ? "محافظ إلكترونية (Wallets):" : "Digital Wallets:"}</span>
+                        <span className="font-black font-mono text-purple-600">{money(currentReconciliation.snapshot.walletSales)}</span>
+                      </div>
+                      <div className="flex justify-between p-3 rounded-2xl bg-primary/10 border border-primary/30 font-black text-primary">
+                        <span>{lang === "ar" ? "إجمالي مبيعات ورديتي:" : "My Total Shift Sales:"}</span>
+                        <span className="font-mono text-sm">
+                          {money(currentReconciliation.snapshot.totalSales)} ({currentReconciliation.snapshot.ordersCount} {lang === "ar" ? "طلب" : "orders"})
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Direct Admin Notification Confirmation Badge */}
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-2">
+                      <Bell className="w-4 h-4 shrink-0 text-emerald-600" />
+                      <span>
+                        {lang === "ar"
+                          ? "تم إخطار مدير النظام (م. حافظ رحيم) مباشرةً بالتقرير ونتائج المطابقة"
+                          : "System Admin (Hafez Rahim) has been directly notified with this reconciliation"}
+                      </span>
+                    </div>
+
+                    {/* Post-closing actions */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toast.success(
+                            lang === "ar"
+                              ? `تمت طباعة تقرير المطابقة والإغلاق النهائي (Z-Report) للكاشير ${pick(activeCashier.name.ar, activeCashier.name.en)} بنجاح`
+                              : `Z-Report printed for cashier ${pick(activeCashier.name.ar, activeCashier.name.en)}`
+                          );
+                        }}
+                        className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>{lang === "ar" ? "طباعة تقرير الإغلاق (Z-Report)" : "Print Z-Report"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleStartNewShift}
+                        className="px-4 py-2.5 rounded-xl border border-primary/40 bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{lang === "ar" ? "بدء وردية جديدة" : "New Shift"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3508,20 +4110,11 @@ export function PosPage() {
                                 {lang === "ar" ? "الكاشير النشط" : "Active"}
                               </span>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveCashier(cashier);
-                                  toast.success(
-                                    lang === "ar"
-                                      ? `تم التبديل إلى الكاشير: ${pick(cashier.name.ar, cashier.name.en)}`
-                                      : `Switched to cashier: ${pick(cashier.name.ar, cashier.name.en)}`
-                                  );
-                                }}
-                                className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
-                              >
-                                {lang === "ar" ? "تبديل إليه" : "Switch"}
-                              </button>
+                              <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-bold text-[9px] border border-border/70">
+                                {ordersCount > 0
+                                  ? lang === "ar" ? "وردية مفتوحة" : "Open Shift"
+                                  : lang === "ar" ? "جاهز / غير نشط" : "Standby"}
+                              </span>
                             )}
                           </div>
                         </div>

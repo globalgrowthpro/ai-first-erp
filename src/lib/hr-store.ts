@@ -219,7 +219,7 @@ const INITIAL_AI_INSIGHTS: HrAiInsight[] = [
 const STORAGE_KEY = "hafez_hr_data_v4";
 
 // Baseline operational roles to supplement the DB so kitchen and sales have complete staffing
-const DEFAULT_SUPPLEMENTAL_EMPLOYEES: EmployeeRecord[] = [
+export const DEFAULT_SUPPLEMENTAL_EMPLOYEES: EmployeeRecord[] = [
   {
     id: "emp-chef-ibrahim",
     code: "EMP-006",

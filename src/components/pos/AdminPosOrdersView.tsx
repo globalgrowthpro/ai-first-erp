@@ -164,6 +164,7 @@ function AdminPosOrdersInner() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("all");
+  const [selectedCashier, setSelectedCashier] = useState("all");
   const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [selectedOrderType, setSelectedOrderType] = useState("all");
@@ -171,6 +172,18 @@ function AdminPosOrdersInner() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
+
+  // Extract unique cashiers from the orders ledger for isolated per-cashier filtering
+  const cashierOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (orders || []).forEach((o) => {
+      if (o.cashierName) {
+        const idKey = o.cashierId || o.cashierName;
+        map.set(idKey, o.cashierName);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [orders]);
 
   // Selected order for thermal receipt preview modal
   const [activeReceiptOrder, setActiveReceiptOrder] = useState<AdminPosOrder | null>(null);
@@ -209,6 +222,7 @@ function AdminPosOrdersInner() {
   const handleResetFilters = () => {
     setSearchQuery("");
     setSelectedBranch("all");
+    setSelectedCashier("all");
     setSelectedPlatform("all");
     setSelectedPayment("all");
     setSelectedOrderType("all");
@@ -221,6 +235,7 @@ function AdminPosOrdersInner() {
   const isFiltered = Boolean(
     searchQuery.trim() ||
     selectedBranch !== "all" ||
+    selectedCashier !== "all" ||
     selectedPlatform !== "all" ||
     selectedPayment !== "all" ||
     selectedOrderType !== "all" ||
@@ -232,6 +247,7 @@ function AdminPosOrdersInner() {
   const activeFiltersCount = [
     Boolean(searchQuery.trim()),
     selectedBranch !== "all",
+    selectedCashier !== "all",
     selectedPlatform !== "all",
     selectedPayment !== "all",
     selectedOrderType !== "all",
@@ -262,6 +278,12 @@ function AdminPosOrdersInner() {
       // 2. Branch filter
       if (selectedBranch !== "all" && o.branchId !== selectedBranch) return false;
 
+      // 2.1 Cashier filter (Per-Cashier Ledger & Metrics Isolation)
+      if (selectedCashier !== "all") {
+        const matchCashier = o.cashierId === selectedCashier || o.cashierName === selectedCashier;
+        if (!matchCashier) return false;
+      }
+
       // 3. Platform filter
       if (selectedPlatform !== "all" && o.orderPlatform !== selectedPlatform) return false;
 
@@ -289,6 +311,7 @@ function AdminPosOrdersInner() {
     orders,
     searchQuery,
     selectedBranch,
+    selectedCashier,
     selectedPlatform,
     selectedPayment,
     selectedOrderType,
@@ -546,6 +569,23 @@ function AdminPosOrdersInner() {
                     {pick(info.ar, info.en)}
                   </option>
                 ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+          </div>
+
+          {/* Cashier Filter (Isolate Orders & Reports by Specific Cashier) */}
+          <div className="relative">
+            <select
+              value={selectedCashier}
+              onChange={(e) => setSelectedCashier(e.target.value)}
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+            >
+              <option value="all">👨‍🍳 {pick("كل الكاشيرات والمشغلين", "All Cashiers")}</option>
+              {cashierOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  👤 {c.name}
+                </option>
+              ))}
             </select>
             <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>

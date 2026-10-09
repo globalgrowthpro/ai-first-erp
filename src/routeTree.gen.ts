@@ -21,6 +21,7 @@ import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as ManufacturingRouteImport } from './routes/manufacturing'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PosRouteImport } from './routes/pos'
+import { Route as PosShiftsRouteImport } from './routes/pos-shifts'
 import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SalesRouteImport } from './routes/sales'
@@ -89,6 +90,11 @@ const PosRoute = PosRouteImport.update({
   path: '/pos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PosShiftsRoute = PosShiftsRouteImport.update({
+  id: '/pos-shifts',
+  path: '/pos-shifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PurchasesRoute = PurchasesRouteImport.update({
   id: '/purchases',
   path: '/purchases',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
   '/pos': typeof PosRoute
+  '/pos-shifts': typeof PosShiftsRoute
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
   '/pos': typeof PosRoute
+  '/pos-shifts': typeof PosShiftsRoute
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/manufacturing': typeof ManufacturingRoute
   '/partners': typeof PartnersRoute
   '/pos': typeof PosRoute
+  '/pos-shifts': typeof PosShiftsRoute
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/manufacturing'
     | '/partners'
     | '/pos'
+    | '/pos-shifts'
     | '/purchases'
     | '/reports'
     | '/sales'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/manufacturing'
     | '/partners'
     | '/pos'
+    | '/pos-shifts'
     | '/purchases'
     | '/reports'
     | '/sales'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/manufacturing'
     | '/partners'
     | '/pos'
+    | '/pos-shifts'
     | '/purchases'
     | '/reports'
     | '/sales'
@@ -268,6 +280,7 @@ export interface RootRouteChildren {
   ManufacturingRoute: typeof ManufacturingRoute
   PartnersRoute: typeof PartnersRoute
   PosRoute: typeof PosRoute
+  PosShiftsRoute: typeof PosShiftsRoute
   PurchasesRoute: typeof PurchasesRoute
   ReportsRoute: typeof ReportsRoute
   SalesRoute: typeof SalesRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pos-shifts': {
+      id: '/pos-shifts'
+      path: '/pos-shifts'
+      fullPath: '/pos-shifts'
+      preLoaderRoute: typeof PosShiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/purchases': {
       id: '/purchases'
       path: '/purchases'
@@ -428,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManufacturingRoute: ManufacturingRoute,
   PartnersRoute: PartnersRoute,
   PosRoute: PosRoute,
+  PosShiftsRoute: PosShiftsRoute,
   PurchasesRoute: PurchasesRoute,
   ReportsRoute: ReportsRoute,
   SalesRoute: SalesRoute,
