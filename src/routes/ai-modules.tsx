@@ -21,6 +21,8 @@ import {
   Copy,
   Check,
   Edit2,
+  Pencil,
+  RotateCcw,
   Trash2,
   AlertTriangle,
 } from "lucide-react";
@@ -33,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { aiModules as initialAiModules, type AiModuleItem } from "@/lib/demo-data";
-import { useAiModulesStore } from "@/lib/ai-modules-store";
+import { useAiModulesStore, DEFAULT_GEMINI_KEY } from "@/lib/ai-modules-store";
 
 export const Route = createFileRoute("/ai-modules")({
   head: () => ({
@@ -90,27 +92,58 @@ const AGENT_ROLES = [
   },
 ];
 
+const PROVIDER_MODELS: Record<AiModuleItem["provider"], Array<{ id: string; name: string; tag?: string }>> = {
+  gemini: [
+    { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash", tag: "الأحدث وموصى به" },
+    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", tag: "سريع وخفيف" },
+    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", tag: "استدلال متقدم" },
+    { id: "gemini-flash-latest", name: "Gemini Flash (Latest)", tag: "تحديث تلقائي" },
+    { id: "gemini-pro-latest", name: "Gemini Pro (Latest)", tag: "تحديث تلقائي" },
+  ],
+  openai: [
+    { id: "gpt-4o", name: "GPT-4o (Omni)", tag: "شامل وقوي" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini", tag: "اقتصادي وسريع" },
+    { id: "o1-preview", name: "OpenAI o1", tag: "تفكير واستنتاج" },
+    { id: "gpt-4-turbo", name: "GPT-4 Turbo", tag: "سياق واسع" },
+  ],
+  anthropic: [
+    { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", tag: "دقيق وتحليلي" },
+    { id: "claude-3-5-haiku", name: "Claude 3.5 Haiku", tag: "سريع جداً" },
+    { id: "claude-3-opus", name: "Claude 3 Opus", tag: "مهام معقدة" },
+  ],
+  deepseek: [
+    { id: "deepseek-chat", name: "DeepSeek V3 (Chat)", tag: "نموذج عام متفوق" },
+    { id: "deepseek-reasoner", name: "DeepSeek R1 (Reasoner)", tag: "تفكير واستدلال" },
+  ],
+  ollama: [
+    { id: "llama3.3", name: "Llama 3.3 (70B)", tag: "محلي مفتوح" },
+    { id: "qwen2.5", name: "Qwen 2.5 (72B)", tag: "محلي داعم للعربية" },
+    { id: "mistral", name: "Mistral Small", tag: "خفيف وسريع" },
+  ],
+};
+
 function AiModulesPage() {
   const { lang, t, pick, n } = useI18n();
 
-  const { modules, addModule, updateModule, deleteModule } = useAiModulesStore();
+  const { modules, addModule, updateModule, deleteModule, resetToDefaults } = useAiModulesStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<AiModuleItem | null>(null);
   const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const [showApiKeyInForm, setShowApiKeyInForm] = useState(false);
 
   // Filter / Search
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  // New Module Form State
+  // New / Edit Module Form State
   const [newMod, setNewMod] = useState({
     nameAr: "",
     nameEn: "",
-    provider: "openai" as AiModuleItem["provider"],
-    model: "gpt-4o",
-    apiKey: "",
+    provider: "gemini" as AiModuleItem["provider"],
+    model: "gemini-3.8-flash",
+    apiKey: DEFAULT_GEMINI_KEY,
     agentRole: "sales" as AiModuleItem["agentRole"],
     roleLabelAr: "أخصائي مبيعات حلويات",
     roleLabelEn: "Sweets Sales Agent",
@@ -120,7 +153,7 @@ function AiModulesPage() {
   });
 
   // Sandbox State
-  const [activeSandboxModule, setActiveSandboxModule] = useState<AiModuleItem>(initialAiModules[0]!);
+  const [activeSandboxModule, setActiveSandboxModule] = useState<AiModuleItem>(() => modules[0] ?? initialAiModules[0]!);
   const [sandboxPrompt, setSandboxPrompt] = useState("");
   const [isSimulating, setIsSimulating] = useState(false);
   const [sandboxLogs, setSandboxLogs] = useState<
@@ -130,8 +163,8 @@ function AiModulesPage() {
       role: "system",
       text:
         lang === "ar"
-          ? "الوكيل النشط: حافظ — منسق العمليات العام (GPT-4o). جاهز لاستقبال الأوامر والتحليلات."
-          : "Active Agent: Hafez — Executive Orchestrator (GPT-4o). Ready for commands.",
+          ? "الوكيل النشط جاهز لاستقبال الأوامر والتحليلات عبر الذكاء الاصطناعي."
+          : "Active Agent ready for commands & analytical reasoning.",
       time: "10:00 AM",
     },
   ]);
@@ -161,6 +194,26 @@ function AiModulesPage() {
     setTimeout(() => setCopiedKeyId(null), 2000);
   };
 
+  // Reset form to add mode
+  const openAddModal = () => {
+    setEditingModuleId(null);
+    setNewMod({
+      nameAr: "",
+      nameEn: "",
+      provider: "gemini",
+      model: "gemini-3.8-flash",
+      apiKey: DEFAULT_GEMINI_KEY,
+      agentRole: "sales",
+      roleLabelAr: "أخصائي مبيعات حلويات",
+      roleLabelEn: "Sweets Sales Agent",
+      systemPrompt: "أنت وكيل ذكي معتمد لسلسلة حلويات وزير الحلو، متخصص في مساعدة مسؤولي المبيعات.",
+      allowedTools: ["create_invoice", "check_stock"],
+      temperature: 0.2,
+    });
+    setShowApiKeyInForm(false);
+    setShowAddModal(true);
+  };
+
   // Open modal in edit mode, pre-filled from an existing module
   const openEditModal = (mod: AiModuleItem) => {
     setEditingModuleId(mod.id);
@@ -177,6 +230,7 @@ function AiModulesPage() {
       allowedTools: mod.allowedTools,
       temperature: mod.temperature,
     });
+    setShowApiKeyInForm(false);
     setShowAddModal(true);
   };
 
@@ -222,23 +276,10 @@ function AiModulesPage() {
     }
     setShowAddModal(false);
     setEditingModuleId(null);
-    setNewMod({
-      nameAr: "",
-      nameEn: "",
-      provider: "openai",
-      model: "gpt-4o",
-      apiKey: "",
-      agentRole: "sales",
-      roleLabelAr: "أخصائي مبيعات حلويات",
-      roleLabelEn: "Sweets Sales Agent",
-      systemPrompt: "أنت وكيل ذكي معتمد لسلسلة حلويات وزير الحلو، متخصص في مساعدة مسؤولي المبيعات.",
-      allowedTools: ["create_invoice", "check_stock"],
-      temperature: 0.2,
-    });
   };
 
-  // Sandbox Simulation
-  const handleRunSandbox = (e: React.FormEvent) => {
+  // Sandbox Simulation & Live Gemini Execution
+  const handleRunSandbox = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sandboxPrompt.trim() || isSimulating) return;
 
@@ -252,6 +293,48 @@ function AiModulesPage() {
     setSandboxLogs((prev) => [...prev, { role: "user", text: userText, time: now }]);
     setIsSimulating(true);
 
+    // 1. Try real Google Gemini API call if provider is gemini and has apiKey
+    if (activeSandboxModule.provider === "gemini" && activeSandboxModule.apiKey) {
+      try {
+        const modelName = activeSandboxModule.model || "gemini-3.8-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeSandboxModule.apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: activeSandboxModule.systemPrompt || "أنت وكيل ذكي معتمد لسلسلة حلويات وزير الحلو، متخصص في مساعدة مسؤولي العمليات." }],
+            },
+            contents: [{ parts: [{ text: userText }] }],
+            generationConfig: {
+              temperature: activeSandboxModule.temperature ?? 0.2,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          const liveReply = data.candidates[0].content.parts[0].text;
+          setSandboxLogs((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: liveReply,
+              tools: ["gemini_live_api"],
+              time: new Date().toLocaleTimeString(lang === "ar" ? "ar-EG" : "en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            },
+          ]);
+          setIsSimulating(false);
+          return;
+        }
+      } catch (callErr) {
+        console.warn("Live Gemini API call failed, falling back to ERP domain engine", callErr);
+      }
+    }
+
+    // 2. Fallback to ERP domain engine
     setTimeout(() => {
       let reply = "";
       const toolsUsed: string[] = [];
@@ -295,7 +378,7 @@ function AiModulesPage() {
         },
       ]);
       setIsSimulating(false);
-    }, 900);
+    }, 800);
   };
 
   return (
@@ -377,14 +460,28 @@ function AiModulesPage() {
                 {lang === "ar" ? "دليل وكلاء وموديلات الذكاء" : "AI Agents & Models Directory"}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              {t("addAiModule")}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(lang === "ar" ? "هل ترغب في إعادة ضبط الموديلات للوضع الافتراضي؟" : "Reset models to defaults?")) {
+                    resetToDefaults();
+                  }
+                }}
+                className="p-2 bg-secondary text-muted-foreground hover:text-foreground rounded-lg border border-border/60 transition-colors cursor-pointer"
+                title={lang === "ar" ? "استعادة الموديلات الافتراضية" : "Restore Defaults"}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={openAddModal}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                {lang === "ar" ? "إضافة موديل جديد" : "Add New Model"}
+              </button>
+            </div>
           </div>
 
           {/* Search & Filter */}
@@ -447,7 +544,7 @@ function AiModulesPage() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5 mt-0.5">
-                          <span className="font-mono bg-muted px-1.5 py-0.2 rounded text-[11px]">
+                          <span className="font-mono bg-muted px-1.5 py-0.2 rounded text-[11px] font-bold text-foreground">
                             {mod.model}
                           </span>
                           <span>•</span>
@@ -458,18 +555,56 @@ function AiModulesPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {/* Active/Idle Status Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => toggleModuleStatus(mod)}
+                        className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
+                          mod.status === "active"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                            : "bg-muted/60 text-muted-foreground border-border hover:bg-muted"
+                        }`}
+                        title={lang === "ar" ? "تبديل حالة التشغيل (نشط / معطل)" : "Toggle Active/Idle"}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${mod.status === "active" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+                        <span>{mod.status === "active" ? (lang === "ar" ? "نشط" : "Active") : (lang === "ar" ? "معطل" : "Idle")}</span>
+                      </button>
+
+                      {/* Edit Model Button */}
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(mod)}
+                        className="px-2.5 py-1 text-xs font-bold rounded-lg border border-border bg-card hover:bg-secondary text-foreground transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+                        title={lang === "ar" ? "تعديل الموديل ومفتاح الربط" : "Edit Model & API Key"}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-primary" />
+                        <span>{lang === "ar" ? "تعديل" : "Edit"}</span>
+                      </button>
+
+                      {/* Test in Sandbox */}
                       <button
                         type="button"
                         onClick={() => setActiveSandboxModule(mod)}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 ${
+                        className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
                           isSelectedForSandbox
-                            ? "bg-primary text-primary-foreground border-transparent shadow-sm"
+                            ? "bg-primary text-primary-foreground border-transparent shadow-xs"
                             : "bg-card border-border hover:bg-secondary"
                         }`}
+                        title={lang === "ar" ? "اختبار في الساندبوكس" : "Test in Sandbox"}
                       >
                         <Play className="w-3.5 h-3.5" />
-                        {lang === "ar" ? "اختبار في الساندبوكس" : "Test"}
+                        <span>{lang === "ar" ? "تجربة" : "Test"}</span>
+                      </button>
+
+                      {/* Delete Agent */}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteCandidate(mod)}
+                        className="p-1.5 text-xs rounded-lg border border-border bg-card hover:bg-rose-500/10 hover:text-rose-600 text-muted-foreground transition-colors cursor-pointer"
+                        title={lang === "ar" ? "حذف الوكيل" : "Delete"}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -718,19 +853,23 @@ function AiModulesPage() {
         </div>
       </div>
 
-      {/* MODAL: ADD NEW AI MODULE */}
+      {/* MODAL: ADD / EDIT AI MODULE */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-card rounded-2xl border border-border/80 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-10">
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5" />
-                <h2 className="font-bold text-base">{t("addAiModule")}</h2>
+                <h2 className="font-bold text-base">
+                  {editingModuleId
+                    ? (lang === "ar" ? `تعديل موديل الذكاء الاصطناعي: ${newMod.nameAr}` : `Edit AI Model: ${newMod.nameEn || newMod.nameAr}`)
+                    : (lang === "ar" ? "إضافة وكيل ذكاء اصطناعي جديد" : "Add New AI Agent")}
+                </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="hover:opacity-80 p-1"
+                className="hover:opacity-80 p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -774,56 +913,108 @@ function AiModulesPage() {
                     value={newMod.provider}
                     onChange={(e) => {
                       const prov = e.target.value as AiModuleItem["provider"];
-                      let defaultModel = "gpt-4o";
-                      if (prov === "gemini") defaultModel = "gemini-1.5-pro";
-                      if (prov === "anthropic") defaultModel = "claude-3-5-sonnet-20241022";
-                      if (prov === "deepseek") defaultModel = "deepseek-chat";
-                      if (prov === "ollama") defaultModel = "llama3.2";
-                      setNewMod({ ...newMod, provider: prov, model: defaultModel });
+                      let defaultModel = "gemini-3.8-flash";
+                      let defaultKey = newMod.apiKey;
+                      if (prov === "gemini") {
+                        defaultModel = "gemini-3.8-flash";
+                        if (!defaultKey || defaultKey.includes("xxxx")) defaultKey = DEFAULT_GEMINI_KEY;
+                      } else if (prov === "openai") {
+                        defaultModel = "gpt-4o";
+                      } else if (prov === "anthropic") {
+                        defaultModel = "claude-3-5-sonnet-20241022";
+                      } else if (prov === "deepseek") {
+                        defaultModel = "deepseek-chat";
+                      } else if (prov === "ollama") {
+                        defaultModel = "llama3.3";
+                      }
+                      setNewMod({ ...newMod, provider: prov, model: defaultModel, apiKey: defaultKey });
                     }}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
                   >
-                    <option value="openai">OpenAI (ChatGPT)</option>
-                    <option value="gemini">Google Gemini</option>
-                    <option value="anthropic">Anthropic (Claude)</option>
-                    <option value="deepseek">DeepSeek AI</option>
-                    <option value="ollama">Local Ollama LLM</option>
+                    <option value="gemini">Google Gemini (🔵)</option>
+                    <option value="openai">OpenAI ChatGPT (🟢)</option>
+                    <option value="anthropic">Anthropic Claude (🟣)</option>
+                    <option value="deepseek">DeepSeek AI (🔷)</option>
+                    <option value="ollama">Local Ollama LLM (🦙)</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {t("model")}
-                  </label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase">
+                      {t("model")} *
+                    </label>
+                    <span className="text-[10px] text-muted-foreground font-semibold">
+                      {lang === "ar" ? "اختر نموذجاً أو اكتب اسماً مخصصاً" : "Pick preset or type custom"}
+                    </span>
+                  </div>
+                  {/* Preset Model Chips */}
+                  <div className="flex flex-wrap gap-1 pb-1">
+                    {PROVIDER_MODELS[newMod.provider]?.map((pm) => (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        onClick={() => setNewMod({ ...newMod, model: pm.id })}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border cursor-pointer ${
+                          newMod.model === pm.id
+                            ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                            : "bg-secondary/70 hover:bg-secondary text-secondary-foreground border-border/60"
+                        }`}
+                        title={pm.tag}
+                      >
+                        {pm.name}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     required
                     value={newMod.model}
                     onChange={(e) => setNewMod({ ...newMod, model: e.target.value })}
-                    placeholder="gpt-4o, gemini-1.5-pro, claude-3-5-sonnet"
+                    placeholder="gemini-3.8-flash, gpt-4o, claude-3-5-sonnet"
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono font-bold focus:border-primary focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* API Key Input */}
-              <div>
-                <label className="block text-xs font-bold uppercase mb-1">
-                  {t("apiKey")} *
-                </label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase">
+                    {t("apiKey")} *
+                  </label>
+                  {newMod.provider === "gemini" && (
+                    <button
+                      type="button"
+                      onClick={() => setNewMod({ ...newMod, apiKey: DEFAULT_GEMINI_KEY })}
+                      className="text-[10px] text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>{lang === "ar" ? "استخدام مفتاح Gemini المعين" : "Use Configured Gemini Key"}</span>
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showApiKeyInForm ? "text" : "password"}
                     required
                     value={newMod.apiKey}
                     onChange={(e) => setNewMod({ ...newMod, apiKey: e.target.value })}
-                    placeholder="sk-proj-..."
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono focus:border-primary focus:outline-none"
+                    placeholder="AQ.Ab8RN6J1... أو sk-..."
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono focus:border-primary focus:outline-none pe-10"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKeyInForm(!showApiKeyInForm)}
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 cursor-pointer"
+                    title={showApiKeyInForm ? "Hide" : "Show"}
+                  >
+                    {showApiKeyInForm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-[11px] text-muted-foreground">
                   {lang === "ar"
-                    ? "يتم تشفير وتأمين مفتاح API محلياً ولا يتم مشاركته خارج بيئة العمل."
+                    ? "يتم تشفير وتأمين مفتاح API محلياً في بيئة العمل للاستخدام في كافة عمليات الذكاء الاصطناعي."
                     : "Your API key is securely handled locally and never transmitted to untrusted endpoints."}
                 </p>
               </div>
@@ -848,7 +1039,7 @@ function AiModulesPage() {
                           roleLabelEn: r.label.en,
                         })
                       }
-                      className={`p-3 text-start rounded-lg border transition-all ${
+                      className={`p-3 text-start rounded-lg border transition-all cursor-pointer ${
                         newMod.agentRole === r.role
                           ? "bg-primary text-primary-foreground border-transparent shadow-sm"
                           : "bg-card border-border hover:bg-secondary"
@@ -896,7 +1087,7 @@ function AiModulesPage() {
                               : [...prev.allowedTools, tool.id],
                           }));
                         }}
-                        className={`p-2 rounded-lg border text-xs flex items-center justify-between text-start transition-colors ${
+                        className={`p-2 rounded-lg border text-xs flex items-center justify-between text-start transition-colors cursor-pointer ${
                           isChecked ? "bg-primary/10 font-bold border-primary/40 text-primary" : "bg-card border-border/70 hover:bg-secondary"
                         }`}
                       >
@@ -941,7 +1132,7 @@ function AiModulesPage() {
                     step="0.1"
                     value={newMod.temperature}
                     onChange={(e) => setNewMod({ ...newMod, temperature: parseFloat(e.target.value) })}
-                    className="w-28"
+                    className="w-28 cursor-pointer"
                   />
                   <span className="font-mono font-bold text-xs bg-card px-2 py-0.5 rounded border border-border">
                     {newMod.temperature}
@@ -954,20 +1145,65 @@ function AiModulesPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg border border-border bg-card text-xs font-bold hover:bg-secondary transition-colors"
+                  className="px-4 py-2 rounded-lg border border-border bg-card text-xs font-bold hover:bg-secondary transition-colors cursor-pointer"
                 >
                   {lang === "ar" ? "إلغاء" : "Cancel"}
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold uppercase shadow-sm hover:opacity-95 transition-all"
+                  className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold uppercase shadow-sm hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {t("addAiModule")}
+                  <Check className="w-4 h-4" />
+                  <span>
+                    {editingModuleId
+                      ? (lang === "ar" ? "حفظ التعديلات" : "Save Changes")
+                      : (lang === "ar" ? "إضافة الموديل" : "Add Model")}
+                  </span>
                 </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: CONFIRM DELETE */}
+      {deleteCandidate && (
+        <Dialog open={Boolean(deleteCandidate)} onOpenChange={() => setDeleteCandidate(null)}>
+          <DialogContent className="max-w-md rounded-2xl p-6" dir={lang === "ar" ? "rtl" : "ltr"}>
+            <DialogHeader className="pb-3 border-b border-border/60">
+              <DialogTitle className="text-base font-bold text-rose-600 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                {lang === "ar" ? "تأكيد حذف وكيل الذكاء الاصطناعي" : "Confirm Agent Deletion"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-3 text-xs text-muted-foreground space-y-2">
+              <p>
+                {lang === "ar"
+                  ? `هل أنت متأكد من رغبتك في حذف الوكيل "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}"؟`
+                  : `Are you sure you want to delete agent "${pick(deleteCandidate.name.ar, deleteCandidate.name.en)}"?`}
+              </p>
+              <p className="font-mono text-[11px] bg-muted/50 p-2 rounded-lg text-foreground">
+                Provider: {deleteCandidate.provider} | Model: {deleteCandidate.model}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-border/60">
+              <button
+                type="button"
+                onClick={() => setDeleteCandidate(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-secondary cursor-pointer"
+              >
+                {lang === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteModule}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 cursor-pointer shadow-xs"
+              >
+                {lang === "ar" ? "تأكيد الحذف" : "Delete Agent"}
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
