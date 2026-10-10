@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   LifeBuoy,
   Plus,
@@ -20,7 +20,13 @@ import {
   ChevronDown,
   RefreshCw,
   Sparkles,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeDownloadWorkbook } from "@/lib/excel-utils";
+import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, Panel, Td } from "@/components/kit";
 import {
@@ -327,6 +333,282 @@ export function HelpdeskManagement() {
     setReplyMessage("");
   };
 
+  const excelInputRef = useRef<HTMLInputElement>(null);
+
+  // Export Helpdesk Tickets to Excel (.xlsx)
+  const handleExportExcel = () => {
+    const listToExport = filteredTickets.length > 0 ? filteredTickets : tickets;
+    if (listToExport.length === 0) {
+      toast.warning(pick("لا توجد تذاكر لتصديرها وفق الفلاتر المحددة", "No tickets available to export"));
+      return;
+    }
+
+    const exportRows = listToExport.map((tkt, idx) => ({
+      "م": idx + 1,
+      "رقم التذكرة": tkt.ticketNumber,
+      "عنوان المشكلة": tkt.title,
+      "التصنيف": getCategoryLabel(tkt.category),
+      "مستوى الأولوية":
+        tkt.priority === "urgent"
+          ? "عاجل جداً"
+          : tkt.priority === "high"
+          ? "مرتفع"
+          : tkt.priority === "medium"
+          ? "متوسط"
+          : "منخفض",
+      "الحالة":
+        tkt.status === "open"
+          ? "مفتوحة"
+          : tkt.status === "in_progress"
+          ? "قيد المعالجة"
+          : tkt.status === "resolved"
+          ? "تم الحل"
+          : "مغلقة",
+      "الفرع أو المنشأة": tkt.branchOrLocation,
+      "المسؤول بالدعم": tkt.assignedTo,
+      "مقدم البلاغ": tkt.submitterName,
+      "المسمى الوظيفي": tkt.submitterRole,
+      "رقم الهاتف": tkt.submitterPhone || "-",
+      "مهلة الحل (ساعات SLA)": tkt.slaDueHours,
+      "تفاصيل المشكلة": tkt.description,
+      "تاريخ الإنشاء": tkt.createdAt,
+      "ملاحظات الحل والإغلاق": tkt.resolutionNotes || "-",
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    ws["!cols"] = [
+      { wch: 5 },
+      { wch: 16 },
+      { wch: 32 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 40 },
+      { wch: 20 },
+      { wch: 28 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, "تذاكر_الدعم_الفني");
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    safeDownloadWorkbook(wb, `تذاكر_الدعم_الفني_Helpdesk_${dateSuffix}.xlsx`);
+    toast.success(pick("تم تصدير التذاكر إلى ملف Excel بنجاح!", "Exported tickets to Excel successfully!"));
+  };
+
+  // Download Ready-made Template for Bulk Import
+  const handleDownloadTemplate = () => {
+    const templateRows = [
+      {
+        "عنوان المشكلة *": "عطل في شاشة لمس الكاشير رقم 2",
+        "التصنيف": "نقاط البيع والفروع (POS)",
+        "مستوى الأولوية": "مرتفع",
+        "الفرع أو المنشأة *": "فرع الكوربة — مصر الجديدة",
+        "المسؤول بالدعم": "فريق الدعم الفني المركزي",
+        "مقدم البلاغ *": "أحمد حسني",
+        "المسمى الوظيفي": "مشرف الفرع",
+        "رقم الهاتف": "+20 102 000 0000",
+        "مهلة الحل (ساعات)": 4,
+        "تفاصيل المشكلة *": "الشاشة لا تستجيب للمس بعد إعادة التشغيل، تم فحص كابل الطاقة والـ USB دون جدوى.",
+      },
+      {
+        "عنوان المشكلة *": "طلب صيانة دورية لفرن المعجنات المركزي",
+        "التصنيف": "المطبخ المركزي والأفران",
+        "مستوى الأولوية": "عاجل جداً",
+        "الفرع أو المنشأة *": "المطبخ المركزي ومصنع العاشر",
+        "المسؤول بالدعم": "م. إسلام حمدي (دعم النظم)",
+        "مقدم البلاغ *": "شيف محمود سالم",
+        "المسمى الوظيفي": "شيف تنفيذي",
+        "رقم الهاتف": "+20 111 222 3333",
+        "مهلة الحل (ساعات)": 2,
+        "تفاصيل المشكلة *": "انخفاض تدريجي في درجة حرارة الفرن رقم 3 وتذبذب مؤشر الحرارة الرقمي.",
+      },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(templateRows);
+    ws["!cols"] = [
+      { wch: 32 },
+      { wch: 22 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 45 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, "قالب_استيراد_التذاكر");
+    safeDownloadWorkbook(wb, "قالب_استيراد_تذاكر_الدعم_الفني.xlsx");
+    toast.info(pick("تم تحميل قالب استيراد التذاكر بنجاح", "Excel template downloaded successfully"));
+  };
+
+  // Import Helpdesk Tickets from Excel File
+  const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const sheetName = wb.SheetNames[0];
+        if (!sheetName) {
+          toast.error(pick("الملف لا يحتوي على أي صفحات عمل", "Workbook is empty"));
+          return;
+        }
+        const sheet = wb.Sheets[sheetName];
+        if (!sheet) return;
+        const rawRows = XLSX.utils.sheet_to_json(sheet) as Record<string, any>[];
+        if (!rawRows.length) {
+          toast.warning(pick("الملف لا يحتوي على أي صفوف بيانات للاستيراد", "File contains no rows"));
+          return;
+        }
+
+        let importedCount = 0;
+        for (const row of rawRows) {
+          const title = String(
+            row["عنوان المشكلة *"] ||
+            row["عنوان المشكلة"] ||
+            row["عنوان التذكرة"] ||
+            row["العنوان"] ||
+            row["Title"] ||
+            row["Subject"] ||
+            ""
+          ).trim();
+
+          if (!title) continue;
+
+          const desc = String(
+            row["تفاصيل المشكلة *"] ||
+            row["تفاصيل المشكلة"] ||
+            row["التفاصيل"] ||
+            row["الوصف"] ||
+            row["Description"] ||
+            title
+          ).trim();
+
+          const rawCategory = String(
+            row["التصنيف"] ||
+            row["Category"] ||
+            "branch_pos"
+          ).trim();
+
+          // match category
+          let category: TicketCategory = "general_inquiry";
+          const matched = allCategories.find(
+            (c) => c.ar === rawCategory || c.en === rawCategory || c.key === rawCategory
+          );
+          if (matched) {
+            category = matched.key;
+          } else if (rawCategory.includes("POS") || rawCategory.includes("بيع") || rawCategory.includes("فروع")) {
+            category = "branch_pos";
+          } else if (rawCategory.includes("مطبخ") || rawCategory.includes("kitchen")) {
+            category = "central_kitchen";
+          } else if (rawCategory.includes("مخزون") || rawCategory.includes("supply")) {
+            category = "inventory_supply";
+          } else if (rawCategory.includes("حساب") || rawCategory.includes("مالي") || rawCategory.includes("finance")) {
+            category = "billing_accounting";
+          } else if (rawCategory.includes("نظام") || rawCategory.includes("عطل") || rawCategory.includes("bug")) {
+            category = "system_bug";
+          }
+
+          const rawPriority = String(row["مستوى الأولوية"] || row["الأولوية"] || row["Priority"] || "").trim();
+          let priority: TicketPriority = "medium";
+          if (rawPriority.includes("عاجل") || rawPriority.toLowerCase().includes("urgent")) {
+            priority = "urgent";
+          } else if (rawPriority.includes("مرتفع") || rawPriority.toLowerCase().includes("high")) {
+            priority = "high";
+          } else if (rawPriority.includes("منخفض") || rawPriority.toLowerCase().includes("low")) {
+            priority = "low";
+          }
+
+          const location = String(
+            row["الفرع أو المنشأة *"] ||
+            row["الفرع أو المنشأة"] ||
+            row["الفرع"] ||
+            row["الموقع"] ||
+            row["Branch"] ||
+            row["Location"] ||
+            "المقر الإداري الرئيسي"
+          ).trim();
+
+          const assignee = String(
+            row["المسؤول بالدعم"] ||
+            row["المسؤول"] ||
+            row["Assignee"] ||
+            row["AssignedTo"] ||
+            "فريق الدعم الفني المركزي"
+          ).trim();
+
+          const submitter = String(
+            row["مقدم البلاغ *"] ||
+            row["مقدم البلاغ"] ||
+            row["الاسم"] ||
+            row["Submitter"] ||
+            row["SubmitterName"] ||
+            "موظف مسؤول"
+          ).trim();
+
+          const submitterRole = String(
+            row["المسمى الوظيفي"] ||
+            row["الوظيفة"] ||
+            row["Role"] ||
+            "مشرف"
+          ).trim();
+
+          const submitterPhone = String(
+            row["رقم الهاتف"] ||
+            row["الهاتف"] ||
+            row["Phone"] ||
+            ""
+          ).trim();
+
+          const sla = Number(row["مهلة الحل (ساعات)"] || row["مهلة الحل"] || row["SLA"]) || 4;
+
+          await addTicket({
+            title,
+            description: desc,
+            category,
+            priority,
+            status: "open",
+            branchOrLocation: location,
+            submitterName: submitter,
+            submitterRole: submitterRole,
+            submitterPhone,
+            assignedTo: assignee,
+            slaDueHours: sla,
+          });
+
+          importedCount++;
+        }
+
+        if (importedCount > 0) {
+          toast.success(
+            pick(
+              `تم استيراد ${importedCount} تذكرة دعم فني من Excel بنجاح!`,
+              `Successfully imported ${importedCount} tickets from Excel!`
+            )
+          );
+        } else {
+          toast.warning(pick("لم يتم العثور على تذاكر مطابقة للاستيراد في الملف", "No valid tickets found to import"));
+        }
+      } catch (err: any) {
+        console.error("Excel import error:", err);
+        toast.error(pick("حدث خطأ أثناء قراءة ملف Excel", "Failed to parse Excel file"));
+      } finally {
+        if (e.target) e.target.value = "";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const getPriorityBadge = (p: TicketPriority) => {
     switch (p) {
       case "urgent":
@@ -408,11 +690,57 @@ export function HelpdeskManagement() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Hidden Excel File Input */}
+        <input
+          type="file"
+          ref={excelInputRef}
+          onChange={handleImportExcel}
+          accept=".xlsx, .xls, .csv"
+          className="hidden"
+        />
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Download Excel Template */}
+          <Btn
+            variant="ghost"
+            size="sm"
+            onClick={handleDownloadTemplate}
+            className="text-xs text-muted-foreground hover:text-foreground"
+            title={pick("تحميل قالب Excel جاهز للاستيراد المجمع", "Download ready Excel template for bulk import")}
+          >
+            <FileSpreadsheet className="size-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">{pick("قالب Excel", "Template")}</span>
+          </Btn>
+
+          {/* Import from Excel */}
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={() => excelInputRef.current?.click()}
+            className="text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10"
+            title={pick("استيراد تذاكر من ملف Excel", "Import tickets from Excel file")}
+          >
+            <Upload className="size-3.5" />
+            <span>{pick("استيراد Excel", "Import Excel")}</span>
+          </Btn>
+
+          {/* Export to Excel */}
+          <Btn
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            className="text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10"
+            title={pick("تصدير التذاكر إلى ملف Excel", "Export tickets to Excel file")}
+          >
+            <Download className="size-3.5" />
+            <span>{pick("تصدير Excel", "Export Excel")}</span>
+          </Btn>
+
           <Btn variant="outline" size="sm" onClick={resetToSeed} className="text-xs">
             <RefreshCw className="size-3.5" />
-            <span>{pick("استعادة التذاكر النموذجية", "Reset Samples")}</span>
+            <span className="hidden md:inline">{pick("استعادة التذاكر", "Reset Samples")}</span>
           </Btn>
+
           <Btn variant="solid" size="sm" onClick={() => setIsNewTicketOpen(true)} className="text-xs">
             <Plus className="size-4" />
             <span>{pick("فتح تذكرة دعم جديدة", "New Ticket")}</span>
@@ -654,7 +982,7 @@ export function HelpdeskManagement() {
 
       {/* Ticket Details & Discussion Modal */}
       <Dialog open={!!activeTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto p-5">
+        <DialogContent className="max-w-3xl sm:max-w-4xl max-h-[92vh] overflow-y-auto p-6 md:p-8">
           {activeTicket && (
             <div className="space-y-5">
               <DialogHeader>
@@ -811,19 +1139,30 @@ export function HelpdeskManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* New Support Ticket Modal */}
+      {/* New Support Ticket Modal (Wider & Responsive) */}
       <Dialog open={isNewTicketOpen} onOpenChange={setIsNewTicketOpen}>
-        <DialogContent className="max-w-xl p-5">
+        <DialogContent className="max-w-3xl sm:max-w-4xl max-h-[92vh] overflow-y-auto p-6 md:p-8">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
-              <LifeBuoy className="size-5 text-primary" />
-              <span>{pick("فتح تذكرة دعم فني جديدة", "Create Support Ticket")}</span>
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-3">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <LifeBuoy className="size-5" />
+              </div>
+              <div>
+                <div>{pick("فتح تذكرة دعم فني جديدة", "Create Support Ticket")}</div>
+                <div className="text-xs text-muted-foreground font-normal mt-0.5">
+                  {pick(
+                    "تسجيل بلاغ عطل فني أو استفسار أو طلب صيانة جديد وتعيين المسؤول المباشر من النظام",
+                    "Submit an issue, service request, or inquiry with direct assignee and SLA assignment"
+                  )}
+                </div>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleCreateTicket} className="space-y-4 pt-2">
+          <form onSubmit={handleCreateTicket} className="space-y-5 pt-3">
+            {/* Subject / Title */}
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 {pick("عنوان التذكرة / المشكلة *", "Ticket Subject / Issue Title *")}
               </label>
               <input
@@ -831,58 +1170,58 @@ export function HelpdeskManagement() {
                 required
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={pick("مثال: عطل في شاشة الكاشير / نقص خامات عاجل", "e.g., POS terminal touch screen failure")}
-                className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder={pick("مثال: عطل في شاشة لمس الكاشير / نقص خامات عاجل بالفرع", "e.g., POS terminal touch screen failure")}
+                className="w-full text-xs sm:text-sm p-3 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
 
             {/* Category with Add Option & Priority */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-foreground">
                     {pick("التصنيف *", "Category *")}
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsAddCategoryOpen((prev) => !prev)}
-                    className="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                    className="text-xs font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
                   >
-                    <Plus className="size-3" />
+                    <Plus className="size-3.5" />
                     <span>{pick("إضافة تصنيف جديد", "+ Add Category")}</span>
                   </button>
                 </div>
 
                 {/* Inline New Category Creation Box */}
                 {isAddCategoryOpen && (
-                  <div className="p-2.5 mb-2 rounded-lg bg-primary/5 border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-1">
-                    <div className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                  <div className="p-3 mb-2.5 rounded-xl bg-primary/5 border border-primary/20 space-y-2.5 animate-in fade-in slide-in-from-top-1">
+                    <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Tag className="size-3.5 text-primary" />
-                      <span>{pick("إضافة تصنيف دعم فني جديد", "Add New Support Category")}</span>
+                      <span>{pick("إضافة تصنيف دعم فني جديد لقاعدة البيانات", "Add New Support Category to DB")}</span>
                     </div>
-                    <div className="grid grid-cols-1 gap-1.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="text"
                         value={newCatNameAr}
                         onChange={(e) => setNewCatNameAr(e.target.value)}
-                        placeholder={pick("اسم التصنيف بالعربية (مثال: الصيانة الدورية)", "Category name in Arabic")}
-                        className="w-full text-xs p-1.5 rounded-md bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder={pick("اسم التصنيف بالعربية (مثال: صيانة دورية)", "Category name in Arabic")}
+                        className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <input
                         type="text"
                         value={newCatNameEn}
                         onChange={(e) => setNewCatNameEn(e.target.value)}
                         placeholder={pick("اسم التصنيف بالإنجليزية (اختياري)", "Category name in English (optional)")}
-                        className="w-full text-xs p-1.5 rounded-md bg-background border border-border/80 focus:outline-none"
+                        className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
                       />
                     </div>
-                    <div className="flex justify-end gap-1.5 pt-1">
+                    <div className="flex justify-end gap-2 pt-1">
                       <Btn
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setIsAddCategoryOpen(false)}
-                        className="text-[11px] h-7 px-2"
+                        className="text-xs h-7 px-2.5"
                       >
                         {pick("إلغاء", "Cancel")}
                       </Btn>
@@ -892,7 +1231,7 @@ export function HelpdeskManagement() {
                         size="sm"
                         onClick={handleSaveNewCategory}
                         disabled={!newCatNameAr.trim() || isSavingCat}
-                        className="text-[11px] h-7 px-3"
+                        className="text-xs h-7 px-3.5"
                       >
                         {isSavingCat ? <RefreshCw className="size-3 animate-spin" /> : <Check className="size-3" />}
                         <span>{pick("حفظ التصنيف", "Save Category")}</span>
@@ -910,7 +1249,7 @@ export function HelpdeskManagement() {
                       setNewCategory(e.target.value as TicketCategory);
                     }
                   }}
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <optgroup label={pick("التصنيفات الأساسية", "Standard Categories")}>
                     {DEFAULT_CATEGORIES.map((cat) => (
@@ -935,32 +1274,32 @@ export function HelpdeskManagement() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {pick("مستوى الأولوية *", "Priority *")}
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  {pick("مستوى الأولوية والـ SLA *", "Priority & SLA *")}
                 </label>
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value as TicketPriority)}
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value="urgent">{pick("عاجل جداً (طارئ - ساعتين)", "Urgent (2h SLA)")}</option>
-                  <option value="high">{pick("مرتفع (4 ساعات)", "High (4h SLA)")}</option>
-                  <option value="medium">{pick("متوسط (8 ساعات)", "Medium (8h SLA)")}</option>
-                  <option value="low">{pick("منخفض (24 ساعة)", "Low (24h SLA)")}</option>
+                  <option value="urgent">{pick("عاجل جداً (طارئ - ساعتين SLA)", "Urgent (2h SLA)")}</option>
+                  <option value="high">{pick("مرتفع (4 ساعات SLA)", "High (4h SLA)")}</option>
+                  <option value="medium">{pick("متوسط (8 ساعات SLA)", "Medium (8h SLA)")}</option>
+                  <option value="low">{pick("منخفض (24 ساعة SLA)", "Low (24h SLA)")}</option>
                 </select>
               </div>
             </div>
 
             {/* Facility & Support Assignee (Fetched from DB) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
                   {pick("الفرع أو المنشأة *", "Branch or Facility *")}
                 </label>
                 <select
                   value={newLocation}
                   onChange={(e) => setNewLocation(e.target.value)}
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   <option value="فرع الكوربة — مصر الجديدة">فرع الكوربة — مصر الجديدة</option>
                   <option value="فرع المعادي — شارع النصر">فرع المعادي — شارع النصر</option>
@@ -972,9 +1311,9 @@ export function HelpdeskManagement() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-semibold text-foreground">
-                    {pick("المسؤول بالدعم *", "Support Assignee *")}
+                    {pick("المسؤول بالدعم (قاعدة البيانات) *", "Support Assignee (From DB) *")}
                   </label>
                   {loadingStaff && (
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -986,7 +1325,7 @@ export function HelpdeskManagement() {
                 <select
                   value={newAssignee}
                   onChange={(e) => setNewAssignee(e.target.value)}
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   {supportStaff.map((staff) => (
                     <option key={staff.id} value={staff.name}>
@@ -997,9 +1336,10 @@ export function HelpdeskManagement() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            {/* Submitter Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
                   {pick("اسم مقدم البلاغ *", "Submitter Name *")}
                 </label>
                 <input
@@ -1008,56 +1348,66 @@ export function HelpdeskManagement() {
                   value={newSubmitter}
                   onChange={(e) => setNewSubmitter(e.target.value)}
                   placeholder="أحمد حسني"
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {pick("المسمى الوظيفي", "Role")}
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  {pick("المسمى الوظيفي", "Role / Title")}
                 </label>
                 <input
                   type="text"
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                   placeholder="مشرف الوردية"
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {pick("رقم الهاتف", "Phone")}
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  {pick("رقم الهاتف للتواصل", "Phone")}
                 </label>
                 <input
                   type="tel"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="+20 102 000 0000"
-                  className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none font-mono"
+                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                 />
               </div>
             </div>
 
+            {/* Full Problem Description */}
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">
-                {pick("تفاصيل المشكلة كاملة *", "Problem Description *")}
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
+                {pick("تفاصيل المشكلة والخطوات المتبعة *", "Full Problem Description *")}
               </label>
               <textarea
                 required
-                rows={3}
+                rows={4}
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
-                placeholder={pick("يرجى ذكر تفاصيل العطل، الخطوات المتبعة، وأي رسائل خطأ ظهرت...", "Describe symptoms, error messages, and actions taken...")}
-                className="w-full text-xs p-2.5 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder={pick(
+                  "يرجى ذكر تفاصيل العطل، الخطوات المتبعة، وأي رسائل خطأ ظهرت، والأثر التشغيلي على الفرع...",
+                  "Describe symptoms, error messages, actions taken, and operational impact..."
+                )}
+                className="w-full text-xs sm:text-sm p-3 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
-              <Btn type="button" variant="outline" size="sm" onClick={() => setIsNewTicketOpen(false)} className="text-xs">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/60">
+              <Btn
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsNewTicketOpen(false)}
+                className="text-xs px-4 h-9"
+              >
                 {pick("إلغاء", "Cancel")}
               </Btn>
-              <Btn type="submit" variant="solid" size="sm" className="text-xs">
+              <Btn type="submit" variant="solid" size="sm" className="text-xs px-5 h-9">
                 <Check className="size-4" />
                 <span>{pick("حفظ وفتح التذكرة", "Submit Ticket")}</span>
               </Btn>
