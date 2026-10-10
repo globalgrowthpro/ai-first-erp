@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   LifeBuoy,
   Plus,
@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useHelpdeskStore,
   type HelpdeskTicket,
@@ -37,6 +38,30 @@ import {
   type TicketStatus,
   type TicketCategory,
 } from "@/lib/helpdesk-store";
+
+interface SupportStaffMember {
+  id: string;
+  name: string;
+  roleTitle?: string;
+  departmentName?: string;
+  email?: string;
+}
+
+interface CategoryOption {
+  key: string;
+  ar: string;
+  en: string;
+  isCustom?: boolean;
+}
+
+const DEFAULT_CATEGORIES: CategoryOption[] = [
+  { key: "branch_pos", ar: "نقاط البيع والفروع (POS)", en: "Branch & POS" },
+  { key: "central_kitchen", ar: "المطبخ المركزي والأفران", en: "Central Kitchen" },
+  { key: "inventory_supply", ar: "المخزون وسلاسل الإمداد", en: "Inventory & Supply" },
+  { key: "billing_accounting", ar: "الحسابات والفواتير", en: "Billing & Finance" },
+  { key: "system_bug", ar: "أعطال النظام والشبكة", en: "System & Network" },
+  { key: "general_inquiry", ar: "استفسار عام", en: "General Inquiry" },
+];
 
 export function HelpdeskManagement() {
   const { t, pick, n } = useI18n();
@@ -59,6 +84,24 @@ export function HelpdeskManagement() {
   const [selectedTicket, setSelectedTicket] = useState<HelpdeskTicket | null>(null);
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
 
+  // Support Staff from Supabase Database
+  const [supportStaff, setSupportStaff] = useState<SupportStaffMember[]>([
+    {
+      id: "team-central",
+      name: "فريق الدعم الفني المركزي",
+      roleTitle: "مركز العمليات ونظم المعلومات",
+      departmentName: "الإدارة العامة",
+    },
+  ]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+
+  // Custom Categories from Supabase Database
+  const [customCategories, setCustomCategories] = useState<CategoryOption[]>([]);
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [newCatNameAr, setNewCatNameAr] = useState("");
+  const [newCatNameEn, setNewCatNameEn] = useState("");
+  const [isSavingCat, setIsSavingCat] = useState(false);
+
   // New Ticket Form State
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -75,6 +118,141 @@ export function HelpdeskManagement() {
   const [replyMessage, setReplyMessage] = useState("");
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [resolutionInput, setResolutionInput] = useState("");
+
+  // Load Support Staff directly from Supabase Database (Employees + Profiles)
+  useEffect(() => {
+    async function loadSupportStaff() {
+      setLoadingStaff(true);
+      try {
+        const [empRes, profRes] = await Promise.all([
+          (supabase as any)
+            .from("employees")
+            .select("id, name_ar, name_en, email, positions(title_ar, title_en), departments(name_ar, name_en)")
+            .eq("is_active", true),
+          (supabase as any)
+            .from("profiles")
+            .select("id, full_name_ar, full_name_en, email")
+            .eq("is_active", true),
+        ]);
+
+        const staffList: SupportStaffMember[] = [
+          {
+            id: "team-central",
+            name: "فريق الدعم الفني المركزي",
+            roleTitle: "مركز العمليات ونظم المعلومات",
+            departmentName: "الإدارة العامة",
+          },
+        ];
+
+        if (empRes.data) {
+          empRes.data.forEach((e: any) => {
+            const name = e.name_ar || e.name_en || e.email;
+            const role = e.positions?.title_ar || e.positions?.title_en || "";
+            const dept = e.departments?.name_ar || e.departments?.name_en || "";
+            if (name && !staffList.some((s) => s.name === name)) {
+              staffList.push({
+                id: e.id,
+                name,
+                roleTitle: role,
+                departmentName: dept,
+                email: e.email,
+              });
+            }
+          });
+        }
+
+        if (profRes.data) {
+          profRes.data.forEach((p: any) => {
+            const name = p.full_name_ar || p.full_name_en || p.email;
+            if (name && !staffList.some((s) => s.name === name || s.email === p.email)) {
+              staffList.push({
+                id: p.id,
+                name: name.includes("@") ? name.split("@")[0] : name,
+                roleTitle: "مسؤول نظام",
+                email: p.email,
+              });
+            }
+          });
+        }
+
+        setSupportStaff(staffList);
+      } catch (err) {
+        console.error("Failed to load support staff from DB:", err);
+      } finally {
+        setLoadingStaff(false);
+      }
+    }
+
+    loadSupportStaff();
+  }, []);
+
+  // Load Custom Categories from Supabase Database
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const { data, error } = await (supabase as any)
+          .from("categories")
+          .select("id, code, name_ar, name_en")
+          .ilike("code", "HD-CAT-%");
+
+        if (data && !error) {
+          setCustomCategories(
+            data.map((c: any) => ({
+              key: c.code,
+              ar: c.name_ar,
+              en: c.name_en || c.name_ar,
+              isCustom: true,
+            }))
+          );
+        }
+      } catch (e) {
+        console.warn("Could not fetch custom categories:", e);
+      }
+    }
+
+    fetchCategories();
+  }, []);
+
+  const allCategories = useMemo(() => {
+    return [...DEFAULT_CATEGORIES, ...customCategories];
+  }, [customCategories]);
+
+  const handleSaveNewCategory = async () => {
+    const trimmedAr = newCatNameAr.trim();
+    if (!trimmedAr) return;
+    setIsSavingCat(true);
+    const code = `HD-CAT-${Date.now()}`;
+    const trimmedEn = newCatNameEn.trim() || trimmedAr;
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from("categories")
+        .insert({
+          code,
+          name_ar: trimmedAr,
+          name_en: trimmedEn,
+        })
+        .select();
+
+      if (!error && data?.[0]) {
+        const added: CategoryOption = {
+          key: code,
+          ar: trimmedAr,
+          en: trimmedEn,
+          isCustom: true,
+        };
+        setCustomCategories((prev) => [...prev, added]);
+        setNewCategory(code);
+        setNewCatNameAr("");
+        setNewCatNameEn("");
+        setIsAddCategoryOpen(false);
+      }
+    } catch (err) {
+      console.error("Error inserting custom category into Supabase:", err);
+    } finally {
+      setIsSavingCat(false);
+    }
+  };
 
   // Filtered Tickets
   const filteredTickets = useMemo(() => {
@@ -206,21 +384,11 @@ export function HelpdeskManagement() {
   };
 
   const getCategoryLabel = (c: TicketCategory) => {
-    switch (c) {
-      case "branch_pos":
-        return pick("نقاط البيع والفروع (POS)", "Branch & POS");
-      case "central_kitchen":
-        return pick("المطبخ المركزي والأفران", "Central Kitchen");
-      case "inventory_supply":
-        return pick("المخزون وسلاسل الإمداد", "Inventory & Supply");
-      case "billing_accounting":
-        return pick("الحسابات والفواتير", "Billing & Finance");
-      case "system_bug":
-        return pick("أعطال النظام والشبكة", "System & Network");
-      case "general_inquiry":
-      default:
-        return pick("استفسارات وطلبات عامة", "General Inquiries");
+    const found = allCategories.find((cat) => cat.key === c || cat.ar === c || cat.en === c);
+    if (found) {
+      return pick(found.ar, found.en);
     }
+    return c;
   };
 
   return (
@@ -350,11 +518,11 @@ export function HelpdeskManagement() {
               className="text-xs px-2.5 py-2 rounded-lg bg-background border border-border/80 focus:outline-none"
             >
               <option value="all">{pick("كافة التصنيفات", "All Categories")}</option>
-              <option value="branch_pos">{pick("نقاط البيع والفروع", "Branch & POS")}</option>
-              <option value="central_kitchen">{pick("المطبخ المركزي", "Central Kitchen")}</option>
-              <option value="inventory_supply">{pick("المخزون والتوريد", "Inventory & Supply")}</option>
-              <option value="billing_accounting">{pick("الحسابات والفواتير", "Billing")}</option>
-              <option value="system_bug">{pick("أعطال النظام", "System Bugs")}</option>
+              {allCategories.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {pick(c.ar, c.en)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -668,22 +836,101 @@ export function HelpdeskManagement() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Category with Add Option & Priority */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {pick("التصنيف *", "Category *")}
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-foreground">
+                    {pick("التصنيف *", "Category *")}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddCategoryOpen((prev) => !prev)}
+                    className="text-[11px] font-semibold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    <span>{pick("إضافة تصنيف جديد", "+ Add Category")}</span>
+                  </button>
+                </div>
+
+                {/* Inline New Category Creation Box */}
+                {isAddCategoryOpen && (
+                  <div className="p-2.5 mb-2 rounded-lg bg-primary/5 border border-primary/20 space-y-2 animate-in fade-in slide-in-from-top-1">
+                    <div className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                      <Tag className="size-3.5 text-primary" />
+                      <span>{pick("إضافة تصنيف دعم فني جديد", "Add New Support Category")}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      <input
+                        type="text"
+                        value={newCatNameAr}
+                        onChange={(e) => setNewCatNameAr(e.target.value)}
+                        placeholder={pick("اسم التصنيف بالعربية (مثال: الصيانة الدورية)", "Category name in Arabic")}
+                        className="w-full text-xs p-1.5 rounded-md bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <input
+                        type="text"
+                        value={newCatNameEn}
+                        onChange={(e) => setNewCatNameEn(e.target.value)}
+                        placeholder={pick("اسم التصنيف بالإنجليزية (اختياري)", "Category name in English (optional)")}
+                        className="w-full text-xs p-1.5 rounded-md bg-background border border-border/80 focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-1.5 pt-1">
+                      <Btn
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsAddCategoryOpen(false)}
+                        className="text-[11px] h-7 px-2"
+                      >
+                        {pick("إلغاء", "Cancel")}
+                      </Btn>
+                      <Btn
+                        type="button"
+                        variant="solid"
+                        size="sm"
+                        onClick={handleSaveNewCategory}
+                        disabled={!newCatNameAr.trim() || isSavingCat}
+                        className="text-[11px] h-7 px-3"
+                      >
+                        {isSavingCat ? <RefreshCw className="size-3 animate-spin" /> : <Check className="size-3" />}
+                        <span>{pick("حفظ التصنيف", "Save Category")}</span>
+                      </Btn>
+                    </div>
+                  </div>
+                )}
+
                 <select
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value as TicketCategory)}
+                  onChange={(e) => {
+                    if (e.target.value === "__add_new__") {
+                      setIsAddCategoryOpen(true);
+                    } else {
+                      setNewCategory(e.target.value as TicketCategory);
+                    }
+                  }}
                   className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
                 >
-                  <option value="branch_pos">{pick("نقاط البيع والفروع (POS)", "Branch & POS")}</option>
-                  <option value="central_kitchen">{pick("المطبخ المركزي والأفران", "Central Kitchen")}</option>
-                  <option value="inventory_supply">{pick("المخزون وسلاسل الإمداد", "Inventory & Supply")}</option>
-                  <option value="billing_accounting">{pick("الحسابات والفواتير", "Billing & Finance")}</option>
-                  <option value="system_bug">{pick("أعطال النظام والشبكة", "System & Network")}</option>
-                  <option value="general_inquiry">{pick("استفسار عام", "General Inquiry")}</option>
+                  <optgroup label={pick("التصنيفات الأساسية", "Standard Categories")}>
+                    {DEFAULT_CATEGORIES.map((cat) => (
+                      <option key={cat.key} value={cat.key}>
+                        {pick(cat.ar, cat.en)}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customCategories.length > 0 && (
+                    <optgroup label={pick("التصنيفات المضافة (قاعدة البيانات)", "Custom Categories (DB)")}>
+                      {customCategories.map((cat) => (
+                        <option key={cat.key} value={cat.key}>
+                          {pick(cat.ar, cat.en)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <option value="__add_new__" className="text-primary font-semibold">
+                    {pick("➕ إضافة تصنيف جديد...", "➕ Add New Category...")}
+                  </option>
                 </select>
               </div>
 
@@ -704,7 +951,8 @@ export function HelpdeskManagement() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Facility & Support Assignee (Fetched from DB) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-1">
                   {pick("الفرع أو المنشأة *", "Branch or Facility *")}
@@ -724,16 +972,28 @@ export function HelpdeskManagement() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {pick("المسؤول بالدعم", "Assignee")}
-                </label>
-                <input
-                  type="text"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-foreground">
+                    {pick("المسؤول بالدعم *", "Support Assignee *")}
+                  </label>
+                  {loadingStaff && (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <RefreshCw className="size-2.5 animate-spin" />
+                      {pick("جاري التحميل...", "Loading...")}
+                    </span>
+                  )}
+                </div>
+                <select
                   value={newAssignee}
                   onChange={(e) => setNewAssignee(e.target.value)}
-                  placeholder="م. إسلام حمدي (دعم النظم)"
                   className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
-                />
+                >
+                  {supportStaff.map((staff) => (
+                    <option key={staff.id} value={staff.name}>
+                      {staff.name} {staff.roleTitle ? `— ${staff.roleTitle}` : staff.departmentName ? `— ${staff.departmentName}` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

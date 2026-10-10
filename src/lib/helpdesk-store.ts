@@ -12,7 +12,8 @@ export type TicketCategory =
   | "general_inquiry"
   | "bug"
   | "technical"
-  | "billing";
+  | "billing"
+  | (string & {});
 
 export interface TicketResponse {
   id: string;
@@ -84,7 +85,7 @@ export function useHelpdeskStore() {
         responses: (row.helpdesk_ticket_responses || []).map((resp: any) => ({
           id: resp.id,
           sender: resp.author_id || "User",
-          senderRole: "Role", // In real app, join with profiles
+          senderRole: "Role",
           message: resp.message,
           timestamp: resp.created_at,
           isInternal: resp.is_internal
@@ -113,23 +114,32 @@ export function useHelpdeskStore() {
     };
     setTickets((prev) => [newTicket, ...prev]);
 
+    // Map to valid PostgreSQL ticket_category enum
+    const validDbEnums = ['technical', 'billing', 'feature_request', 'general_inquiry', 'bug'];
+    const dbCategory = validDbEnums.includes(ticket.category)
+      ? ticket.category
+      : (ticket.category.includes('billing') ? 'billing' :
+         ticket.category.includes('pos') || ticket.category.includes('system') ? 'technical' : 'general_inquiry');
+
     // DB Insert
-    await (supabase as any).from('helpdesk_tickets').insert({
-      ticket_number: tempTicketNumber,
-      title: ticket.title,
-      description: ticket.description,
-      category: ticket.category as any,
-      priority: ticket.priority as any,
-      status: ticket.status as any,
-      branch_or_location: ticket.branchOrLocation,
-      submitter_name: ticket.submitterName,
-      submitter_role: ticket.submitterRole,
-      submitter_phone: ticket.submitterPhone || null,
-      sla_due_hours: ticket.slaDueHours
-    });
-    
-    // Refresh to get actual DB ID
-    fetchTickets();
+    try {
+      await (supabase as any).from('helpdesk_tickets').insert({
+        ticket_number: tempTicketNumber,
+        title: ticket.title,
+        description: ticket.description,
+        category: dbCategory as any,
+        priority: ticket.priority as any,
+        status: ticket.status as any,
+        branch_or_location: ticket.branchOrLocation,
+        submitter_name: ticket.submitterName,
+        submitter_role: ticket.submitterRole,
+        submitter_phone: ticket.submitterPhone || null,
+        sla_due_hours: ticket.slaDueHours
+      });
+      fetchTickets();
+    } catch (e) {
+      console.warn("Failed to insert ticket into DB:", e);
+    }
     
     return newTicket;
   }, [fetchTickets]);
