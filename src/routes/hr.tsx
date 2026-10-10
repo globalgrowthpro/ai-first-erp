@@ -1417,11 +1417,12 @@ function HrPage() {
 
             if (existingUser) {
               linkedUserId = existingUser.id;
-              await updateOrgUser(existingUser.id, {
-                employeeId: editingEmployee?.id,
-                employeeCode: empData.code,
+              const userUpdates: Partial<UserItem> = {
                 role: (empData.erpRole as any) || existingUser.role,
-              });
+              };
+              if (editingEmployee?.id) userUpdates.employeeId = editingEmployee.id;
+              if (empData.code) userUpdates.employeeCode = empData.code;
+              await updateOrgUser(existingUser.id, userUpdates);
 
               saveProvisionedAccount({
                 email: targetEmail,
@@ -1440,12 +1441,12 @@ function HrPage() {
                 )
               );
             } else {
-              let newId = crypto.randomUUID();
+              let newId: string = crypto.randomUUID();
 
               // Try Supabase auth signUp with isolated unpersisted client (admin session is unaffected)
               try {
-                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-                const supabaseAnon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+                const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
+                const supabaseAnon = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
                 if (supabaseUrl && supabaseAnon) {
                   const unpersistedSupabase = createClient(supabaseUrl, supabaseAnon, {
                     auth: {
@@ -1484,7 +1485,7 @@ function HrPage() {
                 position: empData.positionName,
               });
 
-              const createdUser = await addUser({
+              const newUserPayload: UserItem = {
                 id: newId,
                 name: {
                   ar: empData.name.ar,
@@ -1495,11 +1496,15 @@ function HrPage() {
                 status: "active",
                 departmentId: empData.departmentId,
                 positionId: empData.positionId,
-                branch: empData.branchName.ar,
+                allowedPages: ["/", "/sales", "/pos"],
+                allowedActions: ["view", "create"],
+                sidebarVisible: true,
                 lastActive: "الآن",
-                employeeId: editingEmployee?.id,
-                employeeCode: empData.code,
-              });
+              };
+              if (editingEmployee?.id) newUserPayload.employeeId = editingEmployee.id;
+              if (empData.code) newUserPayload.employeeCode = empData.code;
+
+              const createdUser = await addUser(newUserPayload);
               if (createdUser?.id) {
                 linkedUserId = createdUser.id;
               }
@@ -1513,8 +1518,33 @@ function HrPage() {
             }
           }
 
-          const finalData = {
-            ...empData,
+          const employeeCode = empData.code || `EMP-${1000 + employees.length + 1}`;
+          const finalData: Omit<EmployeeRecord, "id"> = {
+            code: employeeCode,
+            name: empData.name,
+            nationalId: empData.nationalId,
+            email: empData.email,
+            phone: empData.phone,
+            emergencyContact: empData.emergencyContact,
+            departmentId: empData.departmentId,
+            departmentName: empData.departmentName,
+            positionId: empData.positionId,
+            positionName: empData.positionName,
+            branchId: empData.branchId,
+            branchName: empData.branchName,
+            directManager: empData.directManager,
+            hireDate: empData.hireDate,
+            gender: empData.gender,
+            contractType: empData.contractType,
+            employmentType: empData.employmentType,
+            status: empData.status,
+            avatarBg: empData.avatarBg,
+            avatarInitials: empData.avatarInitials,
+            avatarUrl: empData.avatarUrl,
+            compensation: empData.compensation,
+            bank: empData.bank,
+            healthCert: empData.healthCert,
+            leaveBalances: empData.leaveBalances,
             userId: linkedUserId,
           };
 
