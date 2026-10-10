@@ -23,6 +23,7 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
+  Store,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
@@ -350,6 +351,55 @@ export function HelpdeskManagement() {
       console.error("Error inserting custom category into Supabase:", err);
     } finally {
       setIsSavingCat(false);
+    }
+  };
+
+  // Inline Quick Branch Creation
+  const [isAddBranchOpen, setIsAddBranchOpen] = useState(false);
+  const [newBranchNameAr, setNewBranchNameAr] = useState("");
+  const [newBranchCity, setNewBranchCity] = useState("القاهرة");
+  const [isSavingBranch, setIsSavingBranch] = useState(false);
+
+  const handleSaveNewBranch = async () => {
+    const trimmed = newBranchNameAr.trim();
+    if (!trimmed) return;
+    setIsSavingBranch(true);
+    const code = `br-${Math.floor(100 + Math.random() * 900)}`;
+    try {
+      const { data, error } = await (supabase as any)
+        .from("branches")
+        .insert({
+          code,
+          name_ar: trimmed,
+          name_en: trimmed,
+          city: newBranchCity,
+          is_wazeer_owned: true,
+          is_active: true,
+        })
+        .select();
+
+      if (!error && data?.[0]) {
+        const added: FacilityOption = {
+          id: data[0].id,
+          name: data[0].name_ar,
+          nameEn: data[0].name_en,
+          type: "branch",
+          city: data[0].city,
+          code: data[0].code,
+        };
+        setFacilities((prev) => [added, ...prev]);
+        setNewLocation(data[0].name_ar);
+        setNewBranchNameAr("");
+        setIsAddBranchOpen(false);
+        toast.success(pick(`تمت إضافة فرع "${trimmed}" بنجاح!`, `Branch "${trimmed}" created successfully!`));
+      } else if (error) {
+        toast.error(error.message);
+      }
+    } catch (err: any) {
+      console.error("Error saving branch:", err);
+      toast.error(pick("حدث خطأ أثناء حفظ الفرع", "Failed to save branch"));
+    } finally {
+      setIsSavingBranch(false);
     }
   };
 
@@ -1390,12 +1440,22 @@ export function HelpdeskManagement() {
                   <label className="text-xs font-semibold text-foreground">
                     {pick("الفرع أو المنشأة (قاعدة البيانات) *", "Branch or Facility (From DB) *")}
                   </label>
-                  {loadingFacilities && (
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <RefreshCw className="size-2.5 animate-spin" />
-                      {pick("جاري التحميل...", "Loading...")}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {loadingFacilities && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <RefreshCw className="size-2.5 animate-spin" />
+                        {pick("جاري التحميل...", "Loading...")}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsAddBranchOpen((prev) => !prev)}
+                      className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <Plus className="size-3" />
+                      {pick("إضافة فرع جديد", "Add Branch")}
+                    </button>
+                  </div>
                 </div>
                 <select
                   value={newLocation}
@@ -1436,6 +1496,62 @@ export function HelpdeskManagement() {
                     </optgroup>
                   )}
                 </select>
+
+                {isAddBranchOpen && (
+                  <div className="mt-2.5 p-3 rounded-xl border border-primary/25 bg-primary/5 space-y-2.5 text-xs animate-in fade-in duration-200 shadow-sm">
+                    <div className="font-bold text-foreground flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-primary">
+                        <Store className="size-3.5" />
+                        <span>{pick("إضافة فرع جديد سريعاً لقاعدة البيانات", "Quick Add Branch to Database")}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono">table: branches</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-muted-foreground mb-1 font-medium">
+                          {pick("اسم الفرع الجديد *", "Branch Name *")}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={pick("مثال: فرع المهندسين — شارع البطل", "e.g. Mohandessin Branch")}
+                          value={newBranchNameAr}
+                          onChange={(e) => setNewBranchNameAr(e.target.value)}
+                          className="w-full p-2 rounded-lg bg-background border border-border text-xs focus:ring-1 focus:ring-primary outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-muted-foreground mb-1 font-medium">
+                          {pick("المدينة *", "City *")}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={pick("مثال: الجيزة / القاهرة", "e.g. Giza / Cairo")}
+                          value={newBranchCity}
+                          onChange={(e) => setNewBranchCity(e.target.value)}
+                          className="w-full p-2 rounded-lg bg-background border border-border text-xs focus:ring-1 focus:ring-primary outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddBranchOpen(false)}
+                        className="px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/70 rounded-lg transition-colors cursor-pointer"
+                      >
+                        {pick("إلغاء", "Cancel")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!newBranchNameAr.trim() || isSavingBranch}
+                        onClick={handleSaveNewBranch}
+                        className="px-3.5 py-1 text-xs font-bold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        {isSavingBranch && <RefreshCw className="size-2.5 animate-spin" />}
+                        {isSavingBranch ? pick("جاري الحفظ...", "Saving...") : pick("حفظ واختيار الفرع", "Save & Select")}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
