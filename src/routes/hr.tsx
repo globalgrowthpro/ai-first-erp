@@ -58,7 +58,8 @@ import {
   exportEmployeesToExcel,
   exportAttendanceToExcel,
 } from "@/lib/excel-utils";
-import { useOrgStore, type UserItem } from "@/lib/org-store";
+import { useOrgStore } from "@/lib/org-store";
+import type { UserItem } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 import { saveProvisionedAccount } from "@/lib/auth-store";

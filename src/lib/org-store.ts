@@ -9,6 +9,8 @@ import {
   users as defaultUsers,
 } from "@/lib/demo-data";
 
+export type { UserItem, DepartmentItem, PositionItem, RoleItem };
+
 // Mapping between UI role keys and PostgreSQL app_role enum values
 export const DB_ROLE_MAP: Record<
   string,
