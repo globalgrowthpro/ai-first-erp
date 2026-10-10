@@ -1,25 +1,24 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, X, ShieldAlert, Building2, ShieldCheck, Users, Radio, LifeBuoy } from "lucide-react";
+import { Check, X, ShieldAlert, Building2, ShieldCheck, Users, Radio } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, PageHeader, Panel, Td } from "@/components/kit";
 import { roles } from "@/lib/demo-data";
 import { CompanyBrandingSettings } from "@/components/settings/CompanyBrandingSettings";
 import { UsersManagement } from "@/components/settings/UsersManagement";
 import { GatewaySettings } from "@/components/settings/GatewaySettings";
-import { HelpdeskManagement } from "@/components/settings/HelpdeskManagement";
 import { useSecurityStore } from "@/lib/security-store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings, Users, Helpdesk & Branding — Hafez ERP" },
+      { title: "Settings, Users & Branding — Hafez ERP" },
       {
         name: "description",
-        content: "Configure company info, color palette, invoice branding, users, departments, positions, roles, SMS/SMTP gateways, and helpdesk support tickets.",
+        content: "Configure company info, color palette, invoice branding, users, departments, positions, roles, and SMS/SMTP gateways.",
       },
-      { property: "og:title", content: "Settings, Users, Helpdesk & Branding — Hafez ERP" },
-      { property: "og:description", content: "Company branding, invoice customization, users, departments, permissions, and unified helpdesk." },
+      { property: "og:title", content: "Settings, Users & Branding — Hafez ERP" },
+      { property: "og:description", content: "Company branding, invoice customization, users, departments, and permissions." },
     ],
   }),
   component: Settings,
@@ -27,7 +26,7 @@ export const Route = createFileRoute("/settings")({
 
 function Settings() {
   const { t, pick, n } = useI18n();
-  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways" | "helpdesk">("branding");
+  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways">("branding");
   const { security } = useSecurityStore();
   const { permissionMatrix, highRiskActions } = security;
 
@@ -36,8 +35,8 @@ function Settings() {
       <PageHeader
         title={t("nav_settings")}
         subtitle={pick(
-          "إعدادات الشركة، الهوية البصرية، المستخدمون، مصفوفة الصلاحيات، ومركز الدعم الفني الموحد",
-          "Company profile, visual branding, users, departments, security matrix, and unified helpdesk"
+          "إعدادات الشركة، الهوية البصرية، المستخدمون، مصفوفة الصلاحيات، وبوابات الرسائل",
+          "Company profile, visual branding, users, departments, security matrix, and notification gateways"
         )}
       />
 
@@ -75,14 +74,6 @@ function Settings() {
           <Radio className="size-4" />
           {pick("بوابات الرسائل والبريد (SMS & SMTP)", "Gateways & Notifications")}
         </Btn>
-        <Btn
-          variant={activeTab === "helpdesk" ? "solid" : "outline"}
-          onClick={() => setActiveTab("helpdesk")}
-          className="text-xs"
-        >
-          <LifeBuoy className="size-4" />
-          {pick("الدعم الفني والتذاكر (Helpdesk)", "Helpdesk & Tickets")}
-        </Btn>
       </div>
 
       {/* Tab 1: Company Profile & Document Branding */}
@@ -93,9 +84,6 @@ function Settings() {
 
       {/* Tab 3: Gateways & SMS / SMTP Notifications */}
       {activeTab === "gateways" && <GatewaySettings />}
-
-      {/* Tab 4: Helpdesk & Support Tickets */}
-      {activeTab === "helpdesk" && <HelpdeskManagement />}
 
       {/* Tab 4: Roles & Security Matrix */}
       {activeTab === "roles" && (
