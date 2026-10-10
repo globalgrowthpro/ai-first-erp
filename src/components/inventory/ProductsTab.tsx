@@ -600,12 +600,9 @@ export function ProductsTab({
       <div className="surface-panel rounded-xl overflow-x-auto shadow-sm">
         <DataTable
           head={[
-            pick("الصورة", "Image"),
-            t("sku"),
+            pick("الصورة والكود", "Image & SKU"),
             pick("اسم الصنف / المنتج", "Product Name"),
-            pick("المجموعة", "Group"),
-            pick("الفرع", "Branch"),
-            pick("التصنيف", "Category"),
+            pick("المجموعة والتصنيف", "Group & Category"),
             pick("الموقع / المخزن", "Warehouse"),
             pick("الرصيد والوحدة", "Stock & Unit"),
             t("costPrice"),
@@ -617,7 +614,7 @@ export function ProductsTab({
         >
           {filteredProducts.length === 0 ? (
             <tr>
-              <td colSpan={13} className="py-12 text-center text-muted-foreground">
+              <td colSpan={10} className="py-12 text-center text-muted-foreground">
                 <Boxes className="mx-auto size-8 opacity-40 mb-2" />
                 <p className="font-semibold">
                   {pick("لا توجد أصناف مطابقة للبحث", "No products matching your search")}
@@ -634,27 +631,25 @@ export function ProductsTab({
 
               return (
                 <tr key={p.id} className="hover:bg-secondary/40 transition-colors">
-                  {/* Image Thumbnail */}
+                  {/* Image & SKU Combined */}
                   <Td>
-                    {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={pick(p.name.ar, p.name.en)}
-                        className="w-10 h-10 rounded-lg object-cover border border-border shadow-sm bg-secondary"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg border border-dashed border-border bg-secondary/60 flex items-center justify-center">
-                        <Package className="size-4 text-muted-foreground/50" />
-                      </div>
-                    )}
-                  </Td>
-
-                  {/* SKU */}
-                  <Td className="num font-bold">
-                    <span className="font-mono text-xs bg-secondary border border-border px-2 py-0.5 rounded-md">
-                      {p.sku}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={pick(p.name.ar, p.name.en)}
+                          className="w-10 h-10 rounded-lg object-cover border border-border shadow-xs bg-secondary shrink-0"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg border border-dashed border-border bg-secondary/60 flex items-center justify-center shrink-0">
+                          <Package className="size-4 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <span className="font-mono text-xs font-bold bg-secondary border border-border px-2 py-0.5 rounded-md whitespace-nowrap">
+                        {p.sku}
+                      </span>
+                    </div>
                   </Td>
 
                   {/* Name */}
@@ -689,56 +684,35 @@ export function ProductsTab({
                     </div>
                   </Td>
 
-                  {/* Group */}
+                  {/* Group & Category Combined */}
                   <Td>
-                    {p.group ? (
-                      <span className="inline-block rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[11px] font-bold whitespace-nowrap">
-                        {p.group}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">—</span>
-                    )}
-                  </Td>
-
-                  {/* Branch */}
-                  <Td>
-                    {p.branchId ? (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-secondary border border-border px-2 py-0.5 text-[11px] font-semibold text-foreground whitespace-nowrap">
-                        <span>📍</span>
-                        <span>
-                          {branches.find((b) => b.id === p.branchId)?.name[pick("ar", "en") as "ar" | "en"] || p.branchId}
+                    <div className="flex flex-col gap-1 items-start">
+                      {p.group && (
+                        <span className="inline-block rounded-md bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap">
+                          {p.group}
                         </span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                        <span>🌐</span>
-                        <span>{pick("جميع الفروع", "All Branches")}</span>
-                      </span>
-                    )}
-                  </Td>
-
-                  {/* Category */}
-                  <Td>
-                    {cat ? (
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-bold shadow-2xs whitespace-nowrap",
-                          getCategoryStyle(cat).className
-                        )}
-                      >
+                      )}
+                      {cat ? (
                         <span
                           className={cn(
-                            "size-1.5 rounded-full shrink-0",
-                            getCategoryStyle(cat).dot
+                            "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[10px] font-bold shadow-2xs whitespace-nowrap",
+                            getCategoryStyle(cat).className
                           )}
-                        />
-                        <span>{pick(cat.name.ar, cat.name.en)}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-block rounded-md bg-secondary/80 border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-                        —
-                      </span>
-                    )}
+                        >
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full shrink-0",
+                              getCategoryStyle(cat).dot
+                            )}
+                          />
+                          <span>{pick(cat.name.ar, cat.name.en)}</span>
+                        </span>
+                      ) : (
+                        !p.group && (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )
+                      )}
+                    </div>
                   </Td>
 
                   {/* Warehouse */}
