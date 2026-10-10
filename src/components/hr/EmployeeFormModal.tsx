@@ -294,7 +294,7 @@ export function EmployeeFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir={dir}>
+      <DialogContent className="w-[96vw] max-w-5xl max-h-[92vh] overflow-y-auto p-6 sm:p-8" dir={dir}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
             <User className="size-5 text-primary" />
@@ -759,7 +759,7 @@ export function EmployeeFormModal({
 
                 {grantErpAccess && (
                   <div className="space-y-3 pt-3 border-t border-primary/20">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
                       <div>
                         <label className="block text-xs font-semibold text-foreground mb-1">
                           {pick("دور وصلاحيات المستخدم في النظام", "Assigned System Role")}
@@ -790,55 +790,55 @@ export function EmployeeFormModal({
                           className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
                         />
                       </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                            <KeyRound className="size-3.5 text-primary" />
+                            {pick("تعيين كلمة مرور الحساب", "Set Account Password")}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+                              let rnd = "";
+                              for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
+                              const pass = `Wz@${rnd}#26`;
+                              setErpPassword(pass);
+                              setShowErpPassword(true);
+                            }}
+                            className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Sparkles className="size-3" />
+                            {pick("توليد عشوائي", "Generate")}
+                          </button>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type={showErpPassword ? "text" : "password"}
+                            value={erpPassword}
+                            onChange={(e) => setErpPassword(e.target.value)}
+                            placeholder={pick("أدخل كلمة مرور (الافتراضية: Wazeer@2026#)", "Custom password or default Wazeer@2026#")}
+                            className="w-full rounded-md border border-input bg-background ps-3 pe-10 py-2 text-xs font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowErpPassword(!showErpPassword)}
+                            className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                            title={showErpPassword ? pick("إخفاء كلمة المرور", "Hide password") : pick("إظهار كلمة المرور", "Show password")}
+                          >
+                            {showErpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="rounded-md border border-primary/20 bg-background/60 p-2.5 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                          <KeyRound className="size-3.5 text-primary" />
-                          {pick("تعيين كلمة مرور الحساب", "Set Account Password")}
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const chars = "abcdefghjkmnpqrstuvwxyz23456789";
-                            let rnd = "";
-                            for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
-                            const pass = `Wz@${rnd}#26`;
-                            setErpPassword(pass);
-                            setShowErpPassword(true);
-                          }}
-                          className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 cursor-pointer transition-colors"
-                        >
-                          <Sparkles className="size-3" />
-                          {pick("توليد كلمة مرور عشوائية", "Generate Password")}
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <input
-                          type={showErpPassword ? "text" : "password"}
-                          value={erpPassword}
-                          onChange={(e) => setErpPassword(e.target.value)}
-                          placeholder={pick("أدخل كلمة مرور أو اتركها فارغة للافتراضية (Wazeer@2026#)", "Enter custom password or leave blank for default (Wazeer@2026#)")}
-                          className="w-full rounded-md border border-input bg-background ps-3 pe-10 py-2 text-xs font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowErpPassword(!showErpPassword)}
-                          className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                          title={showErpPassword ? pick("إخفاء كلمة المرور", "Hide password") : pick("إظهار كلمة المرور", "Show password")}
-                        >
-                          {showErpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                        </button>
-                      </div>
-
-                      <div className="text-[10.5px] text-muted-foreground">
-                        {pick(
-                          "يتم استخدام هذا البريد وكلمة المرور لتسجيل دخول الموظف إلى النظام فور الحفظ.",
-                          "The employee will use this email and password to log in immediately upon save."
-                        )}
-                      </div>
+                    <div className="text-[10.5px] text-muted-foreground">
+                      {pick(
+                        "يتم استخدام هذا البريد وكلمة المرور لتسجيل دخول الموظف إلى النظام فور الحفظ بحسب الصلاحيات المحددة.",
+                        "The employee will use this email and password to log in immediately upon save according to assigned role."
+                      )}
                     </div>
                   </div>
                 )}
