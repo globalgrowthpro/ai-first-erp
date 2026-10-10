@@ -35,7 +35,11 @@ import {
   MALE_AVATARS,
   FEMALE_AVATARS,
   getDefaultAvatar,
+  useHrStore,
 } from "@/lib/hr-store";
+import { useOrgStore } from "@/lib/org-store";
+import { useInventoryStore } from "@/lib/inventory-store";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EmployeeFormModalProps {
   open: boolean;
@@ -62,6 +66,15 @@ export function EmployeeFormModal({
 
   const [activeTab, setActiveTab] = useState<"personal" | "job" | "comp" | "compliance">("personal");
 
+  // Real Database Records
+  const { departments: orgDepts, positions: orgPositions } = useOrgStore();
+  const { branches: invBranches } = useInventoryStore();
+  const { employees } = useHrStore();
+
+  const [dbDepts, setDbDepts] = useState<{ id: string; nameAr: string; nameEn: string; code: string }[]>([]);
+  const [dbBranches, setDbBranches] = useState<{ id: string; nameAr: string; nameEn: string; code: string; isWazeerOwned?: boolean }[]>([]);
+  const [dbPositions, setDbPositions] = useState<{ id: string; titleAr: string; titleEn: string; code: string; departmentId?: string }[]>([]);
+
   // Identification & Gender
   const [code, setCode] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -80,10 +93,13 @@ export function EmployeeFormModal({
 
   // Job Info & Contract
   const [contractType, setContractType] = useState("عقد دائم غير محدد المدة (Permanent)");
+  const [departmentId, setDepartmentId] = useState("");
   const [departmentNameAr, setDepartmentNameAr] = useState("");
   const [departmentNameEn, setDepartmentNameEn] = useState("");
+  const [positionId, setPositionId] = useState("");
   const [positionNameAr, setPositionNameAr] = useState("");
   const [positionNameEn, setPositionNameEn] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [branchNameAr, setBranchNameAr] = useState("");
   const [branchNameEn, setBranchNameEn] = useState("");
   const [directManager, setDirectManager] = useState("");
@@ -113,6 +129,44 @@ export function EmployeeFormModal({
   const [erpPassword, setErpPassword] = useState("");
   const [showErpPassword, setShowErpPassword] = useState(false);
 
+  // Synchronize and load live data from database
+  useEffect(() => {
+    let isMounted = true;
+    async function loadRealData() {
+      // 1. Real Departments
+      if (orgDepts && orgDepts.length > 0) {
+        if (isMounted) setDbDepts(orgDepts.map((d) => ({ id: d.id, nameAr: d.name.ar, nameEn: d.name.en, code: d.code })));
+      } else {
+        const { data } = await supabase.from("departments").select("id, name_ar, name_en, code").order("name_ar");
+        if (data && data.length > 0 && isMounted) {
+          setDbDepts(data.map((d: any) => ({ id: d.id, nameAr: d.name_ar, nameEn: d.name_en, code: d.code })));
+        }
+      }
+
+      // 2. Real Branches
+      if (invBranches && invBranches.length > 0) {
+        if (isMounted) setDbBranches(invBranches.map((b) => ({ id: b.id, nameAr: b.name.ar, nameEn: b.name.en, code: b.code, isWazeerOwned: b.isWazeerOwned })));
+      } else {
+        const { data } = await supabase.from("branches").select("id, name_ar, name_en, code, is_wazeer_owned").order("name_ar");
+        if (data && data.length > 0 && isMounted) {
+          setDbBranches(data.map((b: any) => ({ id: b.id, nameAr: b.name_ar, nameEn: b.name_en, code: b.code, isWazeerOwned: b.is_wazeer_owned })));
+        }
+      }
+
+      // 3. Real Positions
+      if (orgPositions && orgPositions.length > 0) {
+        if (isMounted) setDbPositions(orgPositions.map((p) => ({ id: p.id, titleAr: p.title.ar, titleEn: p.title.en, code: p.code, departmentId: p.departmentId })));
+      } else {
+        const { data } = await supabase.from("positions").select("id, title_ar, title_en, code, department_id").order("title_ar");
+        if (data && data.length > 0 && isMounted) {
+          setDbPositions(data.map((p: any) => ({ id: p.id, titleAr: p.title_ar, titleEn: p.title_en, code: p.code, departmentId: p.department_id })));
+        }
+      }
+    }
+    loadRealData();
+    return () => { isMounted = false; };
+  }, [orgDepts, invBranches, orgPositions]);
+
   useEffect(() => {
     if (!open) return;
     if (editing) {
@@ -129,13 +183,19 @@ export function EmployeeFormModal({
       setEmergencyRelationEn(editing.emergencyContact.relation.en);
 
       setContractType(editing.contractType || "عقد دائم غير محدد المدة (Permanent)");
-      setDepartmentNameAr(editing.departmentName.ar);
-      setDepartmentNameEn(editing.departmentName.en);
-      setPositionNameAr(editing.positionName.ar);
-      setPositionNameEn(editing.positionName.en);
-      setBranchNameAr(editing.branchName.ar);
-      setBranchNameEn(editing.branchName.en);
-      setDirectManager(editing.directManager);
+      setDepartmentId(editing.departmentId || "");
+      setDepartmentNameAr(editing.departmentName?.ar || "");
+      setDepartmentNameEn(editing.departmentName?.en || "");
+
+      setPositionId(editing.positionId || "");
+      setPositionNameAr(editing.positionName?.ar || "");
+      setPositionNameEn(editing.positionName?.en || "");
+
+      setBranchId(editing.branchId || "");
+      setBranchNameAr(editing.branchName?.ar || "");
+      setBranchNameEn(editing.branchName?.en || "");
+
+      setDirectManager(editing.directManager || "Hafez Rahim");
       setHireDate(editing.hireDate);
       setEmploymentType(editing.employmentType);
       setStatus(editing.status);
@@ -173,13 +233,42 @@ export function EmployeeFormModal({
       setEmergencyRelationEn("Immediate Family");
 
       setContractType("عقد دائم غير محدد المدة (Permanent)");
-      setDepartmentNameAr("المطبخ المركزي والتصنيع");
-      setDepartmentNameEn("Central Kitchen & Manufacturing");
-      setPositionNameAr("شيف حلواني");
-      setPositionNameEn("Pastry Chef");
-      setBranchNameAr("مصنع العاشر من رمضان");
-      setBranchNameEn("10th of Ramadan Factory");
-      setDirectManager("شيف إبراهيم البدري");
+
+      // Real Defaults from Database
+      const defDept = dbDepts[0] || (orgDepts && orgDepts[0] ? { id: orgDepts[0].id, nameAr: orgDepts[0].name.ar, nameEn: orgDepts[0].name.en } : null);
+      if (defDept) {
+        setDepartmentId(defDept.id);
+        setDepartmentNameAr(defDept.nameAr);
+        setDepartmentNameEn(defDept.nameEn);
+      } else {
+        setDepartmentId("ad8160eb-cbf7-4356-9243-f3755003a7ed");
+        setDepartmentNameAr("المطبخ المركزي والتصنيع");
+        setDepartmentNameEn("Central Kitchen & Production");
+      }
+
+      const defBranch = dbBranches[0] || (invBranches && invBranches[0] ? { id: invBranches[0].id, nameAr: invBranches[0].name.ar, nameEn: invBranches[0].name.en } : null);
+      if (defBranch) {
+        setBranchId(defBranch.id);
+        setBranchNameAr(defBranch.nameAr);
+        setBranchNameEn(defBranch.nameEn);
+      } else {
+        setBranchId("2265d911-4037-4165-b835-31fbef5a7ffe");
+        setBranchNameAr("فرع الكوربة — مصر الجديدة");
+        setBranchNameEn("Korba — Heliopolis Branch");
+      }
+
+      const defPos = dbPositions[0] || (orgPositions && orgPositions[0] ? { id: orgPositions[0].id, titleAr: orgPositions[0].title.ar, titleEn: orgPositions[0].title.en } : null);
+      if (defPos) {
+        setPositionId(defPos.id);
+        setPositionNameAr(defPos.titleAr);
+        setPositionNameEn(defPos.titleEn);
+      } else {
+        setPositionId("a021cfda-5cbd-467c-95f2-12c69d0ef063");
+        setPositionNameAr("الشيف التنفيذي لحلويات الوزير");
+        setPositionNameEn("Executive Pastry Chef");
+      }
+
+      setDirectManager("Hafez Rahim");
       setHireDate(new Date().toISOString().slice(0, 10));
       setEmploymentType("full_time");
       setStatus("active");
@@ -203,7 +292,7 @@ export function EmployeeFormModal({
       setShowErpPassword(false);
       setActiveTab("personal");
     }
-  }, [open, editing, suggestedCode]);
+  }, [open, editing, suggestedCode, dbDepts, dbBranches, dbPositions]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +302,10 @@ export function EmployeeFormModal({
     const avatarBg =
       editing?.avatarBg ||
       (gender === "female" ? "from-pink-600 to-rose-700" : "from-blue-600 to-indigo-700");
+
+    const resolvedDeptId = departmentId || (dbDepts.find((d) => d.nameAr === departmentNameAr)?.id) || "ad8160eb-cbf7-4356-9243-f3755003a7ed";
+    const resolvedBranchId = branchId || (dbBranches.find((b) => b.nameAr === branchNameAr)?.id) || "2265d911-4037-4165-b835-31fbef5a7ffe";
+    const resolvedPosId = positionId || (dbPositions.find((p) => p.titleAr === positionNameAr)?.id) || "a021cfda-5cbd-467c-95f2-12c69d0ef063";
 
     onSave({
       code: code.trim(),
@@ -231,22 +324,22 @@ export function EmployeeFormModal({
           en: emergencyRelationEn.trim() || "Family",
         },
       },
-      departmentId: "dept-kitchen",
+      departmentId: resolvedDeptId,
       departmentName: {
-        ar: departmentNameAr.trim() || "المطبخ المركزي",
-        en: departmentNameEn.trim() || "Central Kitchen",
+        ar: departmentNameAr.trim() || "المطبخ المركزي والتصنيع",
+        en: departmentNameEn.trim() || "Central Kitchen & Production",
       },
-      positionId: "pos-chef",
+      positionId: resolvedPosId,
       positionName: {
-        ar: positionNameAr.trim() || "شيف حلواني",
-        en: positionNameEn.trim() || "Pastry Chef",
+        ar: positionNameAr.trim() || "الشيف التنفيذي لحلويات الوزير",
+        en: positionNameEn.trim() || "Executive Pastry Chef",
       },
-      branchId: "br-tenth",
+      branchId: resolvedBranchId,
       branchName: {
-        ar: branchNameAr.trim() || "مصنع العاشر من رمضان",
-        en: branchNameEn.trim() || "10th of Ramadan Factory",
+        ar: branchNameAr.trim() || "فرع الكوربة — مصر الجديدة",
+        en: branchNameEn.trim() || "Korba — Heliopolis Branch",
       },
-      directManager: directManager.trim() || "م. وزير الحلو",
+      directManager: directManager.trim() || "Hafez Rahim",
       hireDate: hireDate || new Date().toISOString().slice(0, 10),
       gender,
       contractType,
@@ -612,75 +705,128 @@ export function EmployeeFormModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {pick("الإدارة / القسم", "Department")}
+                  <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                    <Building2 className="size-3.5 text-primary" />
+                    {pick("الإدارة / القسم *", "Department *")}
                   </label>
                   <select
-                    value={departmentNameAr}
+                    value={departmentId || departmentNameAr}
                     onChange={(e) => {
-                      setDepartmentNameAr(e.target.value);
-                      if (e.target.value.includes("المطبخ")) setDepartmentNameEn("Central Kitchen");
-                      else if (e.target.value.includes("مبيعات")) setDepartmentNameEn("Retail Sales");
-                      else if (e.target.value.includes("إمداد")) setDepartmentNameEn("Supply Chain");
-                      else setDepartmentNameEn("Corporate HQ");
+                      const selectedVal = e.target.value;
+                      const dept = dbDepts.find((d) => d.id === selectedVal || d.nameAr === selectedVal);
+                      if (dept) {
+                        setDepartmentId(dept.id);
+                        setDepartmentNameAr(dept.nameAr);
+                        setDepartmentNameEn(dept.nameEn);
+                      }
                     }}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
                   >
-                    <option value="المطبخ المركزي والتصنيع">المطبخ المركزي والتصنيع (Kitchen & Factory)</option>
-                    <option value="مبيعات التجزئة والفروع">مبيعات التجزئة والفروع (Retail & POS)</option>
-                    <option value="سلاسل الإمداد والخدمات اللوجستية">سلاسل الإمداد والخدمات اللوجستية (Logistics)</option>
-                    <option value="الموارد البشرية والشؤون الإدارية">الموارد البشرية والشؤون الإدارية (HR)</option>
-                    <option value="الإدارة المالية والمراجعة">الإدارة المالية والمراجعة (Finance)</option>
+                    {dbDepts.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {pick(d.nameAr, d.nameEn)} ({d.code})
+                      </option>
+                    ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {pick("المسمى الوظيفي", "Job Position")}
+                  <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                    <Briefcase className="size-3.5 text-primary" />
+                    {pick("المسمى الوظيفي *", "Job Position *")}
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={positionNameAr}
-                    onChange={(e) => {
-                      setPositionNameAr(e.target.value);
-                      setPositionNameEn(e.target.value);
-                    }}
-                    placeholder="مثال: شيف حلواني أول / كاشير / مسؤول مخزن"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
+                  <div className="space-y-1.5">
+                    <select
+                      value={positionId || (dbPositions.some((p) => p.titleAr === positionNameAr) ? (dbPositions.find((p) => p.titleAr === positionNameAr)?.id || "") : "custom")}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "custom") {
+                          setPositionId("");
+                        } else {
+                          const pos = dbPositions.find((p) => p.id === val || p.titleAr === val);
+                          if (pos) {
+                            setPositionId(pos.id);
+                            setPositionNameAr(pos.titleAr);
+                            setPositionNameEn(pos.titleEn);
+                          }
+                        }
+                      }}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
+                    >
+                      {dbPositions.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {pick(p.titleAr, p.titleEn)} ({p.code})
+                        </option>
+                      ))}
+                      <option value="custom">{pick("— مسمى وظيفي مخصص (كتابة يدوية) —", "— Custom Job Title (Manual Entry) —")}</option>
+                    </select>
+
+                    {(!positionId || !dbPositions.some((p) => p.id === positionId)) && (
+                      <input
+                        type="text"
+                        required
+                        value={positionNameAr}
+                        onChange={(e) => {
+                          setPositionNameAr(e.target.value);
+                          setPositionNameEn(e.target.value);
+                        }}
+                        placeholder={pick("أدخل المسمى الوظيفي يدوياً...", "Enter custom job title...")}
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    {pick("موقع العمل / الفرع", "Branch / Work Location")}
+                  <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                    <MapPin className="size-3.5 text-primary" />
+                    {pick("موقع العمل / الفرع *", "Branch / Work Location *")}
                   </label>
                   <select
-                    value={branchNameAr}
+                    value={branchId || branchNameAr}
                     onChange={(e) => {
-                      setBranchNameAr(e.target.value);
-                      setBranchNameEn(e.target.value);
+                      const selectedVal = e.target.value;
+                      const br = dbBranches.find((b) => b.id === selectedVal || b.nameAr === selectedVal);
+                      if (br) {
+                        setBranchId(br.id);
+                        setBranchNameAr(br.nameAr);
+                        setBranchNameEn(br.nameEn);
+                      }
                     }}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
                   >
-                    <option value="مصنع العاشر من رمضان">مصنع العاشر من رمضان (Central Factory)</option>
-                    <option value="فرع الكوربة — مصر الجديدة">فرع الكوربة — مصر الجديدة</option>
-                    <option value="فرع المعادي — دجلة">فرع المعادي — دجلة</option>
-                    <option value="المقر الرئيسي — القاهرة الجديدة">المقر الرئيسي — القاهرة الجديدة</option>
+                    {dbBranches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {pick(b.nameAr, b.nameEn)} {b.isWazeerOwned === false ? pick("(فرنشايز)", "(Franchise)") : ""}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label className="block text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                    <User className="size-3.5 text-primary" />
                     {pick("المسؤول المباشر", "Direct Supervisor")}
                   </label>
                   <input
                     type="text"
+                    list="supervisors-datalist"
                     value={directManager}
                     onChange={(e) => setDirectManager(e.target.value)}
-                    placeholder="مثال: شيف إبراهيم البدري"
+                    placeholder="مثال: Hafez Rahim / الشيف إبراهيم عثمان"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
+                  <datalist id="supervisors-datalist">
+                    <option value="Hafez Rahim (المدير العام)" />
+                    {employees.map((emp) => (
+                      <option
+                        key={emp.id}
+                        value={`${emp.name.ar} (${pick(emp.positionName.ar, emp.positionName.en)})`}
+                      />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
