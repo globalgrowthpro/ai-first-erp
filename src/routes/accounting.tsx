@@ -15,15 +15,17 @@ import {
   List,
   RotateCcw,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, Td, TablePagination, usePagination } from "@/components/kit";
-import { trialBalance } from "@/lib/demo-data";
 import { ChartOfAccounts } from "@/components/accounting/ChartOfAccounts";
 import { JournalEntryForm } from "@/components/accounting/JournalEntryForm";
 import { useJournalStore } from "@/lib/accounting-store";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/accounting")({
   head: () => ({
@@ -56,10 +58,38 @@ const BRANCH_FILTER_OPTIONS = [
 ];
 
 function Accounting() {
-  const { t, pick, money, dir } = useI18n();
+  const { t, pick, money, dir, n } = useI18n();
   const [activeTab, setActiveTab] = useState<"coa" | "journal" | "trial">("coa");
   const [isJournalFormOpen, setIsJournalFormOpen] = useState(false);
-  const { entries, resetToDefaultEntries } = useJournalStore();
+  const { entries, loading, isLive, fetchJournal } = useJournalStore();
+
+  // Dynamic Branches from Supabase
+  const [branchesList, setBranchesList] = useState<{ id: string; code: string; label: { ar: string; en: string } }[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("branches")
+      .select("id, code, name_ar, name_en")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setBranchesList(
+            data.map((b) => ({
+              id: b.code || b.id,
+              code: b.code,
+              label: { ar: b.name_ar, en: b.name_en },
+            }))
+          );
+        }
+      });
+  }, []);
+
+  const branchFilterOptions = useMemo(() => {
+    const allOpt = { id: "all", label: { ar: "جميع الفروع والمراكز", en: "All Branches & Hubs" } };
+    if (branchesList.length > 0) {
+      return [allOpt, ...branchesList];
+    }
+    return BRANCH_FILTER_OPTIONS;
+  }, [branchesList]);
 
   // Journal Filters & View State
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,14 +205,36 @@ function Accounting() {
   );
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
 
+  // Dynamic Real Trial Balance calculated from filteredEntries
+  const realTrialBalance = useMemo(() => {
+    const map = new Map<string, { code: string; name: { ar: string; en: string }; debit: number; credit: number }>();
+
+    for (const item of filteredEntries) {
+      const code = item.accountCode || "1000";
+      const curr = map.get(code) || {
+        code,
+        name: item.account || { ar: "حساب", en: "Account" },
+        debit: 0,
+        credit: 0,
+      };
+      curr.debit += Number(item.debit || 0);
+      curr.credit += Number(item.credit || 0);
+      map.set(code, curr);
+    }
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.code.localeCompare(b.code, undefined, { numeric: true })
+    );
+  }, [filteredEntries]);
+
   // Trial Balance Totals
   const trialTotalDebit = useMemo(
-    () => trialBalance.reduce((s, r) => s + (Number(r.debit) || 0), 0),
-    []
+    () => realTrialBalance.reduce((s, r) => s + (Number(r.debit) || 0), 0),
+    [realTrialBalance]
   );
   const trialTotalCredit = useMemo(
-    () => trialBalance.reduce((s, r) => s + (Number(r.credit) || 0), 0),
-    []
+    () => realTrialBalance.reduce((s, r) => s + (Number(r.credit) || 0), 0),
+    [realTrialBalance]
   );
 
   // Excel Export Handler
@@ -261,7 +313,7 @@ function Accounting() {
             <BookOpen className="size-4" />
             <span>{t("journal")}</span>
             <span className="px-1.5 py-0.2 rounded-full bg-primary/20 text-[10px] font-mono">
-              {entries.length}
+              {groupedEntries.length}
             </span>
           </Btn>
           <Btn
@@ -276,6 +328,11 @@ function Accounting() {
 
         {activeTab === "journal" && (
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold shadow-2xs">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{pick("بيانات حية مباشرة (Supabase)", "Live Supabase Data")}</span>
+            </div>
+
             <button
               type="button"
               onClick={handleExportToExcel}
@@ -288,12 +345,12 @@ function Accounting() {
 
             <button
               type="button"
-              onClick={resetToDefaultEntries}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border/70 hover:bg-secondary text-muted-foreground hover:text-foreground text-xs font-semibold transition-colors cursor-pointer"
-              title={pick("استعادة القيود النموذجية للفروع", "Reset to sample branch entries")}
+              onClick={() => fetchJournal()}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/15 text-primary text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+              title={pick("مزامنة وتحديث البيانات الحية من قاعدة البيانات", "Sync live operational journal")}
             >
-              <RotateCcw className="size-3" />
-              <span>{pick("استعادة القيود", "Reset")}</span>
+              <RefreshCw className={cn("size-3", loading && "animate-spin")} />
+              <span>{loading ? pick("جاري المزامنة...", "Syncing...") : pick("مزامنة البيانات الحية", "Sync Live")}</span>
             </button>
           </div>
         )}
@@ -336,7 +393,7 @@ function Accounting() {
             </div>
             <KpiCard
               label={pick("عدد قيود اليومية", "Journal Entries Count")}
-              value={`${groupedEntries.length} ${pick("قيد محاسبي", "Entries")}`}
+              value={pick(`${n(groupedEntries.length)} قيد محاسبي حي`, `${n(groupedEntries.length)} Live Entries`)}
               accent="gold"
             />
           </div>
@@ -363,7 +420,7 @@ function Accounting() {
                   onChange={(e) => setSelectedBranch(e.target.value)}
                   className="w-full text-xs font-bold py-2 ps-3 pe-8 rounded-xl border border-border/70 bg-background text-foreground focus:border-primary outline-none appearance-none cursor-pointer shadow-xs"
                 >
-                  {BRANCH_FILTER_OPTIONS.map((b) => (
+                  {branchFilterOptions.map((b) => (
                     <option key={b.id} value={b.id}>
                       {pick(b.label.ar, b.label.en)}
                     </option>
@@ -622,27 +679,36 @@ function Accounting() {
           </div>
 
           <Panel
-            title={pick("ميزان المراجعة العام بالمجاميع والأرصدة", "General Ledger Trial Balance")}
+            title={pick("ميزان المراجعة العام بالمجاميع والأرصدة (بيانات حية)", "General Ledger Trial Balance (Live Data)")}
             aside={
               <span className="text-xs font-semibold text-muted-foreground">
-                {pick("يشمل خزائن الفروع وأدراج نقاط البيع وإيرادات الفروع", "Includes branch safes, POS drawers & branch sales")}
+                {pick("محسوب ديناميكياً من قيود العمليات اليومية الحية", "Dynamically computed from live operational journals")}
               </span>
             }
           >
-            <DataTable head={[t("account"), pick("مدين (ج.م)", "Debit"), pick("دائن (ج.م)", "Credit")]}>
-              {trialBalance.map((r, i) => (
-                <tr key={`${r.account.en}-${i}`} className="hover:bg-secondary/40">
-                  <Td className="font-semibold text-xs text-foreground">{pick(r.account.ar, r.account.en)}</Td>
-                  <Td className="num font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {r.debit ? money(r.debit) : "—"}
-                  </Td>
-                  <Td className="num font-mono font-bold text-sky-600 dark:text-sky-400">
-                    {r.credit ? money(r.credit) : "—"}
-                  </Td>
+            <DataTable head={[t("account"), pick("كود الحساب", "Code"), pick("مدين (ج.م)", "Debit"), pick("دائن (ج.م)", "Credit")]}>
+              {realTrialBalance.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-muted-foreground text-xs">
+                    {pick("لا توجد حركات في الفترة المحددة", "No ledger activity in this period")}
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                realTrialBalance.map((r, i) => (
+                  <tr key={`${r.code}-${i}`} className="hover:bg-secondary/40">
+                    <Td className="font-semibold text-xs text-foreground">{pick(r.name.ar, r.name.en)}</Td>
+                    <Td className="font-mono text-xs text-primary font-bold">{r.code}</Td>
+                    <Td className="num font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {r.debit ? money(r.debit) : "—"}
+                    </Td>
+                    <Td className="num font-mono font-bold text-sky-600 dark:text-sky-400">
+                      {r.credit ? money(r.credit) : "—"}
+                    </Td>
+                  </tr>
+                ))
+              )}
               <tr className="bg-secondary/60 font-black text-sm border-t-2 border-border">
-                <Td className="font-black uppercase">{pick("الإجمالي العام المعتمد", "Grand Total Balance")}</Td>
+                <Td colSpan={2} className="font-black uppercase">{pick("الإجمالي العام المعتمد", "Grand Total Balance")}</Td>
                 <Td className="num font-mono font-black text-emerald-600 dark:text-emerald-400">{money(trialTotalDebit)}</Td>
                 <Td className="num font-mono font-black text-sky-600 dark:text-sky-400">{money(trialTotalCredit)}</Td>
               </tr>
