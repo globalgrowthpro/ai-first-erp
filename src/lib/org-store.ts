@@ -85,60 +85,11 @@ export function fromDbRole(dbRole: string): UserItem["role"] {
 }
 
 export function useOrgStore() {
-  const [users, setUsers] = useState<UserItem[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("hafez_erp_users_v2");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const existingIds = new Set(parsed.map((u: any) => u.id));
-            const missing = defaultUsers.filter((du) => !existingIds.has(du.id));
-            if (missing.length > 0) {
-              const combined = [...parsed, ...missing];
-              try {
-                localStorage.setItem("hafez_erp_users_v2", JSON.stringify(combined));
-              } catch (_) {}
-              return combined;
-            }
-            return parsed;
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to load users from localStorage:", e);
-      }
-    }
-    return defaultUsers;
-  });
+  const [users, setUsers] = useState<UserItem[]>(defaultUsers);
   const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [positions, setPositions] = useState<PositionItem[]>([]);
-  const [roles, setRoles] = useState<RoleItem[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("hafez_erp_roles_v2");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Merge missing defaults (such as pos_cashier)
-            const existingKeys = new Set(parsed.map((r: any) => r.key));
-            const missing = defaultRoles.filter((dr) => !existingKeys.has(dr.key));
-            if (missing.length > 0) {
-              const combined = [...parsed, ...missing];
-              try {
-                localStorage.setItem("hafez_erp_roles_v2", JSON.stringify(combined));
-              } catch (_) {}
-              return combined;
-            }
-            return parsed;
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to load roles from localStorage:", e);
-      }
-    }
-    return defaultRoles;
-  });
-  const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<RoleItem[]>(defaultRoles);
+  const [loading, setLoading] = useState(false);
 
   const fetchDepartments = useCallback(async () => {
     try {
@@ -197,44 +148,32 @@ export function useOrgStore() {
 
       if (profiles && profiles.length > 0) {
         const dbUsers: UserItem[] = profiles.map((p: any) => {
-            const roleRecord = roles?.find((r: any) => r.user_id === p.id);
-            const cachedRole =
-              typeof window !== "undefined"
-                ? localStorage.getItem(`hafez_user_role_${p.id}`)
-                : null;
-            const dbRole = roleRecord?.role;
-            const resolvedRole =
-              (cachedRole as UserItem["role"]) ||
-              (dbRole ? fromDbRole(dbRole) : "sales");
+          const roleRecord = roles?.find((r: any) => r.user_id === p.id);
+          const dbRole = roleRecord?.role;
+          const resolvedRole = dbRole ? fromDbRole(dbRole) : "sales";
 
-            return {
-              id: p.id,
-              name: { ar: p.full_name_ar || "", en: p.full_name_en || "" },
-              email: p.email || "",
-              avatar: p.avatar_url || "",
-              departmentId: p.department_id || "",
-              positionId: p.position_id || "",
-              role: resolvedRole,
-              allowedPages: ["*"],
-              allowedActions: ["*"],
-              status: p.is_active ? "active" : "inactive",
-              lastActive: p.updated_at
-                ? new Date(p.updated_at).toLocaleTimeString()
-                : "الآن / Active",
-              sidebarVisible: p.sidebar_visible ?? true,
-            };
-          });
+          return {
+            id: p.id,
+            name: { ar: p.full_name_ar || "", en: p.full_name_en || "" },
+            email: p.email || "",
+            avatar: p.avatar_url || "",
+            departmentId: p.department_id || "",
+            positionId: p.position_id || "",
+            role: resolvedRole,
+            allowedPages: ["*"],
+            allowedActions: ["*"],
+            status: p.is_active ? "active" : "inactive",
+            lastActive: p.updated_at
+              ? new Date(p.updated_at).toLocaleTimeString()
+              : "الآن / Active",
+            sidebarVisible: p.sidebar_visible ?? true,
+          };
+        });
 
         setUsers((prev) => {
           const dbIds = new Set(dbUsers.map((u) => u.id));
           const localOnly = prev.filter((u) => !dbIds.has(u.id));
-          const combined = [...dbUsers, ...localOnly];
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem("hafez_erp_users_v2", JSON.stringify(combined));
-            } catch (_) {}
-          }
-          return combined;
+          return [...dbUsers, ...localOnly];
         });
       }
     } catch (e) {
@@ -266,19 +205,7 @@ export function useOrgStore() {
       };
 
       // Optimistic update
-      setUsers((prev) => {
-        const updated = [createdUser, ...prev.filter((u) => u.id !== userId)];
-        if (typeof window !== "undefined") {
-          try {
-            localStorage.setItem("hafez_erp_users_v2", JSON.stringify(updated));
-          } catch (_) {}
-        }
-        return updated;
-      });
-
-      if (user.role && typeof window !== "undefined") {
-        localStorage.setItem(`hafez_user_role_${userId}`, user.role);
-      }
+      setUsers((prev) => [createdUser, ...prev.filter((u) => u.id !== userId)]);
 
       try {
         await supabase.from("profiles").upsert({
@@ -325,19 +252,7 @@ export function useOrgStore() {
   const updateUser = useCallback(
     async (id: string, updates: Partial<UserItem>) => {
       // Optimistic update
-      setUsers((prev) => {
-        const updated = prev.map((u) => (u.id === id ? { ...u, ...updates } : u));
-        if (typeof window !== "undefined") {
-          try {
-            localStorage.setItem("hafez_erp_users_v2", JSON.stringify(updated));
-          } catch (_) {}
-        }
-        return updated;
-      });
-
-      if (updates.role && typeof window !== "undefined") {
-        localStorage.setItem(`hafez_user_role_${id}`, updates.role);
-      }
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...updates } : u)));
 
       try {
         const payload: any = {};
@@ -393,19 +308,7 @@ export function useOrgStore() {
   const deleteUser = useCallback(
     async (id: string) => {
       // Optimistic delete
-      setUsers((prev) => {
-        const updated = prev.filter((u) => u.id !== id);
-        if (typeof window !== "undefined") {
-          try {
-            localStorage.setItem("hafez_erp_users_v2", JSON.stringify(updated));
-          } catch (_) {}
-        }
-        return updated;
-      });
-
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(`hafez_user_role_${id}`);
-      }
+      setUsers((prev) => prev.filter((u) => u.id !== id));
 
       try {
         await supabase.from("user_roles").delete().eq("user_id", id);
@@ -652,34 +555,14 @@ export function useOrgStore() {
   );
 
   const addRole = useCallback((newRole: RoleItem) => {
-    setRoles((prev) => {
-      const updated = [...prev, newRole];
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_erp_roles_v2", JSON.stringify(updated));
-        } catch (e) {
-          console.warn("Failed to persist roles:", e);
-        }
-      }
-      return updated;
-    });
+    setRoles((prev) => [...prev, newRole]);
     return newRole;
   }, []);
 
   const updateRole = useCallback((id: string, updates: Partial<RoleItem>) => {
-    setRoles((prev) => {
-      const updated = prev.map((r) =>
-        r.id === id || r.key === id ? { ...r, ...updates } : r
-      );
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_erp_roles_v2", JSON.stringify(updated));
-        } catch (e) {
-          console.warn("Failed to persist roles:", e);
-        }
-      }
-      return updated;
-    });
+    setRoles((prev) =>
+      prev.map((r) => (r.id === id || r.key === id ? { ...r, ...updates } : r))
+    );
   }, []);
 
   const deleteRole = useCallback((id: string) => {
@@ -689,15 +572,7 @@ export function useOrgStore() {
         console.warn("Cannot delete system admin role");
         return prev;
       }
-      const updated = prev.filter((r) => r.id !== id && r.key !== id);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_erp_roles_v2", JSON.stringify(updated));
-        } catch (e) {
-          console.warn("Failed to persist roles:", e);
-        }
-      }
-      return updated;
+      return prev.filter((r) => r.id !== id && r.key !== id);
     });
   }, []);
 

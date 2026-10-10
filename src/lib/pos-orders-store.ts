@@ -231,96 +231,10 @@ export function usePosOrdersStore() {
         }
       }
 
-      // 2. Fetch and merge with localStorage ("pos_orders_history_data")
-      let localOrders: AdminPosOrder[] = [];
-      try {
-        if (typeof window !== "undefined" && window.localStorage) {
-          const stored = localStorage.getItem("pos_orders_history_data");
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              localOrders = parsed.map((p: any) => {
-                const brInfo = parseBranchInfo(p.branch);
-                const items: PosOrderItemRecord[] = (p.items || []).map((ci: any) => ({
-                  id: ci.id || `loc-item-${Math.random()}`,
-                  sku: ci.product?.sku || ci.sku || "SKU-001",
-                  name: parseItemName(ci.product?.name || ci.name || "صنف حلوى"),
-                  quantity: Math.max(1, Number(ci.quantity) || 1),
-                  unitPrice: Number(ci.unitPrice) || 0,
-                  totalPrice: Number((ci.quantity || 1) * (ci.unitPrice || 0)),
-                  notes: ci.note || undefined,
-                }));
+      // Sort newest first directly from Supabase
+      mappedDbOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-                const plat = p.orderPlatform || "direct";
-                const platInfo = PLATFORM_NAMES_MAP[plat];
-
-                return {
-                  id: p.id || `loc-${Math.random()}`,
-                  orderNumber: p.id || "INV-POS",
-                  branchId: String(p.branch?.id || "korba"),
-                  branchName: brInfo,
-                  cashierId: String(p.cashierId || "usr_101"),
-                  cashierName: String(p.cashierName || "كاشير مناوب"),
-                  customerName: String(p.customer?.name || "عميل نقدي / صالة"),
-                  customerPhone: p.customer?.phone || undefined,
-                  orderType: p.orderType || "takeaway",
-                  orderPlatform: plat,
-                  orderPlatformName: platInfo ? platInfo.ar : plat,
-                  orderRefNumber: p.orderRefNumber || undefined,
-                  tableNumber: p.tableNumber || undefined,
-                  deliveryNotes: p.deliveryNotes || undefined,
-                  subtotal: Number(p.subtotal) || 0,
-                  vatAmount: Number(p.vat) || 0,
-                  discountAmount: Number(p.discount) || 0,
-                  deliveryFee: Number(p.deliveryFee) || 0,
-                  total: Number(p.total) || 0,
-                  paymentMethod: p.paymentMethod || "cash",
-                  paymentMethodLabel: p.paymentMethodLabel || PAYMENT_METHOD_NAMES_MAP[p.paymentMethod]?.ar || p.paymentMethod || "نقداً",
-                  tenderAmount: Number(p.tendered || p.total || 0),
-                  changeAmount: Number(p.change || 0),
-                  status: "completed",
-                  createdAt: p.createdAt || new Date().toISOString(),
-                  formattedDate: formatOrderDateTimeEnglish(p.createdAt || p.date || Date.now()),
-                  items,
-                };
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("Could not read pos_orders_history_data from localStorage:", err);
-      }
-
-      // Enhance DB orders with local items if DB items are empty
-      const localOrdersMap = new Map<string, AdminPosOrder>();
-      for (const lo of localOrders) {
-        localOrdersMap.set(lo.orderNumber, lo);
-      }
-
-      for (const dbo of mappedDbOrders) {
-        if (!dbo.items || dbo.items.length === 0) {
-          const matched = localOrdersMap.get(dbo.orderNumber);
-          if (matched && matched.items && matched.items.length > 0) {
-            dbo.items = matched.items;
-          }
-        }
-      }
-
-      // Merge avoiding duplicate order numbers
-      const combined = [...mappedDbOrders];
-      const seenOrderIds = new Set(mappedDbOrders.map((o) => o.orderNumber));
-
-      for (const lo of localOrders) {
-        if (!seenOrderIds.has(lo.orderNumber)) {
-          seenOrderIds.add(lo.orderNumber);
-          combined.push(lo);
-        }
-      }
-
-      // Sort newest first
-      combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      setOrders(combined);
+      setOrders(mappedDbOrders);
     } catch (e: any) {
       console.error("Error fetching POS orders for admin panel:", e);
       setError(e.message || "Failed to load POS orders");

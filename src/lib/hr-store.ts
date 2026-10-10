@@ -393,32 +393,10 @@ function notify() {
 }
 
 function persistToStorage() {
-  if (typeof window === "undefined") return;
-  try {
-    const payload = {
-      employees: globalEmployees,
-      attendance: globalAttendance,
-      leaves: globalLeaves,
-      payrollRuns: globalPayrollRuns,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch {}
+  // In-memory only; business state is backed by live Supabase tables
 }
 
 function restoreFromStorage(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    if (parsed.employees && Array.isArray(parsed.employees) && parsed.employees.length > 0) {
-      globalEmployees = parsed.employees;
-      globalAttendance = parsed.attendance || [];
-      globalLeaves = parsed.leaves || [];
-      globalPayrollRuns = parsed.payrollRuns || [];
-      return true;
-    }
-  } catch {}
   return false;
 }
 

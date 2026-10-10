@@ -231,22 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isPageAllowed, currentUser.allowedPages, navigate]);
 
   // Notification state
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    try {
-      const stored = localStorage.getItem("hafez_erp_notifications");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return INITIAL_NOTIFICATIONS;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("hafez_erp_notifications", JSON.stringify(notifications));
-    } catch {}
-  }, [notifications]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   useEffect(() => {
     const handleNewNotif = (e: Event) => {

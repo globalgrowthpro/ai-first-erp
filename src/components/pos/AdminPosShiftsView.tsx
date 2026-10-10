@@ -317,18 +317,9 @@ export function AdminPosShiftsView() {
         }
       }
 
-      // 3. Read local storage reconciliations & shifts for fallback/offline persistence
-      let localReconciled: Record<string, any> = {};
-      try {
-        const storedRec = localStorage.getItem("pos_reconciled_shifts_history");
-        if (storedRec) localReconciled = JSON.parse(storedRec);
-      } catch {}
-
-      let localShiftsMap: Record<string, any> = {};
-      try {
-        const storedShifts = localStorage.getItem("pos_cashier_shifts_data");
-        if (storedShifts) localShiftsMap = JSON.parse(storedShifts);
-      } catch {}
+      // Pure live DB & audit records
+      const localReconciled: Record<string, any> = {};
+      const localShiftsMap: Record<string, any> = {};
 
       const combinedRecords: PosShiftAdminRecord[] = [];
       const processedShiftNumbers = new Set<string>();
@@ -382,35 +373,6 @@ export function AdminPosShiftsView() {
                 }
               }
             }
-
-            // 3. Fallback: check hafez_erp_notifications in localStorage
-            try {
-              const storedNotifs = localStorage.getItem("hafez_erp_notifications");
-              if (storedNotifs) {
-                const notifs = JSON.parse(storedNotifs);
-                for (const n of notifs) {
-                  const p = n?.reconciliationPayload;
-                  if (p) {
-                    const pShort = p.shortShiftNumber || formatShortShiftId(p.shiftNumber);
-                    if (
-                      p.shiftNumber === s.shift_number ||
-                      pShort === shortShiftNum ||
-                      (shortShiftNum && p.shiftNumber?.includes(shortShiftNum))
-                    ) {
-                      return {
-                        isClosed: true,
-                        closedAt: n.time?.ar || "مغلقة",
-                        actualCash: p.actualCash,
-                        expectedCash: p.expectedCash,
-                        variance: p.variance,
-                        status: p.status,
-                        notes: p.notes,
-                      };
-                    }
-                  }
-                }
-              }
-            } catch {}
 
             return null;
           };
@@ -820,30 +782,7 @@ export function AdminPosShiftsView() {
         console.error("DB insert error:", insErr);
       }
 
-      // Also persist to localStorage
-      try {
-        const storedShifts = localStorage.getItem("pos_cashier_shifts_data");
-        const shiftsMap = storedShifts ? JSON.parse(storedShifts) : {};
-        shiftsMap[cashier.id] = {
-          shiftNumber,
-          openedAt: openedAtTime,
-          openingCash,
-          totalSales: 0,
-          cashSales: 0,
-          cardSales: 0,
-          walletSales: 0,
-          ordersCount: 0,
-        };
-        localStorage.setItem("pos_cashier_shifts_data", JSON.stringify(shiftsMap));
 
-        // Clear previous reconciliation if any
-        const storedRec = localStorage.getItem("pos_reconciled_shifts_history");
-        if (storedRec) {
-          const recMap = JSON.parse(storedRec);
-          delete recMap[cashier.id];
-          localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(recMap));
-        }
-      } catch {}
 
       toast.success(
         lang === "ar"
@@ -927,31 +866,7 @@ export function AdminPosShiftsView() {
         })
         .eq("shift_number", shiftToClose.shiftNumber);
 
-      // 3. Update localStorage
-      try {
-        const storedRec = localStorage.getItem("pos_reconciled_shifts_history");
-        const recMap = storedRec ? JSON.parse(storedRec) : {};
-        recMap[shiftToClose.cashierId] = {
-          isClosed: true,
-          closedAt: new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }),
-          expectedCash,
-          actualCash,
-          variance,
-          status,
-          notes: closeFormNotes,
-          snapshot: {
-            shiftNumber: shiftToClose.shiftNumber,
-            openedAt: shiftToClose.openedAt,
-            openingCash: shiftToClose.startingAmount,
-            totalSales: shiftToClose.totalSales,
-            cashSales: shiftToClose.cashSales,
-            cardSales: shiftToClose.cardSales,
-            walletSales: shiftToClose.walletSales,
-            ordersCount: shiftToClose.totalEntries,
-          },
-        };
-        localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(recMap));
-      } catch {}
+
 
       toast.success(
         lang === "ar"

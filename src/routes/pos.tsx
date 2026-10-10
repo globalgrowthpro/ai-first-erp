@@ -533,13 +533,6 @@ export function PosPage() {
   // Resolve active branch from live DB (locked — cashier cannot change it)
   const activeBranch = useMemo(() => {
     if (dbBranches.length === 0) return null;
-    try {
-      const saved = localStorage.getItem("pos_terminal_branch_id");
-      if (saved) {
-        const found = dbBranches.find((b) => b.id === saved);
-        if (found) return found;
-      }
-    } catch {}
     return dbBranches[0] ?? null;
   }, [dbBranches]);
 
@@ -559,13 +552,7 @@ export function PosPage() {
   }, [activeBranch]);
 
   // Multi-Users / Cashiers for this branch
-  const [allCashiers, setAllCashiers] = useState<PosCashierUser[]>(() => {
-    try {
-      const stored = localStorage.getItem("pos_all_cashiers_v2");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return POS_BRANCH_CASHIERS;
-  });
+  const [allCashiers, setAllCashiers] = useState<PosCashierUser[]>(POS_BRANCH_CASHIERS);
 
   // Cashiers assigned to the currently selected branch
   const branchCashiers = useMemo(() => {
@@ -592,13 +579,6 @@ export function PosPage() {
           avatarBg: user.avatarBg,
         };
       }
-      try {
-        const savedId = localStorage.getItem("pos_terminal_active_cashier_id");
-        if (savedId) {
-          const found = POS_BRANCH_CASHIERS.find((c) => c.id === savedId);
-          if (found) return found;
-        }
-      } catch {}
       return POS_BRANCH_CASHIERS[0]!;
     },
     []
@@ -619,21 +599,10 @@ export function PosPage() {
   // Role-based access: cashiers only see their own shift, orders, and held tickets
   const isCashierRole = currentUser?.role === "pos_cashier" || activeCashier.role === "cashier";
 
-  // Persist active cashier
-  useEffect(() => {
-    try {
-      localStorage.setItem("pos_terminal_active_cashier_id", activeCashier.id);
-    } catch {}
-  }, [activeCashier.id]);
 
-  // User Shifts Map (Keyed by Cashier ID: each user has his own shift & amount)
-  const [userShifts, setUserShifts] = useState<Record<string, CashierShiftData>>(() => {
-    try {
-      const stored = localStorage.getItem("pos_cashier_shifts_data");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return INITIAL_CASHIER_SHIFTS;
-  });
+
+  // User Shifts Map (Keyed by Cashier ID: loaded live from Supabase)
+  const [userShifts, setUserShifts] = useState<Record<string, CashierShiftData>>(INITIAL_CASHIER_SHIFTS);
 
   // Current Active Cashier's Personal Shift Stats
   const activeShift = useMemo<CashierShiftData>(() => {
@@ -658,14 +627,8 @@ export function PosPage() {
   // Alias for backward compatibility
   const shiftStats = activeShift;
 
-  // Orders History (all completed orders on this POS)
-  const [ordersHistory, setOrdersHistory] = useState<PosCompletedOrder[]>(() => {
-    try {
-      const stored = localStorage.getItem("pos_orders_history_data");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return INITIAL_ORDERS_HISTORY;
-  });
+  // Orders History (all completed orders on this POS - loaded live from Supabase)
+  const [ordersHistory, setOrdersHistory] = useState<PosCompletedOrder[]>([]);
 
   // Active User's Own Orders
   const myOrders = useMemo(() => {
@@ -832,13 +795,7 @@ export function PosPage() {
         snapshot: CashierShiftData;
       }
     >
-  >(() => {
-    try {
-      const stored = localStorage.getItem("pos_reconciled_shifts_history");
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return {};
-  });
+  >({});
 
   const currentReconciliation = reconciledShifts[activeCashier.id] || null;
 
@@ -928,13 +885,7 @@ export function PosPage() {
         },
       };
 
-      // 2. Dispatch event to AppShell & store in localStorage
-      try {
-        const storedNotifs = localStorage.getItem("hafez_erp_notifications");
-        const list = storedNotifs ? JSON.parse(storedNotifs) : [];
-        const nextList = [adminNotificationItem, ...list.filter((n: any) => n.id !== adminNotifId)];
-        localStorage.setItem("hafez_erp_notifications", JSON.stringify(nextList));
-      } catch {}
+      // 2. Dispatch event to AppShell
 
       window.dispatchEvent(
         new CustomEvent("hafez-system-notification", { detail: adminNotificationItem })
@@ -1024,18 +975,12 @@ export function PosPage() {
         snapshot: { ...activeShift },
       };
 
-      setReconciledShifts((prev) => {
-        const next = {
-          ...prev,
-          [activeCashier.id]: reconciliationData,
-          [activeShift.shiftNumber]: reconciliationData,
-          ...(shortShiftNum ? { [shortShiftNum]: reconciliationData } : {}),
-        };
-        try {
-          localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(next));
-        } catch {}
-        return next;
-      });
+      setReconciledShifts((prev) => ({
+        ...prev,
+        [activeCashier.id]: reconciliationData,
+        [activeShift.shiftNumber]: reconciliationData,
+        ...(shortShiftNum ? { [shortShiftNum]: reconciliationData } : {}),
+      }));
 
       try {
         window.dispatchEvent(
@@ -1089,20 +1034,11 @@ export function PosPage() {
       ordersCount: 0,
     };
 
-    setUserShifts((prev) => {
-      const next = { ...prev, [activeCashier.id]: resetShift };
-      try {
-        localStorage.setItem("pos_cashier_shifts_data", JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    setUserShifts((prev) => ({ ...prev, [activeCashier.id]: resetShift }));
 
     setReconciledShifts((prev) => {
       const next = { ...prev };
       delete next[activeCashier.id];
-      try {
-        localStorage.setItem("pos_reconciled_shifts_history", JSON.stringify(next));
-      } catch {}
       return next;
     });
 
@@ -1270,13 +1206,7 @@ export function PosPage() {
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
-  const [applyVat, setApplyVat] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem("pos_apply_vat_default");
-      if (saved !== null) return JSON.parse(saved);
-    } catch {}
-    return false; // Tax disabled by default
-  });
+  const [applyVat, setApplyVat] = useState<boolean>(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
   // Parked / Held Tickets
@@ -1296,19 +1226,8 @@ export function PosPage() {
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [tenderAmount, setTenderAmount] = useState<number>(0);
 
-  // Dynamic Payment Methods list (with localStorage persistence)
-  const [paymentMethods, setPaymentMethods] = useState<PosPaymentMethodConfig[]>(() => {
-    try {
-      const stored = localStorage.getItem("pos_custom_payment_methods");
-      if (stored) {
-        const custom: PosPaymentMethodConfig[] = JSON.parse(stored);
-        return [...DEFAULT_PAYMENT_METHODS, ...custom];
-      }
-    } catch {
-      // fallback
-    }
-    return DEFAULT_PAYMENT_METHODS;
-  });
+  // Dynamic Payment Methods list
+  const [paymentMethods, setPaymentMethods] = useState<PosPaymentMethodConfig[]>(DEFAULT_PAYMENT_METHODS);
 
   // Add Custom Payment Method Modal State
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -1407,13 +1326,6 @@ export function PosPage() {
 
     const updated = [...paymentMethods, newMethod];
     setPaymentMethods(updated);
-
-    try {
-      const customOnly = updated.filter((m) => m.isCustom);
-      localStorage.setItem("pos_custom_payment_methods", JSON.stringify(customOnly));
-    } catch {
-      // ignore
-    }
 
     setPaymentMethod(newId);
     setShowAddPaymentModal(false);
@@ -1737,11 +1649,7 @@ export function PosPage() {
         walletSales: current.walletSales + walletIncrement,
         ordersCount: current.ordersCount + 1,
       };
-      const nextMap = { ...prev, [activeCashier.id]: updated };
-      try {
-        localStorage.setItem("pos_cashier_shifts_data", JSON.stringify(nextMap));
-      } catch {}
-      return nextMap;
+      return { ...prev, [activeCashier.id]: updated };
     });
 
     const activeCashierDisplayName = pick(activeCashier.name.ar, activeCashier.name.en);
@@ -1791,13 +1699,7 @@ export function PosPage() {
     };
 
     setLastCompletedOrder(completedOrderRecord);
-    setOrdersHistory((prev) => {
-      const nextList = [completedOrderRecord, ...prev];
-      try {
-        localStorage.setItem("pos_orders_history_data", JSON.stringify(nextList.slice(0, 100)));
-      } catch {}
-      return nextList;
-    });
+    setOrdersHistory((prev) => [completedOrderRecord, ...prev]);
 
     // Asynchronously persist to Supabase Database (pos_orders, pos_order_items, and pos_shifts)
     (async () => {
@@ -2694,13 +2596,7 @@ export function PosPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setApplyVat((prev: boolean) => {
-                      const next = !prev;
-                      try {
-                        localStorage.setItem("pos_apply_vat_default", JSON.stringify(next));
-                      } catch {}
-                      return next;
-                    });
+                    setApplyVat((prev: boolean) => !prev);
                   }}
                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${
                     applyVat
@@ -4413,9 +4309,6 @@ export function PosPage() {
 
                       const updatedAll = [...allCashiers, created];
                       setAllCashiers(updatedAll);
-                      try {
-                        localStorage.setItem("pos_all_cashiers_v2", JSON.stringify(updatedAll));
-                      } catch {}
 
                       setActiveCashier(created);
                       setShowNewCashierForm(false);

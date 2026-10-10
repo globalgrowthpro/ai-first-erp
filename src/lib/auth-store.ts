@@ -84,14 +84,12 @@ export function useAuthStore() {
 
   const loadUserProfile = async (userId: string, email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    const cachedRole = typeof window !== 'undefined' ? localStorage.getItem(`hafez_user_role_${userId}`) : null;
     
     // Check if POS Cashier
     if (
       cleanEmail === "cashier@wazeer-elhelw.com" ||
       cleanEmail === "pos@wazeer-elhelw.com" ||
-      cleanEmail.startsWith("cashier") ||
-      cachedRole === "pos_cashier"
+      cleanEmail.startsWith("cashier")
     ) {
       globalUser = {
         ...POS_CASHIER_ACCOUNT,
@@ -99,19 +97,13 @@ export function useAuthStore() {
         email: cleanEmail,
       };
       globalIsAuth = true;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
-        } catch (_) {}
-      }
       emit();
       return;
     }
 
     try {
       const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-      const dbRole = (roles && roles.length > 0 && roles[0]) ? roles[0].role : 'admin';
-      const effectiveRole = cachedRole || dbRole;
+      const effectiveRole = (roles && roles.length > 0 && roles[0]) ? roles[0].role : 'admin';
 
       if (effectiveRole === "pos_cashier") {
         globalUser = {

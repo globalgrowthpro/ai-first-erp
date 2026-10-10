@@ -4,7 +4,6 @@ import { aiModules as initialAiModules, type AiModuleItem } from "@/lib/demo-dat
 
 export type { AiModuleItem };
 
-const STORAGE_KEY = "wzr_ai_modules_state";
 const FALLBACK_GEMINI_KEY = (() => {
   try {
     return typeof atob !== "undefined"
@@ -21,44 +20,17 @@ export const DEFAULT_GEMINI_KEY =
   ]) || FALLBACK_GEMINI_KEY;
 
 function getInitialModules(): AiModuleItem[] {
-  if (typeof window === "undefined") return initialAiModules;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure any gemini module has the updated API key if it had a placeholder
-        return parsed.map((m: AiModuleItem) => {
-          if (m.provider === "gemini" && (!m.apiKey || m.apiKey.includes("xxxx") || m.apiKey.startsWith("AIzaSyBwzr"))) {
-            return { ...m, apiKey: DEFAULT_GEMINI_KEY };
-          }
-          return m;
-        });
-      }
+  return initialAiModules.map((m: AiModuleItem) => {
+    if (m.provider === "gemini" && (!m.apiKey || m.apiKey.includes("xxxx") || m.apiKey.startsWith("AIzaSyBwzr"))) {
+      return { ...m, apiKey: DEFAULT_GEMINI_KEY };
     }
-  } catch (err) {
-    console.error("Error reading AI modules from localStorage", err);
-  }
-  return initialAiModules;
-}
-
-function saveToStorage(modules: AiModuleItem[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(modules));
-  } catch (err) {
-    console.error("Error saving AI modules to localStorage", err);
-  }
+    return m;
+  });
 }
 
 export function useAiModulesStore() {
   const [modules, setModules] = useState<AiModuleItem[]>(getInitialModules);
   const [loading, setLoading] = useState(false);
-
-  // Sync to storage on any change
-  useEffect(() => {
-    saveToStorage(modules);
-  }, [modules]);
 
   const fetchModules = useCallback(async () => {
     setLoading(true);

@@ -2,32 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { type AccountItem, type JournalEntry, chartOfAccounts, journal as initialJournalEntries } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 
-const ACCOUNTS_STORAGE_KEY = "erp_chart_of_accounts_v4";
-const JOURNAL_STORAGE_KEY = "erp_journal_entries_v3";
-
 export function useAccountsStore() {
-  const [accounts, setAccounts] = useState<AccountItem[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return chartOfAccounts;
-  });
-
+  const [accounts, setAccounts] = useState<AccountItem[]>(chartOfAccounts);
   const [loading, setLoading] = useState(false);
-
-  const persistAccounts = (next: AccountItem[]) => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-    }
-  };
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -73,7 +50,6 @@ export function useAccountsStore() {
         );
 
         setAccounts(combined);
-        persistAccounts(combined);
       }
     } catch {}
   }, []);
@@ -88,7 +64,6 @@ export function useAccountsStore() {
         account.parentId && a.code === account.parentId ? { ...a, isParent: true } : a
       );
       const next = [...updated, account].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-      persistAccounts(next);
       return next;
     });
 
@@ -117,7 +92,6 @@ export function useAccountsStore() {
       const next = prev
         .map((a) => (a.code === code ? { ...a, ...updates } : a))
         .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
-      persistAccounts(next);
       return next;
     });
 
@@ -145,7 +119,6 @@ export function useAccountsStore() {
   const deleteAccount = useCallback(async (code: string) => {
     setAccounts((prev) => {
       const next = prev.filter(a => a.code !== code);
-      persistAccounts(next);
       return next;
     });
     try {
@@ -164,28 +137,8 @@ export function useAccountsStore() {
 }
 
 export function useJournalStore() {
-  const [entries, setEntries] = useState<JournalEntry[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem(JOURNAL_STORAGE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return initialJournalEntries;
-  });
-
+  const [entries, setEntries] = useState<JournalEntry[]>(initialJournalEntries);
   const [loading, setLoading] = useState(false);
-
-  const persistEntries = (next: JournalEntry[]) => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-    }
-  };
 
   const fetchJournal = useCallback(async () => {
     try {
@@ -215,7 +168,6 @@ export function useJournalStore() {
         }));
 
         setEntries(mapped);
-        persistEntries(mapped);
       }
     } catch {}
   }, []);
@@ -227,14 +179,12 @@ export function useJournalStore() {
   const addEntries = useCallback(async (newEntries: JournalEntry[]) => {
     setEntries((prev) => {
       const next = [...newEntries, ...prev];
-      persistEntries(next);
       return next;
     });
   }, []);
 
   const resetToDefaultEntries = useCallback(() => {
     setEntries(initialJournalEntries);
-    persistEntries(initialJournalEntries);
   }, []);
 
   return {

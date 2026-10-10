@@ -870,14 +870,6 @@ export function formatDateTimeString(raw: any): string {
 }
 
 export function getStoredLocalPosOrders(): any[] {
-  if (typeof window === "undefined" || !window.localStorage) return [];
-  try {
-    const raw = localStorage.getItem("pos_orders_history_data");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
   return [];
 }
 
@@ -919,7 +911,7 @@ export function getDataSourceRawData(
     }
 
     case "pos": {
-      // 1. Prefer live real orders from Supabase / localStorage store
+      // 1. Prefer live real orders from Supabase store
       const ordersToUse =
         liveCollections?.posOrders && liveCollections.posOrders.length > 0
           ? liveCollections.posOrders
@@ -1904,34 +1896,12 @@ export function exportReportToCsv({
 // REACT HOOK: useReportsStore
 // ============================================================================
 
-const STORAGE_KEY = "hafez_custom_reports_v2";
-
 export function useReportsStore() {
-  const [customReports, setCustomReports] = useState<CustomReportDefinition[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (err) {
-        console.warn("[Reports Store] localStorage parse error:", err);
-      }
-    }
-    return DEFAULT_CUSTOM_REPORTS;
-  });
+  const [customReports, setCustomReports] = useState<CustomReportDefinition[]>(DEFAULT_CUSTOM_REPORTS);
 
-  // Sync to local storage
+  // Sync in-memory state
   const persistCustomReports = useCallback((reports: CustomReportDefinition[]) => {
     setCustomReports(reports);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-      } catch (err) {
-        console.error("[Reports Store] Failed to save custom reports:", err);
-      }
-    }
   }, []);
 
   const saveCustomReport = useCallback(

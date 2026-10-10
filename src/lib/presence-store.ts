@@ -245,11 +245,6 @@ export function useOnlinePresence() {
       try {
         bc?.postMessage(pingMsg);
       } catch {}
-
-      // Fallback via localStorage for browsers without BroadcastChannel
-      try {
-        localStorage.setItem(`hafez_presence_${sessionId}`, JSON.stringify(currentPresencePayload));
-      } catch {}
     };
 
     broadcastPing();
@@ -276,7 +271,6 @@ export function useOnlinePresence() {
     const handleUnload = () => {
       try {
         bc?.postMessage({ type: "PRESENCE_BYE", sessionId });
-        localStorage.removeItem(`hafez_presence_${sessionId}`);
       } catch {}
     };
     window.addEventListener("beforeunload", handleUnload);
