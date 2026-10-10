@@ -60,6 +60,9 @@ import {
 } from "@/lib/excel-utils";
 import { useOrgStore } from "@/lib/org-store";
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+import { saveProvisionedAccount } from "@/lib/auth-store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/hr")({
   head: () => ({
@@ -557,7 +560,7 @@ function HrPage() {
                   className="px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-medium"
                 >
                   <option value="all">{pick("جميع الحالات", "All Statuses")}</option>
-                  <option value="active">{pick("على رأس العمل (Active)", "Active")}</option>
+                  <option value="active">{pick("نشط (Active)", "Active")}</option>
                   <option value="on_leave">{pick("في إجازة (On Leave)", "On Leave")}</option>
                   <option value="probation">{pick("تحت الاختبار (Probation)", "Probation")}</option>
                   <option value="terminated">{pick("منتهي الخدمة (Terminated)", "Terminated")}</option>
@@ -760,12 +763,12 @@ function HrPage() {
                     <Td>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${emp.healthCert.status === "valid"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : emp.healthCert.status === "expiring_soon"
-                              ? "bg-amber-500/10 text-amber-600"
-                              : emp.healthCert.status === "expired"
-                                ? "bg-rose-500/10 text-rose-600"
-                                : "bg-muted text-muted-foreground"
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : emp.healthCert.status === "expiring_soon"
+                            ? "bg-amber-500/10 text-amber-600"
+                            : emp.healthCert.status === "expired"
+                              ? "bg-rose-500/10 text-rose-600"
+                              : "bg-muted text-muted-foreground"
                           }`}
                       >
                         {emp.healthCert.status === "valid" && <ShieldCheck className="size-3" />}
@@ -784,14 +787,14 @@ function HrPage() {
                     <Td>
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${emp.status === "active"
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : emp.status === "on_leave"
-                              ? "bg-blue-500/10 text-blue-600"
-                              : "bg-amber-500/10 text-amber-600"
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : emp.status === "on_leave"
+                            ? "bg-blue-500/10 text-blue-600"
+                            : "bg-amber-500/10 text-amber-600"
                           }`}
                       >
                         {emp.status === "active"
-                          ? pick("على رأس العمل", "Active")
+                          ? pick("نشط", "Active")
                           : emp.status === "on_leave"
                             ? pick("في إجازة", "On Leave")
                             : pick("فترة اختبار", "Probation")}
@@ -950,12 +953,12 @@ function HrPage() {
                   <Td>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${rec.status === "present"
-                          ? "bg-emerald-500/10 text-emerald-600"
-                          : rec.status === "late"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : rec.status === "on_leave"
-                              ? "bg-blue-500/10 text-blue-600"
-                              : "bg-rose-500/10 text-rose-600"
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : rec.status === "late"
+                          ? "bg-amber-500/10 text-amber-600"
+                          : rec.status === "on_leave"
+                            ? "bg-blue-500/10 text-blue-600"
+                            : "bg-rose-500/10 text-rose-600"
                         }`}
                     >
                       {rec.status === "present"
@@ -1097,10 +1100,10 @@ function HrPage() {
                   <Td>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${l.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-600"
-                          : l.status === "rejected"
-                            ? "bg-rose-500/10 text-rose-600"
-                            : "bg-amber-500/10 text-amber-600"
+                        ? "bg-emerald-500/10 text-emerald-600"
+                        : l.status === "rejected"
+                          ? "bg-rose-500/10 text-rose-600"
+                          : "bg-amber-500/10 text-amber-600"
                         }`}
                     >
                       {l.status === "approved"
@@ -1148,10 +1151,10 @@ function HrPage() {
                   </div>
                   <span
                     className={`px-2.5 py-1 rounded-full text-xs font-bold ${run.status === "posted_to_gl"
-                        ? "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30"
-                        : run.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
-                          : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                      ? "bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30"
+                      : run.status === "approved"
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                        : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30"
                       }`}
                   >
                     {run.status === "posted_to_gl"
@@ -1269,12 +1272,12 @@ function HrPage() {
                   <div className="flex items-center gap-2">
                     <div
                       className={`size-8 rounded-lg flex items-center justify-center ${ins.type === "warning"
-                          ? "bg-rose-500/10 text-rose-600"
-                          : ins.type === "action"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : ins.type === "success"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : "bg-blue-500/10 text-blue-600"
+                        ? "bg-rose-500/10 text-rose-600"
+                        : ins.type === "action"
+                          ? "bg-amber-500/10 text-amber-600"
+                          : ins.type === "success"
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-blue-500/10 text-blue-600"
                         }`}
                     >
                       <Sparkles className="size-4" />
@@ -1402,11 +1405,14 @@ function HrPage() {
           let linkedUserId = empData.userId || null;
 
           if (empData.grantErpAccess) {
+            const targetPassword = empData.erpPassword?.trim() || "Wazeer@2026#";
+            const targetEmail = empData.email?.trim() || `${(empData.code || "emp").toLowerCase()}@wazeer-elhelw.com`;
+
             // Find existing user if already linked or matching email
             const existingUser = users.find(
               (u) =>
                 (linkedUserId && u.id === linkedUserId) ||
-                (u.email && empData.email && u.email.toLowerCase() === empData.email.toLowerCase())
+                (u.email && targetEmail && u.email.toLowerCase() === targetEmail.toLowerCase())
             );
 
             if (existingUser) {
@@ -1416,15 +1422,75 @@ function HrPage() {
                 employeeCode: empData.code,
                 role: (empData.erpRole as any) || existingUser.role,
               });
+
+              saveProvisionedAccount({
+                email: targetEmail,
+                password: targetPassword,
+                role: empData.erpRole || existingUser.role,
+                userId: existingUser.id,
+                name: { ar: empData.name.ar, en: empData.name.en },
+                department: empData.departmentName,
+                position: empData.positionName,
+              });
+
+              toast.success(
+                pick(
+                  `تم تحديث حساب الدخول بنجاح! كلمة المرور: ${targetPassword}`,
+                  `Login account updated! Password: ${targetPassword}`
+                )
+              );
             } else {
-              const newId = crypto.randomUUID();
+              let newId = crypto.randomUUID();
+
+              // Try Supabase auth signUp with isolated unpersisted client (admin session is unaffected)
+              try {
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+                const supabaseAnon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+                if (supabaseUrl && supabaseAnon) {
+                  const unpersistedSupabase = createClient(supabaseUrl, supabaseAnon, {
+                    auth: {
+                      persistSession: false,
+                      autoRefreshToken: false,
+                      detectSessionInUrl: false,
+                    },
+                  });
+                  const { data: signUpData } = await unpersistedSupabase.auth.signUp({
+                    email: targetEmail,
+                    password: targetPassword,
+                    options: {
+                      data: {
+                        full_name_ar: empData.name.ar,
+                        full_name_en: empData.name.en,
+                        role: empData.erpRole || "sales",
+                      },
+                    },
+                  });
+                  if (signUpData?.user?.id) {
+                    newId = signUpData.user.id;
+                  }
+                }
+              } catch (signUpErr) {
+                console.warn("[HR] Supabase signUp warning:", signUpErr);
+              }
+
+              // Save provisioned account locally so login always succeeds seamlessly
+              saveProvisionedAccount({
+                email: targetEmail,
+                password: targetPassword,
+                role: (empData.erpRole as any) || "sales",
+                userId: newId,
+                name: { ar: empData.name.ar, en: empData.name.en },
+                department: empData.departmentName,
+                position: empData.positionName,
+              });
+
               const createdUser = await addUser({
                 id: newId,
                 name: {
                   ar: empData.name.ar,
                   en: empData.name.en,
                 },
-                email: empData.email || `${(empData.code || "emp").toLowerCase()}@wazeer-elhelw.com`,
+                email: targetEmail,
                 role: (empData.erpRole as any) || "sales",
                 status: "active",
                 departmentId: empData.departmentId,
@@ -1437,6 +1503,13 @@ function HrPage() {
               if (createdUser?.id) {
                 linkedUserId = createdUser.id;
               }
+
+              toast.success(
+                pick(
+                  `تم إنشاء حساب الدخول بنجاح! كلمة المرور: ${targetPassword}`,
+                  `Login account created! Password: ${targetPassword}`
+                )
+              );
             }
           }
 
@@ -1450,7 +1523,7 @@ function HrPage() {
             if (linkedUserId) {
               try {
                 await supabase.from("employees").update({ user_id: linkedUserId }).eq("id", editingEmployee.id);
-              } catch (_) {}
+              } catch (_) { }
             }
           } else {
             addEmployee(finalData);

@@ -102,28 +102,26 @@ export function EmployeeDetailModal({
                   {pick(employee.name.ar, employee.name.en)}
                 </h3>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    employee.gender === "female"
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${employee.gender === "female"
                       ? "bg-rose-500/10 text-rose-600 border border-rose-500/20"
                       : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
-                  }`}
+                    }`}
                 >
                   {employee.gender === "female" ? pick("أنثى (Female)", "Female") : pick("ذكر (Male)", "Male")}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    employee.status === "active"
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${employee.status === "active"
                       ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                       : employee.status === "on_leave"
-                      ? "bg-blue-500/10 text-blue-600 border border-blue-500/20"
-                      : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                  }`}
+                        ? "bg-blue-500/10 text-blue-600 border border-blue-500/20"
+                        : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                    }`}
                 >
                   {employee.status === "active"
-                    ? pick("على رأس العمل", "Active")
+                    ? pick("نشط", "Active")
                     : employee.status === "on_leave"
-                    ? pick("في إجازة", "On Leave")
-                    : pick("تحت الاختبار", "Probation")}
+                      ? pick("في إجازة", "On Leave")
+                      : pick("تحت الاختبار", "Probation")}
                 </span>
                 <span
                   className={cn(
@@ -268,23 +266,22 @@ export function EmployeeDetailModal({
                 {pick("الشهادة الصحية وسلامة الغذاء", "Food Safety Health Cert")}
               </div>
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  employee.healthCert.status === "valid"
+                className={`px-2 py-0.5 rounded text-[10px] font-bold ${employee.healthCert.status === "valid"
                     ? "bg-emerald-500/10 text-emerald-600"
                     : employee.healthCert.status === "expiring_soon"
-                    ? "bg-amber-500/10 text-amber-600"
-                    : employee.healthCert.status === "expired"
-                    ? "bg-rose-500/10 text-rose-600"
-                    : "bg-muted text-muted-foreground"
-                }`}
+                      ? "bg-amber-500/10 text-amber-600"
+                      : employee.healthCert.status === "expired"
+                        ? "bg-rose-500/10 text-rose-600"
+                        : "bg-muted text-muted-foreground"
+                  }`}
               >
                 {employee.healthCert.status === "valid"
                   ? pick("سارية ومعتمدة", "Valid")
                   : employee.healthCert.status === "expiring_soon"
-                  ? pick("توشك على الانتهاء", "Expiring Soon")
-                  : employee.healthCert.status === "expired"
-                  ? pick("منتهية الصلاحية", "Expired")
-                  : pick("غير مطلوب", "Not Required")}
+                    ? pick("توشك على الانتهاء", "Expiring Soon")
+                    : employee.healthCert.status === "expired"
+                      ? pick("منتهية الصلاحية", "Expired")
+                      : pick("غير مطلوب", "Not Required")}
               </span>
             </div>
 

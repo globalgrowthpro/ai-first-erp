@@ -55,6 +55,57 @@ export const DEFAULT_USER: AppUser = {
   ],
 };
 
+export interface ProvisionedAccount {
+  email: string;
+  passwordPlain?: string;
+  role: string;
+  userId: string;
+  name: { ar: string; en: string };
+  department?: { ar: string; en: string };
+  position?: { ar: string; en: string };
+  updatedAt: string;
+}
+
+export function saveProvisionedAccount(account: {
+  email: string;
+  password?: string;
+  role: string;
+  userId: string;
+  name?: { ar: string; en: string };
+  department?: { ar: string; en: string };
+  position?: { ar: string; en: string };
+}) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = localStorage.getItem("hafez_provisioned_accounts");
+    const list: ProvisionedAccount[] = raw ? JSON.parse(raw) : [];
+    const normalizedEmail = account.email.trim().toLowerCase();
+    const updated = list.filter((a) => a.email.toLowerCase() !== normalizedEmail);
+    updated.push({
+      email: normalizedEmail,
+      passwordPlain: account.password,
+      role: account.role,
+      userId: account.userId,
+      name: account.name || { ar: "مستخدم النظام", en: "System User" },
+      department: account.department,
+      position: account.position,
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem("hafez_provisioned_accounts", JSON.stringify(updated));
+  } catch (_) {}
+}
+
+export function getProvisionedAccount(email: string): ProvisionedAccount | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = localStorage.getItem("hafez_provisioned_accounts");
+    const list: ProvisionedAccount[] = raw ? JSON.parse(raw) : [];
+    return list.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
+  } catch (_) {
+    return undefined;
+  }
+}
+
 let globalUser: AppUser | null = null;
 let globalIsAuth = false;
 const listeners = new Set<() => void>();
@@ -219,6 +270,55 @@ export function useAuthStore() {
         return true;
       }
     } catch (_) {}
+
+    // Check provisioned local accounts created by admin
+    const prov = getProvisionedAccount(email);
+    if (prov && prov.passwordPlain && pass === prov.passwordPlain) {
+      const roleMap: Record<string, { ar: string; en: string }> = {
+        sales: { ar: "نقطة بيع ومبيعات الفروع", en: "POS & Sales" },
+        pos_cashier: { ar: "كاشير نقطة بيع", en: "POS Cashier" },
+        admin: { ar: "مسؤول النظام", en: "System Administrator" },
+        accountant: { ar: "محاسب ومراجع مالي", en: "Accountant" },
+        inventory_manager: { ar: "أمين مخزن ومستودعات", en: "Inventory Manager" },
+        hr_manager: { ar: "مدير موارد بشرية", en: "HR Manager" },
+        branch_manager: { ar: "مدير فرع / تشغيل", en: "Branch Manager" },
+      };
+
+      const allowedPagesMap: Record<string, string[]> = {
+        sales: ["/pos", "/sales"],
+        pos_cashier: ["/pos"],
+        accountant: ["/", "/accounting", "/sales", "/purchases", "/reports"],
+        inventory_manager: ["/", "/inventory", "/purchases", "/manufacturing"],
+        hr_manager: ["/", "/hr", "/reports"],
+        branch_manager: ["/", "/pos", "/sales", "/inventory", "/reports"],
+        admin: [
+          "/", "/pos", "/pos-shifts", "/sales", "/purchases", "/accounting", "/inventory",
+          "/manufacturing", "/dispatch", "/partners", "/hr", "/reports",
+          "/audit", "/helpdesk", "/ai", "/ai-modules", "/settings"
+        ],
+      };
+
+      globalUser = {
+        id: prov.userId,
+        name: prov.name,
+        email: prov.email,
+        role: prov.role,
+        roleLabel: roleMap[prov.role] || { ar: prov.role, en: prov.role },
+        department: prov.department || { ar: "العام", en: "General" },
+        position: prov.position || { ar: "موظف معتمد", en: "Staff" },
+        avatarBg: "from-blue-600 to-indigo-700",
+        description: { ar: "حساب دخول نظام الـ ERP", en: "ERP Access Account" },
+        allowedPages: allowedPagesMap[prov.role] || ["/", "/pos", "/sales"],
+      };
+      globalIsAuth = true;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
+        } catch (_) {}
+      }
+      emit();
+      return true;
+    }
 
     // Admin fallback credentials
     const isAdmin =

@@ -402,7 +402,7 @@ export const DATA_SOURCE_CATALOG: Record<
         label: { ar: "حالة العمل", en: "Status" },
         type: "badge",
         options: [
-          { value: "active", label: { ar: "على رأس العمل", en: "Active" } },
+          { value: "active", label: { ar: "نشط", en: "Active" } },
           { value: "probation", label: { ar: "فترة اختبار", en: "Probation" } },
           { value: "on_leave", label: { ar: "في إجازة", en: "On Leave" } },
         ],
@@ -865,7 +865,7 @@ export function formatDateTimeString(raw: any): string {
       const pad = (n: number) => String(n).padStart(2, "0");
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
-  } catch {}
+  } catch { }
   return String(raw).slice(0, 16);
 }
 
@@ -1913,10 +1913,10 @@ export function useReportsStore() {
         const updated = customReports.map((r) =>
           r.id === reportDef.id
             ? {
-                ...r,
-                ...reportDef,
-                updatedAt: now,
-              }
+              ...r,
+              ...reportDef,
+              updatedAt: now,
+            }
             : r,
         );
         persistCustomReports(updated);

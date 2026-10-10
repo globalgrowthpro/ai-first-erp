@@ -37,7 +37,11 @@ import {
   Power,
   Trash2,
   Edit2,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
+import { saveProvisionedAccount } from "@/lib/auth-store";
 
 export const AVAILABLE_ROLES = [
   { value: "admin", ar: "Admin (مدير نظام / إدارة عليا)", en: "Admin (Administrator)" },
@@ -166,11 +170,13 @@ export function UsersManagement() {
     departmentId: "",
     positionId: "",
     role: "sales" as UserItem["role"],
+    password: "",
     allowedPages: ["/", "/sales", "/inventory"],
     allowedActions: ["invoice.create"],
     status: "active" as "active" | "inactive",
     sidebarVisible: true,
   });
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // New Department Form State
   const [newDept, setNewDept] = useState({
@@ -277,6 +283,16 @@ export function UsersManagement() {
     };
 
     addUser(user);
+
+    const userPassword = newUser.password?.trim() || "Wazeer@2026#";
+    saveProvisionedAccount({
+      email: user.email,
+      password: userPassword,
+      role: user.role,
+      userId: user.id,
+      name: user.name,
+    });
+
     if (selectedLinkedEmployeeId) {
       updateEmployee(selectedLinkedEmployeeId, { userId: user.id });
       supabase
@@ -285,9 +301,14 @@ export function UsersManagement() {
         .eq("id", selectedLinkedEmployeeId)
         .then();
     }
-    toast.success(lang === "ar" ? "تمت إضافة المستخدم بنجاح" : "User added successfully");
+    toast.success(
+      lang === "ar"
+        ? `تمت إضافة المستخدم بنجاح! كلمة المرور: ${userPassword}`
+        : `User added successfully! Password: ${userPassword}`
+    );
     setShowAddUserModal(false);
     setSelectedLinkedEmployeeId("");
+    setShowNewUserPassword(false);
     setNewUser({
       nameAr: "",
       nameEn: "",
@@ -295,6 +316,7 @@ export function UsersManagement() {
       departmentId: deptList[0]?.id || "",
       positionId: posList[0]?.id || "",
       role: "sales",
+      password: "",
       allowedPages: ["/", "/sales", "/inventory"],
       allowedActions: ["invoice.create"],
       status: "active",
@@ -1428,6 +1450,54 @@ export function UsersManagement() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Account Password Field */}
+                <div className="md:col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase text-foreground flex items-center gap-1.5">
+                      <KeyRound className="size-3.5 text-primary" />
+                      {lang === "ar" ? "تعيين كلمة مرور الحساب" : "Set Account Password"}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+                        let rnd = "";
+                        for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
+                        const pass = `Wz@${rnd}#26`;
+                        setNewUser((prev) => ({ ...prev, password: pass }));
+                        setShowNewUserPassword(true);
+                      }}
+                      className="text-[11px] text-primary hover:text-primary/80 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Sparkles className="size-3" />
+                      {lang === "ar" ? "توليد كلمة مرور عشوائية" : "Generate Password"}
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type={showNewUserPassword ? "text" : "password"}
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder={lang === "ar" ? "أدخل كلمة مرور مخصصة أو اتركها فارغة للافتراضية (Wazeer@2026#)" : "Enter custom password or leave blank for default (Wazeer@2026#)"}
+                      className="w-full px-3 pe-10 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono focus:border-primary focus:outline-none transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewUserPassword(!showNewUserPassword)}
+                      className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                      title={showNewUserPassword ? (lang === "ar" ? "إخفاء كلمة المرور" : "Hide password") : (lang === "ar" ? "إظهار كلمة المرور" : "Show password")}
+                    >
+                      {showNewUserPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    {lang === "ar"
+                      ? "يمكن للمستخدم تسجيل الدخول فوراً باستخدام بريده الإلكتروني وكلمة المرور المحددة هنا."
+                      : "The user can immediately log in using their email and the password specified here."}
+                  </p>
                 </div>
               </div>
 

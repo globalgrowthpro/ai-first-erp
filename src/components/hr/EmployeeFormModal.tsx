@@ -21,6 +21,10 @@ import {
   X,
   BadgeCheck,
   FileCheck2,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -38,7 +42,13 @@ interface EmployeeFormModalProps {
   onOpenChange: (open: boolean) => void;
   editing: EmployeeRecord | null;
   suggestedCode?: string;
-  onSave: (data: Omit<EmployeeRecord, "id" | "code"> & { code?: string; grantErpAccess?: boolean; erpRole?: string; userId?: string | null }) => void;
+  onSave: (data: Omit<EmployeeRecord, "id" | "code"> & {
+    code?: string;
+    grantErpAccess?: boolean;
+    erpRole?: string;
+    erpPassword?: string;
+    userId?: string | null;
+  }) => void;
 }
 
 export function EmployeeFormModal({
@@ -100,6 +110,8 @@ export function EmployeeFormModal({
   // ERP System User Account Access
   const [grantErpAccess, setGrantErpAccess] = useState(false);
   const [erpRole, setErpRole] = useState("sales");
+  const [erpPassword, setErpPassword] = useState("");
+  const [showErpPassword, setShowErpPassword] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +155,8 @@ export function EmployeeFormModal({
       setHealthCertStatus(editing.healthCert.status);
       setAvatarUrl(editing.avatarUrl || getDefaultAvatar(editing.gender, editing.code));
       setGrantErpAccess(Boolean(editing.userId));
+      setErpPassword("");
+      setShowErpPassword(false);
     } else {
       const newCode = suggestedCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
       setCode(newCode);
@@ -185,6 +199,8 @@ export function EmployeeFormModal({
       setHealthCertStatus("valid");
       setGrantErpAccess(false);
       setErpRole("sales");
+      setErpPassword("");
+      setShowErpPassword(false);
       setActiveTab("personal");
     }
   }, [open, editing, suggestedCode]);
@@ -269,6 +285,7 @@ export function EmployeeFormModal({
       },
       grantErpAccess,
       erpRole,
+      erpPassword: erpPassword.trim() || undefined,
       userId: editing?.userId || null,
     });
 
@@ -293,8 +310,8 @@ export function EmployeeFormModal({
             type="button"
             onClick={() => setActiveTab("personal")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "personal"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-secondary"
               }`}
           >
             {pick("البيانات الشخصية والتعريف", "Personal & ID")}
@@ -303,8 +320,8 @@ export function EmployeeFormModal({
             type="button"
             onClick={() => setActiveTab("job")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "job"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-secondary"
               }`}
           >
             {pick("الوظيفة والعقد والفرع", "Job, Contract & Branch")}
@@ -313,8 +330,8 @@ export function EmployeeFormModal({
             type="button"
             onClick={() => setActiveTab("comp")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "comp"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-secondary"
               }`}
           >
             {pick("الراتب والبدلات والبنك", "Compensation & Bank")}
@@ -323,8 +340,8 @@ export function EmployeeFormModal({
             type="button"
             onClick={() => setActiveTab("compliance")}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${activeTab === "compliance"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-secondary"
               }`}
           >
             {pick("السلامة والشهادة الصحية", "Health & Safety")}
@@ -372,8 +389,8 @@ export function EmployeeFormModal({
                         );
                       }}
                       className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${gender === "male"
-                          ? "bg-blue-600 text-white border-blue-600 shadow-xs"
-                          : "bg-background border-input text-muted-foreground hover:bg-muted"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-background border-input text-muted-foreground hover:bg-muted"
                         }`}
                     >
                       <span>{pick("ذكر (Male)", "Male")}</span>
@@ -389,8 +406,8 @@ export function EmployeeFormModal({
                         );
                       }}
                       className={`py-2 px-3 rounded-md border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${gender === "female"
-                          ? "bg-rose-600 text-white border-rose-600 shadow-xs"
-                          : "bg-background border-input text-muted-foreground hover:bg-muted"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-background border-input text-muted-foreground hover:bg-muted"
                         }`}
                     >
                       <span>{pick("أنثى (Female)", "Female")}</span>
@@ -703,7 +720,7 @@ export function EmployeeFormModal({
                     onChange={(e) => setStatus(e.target.value as EmployeeStatus)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="active">على رأس العمل (Active)</option>
+                    <option value="active">نشط (Active)</option>
                     <option value="probation">فترة اختبار (Probation)</option>
                     <option value="on_leave">في إجازة (On Leave)</option>
                     <option value="suspended">موقوف مؤقتاً (Suspended)</option>
@@ -741,35 +758,87 @@ export function EmployeeFormModal({
                 </div>
 
                 {grantErpAccess && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-primary/20">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
-                        {pick("دور وصلاحيات المستخدم في النظام", "Assigned System Role")}
-                      </label>
-                      <select
-                        value={erpRole}
-                        onChange={(e) => setErpRole(e.target.value)}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-medium"
-                      >
-                        <option value="sales">{pick("نقطة بيع ومبيعات الفروع (Cashier / POS)", "POS & Branch Sales")}</option>
-                        <option value="inventory_manager">{pick("أمين مخزن ومستودعات (Inventory Manager)", "Inventory Manager")}</option>
-                        <option value="accountant">{pick("محاسب ومراجع مالي (Accountant / Finance)", "Accountant / Finance")}</option>
-                        <option value="hr_manager">{pick("مدير موارد بشرية (HR Manager)", "HR Manager")}</option>
-                        <option value="branch_manager">{pick("مدير فرع / تشغيل (Branch Manager)", "Branch Manager")}</option>
-                        <option value="admin">{pick("مدير نظام بصلاحيات كاملة (System Administrator)", "System Administrator")}</option>
-                      </select>
+                  <div className="space-y-3 pt-3 border-t border-primary/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {pick("دور وصلاحيات المستخدم في النظام", "Assigned System Role")}
+                        </label>
+                        <select
+                          value={erpRole}
+                          onChange={(e) => setErpRole(e.target.value)}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-medium"
+                        >
+                          <option value="sales">{pick("نقطة بيع ومبيعات الفروع (Cashier / POS)", "POS & Branch Sales")}</option>
+                          <option value="inventory_manager">{pick("أمين مخزن ومستودعات (Inventory Manager)", "Inventory Manager")}</option>
+                          <option value="accountant">{pick("محاسب ومراجع مالي (Accountant / Finance)", "Accountant / Finance")}</option>
+                          <option value="hr_manager">{pick("مدير موارد بشرية (HR Manager)", "HR Manager")}</option>
+                          <option value="branch_manager">{pick("مدير فرع / تشغيل (Branch Manager)", "Branch Manager")}</option>
+                          <option value="admin">{pick("مدير نظام بصلاحيات كاملة (System Administrator)", "System Administrator")}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {pick("البريد الإلكتروني لتسجيل الدخول", "Login Email Address")}
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="emp@wazeer-elhelw.com"
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1">
-                        {pick("البريد الإلكتروني لتسجيل الدخول", "Login Email Address")}
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="emp@wazeer-elhelw.com"
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
-                      />
+
+                    <div className="rounded-md border border-primary/20 bg-background/60 p-2.5 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <KeyRound className="size-3.5 text-primary" />
+                          {pick("تعيين كلمة مرور الحساب", "Set Account Password")}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+                            let rnd = "";
+                            for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
+                            const pass = `Wz@${rnd}#26`;
+                            setErpPassword(pass);
+                            setShowErpPassword(true);
+                          }}
+                          className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Sparkles className="size-3" />
+                          {pick("توليد كلمة مرور عشوائية", "Generate Password")}
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showErpPassword ? "text" : "password"}
+                          value={erpPassword}
+                          onChange={(e) => setErpPassword(e.target.value)}
+                          placeholder={pick("أدخل كلمة مرور أو اتركها فارغة للافتراضية (Wazeer@2026#)", "Enter custom password or leave blank for default (Wazeer@2026#)")}
+                          className="w-full rounded-md border border-input bg-background ps-3 pe-10 py-2 text-xs font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowErpPassword(!showErpPassword)}
+                          className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                          title={showErpPassword ? pick("إخفاء كلمة المرور", "Hide password") : pick("إظهار كلمة المرور", "Show password")}
+                        >
+                          {showErpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        </button>
+                      </div>
+
+                      <div className="text-[10.5px] text-muted-foreground">
+                        {pick(
+                          "يتم استخدام هذا البريد وكلمة المرور لتسجيل دخول الموظف إلى النظام فور الحفظ.",
+                          "The employee will use this email and password to log in immediately upon save."
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
