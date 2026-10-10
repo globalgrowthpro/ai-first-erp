@@ -53,6 +53,15 @@ interface SupportStaffMember {
   email?: string;
 }
 
+interface FacilityOption {
+  id: string;
+  name: string;
+  nameEn?: string;
+  type: "branch" | "warehouse" | "headquarters";
+  city?: string;
+  code?: string;
+}
+
 interface CategoryOption {
   key: string;
   ar: string;
@@ -89,6 +98,10 @@ export function HelpdeskManagement() {
   // Modals
   const [selectedTicket, setSelectedTicket] = useState<HelpdeskTicket | null>(null);
   const [isNewTicketOpen, setIsNewTicketOpen] = useState(false);
+
+  // Real Branches & Facilities from Supabase Database
+  const [facilities, setFacilities] = useState<FacilityOption[]>([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(false);
 
   // Support Staff from Supabase Database
   const [supportStaff, setSupportStaff] = useState<SupportStaffMember[]>([
@@ -190,6 +203,86 @@ export function HelpdeskManagement() {
     }
 
     loadSupportStaff();
+  }, []);
+
+  // Load Real Branches & Facilities directly from Supabase Database
+  useEffect(() => {
+    async function loadFacilities() {
+      setLoadingFacilities(true);
+      try {
+        const [branchRes, whRes] = await Promise.all([
+          (supabase as any)
+            .from("branches")
+            .select("id, code, name_ar, name_en, city, is_active")
+            .eq("is_active", true)
+            .order("name_ar"),
+          (supabase as any)
+            .from("warehouses")
+            .select("id, code, name_ar, name_en, location, is_active")
+            .eq("is_active", true)
+            .order("name_ar"),
+        ]);
+
+        const list: FacilityOption[] = [];
+        const seenNames = new Set<string>();
+
+        // 1. Live Branches from Database
+        if (branchRes.data && branchRes.data.length > 0) {
+          branchRes.data.forEach((b: any) => {
+            const name = b.name_ar || b.name_en;
+            if (name && !seenNames.has(name)) {
+              seenNames.add(name);
+              list.push({
+                id: b.id,
+                name,
+                nameEn: b.name_en,
+                type: "branch",
+                city: b.city,
+                code: b.code,
+              });
+            }
+          });
+        }
+
+        // 2. Live Warehouses & Kitchens from Database
+        if (whRes.data && whRes.data.length > 0) {
+          whRes.data.forEach((w: any) => {
+            const name = w.name_ar || w.name_en;
+            if (name && !seenNames.has(name)) {
+              seenNames.add(name);
+              list.push({
+                id: w.id,
+                name,
+                nameEn: w.name_en,
+                type: "warehouse",
+                city: w.location,
+                code: w.code,
+              });
+            }
+          });
+        }
+
+        // 3. Main Admin Headquarters
+        if (!seenNames.has("المقر الإداري الرئيسي")) {
+          list.push({
+            id: "hq-main",
+            name: "المقر الإداري الرئيسي",
+            type: "headquarters",
+          });
+        }
+
+        setFacilities(list);
+        if (list.length > 0) {
+          setNewLocation(list[0].name);
+        }
+      } catch (err) {
+        console.error("Failed to load facilities from DB:", err);
+      } finally {
+        setLoadingFacilities(false);
+      }
+    }
+
+    loadFacilities();
   }, []);
 
   // Load Custom Categories from Supabase Database
@@ -1293,20 +1386,55 @@ export function HelpdeskManagement() {
             {/* Facility & Support Assignee (Fetched from DB) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  {pick("الفرع أو المنشأة *", "Branch or Facility *")}
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-foreground">
+                    {pick("الفرع أو المنشأة (قاعدة البيانات) *", "Branch or Facility (From DB) *")}
+                  </label>
+                  {loadingFacilities && (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <RefreshCw className="size-2.5 animate-spin" />
+                      {pick("جاري التحميل...", "Loading...")}
+                    </span>
+                  )}
+                </div>
                 <select
                   value={newLocation}
                   onChange={(e) => setNewLocation(e.target.value)}
                   className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value="فرع الكوربة — مصر الجديدة">فرع الكوربة — مصر الجديدة</option>
-                  <option value="فرع المعادي — شارع النصر">فرع المعادي — شارع النصر</option>
-                  <option value="فرع التجمع الخامس — التسعين">فرع التجمع الخامس — التسعين</option>
-                  <option value="المطبخ المركزي ومصنع العاشر">المطبخ المركزي ومصنع العاشر</option>
-                  <option value="مستودع التبريد والخامات المركزي">مستودع التبريد والخامات المركزي</option>
-                  <option value="المقر الإداري الرئيسي">المقر الإداري الرئيسي</option>
+                  {facilities.some((f) => f.type === "branch") && (
+                    <optgroup label={pick("فروع البيع بالتجزئة (قاعدة البيانات)", "Retail Branches (DB)")}>
+                      {facilities
+                        .filter((f) => f.type === "branch")
+                        .map((f) => (
+                          <option key={f.id} value={f.name}>
+                            {f.name} {f.city ? `(${f.city})` : ""}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  {facilities.some((f) => f.type === "warehouse") && (
+                    <optgroup label={pick("المصانع والمستودعات المركزية (قاعدة البيانات)", "Central Factory & Warehouses (DB)")}>
+                      {facilities
+                        .filter((f) => f.type === "warehouse")
+                        .map((f) => (
+                          <option key={f.id} value={f.name}>
+                            {f.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  {facilities.some((f) => f.type === "headquarters") && (
+                    <optgroup label={pick("المقر الرئيسي والإدارة", "Headquarters")}>
+                      {facilities
+                        .filter((f) => f.type === "headquarters")
+                        .map((f) => (
+                          <option key={f.id} value={f.name}>
+                            {f.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -1345,11 +1473,26 @@ export function HelpdeskManagement() {
                 <input
                   type="text"
                   required
+                  list="employee-submitters"
                   value={newSubmitter}
-                  onChange={(e) => setNewSubmitter(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewSubmitter(val);
+                    const matched = supportStaff.find((s) => s.name === val);
+                    if (matched && matched.roleTitle) {
+                      setNewRole(matched.roleTitle);
+                    }
+                  }}
                   placeholder="أحمد حسني"
                   className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
+                <datalist id="employee-submitters">
+                  {supportStaff.map((staff) => (
+                    <option key={staff.id} value={staff.name}>
+                      {staff.roleTitle || staff.departmentName || ""}
+                    </option>
+                  ))}
+                </datalist>
               </div>
 
               <div>
