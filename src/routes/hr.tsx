@@ -58,7 +58,7 @@ import {
   exportEmployeesToExcel,
   exportAttendanceToExcel,
 } from "@/lib/excel-utils";
-import { useOrgStore } from "@/lib/org-store";
+import { useOrgStore, type UserItem } from "@/lib/org-store";
 import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 import { saveProvisionedAccount } from "@/lib/auth-store";
@@ -1540,12 +1540,12 @@ function HrPage() {
             status: empData.status,
             avatarBg: empData.avatarBg,
             avatarInitials: empData.avatarInitials,
-            avatarUrl: empData.avatarUrl,
             compensation: empData.compensation,
             bank: empData.bank,
             healthCert: empData.healthCert,
             leaveBalances: empData.leaveBalances,
-            userId: linkedUserId,
+            userId: linkedUserId || null,
+            ...(empData.avatarUrl ? { avatarUrl: empData.avatarUrl } : {}),
           };
 
           if (editingEmployee) {
