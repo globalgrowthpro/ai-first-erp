@@ -708,12 +708,21 @@ export function useHrStore() {
         };
       });
 
-      // Merge with supplemental employees to ensure kitchen, sales, and accounts are complete
+      // Merge with supplemental employees and preserve locally added custom employees
       const existingCodes = new Set(dbEmployees.map((e) => e.code));
+      const dbIds = new Set(dbEmployees.map((e) => e.id));
+      const supplementalCodes = new Set(DEFAULT_SUPPLEMENTAL_EMPLOYEES.map((s) => s.code));
+
+      // Keep any locally created employees not in DB yet
+      const locallyCreated = (globalEmployees || []).filter(
+        (e) => !dbIds.has(e.id) && !existingCodes.has(e.code) && !supplementalCodes.has(e.code)
+      );
+
       const missingSupplementals = DEFAULT_SUPPLEMENTAL_EMPLOYEES.filter((s) => !existingCodes.has(s.code));
-      const mergedEmployees = [...dbEmployees, ...missingSupplementals];
+      const mergedEmployees = [...dbEmployees, ...locallyCreated, ...missingSupplementals];
 
       globalEmployees = mergedEmployees;
+      persistToStorage();
 
       // 3. Map Attendance
       if (attRes.data && attRes.data.length > 0) {
@@ -804,33 +813,66 @@ export function useHrStore() {
     }
   }, [fetchAllHrData]);
 
+  const isUuid = (val?: string | null): boolean =>
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
   // Actions
   const addEmployee = useCallback(
     async (empData: Omit<EmployeeRecord, "id"> & { id?: string }) => {
+      const generatedId =
+        empData.id ||
+        (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `emp-${Date.now()}`);
+
       const newEmp: EmployeeRecord = {
         ...empData,
-        id: empData.id || `emp-${Date.now()}`,
+        id: generatedId,
       };
 
-      globalEmployees = [newEmp, ...globalEmployees];
+      globalEmployees = [
+        newEmp,
+        ...globalEmployees.filter((e) => e.id !== newEmp.id && e.code !== newEmp.code),
+      ];
       persistToStorage();
       notify();
 
       try {
-        await supabase.from("employees").insert({
-          code: newEmp.code,
+        const payload: Record<string, any> = {
+          code: newEmp.code || null,
           name_ar: newEmp.name.ar,
-          name_en: newEmp.name.en,
-          email: newEmp.email,
-          phone: newEmp.phone,
-          department_id: newEmp.departmentId || null,
-          position_id: newEmp.positionId || null,
-          base_salary: newEmp.compensation?.basicSalary || 0,
+          name_en: newEmp.name.en || newEmp.name.ar,
+          national_id: newEmp.nationalId || null,
+          email: newEmp.email || null,
+          phone: newEmp.phone || null,
+          department_id: isUuid(newEmp.departmentId) ? newEmp.departmentId : null,
+          position_id: isUuid(newEmp.positionId) ? newEmp.positionId : null,
+          user_id: isUuid(newEmp.userId) ? newEmp.userId : null,
+          base_salary: Number(newEmp.compensation?.basicSalary) || 0,
           hire_date: newEmp.hireDate || new Date().toISOString().slice(0, 10),
           is_active: newEmp.status === "active",
-        });
+        };
+
+        if (isUuid(newEmp.id)) {
+          payload.id = newEmp.id;
+        }
+
+        const { data: inserted, error: insErr } = await supabase
+          .from("employees")
+          .insert(payload)
+          .select()
+          .single();
+
+        if (insErr) {
+          console.warn("[HR Store] Supabase employee insert warning:", insErr.code, insErr.message);
+        } else if (inserted?.id) {
+          newEmp.id = inserted.id;
+          globalEmployees = globalEmployees.map((e) =>
+            e.code === newEmp.code || e.id === generatedId ? { ...e, id: inserted.id } : e
+          );
+          persistToStorage();
+          notify();
+        }
       } catch (err) {
-        console.warn("[HR Store] DB insert warning:", err);
+        console.warn("[HR Store] DB insert error:", err);
       }
 
       return newEmp;
@@ -846,18 +888,44 @@ export function useHrStore() {
     notify();
 
     try {
-      await supabase
-        .from("employees")
-        .update({
-          name_ar: updates.name?.ar,
-          name_en: updates.name?.en,
-          phone: updates.phone,
-          email: updates.email,
-          base_salary: updates.compensation?.basicSalary,
-        })
-        .eq("id", id);
+      if (isUuid(id)) {
+        const updatePayload: Record<string, any> = {};
+        if (updates.name?.ar) updatePayload.name_ar = updates.name.ar;
+        if (updates.name?.en) updatePayload.name_en = updates.name.en;
+        if (updates.nationalId) updatePayload.national_id = updates.nationalId;
+        if (updates.phone) updatePayload.phone = updates.phone;
+        if (updates.email) updatePayload.email = updates.email;
+        if (updates.departmentId !== undefined) {
+          updatePayload.department_id = isUuid(updates.departmentId) ? updates.departmentId : null;
+        }
+        if (updates.positionId !== undefined) {
+          updatePayload.position_id = isUuid(updates.positionId) ? updates.positionId : null;
+        }
+        if (updates.userId !== undefined) {
+          updatePayload.user_id = isUuid(updates.userId) ? updates.userId : null;
+        }
+        if (updates.compensation?.basicSalary !== undefined) {
+          updatePayload.base_salary = Number(updates.compensation.basicSalary) || 0;
+        }
+        if (updates.status !== undefined) {
+          updatePayload.is_active = updates.status === "active";
+        }
+        if (updates.hireDate) {
+          updatePayload.hire_date = updates.hireDate;
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          const { error: updErr } = await supabase
+            .from("employees")
+            .update(updatePayload)
+            .eq("id", id);
+          if (updErr) {
+            console.warn("[HR Store] Supabase employee update warning:", updErr.code, updErr.message);
+          }
+        }
+      }
     } catch (err) {
-      console.warn("[HR Store] DB update warning:", err);
+      console.warn("[HR Store] DB update error:", err);
     }
   }, []);
 
@@ -867,9 +935,14 @@ export function useHrStore() {
     notify();
 
     try {
-      await supabase.from("employees").delete().eq("id", id);
+      if (isUuid(id)) {
+        const { error: delErr } = await supabase.from("employees").delete().eq("id", id);
+        if (delErr) {
+          console.warn("[HR Store] Supabase employee delete warning:", delErr.code, delErr.message);
+        }
+      }
     } catch (err) {
-      console.warn("[HR Store] DB delete warning:", err);
+      console.warn("[HR Store] DB delete error:", err);
     }
   }, []);
 

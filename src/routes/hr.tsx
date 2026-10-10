@@ -1519,14 +1519,21 @@ function HrPage() {
           };
 
           if (editingEmployee) {
-            updateEmployee(editingEmployee.id, finalData);
+            await updateEmployee(editingEmployee.id, finalData);
             if (linkedUserId) {
               try {
                 await supabase.from("employees").update({ user_id: linkedUserId }).eq("id", editingEmployee.id);
               } catch (_) { }
             }
+            toast.success(pick("تم تحديث بيانات الموظف بنجاح", "Employee updated successfully"));
           } else {
-            addEmployee(finalData);
+            await addEmployee(finalData);
+            toast.success(
+              pick(
+                `تمت إضافة الموظف (${finalData.name.ar}) بنجاح وتثبيته في المنظومة`,
+                `Employee (${finalData.name.en}) added and saved successfully`
+              )
+            );
           }
         }}
       />
