@@ -26,6 +26,7 @@ import { JournalEntryForm } from "@/components/accounting/JournalEntryForm";
 import { useJournalStore } from "@/lib/accounting-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/accounting")({
   head: () => ({
