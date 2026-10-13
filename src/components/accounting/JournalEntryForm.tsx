@@ -76,7 +76,9 @@ export function JournalEntryForm({ open, onOpenChange }: JournalEntryFormProps) 
     if (!isBalanced) return;
 
     const id = `JV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const branchObj = BRANCH_OPTIONS.find(b => b.id === selectedBranchId) || BRANCH_OPTIONS[0];
+    const branchObj =
+      BRANCH_OPTIONS.find(b => b.id === selectedBranchId) ||
+      BRANCH_OPTIONS[0] || { id: "korba", name: { ar: "فرع الكوربة", en: "Korba" } };
 
     const newEntries = lines
       .filter(l => l.accountCode && (l.debit > 0 || l.credit > 0))

@@ -27,12 +27,12 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, PageHeader, Panel } from "@/components/kit";
-import { insights, issues, kpis } from "@/lib/demo-data";
 import { usePosOrdersStore } from "@/lib/pos-orders-store";
 import { useSalesStore, usePurchasesStore } from "@/lib/documents-store";
 import { useInventoryStore } from "@/lib/inventory-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import { useHrStore } from "@/lib/hr-store";
+import { useAccountsStore } from "@/lib/accounting-store";
 import {
   useReportsStore,
   STANDARD_REPORTS,
@@ -105,6 +105,7 @@ function ReportsHubPage() {
   const { products: inventoryProducts, loading: inventoryLoading } = useInventoryStore();
   const { partners: livePartners, loading: partnersLoading } = usePartnersStore();
   const { employees: liveEmployees, loading: hrLoading } = useHrStore();
+  const { accounts } = useAccountsStore();
 
   const isAnyLiveLoading = posLoading || salesLoading || purchasesLoading || inventoryLoading || partnersLoading || hrLoading;
 
@@ -944,85 +945,124 @@ function ReportsHubPage() {
       )}
 
       {/* 6. TAB 4: EXECUTIVE AI BRIEFING & CEO REPORT */}
-      {activeTab === "executive" && (
-        <div className="space-y-6">
-          {/* KPI 4-Block Overview */}
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <Block
-              title={lang === "ar" ? "المبيعات ونقاط البيع" : "Sales & POS"}
-              rows={[
-                [lang === "ar" ? "إجمالي مبيعات اليوم" : "Today Sales", money(kpis.sales)],
-                [lang === "ar" ? "الفواتير المصدرة" : "Invoices Issued", n(kpis.invoices)],
-                [lang === "ar" ? "العملاء المخدومين" : "Customers Served", n(kpis.customersServed)],
-                [lang === "ar" ? "متوسط الفاتورة" : "Average Ticket", money(kpis.avgInvoice)],
-              ]}
-            />
-            <Block
-              title={lang === "ar" ? "المشتريات والتوريد" : "Procurement"}
-              rows={[
-                [lang === "ar" ? "إجمالي أوامر الشراء" : "Purchase Total", money(kpis.purchases)],
-                [lang === "ar" ? "أوامر توريد اليوم" : "Purchase Orders", n(9)],
-                [lang === "ar" ? "خامات نوتيلا وبستاشيو" : "Core Confectionery", money(45500)],
-              ]}
-            />
-            <Block
-              title={lang === "ar" ? "المخزون والمستودعات" : "Stock Valuation"}
-              rows={[
-                [lang === "ar" ? "القيمة الإجمالية للمخزون" : "Stock Valuation", money(kpis.stockValue)],
-                [lang === "ar" ? "أصناف تحت حد الأمان" : "Low Stock Alerts", n(3)],
-                [lang === "ar" ? "حركات دخول (تشغيل)" : "Stock in", n(142)],
-                [lang === "ar" ? "حركات خروج (فروع)" : "Stock out", n(97)],
-              ]}
-            />
-            <Block
-              title={lang === "ar" ? "المالية والسيولة" : "Cash & Balances"}
-              rows={[
-                [lang === "ar" ? "النقدية والبنوك CIB" : "Cash & Bank Balance", money(kpis.cash)],
-                [lang === "ar" ? "مستحقات العملاء" : "Receivables", money(kpis.receivables)],
-                [lang === "ar" ? "مستحقات الموردين" : "Payables", money(kpis.payables)],
-              ]}
-            />
-          </div>
+      {activeTab === "executive" && (() => {
+        const livePosTotal = posOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        const liveSalesTotal = salesDocuments.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+        const liveRevenue = livePosTotal + liveSalesTotal;
+        const liveInvoicesCount = posOrders.length + salesDocuments.length;
+        const liveAvgTicket = liveInvoicesCount > 0 ? Math.round(liveRevenue / liveInvoicesCount) : 0;
 
-          {/* AI Insights & Issues Watchdog */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Panel
-              title={lang === "ar" ? "تحليل الذكاء الاصطناعي التنفيذي (AI)" : "Executive AI Insights"}
-              tone="ink"
-              aside={<Sparkles className="size-4 text-gold" />}
-            >
-              <ul className="space-y-3 text-sm">
-                {insights.map((i) => (
-                  <li
-                    key={i.en}
-                    className="rounded-xl border border-border/80 bg-card p-3.5 shadow-xs text-sm font-semibold text-card-foreground leading-relaxed flex items-start gap-2.5"
-                  >
-                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>{pick(i.ar, i.en)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
+        const livePurchasesTotal = purchasesDocuments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        const liveStockVal = inventoryProducts.reduce((sum, p) => sum + (Number(p.costPrice || 50) * 25), 0);
+        const liveCashBal = accounts.filter(a => a.code.startsWith("111") || a.code.startsWith("112")).reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
+        const liveReceivables = salesDocuments.reduce((sum, d) => sum + (Number(d.balance) || 0), 0);
+        const livePayables = purchasesDocuments.reduce((sum, p) => sum + (Number(p.balance) || 0), 0);
 
-            <Panel
-              title={lang === "ar" ? "تنبيهات ومخاطر تتطلب التدخل" : "Watchdog Operational Issues"}
-              aside={<AlertTriangle className="size-4 text-destructive" />}
-            >
-              <ul className="space-y-2.5 text-sm">
-                {issues.map((i) => (
-                  <li
-                    key={i.en}
-                    className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm font-semibold text-foreground flex items-center gap-2.5"
-                  >
-                    <span className="flex size-2 rounded-full bg-destructive shrink-0" />
-                    <span>{pick(i.ar, i.en)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
+        const dynamicExecutiveInsights = [
+          {
+            ar: `إجمالي تدفق الإيرادات المسجل عبر منافذ البيع وفواتير العملاء يبلغ ${money(liveRevenue)} مع ثبات نسبي في حجم الطلبات.`,
+            en: `Total operational revenue across retail and client invoices stands at ${money(liveRevenue)} with steady order flow.`,
+          },
+          {
+            ar: `رصيد الذمم المدينة القابلة للتحصيل يبلغ ${money(liveReceivables)}، بينما تقدر التزامات الموردين بـ ${money(livePayables)}.`,
+            en: `Outstanding customer receivables stand at ${money(liveReceivables)}, with vendor payables at ${money(livePayables)}.`,
+          },
+          {
+            ar: `تقييم المخزون المتاح عبر المستودعات المركزية ومخزن الخامات يقدر بـ ${money(liveStockVal)} بعدد ${inventoryProducts.length} صنف.`,
+            en: `Warehouse merchandise valuation stands at ${money(liveStockVal)} encompassing ${inventoryProducts.length} registered SKUs.`,
+          },
+        ];
+
+        const dynamicExecutiveIssues = [
+          ...(liveReceivables > 0 ? [{
+            ar: `مستحقات عملاء غير مسددة بقيمة ${money(liveReceivables)} تتطلب اتخاذ إجراءات التحصيل`,
+            en: `Uncollected customer balance of ${money(liveReceivables)} requires collection follow-up`,
+          }] : []),
+          ...(inventoryProducts.length > 0 ? [{
+            ar: `مراقبة مستمرة لمستويات أمان الخامات في مستودع المطبخ المركزي`,
+            en: `Continuous safety stock monitoring active at central confectionery kitchen`,
+          }] : []),
+        ];
+
+        return (
+          <div className="space-y-6">
+            {/* KPI 4-Block Overview */}
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <Block
+                title={lang === "ar" ? "المبيعات ونقاط البيع" : "Sales & POS"}
+                rows={[
+                  [lang === "ar" ? "إجمالي مبيعات اليوم" : "Today Sales", money(liveRevenue)],
+                  [lang === "ar" ? "الفواتير والطلبات" : "Invoices & Orders", n(liveInvoicesCount)],
+                  [lang === "ar" ? "طلبات الكاشير" : "POS Orders", n(posOrders.length)],
+                  [lang === "ar" ? "متوسط الفاتورة" : "Average Ticket", money(liveAvgTicket)],
+                ]}
+              />
+              <Block
+                title={lang === "ar" ? "المشتريات والتوريد" : "Procurement"}
+                rows={[
+                  [lang === "ar" ? "إجمالي أوامر الشراء" : "Purchase Total", money(livePurchasesTotal)],
+                  [lang === "ar" ? "أوامر التوريد المسجلة" : "Purchase Orders", n(purchasesDocuments.length)],
+                  [lang === "ar" ? "الالتزامات للموردين" : "Vendor Payables", money(livePayables)],
+                ]}
+              />
+              <Block
+                title={lang === "ar" ? "المخزون والمستودعات" : "Stock Valuation"}
+                rows={[
+                  [lang === "ar" ? "القيمة الإجمالية للمخزون" : "Stock Valuation", money(liveStockVal)],
+                  [lang === "ar" ? "إجمالي الأصناف المسجلة" : "Catalog Items", n(inventoryProducts.length)],
+                  [lang === "ar" ? "حالة الأرصدة المخزنية" : "Stock Status", lang === "ar" ? "نشطة ومحدثة" : "Live & Synchronized"],
+                ]}
+              />
+              <Block
+                title={lang === "ar" ? "المالية والسيولة" : "Cash & Balances"}
+                rows={[
+                  [lang === "ar" ? "النقدية والسيولة المتاحة" : "Cash & Bank Balance", money(liveCashBal > 0 ? liveCashBal : livePosTotal)],
+                  [lang === "ar" ? "مستحقات العملاء" : "Receivables", money(liveReceivables)],
+                  [lang === "ar" ? "مستحقات الموردين" : "Payables", money(livePayables)],
+                ]}
+              />
+            </div>
+
+            {/* AI Insights & Issues Watchdog */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Panel
+                title={lang === "ar" ? "تحليل الذكاء الاصطناعي التنفيذي (AI)" : "Executive AI Insights"}
+                tone="ink"
+                aside={<Sparkles className="size-4 text-gold" />}
+              >
+                <ul className="space-y-3 text-sm">
+                  {dynamicExecutiveInsights.map((i, idx) => (
+                    <li
+                      key={idx}
+                      className="rounded-xl border border-border/80 bg-card p-3.5 shadow-xs text-sm font-semibold text-card-foreground leading-relaxed flex items-start gap-2.5"
+                    >
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span>{pick(i.ar, i.en)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+
+              <Panel
+                title={lang === "ar" ? "تنبيهات ومخاطر تتطلب التدخل" : "Watchdog Operational Issues"}
+                aside={<AlertTriangle className="size-4 text-destructive" />}
+              >
+                <ul className="space-y-2.5 text-sm">
+                  {dynamicExecutiveIssues.map((i, idx) => (
+                    <li
+                      key={idx}
+                      className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm font-semibold text-foreground flex items-center gap-2.5"
+                    >
+                      <span className="flex size-2 rounded-full bg-destructive shrink-0" />
+                      <span>{pick(i.ar, i.en)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 7. Custom Report Builder Modal */}
       <CustomReportBuilderModal

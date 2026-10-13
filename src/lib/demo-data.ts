@@ -1709,7 +1709,7 @@ export interface UserItem {
   id: string;
   name: Bi;
   email: string;
-  avatar?: string;
+  avatar?: string | undefined;
   departmentId: string;
   positionId: string;
   role: AppUserRole;
@@ -1718,8 +1718,9 @@ export interface UserItem {
   status: "active" | "inactive";
   lastActive: string;
   sidebarVisible: boolean;
-  employeeId?: string;
-  employeeCode?: string;
+  employeeId?: string | undefined;
+  employeeCode?: string | undefined;
+  erpPassword?: string | undefined;
 }
 
 export const users: UserItem[] = [

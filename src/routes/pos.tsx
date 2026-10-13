@@ -65,8 +65,8 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { partners as defaultCustomers } from "@/lib/demo-data";
 import { useInventoryStore, calculateBuildableQuantity } from "@/lib/inventory-store";
+import { usePartnersStore } from "@/lib/partners-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -510,6 +510,11 @@ export function PosPage() {
   const { currentUser, logout } = useAuthStore();
   const navigate = useNavigate();
   const { addDocument, documents, nextCode } = useSalesStore();
+  const { partners } = usePartnersStore();
+  const liveCustomers = useMemo(
+    () => partners.filter((p) => p.type === "customer"),
+    [partners]
+  );
 
   const hasOnlyPosPermission =
     currentUser?.role === "pos_cashier" ||
@@ -4597,10 +4602,10 @@ export function PosPage() {
 
               {/* Registered Customers */}
               <div className="space-y-1.5 max-h-60 overflow-y-auto">
-                {defaultCustomers.map((cust) => (
+                {liveCustomers.map((cust) => (
                   <button
                     type="button"
-                    key={cust.code}
+                    key={cust.id || cust.code}
                     onClick={() => {
                       setSelectedCustomer({
                         name: pick(cust.name.ar, cust.name.en),

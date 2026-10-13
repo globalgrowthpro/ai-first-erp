@@ -50,32 +50,78 @@ export function useManufacturingStore() {
   const [orders, setOrders] = useState<ManufacturingOrder[]>([]);
 
   const fetchOrders = useCallback(async () => {
-    const { data } = await supabase.from('work_orders').select('*');
-    if (data) {
-      setOrders(data.map((o: any) => ({
-        id: o.id,
-        code: o.order_no || `MO-${o.id.slice(0, 4)}`,
-        bomId: o.bom_id || '',
-        finishedProductId: o.product_id || '',
-        finishedProductName: { ar: 'منتج مصنع', en: 'Manufactured Product' },
-        targetQty: o.quantity || 0,
-        producedQty: o.status === 'completed' ? o.quantity : 0,
-        unitName: { ar: 'قطعة', en: 'Pcs' },
-        sourceWarehouseId: '',
-        destWarehouseId: o.warehouse_id || '',
-        startDate: o.planned_date || o.created_at,
-        dueDate: o.planned_date || o.created_at,
-        completedDate: o.completed_at || '',
-        supervisor: o.assigned_to || '',
-        estimatedMaterialCost: 0,
-        overheadCost: 0,
-        totalCost: 0,
-        status: (o.status === 'planned' ? 'confirmed' : o.status) as ProductionStage,
-        priority: 'normal',
-        componentsRequired: [],
-        qcPassed: o.status === 'completed',
-        notes: o.notes || '',
-      })));
+    try {
+      const [woRes, prodRes, bomsRes] = await Promise.all([
+        supabase.from('work_orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('products').select('*'),
+        supabase.from('boms').select('*, bom_lines(*)'),
+      ]);
+
+      const data = woRes.data || [];
+      const productsMap = new Map((prodRes.data || []).map((p: any) => [p.id, p]));
+      const bomsList = bomsRes.data || [];
+
+      if (data) {
+        setOrders(data.map((o: any) => {
+          const product = productsMap.get(o.product_id);
+          const matchedBom = bomsList.find((b: any) => b.id === o.bom_id || b.product_id === o.product_id);
+
+          const componentsRequired: OrderComponentRequirement[] = (matchedBom?.bom_lines || []).map((line: any) => {
+            const compProduct = productsMap.get(line.component_id);
+            const reqQty = Number(line.quantity || 1) * Number(o.quantity || 1);
+            const unitCost = Number(compProduct?.cost_price || 25);
+            return {
+              productId: line.component_id || '',
+              productName: {
+                ar: compProduct?.name_ar || 'خامة أولية',
+                en: compProduct?.name_en || 'Raw Material',
+              },
+              requiredQty: reqQty,
+              unitName: 'كجم',
+              unitCost,
+              availableStock: 100,
+              allocated: true,
+            };
+          });
+
+          const estimatedMaterialCost = componentsRequired.reduce(
+            (sum, c) => sum + c.requiredQty * c.unitCost,
+            0
+          );
+          const overheadCost = Math.round(estimatedMaterialCost * 0.15);
+          const totalCost = estimatedMaterialCost + overheadCost;
+
+          return {
+            id: o.id,
+            code: o.order_no || `MO-${o.id.slice(0, 4)}`,
+            bomId: o.bom_id || matchedBom?.id || '',
+            finishedProductId: o.product_id || '',
+            finishedProductName: {
+              ar: product?.name_ar || 'منتج مصنّع معتمد',
+              en: product?.name_en || 'Manufactured Product',
+            },
+            targetQty: o.quantity || 0,
+            producedQty: o.status === 'completed' ? o.quantity : 0,
+            unitName: { ar: 'قطعة', en: 'Pcs' },
+            sourceWarehouseId: '',
+            destWarehouseId: o.warehouse_id || '',
+            startDate: o.planned_date || o.created_at,
+            dueDate: o.planned_date || o.created_at,
+            completedDate: o.completed_at || '',
+            supervisor: o.assigned_to || '',
+            estimatedMaterialCost,
+            overheadCost,
+            totalCost,
+            status: (o.status === 'planned' ? 'confirmed' : o.status) as ProductionStage,
+            priority: 'normal',
+            componentsRequired,
+            qcPassed: o.status === 'completed',
+            notes: o.notes || '',
+          };
+        }));
+      }
+    } catch (err) {
+      console.warn("[Manufacturing Store] Failed to load work orders:", err);
     }
   }, []);
 

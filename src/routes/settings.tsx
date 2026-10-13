@@ -3,11 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, X, ShieldAlert, Building2, ShieldCheck, Users, Radio } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, PageHeader, Panel, Td } from "@/components/kit";
-import { roles } from "@/lib/demo-data";
 import { CompanyBrandingSettings } from "@/components/settings/CompanyBrandingSettings";
 import { UsersManagement } from "@/components/settings/UsersManagement";
 import { GatewaySettings } from "@/components/settings/GatewaySettings";
 import { useSecurityStore } from "@/lib/security-store";
+import { useOrgStore } from "@/lib/org-store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -29,6 +29,7 @@ function Settings() {
   const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways">("branding");
   const { security } = useSecurityStore();
   const { permissionMatrix, highRiskActions } = security;
+  const { roles, users } = useOrgStore();
 
   return (
     <div className="space-y-6">
@@ -91,14 +92,18 @@ function Settings() {
           <div className="grid gap-6 lg:grid-cols-3">
             <Panel title={t("roles")}>
               <ul className="space-y-2">
-                {roles.map((r) => (
-                  <li key={r.key.en} className="surface-flat flex items-center justify-between rounded-md px-3 py-2 text-sm">
-                    <span className="font-semibold">{pick(r.key.ar, r.key.en)}</span>
-                    <span className="num text-muted-foreground">
-                      {n(r.users)} {pick("مستخدم", "users")}
-                    </span>
-                  </li>
-                ))}
+                {roles.map((r) => {
+                  const roleUsersCount = users.filter((u) => u.role === r.key).length;
+                  const label = r.name || { ar: r.key, en: r.key };
+                  return (
+                    <li key={r.id || r.key} className="surface-flat flex items-center justify-between rounded-md px-3 py-2 text-sm">
+                      <span className="font-semibold">{pick(label.ar, label.en)}</span>
+                      <span className="num text-muted-foreground">
+                        {n(roleUsersCount)} {pick("مستخدم", "users")}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </Panel>
 

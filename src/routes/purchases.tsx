@@ -5,7 +5,6 @@ import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, TablePagination, usePagination } from "@/components/kit";
-import { kpis } from "@/lib/demo-data";
 import { usePurchasesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
@@ -234,8 +233,8 @@ function Purchases() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard label={t("kpi_purchases")} value={money(total || kpis.purchases)} delta={kpis.purchasesDelta} accent="brand" />
-        <KpiCard label={t("kpi_payables")} value={money(kpis.payables)} delta={kpis.payablesDelta} accent="ink" />
+        <KpiCard label={t("kpi_purchases")} value={money(total)} accent="brand" />
+        <KpiCard label={t("kpi_payables")} value={money(documents.reduce((s, i) => s + (i.balance || 0), 0))} accent="ink" />
         <KpiCard label={t("purchaseOrders")} value={String(documents.length)} accent="gold" />
       </div>
 

@@ -46,12 +46,10 @@ interface EmployeeFormModalProps {
   onOpenChange: (open: boolean) => void;
   editing: EmployeeRecord | null;
   suggestedCode?: string;
-  onSave: (data: Omit<EmployeeRecord, "id" | "code"> & {
-    code?: string;
+  onSave: (data: Omit<EmployeeRecord, "id"> & {
     grantErpAccess?: boolean;
     erpRole?: string;
     erpPassword?: string;
-    userId?: string | null;
   }) => void;
 }
 
@@ -155,7 +153,7 @@ export function EmployeeFormModal({
 
       // 3. Real Positions
       if (orgPositions && orgPositions.length > 0) {
-        if (isMounted) setDbPositions(orgPositions.map((p) => ({ id: p.id, titleAr: p.title.ar, titleEn: p.title.en, code: p.code, departmentId: p.departmentId })));
+        if (isMounted) setDbPositions(orgPositions.map((p) => ({ id: p.id, titleAr: p.title.ar, titleEn: p.title.en, code: p.code || "", departmentId: p.departmentId })));
       } else {
         const { data } = await supabase.from("positions").select("id, title_ar, title_en, code, department_id").order("title_ar");
         if (data && data.length > 0 && isMounted) {
@@ -376,9 +374,8 @@ export function EmployeeFormModal({
         emergencyTotal: 6,
         emergencyUsed: 0,
       },
-      grantErpAccess,
-      erpRole,
-      erpPassword: erpPassword.trim() || undefined,
+      ...(grantErpAccess ? { grantErpAccess, erpRole } : {}),
+      ...(erpPassword.trim() ? { erpPassword: erpPassword.trim() } : {}),
       userId: editing?.userId || null,
     });
 

@@ -5,7 +5,6 @@ import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, TablePagination, usePagination } from "@/components/kit";
-import { kpis } from "@/lib/demo-data";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
@@ -429,9 +428,9 @@ function Sales() {
       {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
-            <KpiCard label={t("kpi_sales")} value={money(total || kpis.sales)} delta={kpis.salesDelta} accent="primary" />
+            <KpiCard label={t("kpi_sales")} value={money(total)} accent="primary" />
             <KpiCard label={t("balance")} value={money(outstanding)} accent="gold" />
-            <KpiCard label={t("kpi_receivables")} value={money(kpis.receivables)} delta={kpis.receivablesDelta} accent="brand" />
+            <KpiCard label={t("kpi_receivables")} value={money(documents.reduce((s, i) => s + (i.balance || 0), 0))} accent="brand" />
           </div>
 
           {/* Filters Bar for Standard Invoices */}

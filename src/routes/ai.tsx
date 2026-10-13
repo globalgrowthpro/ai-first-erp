@@ -129,10 +129,10 @@ interface ChatMessage {
   id: string;
   sender: "client" | "agent";
   senderName: string;
-  avatarText?: string;
+  avatarText?: string | undefined;
   text: string;
   time: string;
-  status?: "sent" | "delivered" | "read";
+  status?: "sent" | "delivered" | "read" | undefined;
 }
 
 function formatActivityTime(isoString?: string | null): string {
@@ -806,7 +806,7 @@ function AiWorkspacePage() {
           id: `chat-${order.id}-1`,
           sender: "client",
           senderName: order.customerName || pick("العميل", "Customer"),
-          avatarText: (order.customerName || "C")[0],
+          avatarText: (order.customerName || "C").charAt(0) || "C",
           text: pick({
             ar: `مرحباً، أود مراجعة تفاصيل الفاتورة ${order.orderNumber} الصادرة من ${branchLabel}.`,
             en: `Hello, I would like to verify details for invoice ${order.orderNumber} issued at ${branchLabel}.`,
@@ -957,7 +957,7 @@ function AiWorkspacePage() {
           id: `chat-${ticket.id}-1`,
           sender: "client",
           senderName: ticket.submitterName,
-          avatarText: (ticket.submitterName || "U")[0],
+          avatarText: (ticket.submitterName || "U").charAt(0) || "U",
           text: ticket.title,
           time: formatActivityTime(ticket.createdAt),
         },
@@ -1022,7 +1022,7 @@ function AiWorkspacePage() {
           id: `chat-${partner.id}-1`,
           sender: "client",
           senderName: partnerName,
-          avatarText: (partnerName || "P")[0],
+          avatarText: (partnerName || "P").charAt(0) || "P",
           text: `مرحباً، أود التأكد من اعتماد بيانات حسابنا التجاري والحد الائتماني.`,
           time: formatActivityTime(partner.createdAt),
         },
@@ -1074,7 +1074,7 @@ function AiWorkspacePage() {
             setSelectedDocId(first.documentId);
           }
           if (realChats[first.id]) {
-            setMessages(realChats[first.id]);
+            setMessages(realChats[first.id]!);
           } else {
             setMessages(INITIAL_MESSAGES);
           }
@@ -1093,7 +1093,7 @@ function AiWorkspacePage() {
   // Current active document
   const currentDoc: DocumentData =
     realDocuments[selectedDocId] ??
-    (selectedDocId && SAMPLE_DOCUMENTS[selectedDocId]) ??
+    (selectedDocId ? SAMPLE_DOCUMENTS[selectedDocId] : undefined) ??
     realDocuments[realActivities[0]?.documentId || ""] ??
     SAMPLE_DOCUMENTS["inv-4521"]!;
 
@@ -1106,9 +1106,9 @@ function AiWorkspacePage() {
       setSelectedDocId(activity.documentId);
     }
     if (realChats[activity.id]) {
-      setMessages(realChats[activity.id]);
+      setMessages(realChats[activity.id]!);
     } else if (ACTIVITY_CHATS[activity.id]) {
-      setMessages(ACTIVITY_CHATS[activity.id]);
+      setMessages(ACTIVITY_CHATS[activity.id]!);
     }
     // If mobile, switch to document view
     setActiveMobileTab("document");
@@ -1144,10 +1144,14 @@ function AiWorkspacePage() {
     const modelName = geminiModule?.model || "gemini-3.8-flash";
 
     // Prepare rich ERP document context for Gemini
+    const categoryText = currentDoc.categoryLabel
+      ? pick(currentDoc.categoryLabel.ar, currentDoc.categoryLabel.en)
+      : currentDoc.category;
+
     const docContextLines = [
       `بيانات المستند المفتوح حالياً أمامك في شاشة وزير الحلو:`,
       `- الكود: ${currentDoc.code}`,
-      `- النوع: ${currentDoc.category} (${pick(currentDoc.categoryLabel.ar, currentDoc.categoryLabel.en)})`,
+      `- النوع: ${currentDoc.category} (${categoryText})`,
       `- الطرف / العميل: ${currentDoc.clientName} (${currentDoc.clientEmail || ""}, ${currentDoc.clientPhone || ""})`,
       `- الحالة: ${currentDoc.status}`,
       `- التاريخ: ${currentDoc.invoiceDate} | تاريخ الاستحقاق: ${currentDoc.dueDate}`,
@@ -1253,7 +1257,7 @@ ${docContextLines.join("\n")}
       id: `msg-reply-${Date.now()}`,
       sender: "client",
       senderName: currentDoc.clientName || "AI Copilot",
-      ...(currentDoc.clientName ? { avatarText: currentDoc.clientName[0] } : { avatarText: "AI" }),
+      avatarText: currentDoc.clientName ? currentDoc.clientName.charAt(0) : "AI",
       text: replyText,
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };

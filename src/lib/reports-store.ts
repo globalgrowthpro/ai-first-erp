@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import {
@@ -1899,9 +1900,33 @@ export function exportReportToCsv({
 export function useReportsStore() {
   const [customReports, setCustomReports] = useState<CustomReportDefinition[]>(DEFAULT_CUSTOM_REPORTS);
 
-  // Sync in-memory state
-  const persistCustomReports = useCallback((reports: CustomReportDefinition[]) => {
+  // Sync with Supabase on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('company_settings').select('branding').limit(1).maybeSingle();
+        const customReps = (data?.branding as any)?.custom_reports;
+        if (Array.isArray(customReps) && customReps.length > 0) {
+          setCustomReports(customReps);
+        }
+      } catch (err) {
+        console.warn("[Reports Store] Could not load custom reports from Supabase:", err);
+      }
+    })();
+  }, []);
+
+  // Persist to Supabase and update state
+  const persistCustomReports = useCallback(async (reports: CustomReportDefinition[]) => {
     setCustomReports(reports);
+    try {
+      const { data: existing } = await supabase.from('company_settings').select('id, branding').limit(1).maybeSingle();
+      if (existing?.id) {
+        const updatedBranding = { ...((existing.branding as any) || {}), custom_reports: reports };
+        await supabase.from('company_settings').update({ branding: updatedBranding }).eq('id', existing.id);
+      }
+    } catch (err) {
+      console.warn("[Reports Store] Failed to persist custom reports to Supabase:", err);
+    }
   }, []);
 
   const saveCustomReport = useCallback(

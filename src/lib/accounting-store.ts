@@ -12,7 +12,7 @@ export function useAccountsStore() {
       if (!error && data && data.length > 0) {
         const mapped: AccountItem[] = data.map((a) => {
           const defaultAcc = chartOfAccounts.find((c) => c.code === a.code);
-          const rawOpening = Number(a.opening_balance ?? a.current_balance ?? 0);
+          const rawOpening = Number(a.opening_balance ?? (a as any).current_balance ?? 0);
           const fallbackBalance = defaultAcc ? defaultAcc.balance : 0;
           const finalBalance = rawOpening !== 0 ? rawOpening : fallbackBalance;
           const normalBal: "debit" | "credit" =
@@ -370,7 +370,7 @@ export async function fetchLiveOperationalJournal(): Promise<JournalEntry[]> {
       resultEntries.push({
         id: entryId,
         date,
-        reference: m.reference || m.move_no,
+        reference: m.reference || m.move_no || "",
         memo: {
           ar: `إثبات تكلفة البضاعة المباعة (COGS) لحركة المخزون ${m.move_no} (${m.reference || ""})`,
           en: `Cost of Goods Sold (COGS) for stock move ${m.move_no}`,
@@ -388,7 +388,7 @@ export async function fetchLiveOperationalJournal(): Promise<JournalEntry[]> {
       resultEntries.push({
         id: entryId,
         date,
-        reference: m.reference || m.move_no,
+        reference: m.reference || m.move_no || "",
         memo: {
           ar: `صرف مخزون حلويات وبضاعة تامة لحركة ${m.move_no}`,
           en: `Inventory Reduction for ${m.move_no}`,
@@ -441,11 +441,56 @@ export function useJournalStore() {
   }, [fetchJournal]);
 
   const addEntries = useCallback(async (newEntries: JournalEntry[]) => {
-    setEntries((prev) => {
-      const next = [...newEntries, ...prev];
-      return next;
-    });
-  }, []);
+    setEntries((prev) => [...newEntries, ...prev]);
+
+    try {
+      const grouped = new Map<string, JournalEntry[]>();
+      for (const ent of newEntries) {
+        const key = ent.id || ent.reference || `JV-${Date.now()}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(ent);
+      }
+
+      const { data: accs } = await supabase.from("accounts").select("id, code");
+      const accMap = new Map((accs || []).map((a) => [a.code, a.id]));
+      const defaultAccountId = accs && accs.length > 0 && accs[0] ? accs[0].id : null;
+
+      for (const [entryId, lines] of grouped.entries()) {
+        if (!lines || lines.length === 0) continue;
+        const first = lines[0];
+        if (!first) continue;
+
+        const { data: jeData, error: jeErr } = await supabase
+          .from("journal_entries")
+          .insert({
+            entry_no: entryId,
+            entry_date: first.date || new Date().toISOString().slice(0, 10),
+            reference: first.reference || entryId,
+            description_ar: first.memo?.ar || "قيد محاسبي معتمد",
+            description_en: first.memo?.en || "Journal Entry",
+            is_posted: true,
+          })
+          .select()
+          .single();
+
+        if (!jeErr && jeData?.id && defaultAccountId) {
+          const lineInserts = lines.map((l, idx) => ({
+            entry_id: jeData.id,
+            account_id: accMap.get(l.accountCode || '') || defaultAccountId,
+            debit: Number(l.debit || 0),
+            credit: Number(l.credit || 0),
+            line_no: idx + 1,
+            memo: l.memo?.ar || l.memo?.en || null,
+          }));
+
+          await supabase.from("journal_lines").insert(lineInserts);
+        }
+      }
+      fetchJournal();
+    } catch (err) {
+      console.warn("[Journal Store] Failed to persist journal entry to Supabase:", err);
+    }
+  }, [fetchJournal]);
 
   const resetToDefaultEntries = useCallback(() => {
     fetchJournal();

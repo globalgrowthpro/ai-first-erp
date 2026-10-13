@@ -727,7 +727,7 @@ export function useHrStore() {
       // 3. Map Attendance
       if (attRes.data && attRes.data.length > 0) {
         globalAttendance = attRes.data.map((a: any) => {
-          const emp = mergedEmployees.find((e) => e.id === a.employee_id) || mergedEmployees[0];
+          const emp = mergedEmployees.find((e) => e.id === a.employee_id) || mergedEmployees[0] || (DEFAULT_SUPPLEMENTAL_EMPLOYEES[0] as EmployeeRecord);
           return {
             id: a.id,
             date: a.work_date,
@@ -751,7 +751,7 @@ export function useHrStore() {
       // 4. Map Leaves
       if (leaveRes.data && leaveRes.data.length > 0) {
         globalLeaves = leaveRes.data.map((l: any) => {
-          const emp = mergedEmployees.find((e) => e.id === l.employee_id) || mergedEmployees[0];
+          const emp = mergedEmployees.find((e) => e.id === l.employee_id) || mergedEmployees[0] || (DEFAULT_SUPPLEMENTAL_EMPLOYEES[0] as EmployeeRecord);
           return {
             id: l.id,
             employeeId: l.employee_id,
@@ -836,7 +836,7 @@ export function useHrStore() {
       notify();
 
       try {
-        const payload: Record<string, any> = {
+        const payload: any = {
           code: newEmp.code || null,
           name_ar: newEmp.name.ar,
           name_en: newEmp.name.en || newEmp.name.ar,
@@ -855,9 +855,9 @@ export function useHrStore() {
           payload.id = newEmp.id;
         }
 
-        const { data: inserted, error: insErr } = await supabase
+        const { data: inserted, error: insErr } = await (supabase
           .from("employees")
-          .insert(payload)
+          .insert as any)(payload)
           .select()
           .single();
 
@@ -889,7 +889,7 @@ export function useHrStore() {
 
     try {
       if (isUuid(id)) {
-        const updatePayload: Record<string, any> = {};
+        const updatePayload: any = {};
         if (updates.name?.ar) updatePayload.name_ar = updates.name.ar;
         if (updates.name?.en) updatePayload.name_en = updates.name.en;
         if (updates.nationalId) updatePayload.national_id = updates.nationalId;
@@ -915,9 +915,9 @@ export function useHrStore() {
         }
 
         if (Object.keys(updatePayload).length > 0) {
-          const { error: updErr } = await supabase
+          const { error: updErr } = await (supabase
             .from("employees")
-            .update(updatePayload)
+            .update as any)(updatePayload)
             .eq("id", id);
           if (updErr) {
             console.warn("[HR Store] Supabase employee update warning:", updErr.code, updErr.message);
@@ -946,16 +946,41 @@ export function useHrStore() {
     }
   }, []);
 
-  const bulkAddEmployees = useCallback((newEmps: Omit<EmployeeRecord, "id">[]) => {
-    const records: EmployeeRecord[] = newEmps.map((emp, i) => ({
-      ...emp,
-      id: `emp-${Date.now()}-${i}`,
-    }));
-    globalEmployees = [...records, ...globalEmployees];
-    persistToStorage();
-    notify();
-    return records.length;
-  }, []);
+  const bulkAddEmployees = useCallback(
+    async (newEmps: Omit<EmployeeRecord, "id">[]) => {
+      const records: EmployeeRecord[] = newEmps.map((emp, i) => ({
+        ...emp,
+        id: `emp-${Date.now()}-${i}`,
+      }));
+      globalEmployees = [...records, ...globalEmployees];
+      persistToStorage();
+      notify();
+
+      try {
+        const payloads = newEmps.map((emp) => ({
+          code: emp.code || null,
+          name_ar: emp.name.ar,
+          name_en: emp.name.en || emp.name.ar,
+          national_id: emp.nationalId || null,
+          email: emp.email || null,
+          phone: emp.phone || null,
+          department_id: isUuid(emp.departmentId) ? emp.departmentId : null,
+          position_id: isUuid(emp.positionId) ? emp.positionId : null,
+          user_id: isUuid(emp.userId) ? emp.userId : null,
+          base_salary: Number(emp.compensation?.basicSalary) || 0,
+          hire_date: emp.hireDate || new Date().toISOString().slice(0, 10),
+          is_active: emp.status === "active",
+        }));
+        await (supabase.from("employees").insert as any)(payloads);
+        fetchAllHrData();
+      } catch (err) {
+        console.warn("[HR Store] Bulk insert employees warning:", err);
+      }
+
+      return records.length;
+    },
+    [fetchAllHrData]
+  );
 
   // Attendance actions
   const logAttendance = useCallback(async (record: Omit<AttendanceRecord, "id">) => {
@@ -1154,7 +1179,9 @@ export function useHrStore() {
   }, []);
 
   const postPayrollToGl = useCallback(async (id: string) => {
-    const journalId = `JE-${Date.now().toString().slice(-6)}`;
+    const journalId = `JV-PR-${Date.now().toString().slice(-6)}`;
+    const targetRun = globalPayrollRuns.find((r) => r.id === id);
+
     globalPayrollRuns = globalPayrollRuns.map((run) =>
       run.id === id
         ? {
@@ -1168,10 +1195,53 @@ export function useHrStore() {
     notify();
 
     try {
-      await supabase
-        .from("payroll_runs")
-        .update({ is_posted: true })
-        .eq("id", id);
+      if (isUuid(id)) {
+        await supabase
+          .from("payroll_runs")
+          .update({ is_posted: true })
+          .eq("id", id);
+      }
+
+      if (targetRun) {
+        const { data: jeData } = await supabase
+          .from("journal_entries")
+          .insert({
+            entry_no: journalId,
+            entry_date: new Date().toISOString().slice(0, 10),
+            reference: targetRun.period,
+            description_ar: `إثبات استحقاق مسير رواتب شهر ${targetRun.period}`,
+            description_en: `Payroll Accrual for ${targetRun.period}`,
+            is_posted: true,
+          })
+          .select()
+          .single();
+
+        if (jeData?.id) {
+          const { data: accs } = await supabase.from("accounts").select("id, code");
+          const accMap = new Map((accs || []).map((a) => [a.code, a.id]));
+          const salaryExpId = accMap.get("5200") || (accs && accs[0]?.id) || jeData.id;
+          const salaryPayableId = accMap.get("2110") || (accs && accs[0]?.id) || jeData.id;
+
+          await supabase.from("journal_lines").insert([
+            {
+              entry_id: jeData.id,
+              account_id: salaryExpId,
+              debit: targetRun.totalGross,
+              credit: 0,
+              line_no: 1,
+              memo: `إجمالي رواتب شهر ${targetRun.period}`,
+            },
+            {
+              entry_id: jeData.id,
+              account_id: salaryPayableId,
+              debit: 0,
+              credit: targetRun.totalNet,
+              line_no: 2,
+              memo: `صافي رواتب محولة للبنوك شهر ${targetRun.period}`,
+            },
+          ]);
+        }
+      }
     } catch (err) {
       console.warn("[HR Store] Payroll DB post warning:", err);
     }

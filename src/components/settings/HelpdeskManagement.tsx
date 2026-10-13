@@ -273,7 +273,7 @@ export function HelpdeskManagement() {
         }
 
         setFacilities(list);
-        if (list.length > 0) {
+        if (list.length > 0 && list[0]) {
           setNewLocation(list[0].name);
         }
       } catch (err) {
