@@ -1425,7 +1425,7 @@ function HrPage() {
               if (empData.code) userUpdates.employeeCode = empData.code;
               await updateOrgUser(existingUser.id, userUpdates);
 
-              saveProvisionedAccount({
+              await saveProvisionedAccount({
                 email: targetEmail,
                 password: targetPassword,
                 role: empData.erpRole || existingUser.role,
@@ -1475,8 +1475,8 @@ function HrPage() {
                 console.warn("[HR] Supabase signUp warning:", signUpErr);
               }
 
-              // Save provisioned account locally so login always succeeds seamlessly
-              saveProvisionedAccount({
+              // Save provisioned account synced directly to Supabase
+              await saveProvisionedAccount({
                 email: targetEmail,
                 password: targetPassword,
                 role: (empData.erpRole as any) || "sales",

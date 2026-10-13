@@ -1,45 +1,72 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Mock "signed-in user" UI preferences.
- * The demo app has no auth session yet, so the current user is fixed to usr-1
- * (Hafez Rahim / admin). Preferences persist in localStorage.
+ * User UI preferences backed directly by Supabase profiles and company_settings.
+ * Eliminates all localStorage reliance.
  */
 export const CURRENT_USER_ID = "usr-1";
 
-const STORAGE_KEY = "hafez-erp:sidebar-visible";
 const EVENT = "hafez-erp:sidebar-visible-change";
 
 let sidebarVisible = true;
-let hydrated = false;
+let isHydrated = false;
 
-function hydrate() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw === "false") sidebarVisible = false;
-  if (raw === "true") sidebarVisible = true;
-}
+async function hydrateFromSupabase() {
+  if (isHydrated) return;
+  isHydrated = true;
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("sidebar_visible")
+      .limit(1)
+      .maybeSingle();
 
-export function getSidebarVisible() {
-  hydrate();
-  return sidebarVisible;
-}
-
-export function setSidebarVisible(next: boolean) {
-  sidebarVisible = next;
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, String(next));
-    window.dispatchEvent(new CustomEvent(EVENT, { detail: next }));
+    if (data && typeof data.sidebar_visible === "boolean") {
+      sidebarVisible = data.sidebar_visible;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(EVENT, { detail: sidebarVisible }));
+      }
+    }
+  } catch (err) {
+    console.warn("[UI Prefs] Could not load preference from Supabase:", err);
   }
 }
 
-/** Reads the preference after hydration and stays in sync with other components. */
+export function getSidebarVisible(): boolean {
+  if (!isHydrated) {
+    hydrateFromSupabase();
+  }
+  return sidebarVisible;
+}
+
+export async function setSidebarVisible(next: boolean) {
+  sidebarVisible = next;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(EVENT, { detail: next }));
+  }
+
+  try {
+    // Persist to Supabase profiles table
+    await supabase
+      .from("profiles")
+      .update({ sidebar_visible: next })
+      .not("id", "is", null);
+  } catch (err) {
+    console.warn("[UI Prefs] Failed to save sidebar preference to Supabase:", err);
+  }
+}
+
+/** Reads the preference from Supabase state and stays in sync across components. */
 export function useSidebarVisible(): [boolean, (next: boolean) => void] {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     setVisible(getSidebarVisible());
+    hydrateFromSupabase().then(() => {
+      setVisible(sidebarVisible);
+    });
+
     const handler = (event: Event) => {
       setVisible((event as CustomEvent<boolean>).detail);
     };

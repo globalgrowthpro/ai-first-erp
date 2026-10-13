@@ -148,12 +148,13 @@ export function usePartnersStore() {
   }, []);
 
   const recordPayment = useCallback(async (partnerId: string, params: RecordPaymentParams) => {
-    // In a real app, this would insert a payment record and update balance in DB
+    let nextBalance = 0;
     setPartners(prev => prev.map(p => {
       if (p.id === partnerId) {
+        nextBalance = p.balance - params.amount;
         return {
           ...p,
-          balance: p.balance - params.amount,
+          balance: nextBalance,
           transactions: [
             {
               id: `tx-temp-${Date.now()}`,
@@ -173,6 +174,13 @@ export function usePartnersStore() {
       }
       return p;
     }));
+
+    // Persist updated balance directly to Supabase partners table
+    try {
+      await supabase.from('partners').update({ balance: nextBalance }).eq('id', partnerId);
+    } catch (err) {
+      console.warn("[Partners Store] Failed to update balance in Supabase:", err);
+    }
   }, []);
 
   const toggleStatus = useCallback(async (id: string) => {

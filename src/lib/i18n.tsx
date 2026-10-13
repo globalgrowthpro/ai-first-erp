@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Lang = "ar" | "en";
 
@@ -287,15 +288,59 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>("ar");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("erp-lang");
-    if (saved === "ar" || saved === "en") setLang(saved);
+    let active = true;
+    async function loadLangFromSupabase() {
+      try {
+        const { data } = await supabase
+          .from("company_settings")
+          .select("branding")
+          .limit(1)
+          .maybeSingle();
+
+        const brandingObj = data?.branding as Record<string, any> | null;
+        const savedLang = brandingObj ? brandingObj["defaultLanguage"] : undefined;
+        if (active && (savedLang === "ar" || savedLang === "en")) {
+          setLang(savedLang);
+        }
+      } catch (err: unknown) {
+        console.warn("[i18n] Failed to load language preference from Supabase:", err);
+      }
+    }
+    loadLangFromSupabase();
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     const dir = lang === "ar" ? "rtl" : "ltr";
     document.documentElement.setAttribute("dir", dir);
     document.documentElement.setAttribute("lang", lang);
-    window.localStorage.setItem("erp-lang", lang);
+
+    // Persist language to Supabase company_settings
+    async function persistLang() {
+      try {
+        const { data } = await supabase
+          .from("company_settings")
+          .select("id, branding")
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.id) {
+          const currentBranding = (data.branding as Record<string, any>) || {};
+          await supabase
+            .from("company_settings")
+            .update({
+              branding: { ...currentBranding, defaultLanguage: lang },
+            })
+            .eq("id", data.id);
+        }
+      } catch (err: unknown) {
+        console.warn("[i18n] Failed to save language preference to Supabase:", err);
+      }
+    }
+
+    persistLang();
   }, [lang]);
 
   const toggle = useCallback(() => setLang((l) => (l === "ar" ? "en" : "ar")), []);

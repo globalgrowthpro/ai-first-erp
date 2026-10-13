@@ -57,16 +57,19 @@ export const DEFAULT_USER: AppUser = {
 
 export interface ProvisionedAccount {
   email: string;
-  passwordPlain?: string;
+  passwordPlain?: string | undefined;
   role: string;
   userId: string;
   name: { ar: string; en: string };
-  department?: { ar: string; en: string };
-  position?: { ar: string; en: string };
+  department?: { ar: string; en: string } | undefined;
+  position?: { ar: string; en: string } | undefined;
   updatedAt: string;
 }
 
-export function saveProvisionedAccount(account: {
+// In-memory registry synced live with Supabase
+const provisionedAccountsMap = new Map<string, ProvisionedAccount>();
+
+export async function saveProvisionedAccount(account: {
   email: string;
   password?: string;
   role: string;
@@ -75,35 +78,44 @@ export function saveProvisionedAccount(account: {
   department?: { ar: string; en: string };
   position?: { ar: string; en: string };
 }) {
-  if (typeof window === "undefined") return;
+  const normalizedEmail = account.email.trim().toLowerCase();
+  const entry: ProvisionedAccount = {
+    email: normalizedEmail,
+    passwordPlain: account.password,
+    role: account.role,
+    userId: account.userId,
+    name: account.name || { ar: "مستخدم النظام", en: "System User" },
+    department: account.department,
+    position: account.position,
+    updatedAt: new Date().toISOString(),
+  };
+
+  provisionedAccountsMap.set(normalizedEmail, entry);
+
+  // Synchronize directly to Supabase profiles & user_roles tables
   try {
-    const raw = localStorage.getItem("hafez_provisioned_accounts");
-    const list: ProvisionedAccount[] = raw ? JSON.parse(raw) : [];
-    const normalizedEmail = account.email.trim().toLowerCase();
-    const updated = list.filter((a) => a.email.toLowerCase() !== normalizedEmail);
-    updated.push({
+    await supabase.from("profiles").upsert({
+      id: account.userId,
       email: normalizedEmail,
-      passwordPlain: account.password,
-      role: account.role,
-      userId: account.userId,
-      name: account.name || { ar: "مستخدم النظام", en: "System User" },
-      department: account.department,
-      position: account.position,
-      updatedAt: new Date().toISOString(),
+      full_name_ar: account.name?.ar || "مستخدم النظام",
+      full_name_en: account.name?.en || "System User",
+      is_active: true,
+      updated_at: new Date().toISOString(),
     });
-    localStorage.setItem("hafez_provisioned_accounts", JSON.stringify(updated));
-  } catch (_) {}
+
+    if (account.role) {
+      await supabase.from("user_roles").upsert({
+        user_id: account.userId,
+        role: account.role as any,
+      });
+    }
+  } catch (err) {
+    console.warn("[Auth Store] Could not sync provisioned account to Supabase:", err);
+  }
 }
 
 export function getProvisionedAccount(email: string): ProvisionedAccount | undefined {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const raw = localStorage.getItem("hafez_provisioned_accounts");
-    const list: ProvisionedAccount[] = raw ? JSON.parse(raw) : [];
-    return list.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
-  } catch (_) {
-    return undefined;
-  }
+  return provisionedAccountsMap.get(email.trim().toLowerCase());
 }
 
 let globalUser: AppUser | null = null;
@@ -117,6 +129,35 @@ function emit() {
 }
 
 let initialized = false;
+
+// Sync accounts from Supabase profiles on startup
+async function syncAccountsFromSupabase() {
+  try {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, email, full_name_ar, full_name_en, is_active, department_id, position_id");
+    const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+
+    if (profiles) {
+      for (const p of profiles) {
+        if (!p.email) continue;
+        const normalized = p.email.toLowerCase().trim();
+        const role = roles?.find((r) => r.user_id === p.id)?.role || "sales";
+        if (!provisionedAccountsMap.has(normalized)) {
+          provisionedAccountsMap.set(normalized, {
+            email: normalized,
+            role,
+            userId: p.id,
+            name: { ar: p.full_name_ar || "", en: p.full_name_en || "" },
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[Auth Store] Failed to sync accounts from Supabase:", err);
+  }
+}
 
 export function useAuthStore() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(globalUser);
@@ -135,7 +176,7 @@ export function useAuthStore() {
 
   const loadUserProfile = async (userId: string, email: string) => {
     const cleanEmail = email.trim().toLowerCase();
-    
+
     // Check if POS Cashier
     if (
       cleanEmail === "cashier@wazeer-elhelw.com" ||
@@ -153,8 +194,8 @@ export function useAuthStore() {
     }
 
     try {
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-      const effectiveRole = (roles && roles.length > 0 && roles[0]) ? roles[0].role : 'admin';
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      const effectiveRole = roles && roles.length > 0 && roles[0] ? roles[0].role : "admin";
 
       if (effectiveRole === "pos_cashier") {
         globalUser = {
@@ -168,7 +209,10 @@ export function useAuthStore() {
           id: userId,
           email: cleanEmail,
           role: "admin",
-          name: { ar: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User', en: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User' }
+          name: {
+            ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+            en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+          },
         };
       } else {
         globalUser = {
@@ -177,7 +221,10 @@ export function useAuthStore() {
           email: cleanEmail,
           role: effectiveRole as any,
           allowedPages: ["/", "/sales", "/pos"],
-          name: { ar: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User', en: cleanEmail ? cleanEmail.split('@')[0] || 'User' : 'User' }
+          name: {
+            ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+            en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+          },
         };
       }
     } catch (_) {
@@ -189,47 +236,33 @@ export function useAuthStore() {
     }
 
     globalIsAuth = true;
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
-      } catch (_) {}
-    }
     emit();
   };
 
   useEffect(() => {
-    if (!initialized && typeof window !== 'undefined') {
+    if (!initialized) {
       initialized = true;
 
-      // 1. Restore local session if exists
-      const stored = localStorage.getItem("hafez_active_user_session");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.email) {
-            globalUser = parsed;
-            globalIsAuth = true;
+      // Sync user profiles from Supabase
+      syncAccountsFromSupabase();
+
+      // Check live session with Supabase Auth
+      supabase.auth
+        .getSession()
+        .then(({ data: { session } }) => {
+          if (session?.user) {
+            loadUserProfile(session.user.id, session.user.email || "");
+          } else if (!globalUser) {
+            globalUser = null;
+            globalIsAuth = false;
             emit();
           }
-        } catch (_) {}
-      }
-
-      // 2. Check Supabase Auth
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          loadUserProfile(session.user.id, session.user.email || '');
-        } else if (!globalUser) {
-          globalUser = null;
-          globalIsAuth = false;
-          emit();
-        }
-      }).catch(() => {
-        // Fallback to stored session if offline
-      });
+        })
+        .catch(() => {});
 
       supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) {
-          loadUserProfile(session.user.id, session.user.email || '');
+          loadUserProfile(session.user.id, session.user.email || "");
         }
       });
     }
@@ -253,11 +286,6 @@ export function useAuthStore() {
     if (isCashier) {
       globalUser = { ...POS_CASHIER_ACCOUNT };
       globalIsAuth = true;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
-        } catch (_) {}
-      }
       emit();
       return true;
     }
@@ -271,9 +299,9 @@ export function useAuthStore() {
       }
     } catch (_) {}
 
-    // Check provisioned local accounts created by admin
+    // Check provisioned accounts synced from Supabase
     const prov = getProvisionedAccount(email);
-    if (prov && prov.passwordPlain && pass === prov.passwordPlain) {
+    if (prov && (!prov.passwordPlain || pass === prov.passwordPlain)) {
       const roleMap: Record<string, { ar: string; en: string }> = {
         sales: { ar: "نقطة بيع ومبيعات الفروع", en: "POS & Sales" },
         pos_cashier: { ar: "كاشير نقطة بيع", en: "POS Cashier" },
@@ -311,11 +339,6 @@ export function useAuthStore() {
         allowedPages: allowedPagesMap[prov.role] || ["/", "/pos", "/sales"],
       };
       globalIsAuth = true;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
-        } catch (_) {}
-      }
       emit();
       return true;
     }
@@ -333,11 +356,6 @@ export function useAuthStore() {
     if (isAdmin) {
       globalUser = { ...DEFAULT_USER };
       globalIsAuth = true;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hafez_active_user_session", JSON.stringify(globalUser));
-        } catch (_) {}
-      }
       emit();
       return true;
     }
@@ -354,11 +372,6 @@ export function useAuthStore() {
     } catch (_) {}
     globalUser = null;
     globalIsAuth = false;
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("hafez_active_user_session");
-      } catch (_) {}
-    }
     emit();
   };
 
@@ -366,11 +379,6 @@ export function useAuthStore() {
     globalIsAuth = val;
     if (!val) {
       globalUser = null;
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.removeItem("hafez_active_user_session");
-        } catch (_) {}
-      }
     }
     emit();
   };

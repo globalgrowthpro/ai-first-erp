@@ -70,7 +70,6 @@ export function useAiModulesStore() {
           };
         });
         setModules(mapped);
-        saveToStorage(mapped);
       }
     } catch (err) {
       console.error("Failed to fetch AI modules from Supabase", err);
@@ -81,11 +80,7 @@ export function useAiModulesStore() {
 
   const addModule = useCallback(async (module: Omit<AiModuleItem, "id">) => {
     const newMod: AiModuleItem = { ...module, id: `mod-${Date.now()}` };
-    setModules(prev => {
-      const next = [newMod, ...prev];
-      saveToStorage(next);
-      return next;
-    });
+    setModules(prev => [newMod, ...prev]);
     try {
       await supabase.from('ai_modules').insert({
         code: `AI-${newMod.id.slice(-4)}`,
@@ -104,11 +99,7 @@ export function useAiModulesStore() {
   }, []);
 
   const updateModule = useCallback(async (id: string, updates: Partial<AiModuleItem>) => {
-    setModules(prev => {
-      const next = prev.map(m => m.id === id ? { ...m, ...updates } : m);
-      saveToStorage(next);
-      return next;
-    });
+    setModules(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     try {
       const payload: any = {};
       if (updates.name?.ar !== undefined) payload.name_ar = updates.name.ar;
@@ -125,11 +116,7 @@ export function useAiModulesStore() {
   }, []);
 
   const deleteModule = useCallback(async (id: string) => {
-    setModules(prev => {
-      const next = prev.filter(m => m.id !== id);
-      saveToStorage(next);
-      return next;
-    });
+    setModules(prev => prev.filter(m => m.id !== id));
     try {
       await supabase.from('ai_modules').delete().eq('id', id);
     } catch (err) {
@@ -139,7 +126,6 @@ export function useAiModulesStore() {
 
   const resetToDefaults = useCallback(() => {
     setModules(initialAiModules);
-    saveToStorage(initialAiModules);
   }, []);
 
   return {
