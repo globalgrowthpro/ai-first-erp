@@ -24,6 +24,12 @@ import {
   Copy,
   Edit,
   Eye,
+  Clock,
+  Flame,
+  CreditCard,
+  Share2,
+  DollarSign,
+  BarChart3,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, PageHeader, Panel } from "@/components/kit";
@@ -42,6 +48,7 @@ import {
   executeReportQuery,
   DATA_SOURCE_CATALOG,
   exportReportToExcel,
+  exportAllSalesReportsToExcel,
   type ReportColumn,
   type LiveDataSourceCollections,
 } from "@/lib/reports-store";
@@ -81,6 +88,20 @@ function getReportIcon(iconName: string) {
       return <Users className="size-5" />;
     case "Briefcase":
       return <Briefcase className="size-5" />;
+    case "Clock":
+      return <Clock className="size-5" />;
+    case "TrendingUp":
+      return <TrendingUp className="size-5" />;
+    case "Flame":
+      return <Flame className="size-5" />;
+    case "CreditCard":
+      return <CreditCard className="size-5" />;
+    case "Share2":
+      return <Share2 className="size-5" />;
+    case "DollarSign":
+      return <DollarSign className="size-5" />;
+    case "BarChart3":
+      return <BarChart3 className="size-5" />;
     default:
       return <Layers className="size-5" />;
   }
@@ -419,6 +440,25 @@ function ReportsHubPage() {
             >
               <Plus className="size-4" />
               {lang === "ar" ? "تصميم تقرير مخصص" : "Create Custom Report"}
+            </Btn>
+
+            <Btn
+              variant="outline"
+              className="border-emerald-600/40 text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-500/10 gap-1.5"
+              onClick={() => {
+                const ok = exportAllSalesReportsToExcel({ liveData, lang: lang as "ar" | "en" });
+                if (ok) {
+                  toast.success(
+                    lang === "ar"
+                      ? "تم تصدير حزمة تقارير المبيعات الشاملة (8 في 1) في مصنف Excel متكامل بنجاح!"
+                      : "Master Sales Reports (8-in-1) exported to Excel successfully!",
+                  );
+                }
+              }}
+              title={lang === "ar" ? "تحميل مصنف Excel شامل لكافة تقارير المبيعات الـ 8" : "Download Master Excel with all 8 Sales Reports"}
+            >
+              <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{lang === "ar" ? "حزمة تقارير المبيعات (8 في 1) Excel" : "Master Sales Excel (8-in-1)"}</span>
             </Btn>
 
             {activeTab === "viewer" && activeReportExecution && (

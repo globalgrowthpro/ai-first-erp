@@ -35,6 +35,8 @@ import {
   Store,
   Phone,
   History,
+  Building2,
+  MapPin,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -64,6 +66,7 @@ const erpNav = [
   { to: "/purchases", key: "nav_purchases", icon: ShoppingCart },
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
   { to: "/inventory", key: "nav_inventory", icon: Boxes },
+  { to: "/inventory", search: { tab: "branches" }, key: "nav_branches", icon: MapPin },
   { to: "/manufacturing", key: "nav_manufacturing", icon: Factory },
   { to: "/dispatch", key: "nav_dispatch", icon: Truck },
   { to: "/partners", key: "nav_partners", icon: Users },
@@ -151,24 +154,29 @@ function NavList({
         {label}
       </p>
       <nav className="mt-1.5 space-y-0.5">
-        {visibleItems.map(({ to, key, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            activeOptions={{ exact: to === "/" }}
-            className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-foreground/75 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Icon className="size-4 shrink-0" />
-              <span className="truncate">{t(key)}</span>
-            </div>
-            {to === "/helpdesk" && activeTicketsCount > 0 && (
-              <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 group-data-[status=active]:bg-primary-foreground/20 group-data-[status=active]:text-primary-foreground shrink-0">
-                {activeTicketsCount}
-              </span>
-            )}
-          </Link>
-        ))}
+        {visibleItems.map((item) => {
+          const { to, key, icon: Icon } = item;
+          const searchParam = "search" in item ? (item as any).search : undefined;
+          return (
+            <Link
+              key={`${to}-${key}`}
+              to={to}
+              search={searchParam}
+              activeOptions={{ exact: to === "/" || Boolean(searchParam) }}
+              className="group flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-foreground/75 transition-colors hover:bg-ink-foreground/10 hover:text-ink-foreground data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon className="size-4 shrink-0" />
+                <span className="truncate">{t(key)}</span>
+              </div>
+              {to === "/helpdesk" && activeTicketsCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 group-data-[status=active]:bg-primary-foreground/20 group-data-[status=active]:text-primary-foreground shrink-0">
+                  {activeTicketsCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

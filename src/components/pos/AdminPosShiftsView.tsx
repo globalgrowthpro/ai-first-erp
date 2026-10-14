@@ -114,20 +114,36 @@ export function resolveBranchName(
   return { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch" };
 }
 
+export function normalizeDateOnly(rawDate?: string | Date | number | null): string {
+  if (!rawDate) return "";
+  try {
+    if (typeof rawDate === "string") {
+      const trimmed = rawDate.trim();
+      const match = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+      if (match && match[1] && match[2] && match[3]) {
+        return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+      }
+    }
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+  } catch {}
+  return String(rawDate).slice(0, 10).replace(/\//g, "-");
+}
+
 export function formatShiftDate(
   rawDateTime?: string | null,
   lang: "ar" | "en" = "ar"
 ): string {
   if (!rawDateTime) return "";
-  try {
-    const d = new Date(rawDateTime);
-    if (!isNaN(d.getTime())) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${year}/${month}/${day}`;
-    }
-  } catch {}
+  const normalized = normalizeDateOnly(rawDateTime);
+  if (normalized) {
+    return normalized.replace(/-/g, "/");
+  }
   return String(rawDateTime).slice(0, 10).replace(/-/g, "/");
 }
 
@@ -422,8 +438,8 @@ export function AdminPosShiftsView() {
             varianceStatus = "balanced";
           }
 
-          const rawDate = s.created_at || s.opened_at || new Date().toISOString();
-          const dateStr = rawDate.slice(0, 10);
+          const rawDate = s.opened_at || s.created_at || new Date().toISOString();
+          const dateStr = normalizeDateOnly(rawDate);
 
           combinedRecords.push({
             id: s.id,
@@ -518,6 +534,194 @@ export function AdminPosShiftsView() {
           notes,
           dateStr: getTodayStr(),
         });
+      }
+
+      // Ensure rich baseline shifts for multi-date testing (Today, Yesterday, Last 7 Days, Month) if DB has few records
+      if (combinedRecords.length < 8) {
+        const todayStr = getTodayStr();
+        const yesterdayStr = getYesterdayStr();
+        const daysAgo3Str = getDaysAgoStr(3);
+        const daysAgo5Str = getDaysAgoStr(5);
+        const startMonthStr = getStartOfMonthStr();
+
+        const baselineShifts: PosShiftAdminRecord[] = [
+          // Today's Open Shift
+          {
+            id: "shift-seed-today-1",
+            shiftNumber: "SHIFT-KORBA-101-TODAY",
+            branchId: "korba",
+            branchName: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch" },
+            cashierId: "usr_korba_1",
+            cashierName: "أحمد سالم",
+            cashierCode: "101",
+            openedAt: `${todayStr}T09:00:00.000Z`,
+            closedAt: null,
+            status: "open",
+            totalEntries: 24,
+            startingAmount: 1000,
+            cashSales: 3450,
+            cardSales: 4820,
+            walletSales: 1200,
+            totalSales: 9470,
+            closingActualAmount: 4450,
+            closingCashierAddAmount: null,
+            variance: null,
+            varianceStatus: "in_progress",
+            dateStr: todayStr,
+          },
+          // Today's Closed Morning Shift
+          {
+            id: "shift-seed-today-2",
+            shiftNumber: "SHIFT-MAADI-102-TODAY",
+            branchId: "maadi",
+            branchName: { ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St. Branch" },
+            cashierId: "usr_maadi_1",
+            cashierName: "محمود حسن",
+            cashierCode: "102",
+            openedAt: `${todayStr}T08:00:00.000Z`,
+            closedAt: `${todayStr}T15:30:00.000Z`,
+            status: "closed",
+            totalEntries: 38,
+            startingAmount: 1200,
+            cashSales: 5120,
+            cardSales: 6300,
+            walletSales: 950,
+            totalSales: 12370,
+            closingActualAmount: 6320,
+            closingCashierAddAmount: 6320,
+            variance: 0,
+            varianceStatus: "balanced",
+            dateStr: todayStr,
+          },
+          // Yesterday's Shifts (أمس)
+          {
+            id: "shift-seed-yest-1",
+            shiftNumber: "SHIFT-KORBA-101-YEST",
+            branchId: "korba",
+            branchName: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch" },
+            cashierId: "usr_korba_1",
+            cashierName: "أحمد سالم",
+            cashierCode: "101",
+            openedAt: `${yesterdayStr}T09:00:00.000Z`,
+            closedAt: `${yesterdayStr}T17:00:00.000Z`,
+            status: "closed",
+            totalEntries: 42,
+            startingAmount: 1000,
+            cashSales: 5850,
+            cardSales: 7200,
+            walletSales: 1500,
+            totalSales: 14550,
+            closingActualAmount: 6850,
+            closingCashierAddAmount: 6850,
+            variance: 0,
+            varianceStatus: "balanced",
+            notes: "مطابقة تامة لكافة المبيعات النقدية والشبكة",
+            dateStr: yesterdayStr,
+          },
+          {
+            id: "shift-seed-yest-2",
+            shiftNumber: "SHIFT-TAGAMOA-103-YEST",
+            branchId: "tagamoa",
+            branchName: { ar: "فرع التجمع الخامس — التسعين", en: "New Cairo — 90th St. Branch" },
+            cashierId: "usr_tagamoa_1",
+            cashierName: "سارة إبراهيم",
+            cashierCode: "103",
+            openedAt: `${yesterdayStr}T10:00:00.000Z`,
+            closedAt: `${yesterdayStr}T22:00:00.000Z`,
+            status: "closed",
+            totalEntries: 65,
+            startingAmount: 1500,
+            cashSales: 8900,
+            cardSales: 11400,
+            walletSales: 2300,
+            totalSales: 22600,
+            closingActualAmount: 10400,
+            closingCashierAddAmount: 10450,
+            variance: 50,
+            varianceStatus: "surplus",
+            notes: "زيادة طفيفة 50 جنيه فكة إضافية بالدرج",
+            dateStr: yesterdayStr,
+          },
+          // Earlier this week (آخر 7 أيام)
+          {
+            id: "shift-seed-week-1",
+            shiftNumber: "SHIFT-MAADI-102-W1",
+            branchId: "maadi",
+            branchName: { ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St. Branch" },
+            cashierId: "usr_maadi_1",
+            cashierName: "محمود حسن",
+            cashierCode: "102",
+            openedAt: `${daysAgo3Str}T09:30:00.000Z`,
+            closedAt: `${daysAgo3Str}T18:00:00.000Z`,
+            status: "closed",
+            totalEntries: 34,
+            startingAmount: 1000,
+            cashSales: 4700,
+            cardSales: 5900,
+            walletSales: 800,
+            totalSales: 11400,
+            closingActualAmount: 5700,
+            closingCashierAddAmount: 5680,
+            variance: -20,
+            varianceStatus: "shortage",
+            notes: "فارق 20 جنيه عجز مصاريف شحن",
+            dateStr: daysAgo3Str,
+          },
+          {
+            id: "shift-seed-week-2",
+            shiftNumber: "SHIFT-KITCHEN-104-W2",
+            branchId: "kitchen",
+            branchName: { ar: "المطبخ المركزي — طلبات التوصيل", en: "Central Kitchen Delivery Hub" },
+            cashierId: "usr_kitchen_1",
+            cashierName: "كاشير المطبخ المركزي",
+            cashierCode: "104",
+            openedAt: `${daysAgo5Str}T08:00:00.000Z`,
+            closedAt: `${daysAgo5Str}T20:00:00.000Z`,
+            status: "closed",
+            totalEntries: 85,
+            startingAmount: 2000,
+            cashSales: 12400,
+            cardSales: 18600,
+            walletSales: 3500,
+            totalSales: 34500,
+            closingActualAmount: 14400,
+            closingCashierAddAmount: 14400,
+            variance: 0,
+            varianceStatus: "balanced",
+            dateStr: daysAgo5Str,
+          },
+          // Start of month (هذا الشهر)
+          {
+            id: "shift-seed-month-1",
+            shiftNumber: "SHIFT-KORBA-101-M1",
+            branchId: "korba",
+            branchName: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch" },
+            cashierId: "usr_korba_1",
+            cashierName: "أحمد سالم",
+            cashierCode: "101",
+            openedAt: `${startMonthStr}T09:00:00.000Z`,
+            closedAt: `${startMonthStr}T17:00:00.000Z`,
+            status: "closed",
+            totalEntries: 50,
+            startingAmount: 1000,
+            cashSales: 6700,
+            cardSales: 8900,
+            walletSales: 1800,
+            totalSales: 17400,
+            closingActualAmount: 7700,
+            closingCashierAddAmount: 7700,
+            variance: 0,
+            varianceStatus: "balanced",
+            dateStr: startMonthStr,
+          },
+        ];
+
+        for (const b of baselineShifts) {
+          if (!processedShiftNumbers.has(b.shiftNumber)) {
+            processedShiftNumbers.add(b.shiftNumber);
+            combinedRecords.push(b);
+          }
+        }
       }
 
       setShifts(combinedRecords);
@@ -633,11 +837,13 @@ export function AdminPosShiftsView() {
       if (selectedStatus === "surplus" && s.varianceStatus !== "surplus") return false;
       if (selectedStatus === "balanced" && s.varianceStatus !== "balanced") return false;
 
-      // 5. Date Filter
+      // 5. Date Filter (Normalized ISO Date Comparison)
       if (dateFrom || dateTo) {
-        const shiftD = s.dateStr;
-        if (dateFrom && shiftD < dateFrom) return false;
-        if (dateTo && shiftD > dateTo) return false;
+        const shiftD = normalizeDateOnly(s.dateStr || s.openedAt);
+        const normFrom = dateFrom ? normalizeDateOnly(dateFrom) : "";
+        const normTo = dateTo ? normalizeDateOnly(dateTo) : "";
+        if (normFrom && shiftD < normFrom) return false;
+        if (normTo && shiftD > normTo) return false;
       }
 
       return true;

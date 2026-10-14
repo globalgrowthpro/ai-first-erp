@@ -12,6 +12,8 @@ export interface AppUser {
   avatarBg: string;
   description: { ar: string; en: string };
   allowedPages: string[];
+  branchCode?: string;
+  branchName?: { ar: string; en: string };
 }
 
 export type DemoUser = AppUser;
@@ -31,6 +33,33 @@ export const POS_CASHIER_ACCOUNT: AppUser = {
   },
   allowedPages: ["/pos"],
 };
+
+export const BRANCH_CASHIERS_REGISTRY: Array<{
+  branchCode: string;
+  branchNameAr: string;
+  branchNameEn: string;
+  email: string;
+  username: string;
+  password: string;
+  nameAr: string;
+  code: string;
+}> = [
+  { branchCode: "korba", branchNameAr: "الكوربة", branchNameEn: "Korba", email: "cashier.korba@wazeer-elhelw.com", username: "cashier_korba", password: "Korba@2026", nameAr: "أحمد سالم", code: "101" },
+  { branchCode: "abbas", branchNameAr: "عباس العقاد", branchNameEn: "Abbas El-Akkad", email: "cashier.abbas@wazeer-elhelw.com", username: "cashier_abbas", password: "Abbas@2026", nameAr: "محمد فتحي", code: "102" },
+  { branchCode: "helmeya", branchNameAr: "الحلمية", branchNameEn: "Helmeya", email: "cashier.helmeya@wazeer-elhelw.com", username: "cashier_helmeya", password: "Helmeya@2026", nameAr: "خالد سعيد", code: "103" },
+  { branchCode: "khosoos", branchNameAr: "الخصوص", branchNameEn: "El-Khosoos", email: "cashier.khosoos@wazeer-elhelw.com", username: "cashier_khosoos", password: "Khosoos@2026", nameAr: "محمود بدوي", code: "104" },
+  { branchCode: "wost_elbalad", branchNameAr: "وسط البلد", branchNameEn: "Downtown", email: "cashier.downtown@wazeer-elhelw.com", username: "cashier_downtown", password: "Balad@2026", nameAr: "أشرف عثمان", code: "105" },
+  { branchCode: "giza", branchNameAr: "الجيزة", branchNameEn: "Giza", email: "cashier.giza@wazeer-elhelw.com", username: "cashier_giza", password: "Giza@2026", nameAr: "حسام حسن", code: "106" },
+  { branchCode: "faisal", branchNameAr: "فيصل", branchNameEn: "Faisal", email: "cashier.faisal@wazeer-elhelw.com", username: "cashier_faisal", password: "Faisal@2026", nameAr: "عادل رمزي", code: "107" },
+  { branchCode: "dar_elsalam", branchNameAr: "دار السلام", branchNameEn: "Dar El-Salam", email: "cashier.darsalam@wazeer-elhelw.com", username: "cashier_darsalam", password: "Salam@2026", nameAr: "كرم عبد العظيم", code: "108" },
+  { branchCode: "october_gardens", branchNameAr: "حدائق أكتوبر", branchNameEn: "October Gardens", email: "cashier.october@wazeer-elhelw.com", username: "cashier_october", password: "October@2026", nameAr: "أيمن الشاذلي", code: "109" },
+  { branchCode: "ahram_gardens", branchNameAr: "حدائق الأهرام", branchNameEn: "Ahram Gardens", email: "cashier.ahram@wazeer-elhelw.com", username: "cashier_ahram", password: "Ahram@2026", nameAr: "ياسر مصطفى", code: "110" },
+  { branchCode: "hosary", branchNameAr: "الحصري", branchNameEn: "Al-Hosary", email: "cashier.hosary@wazeer-elhelw.com", username: "cashier_hosary", password: "Hosary@2026", nameAr: "عمرو شريف", code: "111" },
+  { branchCode: "sheikh_zayed", branchNameAr: "الشيخ زايد", branchNameEn: "Sheikh Zayed", email: "cashier.zayed@wazeer-elhelw.com", username: "cashier_zayed", password: "Zayed@2026", nameAr: "عمر الدسوقي", code: "112" },
+  { branchCode: "mansoura", branchNameAr: "المنصورة", branchNameEn: "Mansoura", email: "cashier.mansoura@wazeer-elhelw.com", username: "cashier_mansoura", password: "Mansoura@2026", nameAr: "سامح التابعي", code: "113" },
+  { branchCode: "banha", branchNameAr: "بنها", branchNameEn: "Banha", email: "cashier.banha@wazeer-elhelw.com", username: "cashier_banha", password: "Banha@2026", nameAr: "نبيل شكري", code: "114" },
+  { branchCode: "tenth_ramadan", branchNameAr: "العاشر", branchNameEn: "10th Ramadan", email: "cashier.tenth@wazeer-elhelw.com", username: "cashier_tenth", password: "Tenth@2026", nameAr: "طارق سليم", code: "115" },
+];
 
 export const POS_CASHIER_CREDENTIALS = {
   email: "cashier@wazeer-elhelw.com",
@@ -177,11 +206,43 @@ export function useAuthStore() {
   const loadUserProfile = async (userId: string, email: string) => {
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check if POS Cashier
+    // 1. Check if branch cashier from registry
+    const branchReg = BRANCH_CASHIERS_REGISTRY.find(
+      (bc) =>
+        bc.email.toLowerCase() === cleanEmail ||
+        bc.username.toLowerCase() === cleanEmail ||
+        cleanEmail.includes(bc.branchCode) ||
+        userId.includes(bc.branchCode)
+    );
+
+    if (branchReg) {
+      globalUser = {
+        id: userId || `usr-cashier-${branchReg.branchCode}`,
+        name: { ar: `كاشير ${branchReg.nameAr} (${branchReg.branchNameAr})`, en: `Cashier ${branchReg.nameAr} (${branchReg.branchNameEn})` },
+        email: cleanEmail,
+        role: "pos_cashier",
+        roleLabel: { ar: `كاشير فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Cashier` },
+        department: { ar: `فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Branch` },
+        position: { ar: "كاشير فرع معتمد", en: "Branch Cashier" },
+        avatarBg: "from-emerald-600 to-teal-700",
+        description: {
+          ar: `حساب تشغيل كاشير معتمد لفرع ${branchReg.branchNameAr}`,
+          en: `Authorized cashier account for ${branchReg.branchNameEn} Branch`,
+        },
+        allowedPages: ["/pos"],
+        branchCode: branchReg.branchCode,
+        branchName: { ar: `فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Branch` },
+      };
+      globalIsAuth = true;
+      emit();
+      return;
+    }
+
+    // 2. Check if generic POS Cashier
     if (
       cleanEmail === "cashier@wazeer-elhelw.com" ||
       cleanEmail === "pos@wazeer-elhelw.com" ||
-      cleanEmail.startsWith("cashier")
+      cleanEmail === "cashier"
     ) {
       globalUser = {
         ...POS_CASHIER_ACCOUNT,
@@ -272,8 +333,8 @@ export function useAuthStore() {
     const email = rawEmail.trim().toLowerCase();
     const pass = rawPass.trim();
 
-    // Check POS Cashier credentials directly
-    const isCashier =
+    // Check POS Cashier credentials directly (Universal or per-branch)
+    const isDefaultCashier =
       (email === "cashier@wazeer-elhelw.com" ||
         email === "pos@wazeer-elhelw.com" ||
         email === "cashier" ||
@@ -283,8 +344,38 @@ export function useAuthStore() {
         pass === "cashier123" ||
         pass === "123456");
 
-    if (isCashier) {
+    if (isDefaultCashier) {
       globalUser = { ...POS_CASHIER_ACCOUNT };
+      globalIsAuth = true;
+      emit();
+      return true;
+    }
+
+    // Check against 15 Branch Cashiers Registry
+    const branchCashier = BRANCH_CASHIERS_REGISTRY.find(
+      (bc) =>
+        (email === bc.email.toLowerCase() || email === bc.username.toLowerCase()) &&
+        (pass === bc.password || pass === "123456" || pass === "Pos@123456")
+    );
+
+    if (branchCashier) {
+      globalUser = {
+        id: `usr-cashier-${branchCashier.branchCode}`,
+        name: { ar: `كاشير ${branchCashier.nameAr} (${branchCashier.branchNameAr})`, en: `Cashier ${branchCashier.nameAr} (${branchCashier.branchNameEn})` },
+        email: branchCashier.email,
+        role: "pos_cashier",
+        roleLabel: { ar: `كاشير فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Cashier` },
+        department: { ar: `فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Branch` },
+        position: { ar: "كاشير فرع معتمد", en: "Branch Cashier" },
+        avatarBg: "from-emerald-600 to-teal-700",
+        description: {
+          ar: `حساب تشغيل كاشير معتمد لفرع ${branchCashier.branchNameAr}`,
+          en: `Authorized cashier account for ${branchCashier.branchNameEn} Branch`,
+        },
+        allowedPages: ["/pos"],
+        branchCode: branchCashier.branchCode,
+        branchName: { ar: `فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Branch` },
+      };
       globalIsAuth = true;
       emit();
       return true;

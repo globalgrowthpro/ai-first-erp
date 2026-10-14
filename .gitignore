@@ -33,3 +33,11 @@ dist-ssr
 
 # Supabase CLI temp
 supabase/.temp/
+
+# Confidential credentials and scratch exports (Do NOT commit)
+scratch/
+*credentials*.xlsx
+*حسابات*.xlsx
+*فروع*.xlsx
+*.xlsx
+

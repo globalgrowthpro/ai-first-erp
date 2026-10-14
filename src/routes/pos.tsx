@@ -69,7 +69,7 @@ import { useInventoryStore, calculateBuildableQuantity } from "@/lib/inventory-s
 import { usePartnersStore } from "@/lib/partners-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, BRANCH_CASHIERS_REGISTRY } from "@/lib/auth-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealQrCode } from "@/components/ui/qr-code";
@@ -129,13 +129,23 @@ interface HeldOrder {
   orderRefNumber?: string | undefined;
 }
 
-// Available POS Branches
+// Available POS Branches (15 Wazeer El-Helw Branches)
 export const POS_BRANCHES = [
   { id: "korba", ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis Branch", phone: "+20 100 455 2211" },
-  { id: "maadi", ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St. Branch", phone: "+20 100 882 3344" },
-  { id: "tagamoa", ar: "فرع التجمع الخامس — التسعين", en: "New Cairo — 90th St. Branch", phone: "+20 100 994 5566" },
-  { id: "coast", ar: "فرع الساحل الشمالي — مارينا", en: "North Coast — Marina Hub", phone: "+20 100 331 7788" },
-  { id: "kitchen", ar: "المطبخ المركزي — طلبات التوصيل", en: "Central Kitchen Delivery Hub", phone: "+20 100 112 0000" },
+  { id: "abbas", ar: "فرع عباس العقاد — مدينة نصر", en: "Abbas El-Akkad — Nasr City Branch", phone: "+20 100 551 2233" },
+  { id: "helmeya", ar: "فرع الحلمية — حلمية الزيتون", en: "Helmeya Branch", phone: "+20 100 662 3344" },
+  { id: "khosoos", ar: "فرع الخصوص — القليوبية", en: "El-Khosoos Branch", phone: "+20 100 773 4455" },
+  { id: "wost_elbalad", ar: "فرع وسط البلد — طلعت حرب", en: "Downtown — Talaat Harb Branch", phone: "+20 100 884 5566" },
+  { id: "giza", ar: "فرع الجيزة — ميدان الجيزة", en: "Giza Square Branch", phone: "+20 100 995 6677" },
+  { id: "faisal", ar: "فرع فيصل — شارع فيصل الرئيسي", en: "Faisal Main St. Branch", phone: "+20 100 116 7788" },
+  { id: "dar_elsalam", ar: "فرع دار السلام — الكورنيش", en: "Dar El-Salam Branch", phone: "+20 100 227 8899" },
+  { id: "october_gardens", ar: "فرع حدائق أكتوبر — زويل", en: "October Gardens Branch", phone: "+20 100 338 9900" },
+  { id: "ahram_gardens", ar: "فرع حدائق الأهرام — البوابة الثانية", en: "Ahram Gardens Branch", phone: "+20 100 449 0011" },
+  { id: "hosary", ar: "فرع الحصري — 6 أكتوبر", en: "Al-Hosary — 6th of October Branch", phone: "+20 100 550 1122" },
+  { id: "sheikh_zayed", ar: "فرع الشيخ زايد — أمريكانا بلازا", en: "Sheikh Zayed Branch", phone: "+20 100 661 2233" },
+  { id: "mansoura", ar: "فرع المنصورة — المشاية", en: "Mansoura — Meshaya Branch", phone: "+20 100 772 3344" },
+  { id: "banha", ar: "فرع بنها — الإشارة والفلل", en: "Banha — Villas Branch", phone: "+20 100 883 4455" },
+  { id: "tenth_ramadan", ar: "فرع العاشر — صيدناوي والمصنع المركزي", en: "10th of Ramadan Branch & Hub", phone: "+20 100 994 5566" },
 ];
 
 // POS Cashier User Profile (Multi-Users per Branch)
@@ -151,7 +161,7 @@ export interface PosCashierUser {
 }
 
 export const POS_BRANCH_CASHIERS: PosCashierUser[] = [
-  // فرع الكوربة — مصر الجديدة (korba)
+  // 1. الكوربة
   {
     id: "usr_korba_1",
     branchId: "korba",
@@ -162,103 +172,159 @@ export const POS_BRANCH_CASHIERS: PosCashierUser[] = [
     avatar: "👨‍🍳",
     avatarBg: "from-amber-600 to-orange-600",
   },
+  // 2. عباس العقاد
   {
-    id: "usr_korba_2",
-    branchId: "korba",
-    name: { ar: "سارة محمود", en: "Sara Mahmoud" },
+    id: "usr_abbas_1",
+    branchId: "abbas",
+    name: { ar: "محمد فتحي", en: "Mohamed Fathy" },
     code: "102",
-    role: "cashier",
-    roleLabel: { ar: "كاشير صالة", en: "Hall Cashier" },
-    avatar: "👩‍🍳",
-    avatarBg: "from-rose-600 to-pink-600",
-  },
-  {
-    id: "usr_korba_3",
-    branchId: "korba",
-    name: { ar: "كريم عادل", en: "Kareem Adel" },
-    code: "103",
-    role: "cashier",
-    roleLabel: { ar: "كاشير مسائي", en: "Evening Cashier" },
-    avatar: "👨‍💻",
-    avatarBg: "from-blue-600 to-indigo-600",
-  },
-  {
-    id: "usr_korba_4",
-    branchId: "korba",
-    name: { ar: "محمود عبد الله", en: "Mahmoud Abdullah" },
-    code: "100",
-    role: "branch_manager",
-    roleLabel: { ar: "مدير الفرع", en: "Branch Manager" },
-    avatar: "👔",
-    avatarBg: "from-purple-600 to-indigo-700",
-  },
-
-  // فرع المعادي (maadi)
-  {
-    id: "usr_maadi_1",
-    branchId: "maadi",
-    name: { ar: "طارق الشناوي", en: "Tarek Shennawy" },
-    code: "201",
     role: "lead_cashier",
     roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
     avatar: "👨‍🍳",
     avatarBg: "from-teal-600 to-emerald-600",
   },
+  // 3. الحلمية
   {
-    id: "usr_maadi_2",
-    branchId: "maadi",
-    name: { ar: "نورهان فتحي", en: "Nourhan Fathy" },
-    code: "202",
-    role: "cashier",
-    roleLabel: { ar: "كاشير صالة", en: "Hall Cashier" },
-    avatar: "👩‍💼",
-    avatarBg: "from-fuchsia-600 to-pink-600",
+    id: "usr_helmeya_1",
+    branchId: "helmeya",
+    name: { ar: "خالد سعيد", en: "Khaled Saeed" },
+    code: "103",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-blue-600 to-indigo-600",
   },
-
-  // فرع التجمع الخامس (tagamoa)
+  // 4. الخصوص
   {
-    id: "usr_tagamoa_1",
-    branchId: "tagamoa",
-    name: { ar: "عمر فاروق", en: "Omar Farouk" },
-    code: "301",
+    id: "usr_khosoos_1",
+    branchId: "khosoos",
+    name: { ar: "محمود بدوي", en: "Mahmoud Badawy" },
+    code: "104",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-rose-600 to-pink-600",
+  },
+  // 5. وسط البلد
+  {
+    id: "usr_wost_elbalad_1",
+    branchId: "wost_elbalad",
+    name: { ar: "أشرف عثمان", en: "Ashraf Othman" },
+    code: "105",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-purple-600 to-indigo-600",
+  },
+  // 6. الجيزة
+  {
+    id: "usr_giza_1",
+    branchId: "giza",
+    name: { ar: "حسام حسن", en: "Hossam Hassan" },
+    code: "106",
     role: "lead_cashier",
     roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
     avatar: "👨‍🍳",
     avatarBg: "from-amber-600 to-yellow-600",
   },
+  // 7. فيصل
   {
-    id: "usr_tagamoa_2",
-    branchId: "tagamoa",
-    name: { ar: "ياسمين خالد", en: "Yasmine Khaled" },
-    code: "302",
-    role: "cashier",
-    roleLabel: { ar: "كاشير صالة", en: "Hall Cashier" },
-    avatar: "👩‍🍳",
-    avatarBg: "from-violet-600 to-purple-600",
-  },
-
-  // فرع الساحل الشمالي (coast)
-  {
-    id: "usr_coast_1",
-    branchId: "coast",
-    name: { ar: "مصطفى فهمي", en: "Mostafa Fahmy" },
-    code: "401",
+    id: "usr_faisal_1",
+    branchId: "faisal",
+    name: { ar: "عادل رمزي", en: "Adel Ramzy" },
+    code: "107",
     role: "lead_cashier",
-    roleLabel: { ar: "كاشير الساحل", en: "Coast Cashier" },
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-emerald-600 to-teal-600",
+  },
+  // 8. دار السلام
+  {
+    id: "usr_dar_elsalam_1",
+    branchId: "dar_elsalam",
+    name: { ar: "كرم عبد العظيم", en: "Karam Abdelazim" },
+    code: "108",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
     avatar: "👨‍🍳",
     avatarBg: "from-cyan-600 to-blue-600",
   },
-
-  // المطبخ المركزي (kitchen)
+  // 9. حدائق أكتوبر
   {
-    id: "usr_kitchen_1",
-    branchId: "kitchen",
-    name: { ar: "الشيف هاني", en: "Chef Hany" },
-    code: "501",
-    role: "supervisor",
-    roleLabel: { ar: "مشرف طلبيات", en: "Dispatch Supervisor" },
+    id: "usr_october_gardens_1",
+    branchId: "october_gardens",
+    name: { ar: "أيمن الشاذلي", en: "Ayman El-Shazly" },
+    code: "109",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
     avatar: "👨‍🍳",
-    avatarBg: "from-emerald-600 to-teal-600",
+    avatarBg: "from-violet-600 to-purple-600",
+  },
+  // 10. حدائق الأهرام
+  {
+    id: "usr_ahram_gardens_1",
+    branchId: "ahram_gardens",
+    name: { ar: "ياسر مصطفى", en: "Yasser Mostafa" },
+    code: "110",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-fuchsia-600 to-pink-600",
+  },
+  // 11. الحصري
+  {
+    id: "usr_hosary_1",
+    branchId: "hosary",
+    name: { ar: "عمرو شريف", en: "Amr Sherif" },
+    code: "111",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-orange-600 to-amber-600",
+  },
+  // 12. الشيخ زايد
+  {
+    id: "usr_sheikh_zayed_1",
+    branchId: "sheikh_zayed",
+    name: { ar: "عمر الدسوقي", en: "Omar El-Desouky" },
+    code: "112",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-lime-600 to-emerald-600",
+  },
+  // 13. المنصورة
+  {
+    id: "usr_mansoura_1",
+    branchId: "mansoura",
+    name: { ar: "سامح التابعي", en: "Sameh El-Tabei" },
+    code: "113",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-sky-600 to-blue-600",
+  },
+  // 14. بنها
+  {
+    id: "usr_banha_1",
+    branchId: "banha",
+    name: { ar: "نبيل شكري", en: "Nabil Shokry" },
+    code: "114",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-indigo-600 to-violet-600",
+  },
+  // 15. العاشر من رمضان
+  {
+    id: "usr_tenth_ramadan_1",
+    branchId: "tenth_ramadan",
+    name: { ar: "طارق سليم", en: "Tarek Selim" },
+    code: "115",
+    role: "lead_cashier",
+    roleLabel: { ar: "كاشير رئيسي", en: "Lead Cashier" },
+    avatar: "👨‍🍳",
+    avatarBg: "from-emerald-600 to-teal-700",
   },
 ];
 
@@ -535,25 +601,96 @@ export function PosPage() {
     consumeAssemblyStock,
   } = useInventoryStore();
 
-  // Resolve active branch from live DB (locked — cashier cannot change it)
-  const activeBranch = useMemo(() => {
-    if (dbBranches.length === 0) return null;
-    return dbBranches[0] ?? null;
-  }, [dbBranches]);
+  // Resolve assigned branch for currentUser (strictly checks branch assignment)
+  // If user is assigned to a branch, returns that branch. If not assigned, returns null (empty).
+  const assignedBranch = useMemo(() => {
+    if (!currentUser) return null;
 
-  // Selected Branch — derived from live DB branches (read-only on POS, cashier cannot change it)
-  // Kept in POS_BRANCHES-compatible shape { id, ar, en, phone } for backward compatibility
+    // 1. Direct branchCode on currentUser
+    const userBranchCode = (currentUser as any).branchCode?.toLowerCase()?.trim();
+    if (userBranchCode) {
+      const foundInPos = POS_BRANCHES.find((b) => b.id.toLowerCase() === userBranchCode);
+      if (foundInPos) {
+        return {
+          id: foundInPos.id,
+          name: { ar: foundInPos.ar, en: foundInPos.en },
+          phone: foundInPos.phone,
+        };
+      }
+      const foundInDb = dbBranches.find(
+        (b) => b.code?.toLowerCase() === userBranchCode || b.id?.toLowerCase() === userBranchCode
+      );
+      if (foundInDb) return foundInDb;
+    }
+
+    // 2. Direct branchName on currentUser
+    if ((currentUser as any).branchName?.ar) {
+      const bn = (currentUser as any).branchName;
+      return {
+        id: userBranchCode || "branch-assigned",
+        name: { ar: bn.ar, en: bn.en || bn.ar },
+        phone: "",
+      };
+    }
+
+    // 3. Match from BRANCH_CASHIERS_REGISTRY using email, username, id, or department/roleLabel/name
+    const userEmail = currentUser.email?.toLowerCase()?.trim() || "";
+    const userId = currentUser.id?.toLowerCase() || "";
+    const reg = BRANCH_CASHIERS_REGISTRY.find(
+      (bc) =>
+        bc.email.toLowerCase() === userEmail ||
+        bc.username.toLowerCase() === userEmail ||
+        userId.includes(bc.branchCode) ||
+        userEmail.includes(bc.branchCode) ||
+        currentUser.name?.ar?.includes(bc.branchNameAr) ||
+        currentUser.department?.ar?.includes(bc.branchNameAr) ||
+        currentUser.roleLabel?.ar?.includes(bc.branchNameAr)
+    );
+
+    if (reg) {
+      const foundInPos = POS_BRANCHES.find((b) => b.id.toLowerCase() === reg.branchCode.toLowerCase());
+      if (foundInPos) {
+        return {
+          id: foundInPos.id,
+          name: { ar: foundInPos.ar, en: foundInPos.en },
+          phone: foundInPos.phone,
+        };
+      }
+      const foundInDb = dbBranches.find(
+        (b) => b.code?.toLowerCase() === reg.branchCode.toLowerCase() || b.id?.toLowerCase() === reg.branchCode.toLowerCase()
+      );
+      if (foundInDb) return foundInDb;
+
+      return {
+        id: reg.branchCode,
+        name: { ar: `فرع ${reg.branchNameAr}`, en: `${reg.branchNameEn} Branch` },
+        phone: "",
+      };
+    }
+
+    // 4. User is NOT assigned to any branch -> return null (show empty)
+    return null;
+  }, [currentUser, dbBranches]);
+
+  const activeBranch = assignedBranch;
+
+  // Selected Branch — derived from assigned branch.
+  // If not assigned to any branch, defaults to empty.
   const selectedBranch = useMemo(() => {
     if (activeBranch) {
       return {
         id: activeBranch.id,
         ar: activeBranch.name.ar,
         en: activeBranch.name.en,
-        phone: activeBranch.phone || "",
+        phone: (activeBranch as any).phone || "",
       };
     }
-    // Fallback to first static branch only if DB has no branches yet
-    return POS_BRANCHES[0]!;
+    return {
+      id: "unassigned",
+      ar: "",
+      en: "",
+      phone: "",
+    };
   }, [activeBranch]);
 
   // Multi-Users / Cashiers for this branch
@@ -1867,10 +2004,10 @@ export function PosPage() {
             title={lang === "ar" ? "الفرع المخصص لنقطة البيع (مقفل على المحطة)" : "Terminal Branch (Locked)"}
           >
             <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-            <span className="truncate max-w-[200px] text-xs font-medium">
+            <span className="truncate max-w-[200px] text-xs font-medium min-h-[16px]">
               {activeBranch
                 ? (lang === "ar" ? activeBranch.name.ar : activeBranch.name.en)
-                : (lang === "ar" ? "المطبخ المركزي" : "Central Kitchen")}
+                : ""}
             </span>
             <Lock className="w-3 h-3 text-muted-foreground opacity-50 ms-0.5 shrink-0" />
           </div>

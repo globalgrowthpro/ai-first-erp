@@ -10,8 +10,9 @@ import { useDispatchStore } from "@/lib/dispatch-store";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 import { AdminPosOrdersView } from "@/components/pos/AdminPosOrdersView";
 import { AdminPosShiftsView } from "@/components/pos/AdminPosShiftsView";
+import { SalesReportsHub } from "@/components/sales/SalesReportsHub";
 import { usePosOrdersStore } from "@/lib/pos-orders-store";
-import { FileText, ShoppingBag, History } from "lucide-react";
+import { FileText, ShoppingBag, History, BarChart3 } from "lucide-react";
 
 export const Route = createFileRoute("/sales")({
   head: () => ({
@@ -39,7 +40,7 @@ function Sales() {
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "all_invoices" | "commercial">("pos_orders");
+  const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "all_invoices" | "commercial" | "sales_reports">("pos_orders");
   const { metrics: posMetrics } = usePosOrdersStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -416,6 +417,28 @@ function Sales() {
             {documents.filter((inv) => inv.balance > 0 || inv.status !== "paid").length} {pick("فاتورة", "invoices")}
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setSalesTab("sales_reports")}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "sales_reports"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <BarChart3 className={`w-4 h-4 ${salesTab === "sales_reports" ? "text-emerald-300" : "text-emerald-500"}`} />
+          <span>{pick("تقارير المبيعات الشاملة", "Sales Reports Suite")}</span>
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black transition-all ${
+              salesTab === "sales_reports"
+                ? "bg-white text-slate-950 shadow-sm ring-1 ring-black/10"
+                : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+            }`}
+          >
+            8 {pick("تقارير", "reports")}
+          </span>
+        </button>
       </div>
 
       {/* View 1: POS Retail Orders */}
@@ -424,8 +447,11 @@ function Sales() {
       {/* View 2: Cashier Shifts & Drawer Ledger */}
       {salesTab === "pos_shifts" && <AdminPosShiftsView />}
 
+      {/* View 5: Comprehensive Sales Reports Hub */}
+      {salesTab === "sales_reports" && <SalesReportsHub />}
+
       {/* View 3 & 4: Standard Invoices Table */}
-      {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && (
+      {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && salesTab !== "sales_reports" && (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <KpiCard label={t("kpi_sales")} value={money(total)} accent="primary" />
