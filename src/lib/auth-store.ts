@@ -67,6 +67,12 @@ export const POS_CASHIER_CREDENTIALS = {
   password: "Pos@123456",
 } as const;
 
+export const ADMIN_ACCOUNT_CREDENTIALS = {
+  email: "wazeerAdmin@erp.org",
+  username: "wazeerAdmin",
+  password: "#786$Wazeri",
+} as const;
+
 export const DEFAULT_USER: AppUser = {
   id: "usr-1",
   name: { ar: "وزير الحلو", en: "Hafez Rahim" },
@@ -106,6 +112,7 @@ export async function saveProvisionedAccount(account: {
   name?: { ar: string; en: string };
   department?: { ar: string; en: string };
   position?: { ar: string; en: string };
+  allowedPages?: string[];
 }) {
   const normalizedEmail = account.email.trim().toLowerCase();
   const entry: ProvisionedAccount = {
@@ -121,7 +128,7 @@ export async function saveProvisionedAccount(account: {
 
   provisionedAccountsMap.set(normalizedEmail, entry);
 
-  // Synchronize directly to Supabase profiles & user_roles tables
+  // Synchronize directly to Supabase profiles, user_roles & user_pages tables
   try {
     await supabase.from("profiles").upsert({
       id: account.userId,
@@ -138,6 +145,20 @@ export async function saveProvisionedAccount(account: {
         role: account.role as any,
       });
     }
+
+    if (account.allowedPages && account.allowedPages.length > 0) {
+      try {
+        await supabase.from("user_pages").delete().eq("user_id", account.userId);
+        const valid = account.allowedPages.filter((p) => p && p !== "*");
+        if (valid.length > 0) {
+          await supabase.from("user_pages").insert(
+            valid.map((pagePath) => ({ user_id: account.userId, page_path: pagePath }))
+          );
+        }
+      } catch (pageErr) {
+        console.warn("[Auth Store] Could not sync user_pages to Supabase:", pageErr);
+      }
+    }
   } catch (err) {
     console.warn("[Auth Store] Could not sync provisioned account to Supabase:", err);
   }
@@ -147,14 +168,53 @@ export function getProvisionedAccount(email: string): ProvisionedAccount | undef
   return provisionedAccountsMap.get(email.trim().toLowerCase());
 }
 
-let globalUser: AppUser | null = null;
-let globalIsAuth = false;
+const AUTH_USER_KEY = "wazeer_erp_auth_user";
+const AUTH_STATUS_KEY = "wazeer_erp_is_auth";
+
+function readStoredUser(): AppUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(AUTH_USER_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function readStoredAuth(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const isAuth = localStorage.getItem(AUTH_STATUS_KEY);
+    if (isAuth === "true") return true;
+    if (localStorage.getItem(AUTH_USER_KEY)) return true;
+  } catch {}
+  return false;
+}
+
+let globalUser: AppUser | null = readStoredUser();
+let globalIsAuth = readStoredAuth();
 const listeners = new Set<() => void>();
 
 function emit() {
   for (const l of listeners) {
     l();
   }
+}
+
+function persistSession(user: AppUser | null, isAuth: boolean) {
+  globalUser = user;
+  globalIsAuth = isAuth;
+  if (typeof window !== "undefined") {
+    try {
+      if (user && isAuth) {
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        localStorage.setItem(AUTH_STATUS_KEY, "true");
+      } else {
+        localStorage.removeItem(AUTH_USER_KEY);
+        localStorage.removeItem(AUTH_STATUS_KEY);
+      }
+    } catch {}
+  }
+  emit();
 }
 
 let initialized = false;
@@ -171,13 +231,22 @@ async function syncAccountsFromSupabase() {
       for (const p of profiles) {
         if (!p.email) continue;
         const normalized = p.email.toLowerCase().trim();
-        const role = roles?.find((r) => r.user_id === p.id)?.role || "sales";
+        const isProfileAdmin =
+          normalized === "wazeeradmin@erp.org" ||
+          normalized.includes("admin") ||
+          (p.full_name_ar && p.full_name_ar.includes("أدمين")) ||
+          (p.full_name_en && p.full_name_en.toLowerCase().includes("admin"));
+
+        const role = roles?.find((r) => r.user_id === p.id)?.role || (isProfileAdmin ? "admin" : "sales");
         if (!provisionedAccountsMap.has(normalized)) {
           provisionedAccountsMap.set(normalized, {
             email: normalized,
             role,
             userId: p.id,
-            name: { ar: p.full_name_ar || "", en: p.full_name_en || "" },
+            name: {
+              ar: p.full_name_ar || (isProfileAdmin ? "مسؤول النظام" : ""),
+              en: p.full_name_en || (isProfileAdmin ? "Administrator" : ""),
+            },
             updatedAt: new Date().toISOString(),
           });
         }
@@ -203,8 +272,39 @@ export function useAuthStore() {
     };
   }, []);
 
+  const getDynamicPagesForUser = async (userId: string, email?: string): Promise<string[] | null> => {
+    try {
+      let targetId = userId;
+      const cleanEmail = email?.trim().toLowerCase();
+
+      // If userId is not a UUID, resolve it from profiles via email
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId) && cleanEmail) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", cleanEmail)
+          .maybeSingle();
+        if (prof?.id) targetId = prof.id;
+      }
+
+      if (targetId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+        const { data: dbPages } = await supabase
+          .from("user_pages")
+          .select("page_path")
+          .eq("user_id", targetId);
+        if (dbPages && dbPages.length > 0) {
+          return dbPages.map((p: any) => p.page_path);
+        }
+      }
+    } catch (err) {
+      console.warn("[Auth Store] Could not query user_pages from Supabase:", err);
+    }
+    return null;
+  };
+
   const loadUserProfile = async (userId: string, email: string) => {
     const cleanEmail = email.trim().toLowerCase();
+    const dynamicPages = await getDynamicPagesForUser(userId, cleanEmail);
 
     // 1. Check if branch cashier from registry
     const branchReg = BRANCH_CASHIERS_REGISTRY.find(
@@ -216,7 +316,7 @@ export function useAuthStore() {
     );
 
     if (branchReg) {
-      globalUser = {
+      persistSession({
         id: userId || `usr-cashier-${branchReg.branchCode}`,
         name: { ar: `كاشير ${branchReg.nameAr} (${branchReg.branchNameAr})`, en: `Cashier ${branchReg.nameAr} (${branchReg.branchNameEn})` },
         email: cleanEmail,
@@ -229,12 +329,10 @@ export function useAuthStore() {
           ar: `حساب تشغيل كاشير معتمد لفرع ${branchReg.branchNameAr}`,
           en: `Authorized cashier account for ${branchReg.branchNameEn} Branch`,
         },
-        allowedPages: ["/pos"],
+        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
         branchCode: branchReg.branchCode,
         branchName: { ar: `فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Branch` },
-      };
-      globalIsAuth = true;
-      emit();
+      }, true);
       return;
     }
 
@@ -244,13 +342,26 @@ export function useAuthStore() {
       cleanEmail === "pos@wazeer-elhelw.com" ||
       cleanEmail === "cashier"
     ) {
-      globalUser = {
+      persistSession({
         ...POS_CASHIER_ACCOUNT,
         id: userId || POS_CASHIER_ACCOUNT.id,
         email: cleanEmail,
-      };
-      globalIsAuth = true;
-      emit();
+        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+      }, true);
+      return;
+    }
+
+    // 3. Check if Admin account by email (wazeerAdmin@erp.org)
+    if (cleanEmail === "wazeeradmin@erp.org" || cleanEmail === "wazeeradmin" || cleanEmail.includes("admin")) {
+      persistSession({
+        ...DEFAULT_USER,
+        id: userId || "usr-wazeer-admin",
+        email: cleanEmail,
+        name: { ar: "أدمين وزير الحلو", en: "Wazeer Admin" },
+        role: "admin",
+        roleLabel: { ar: "مسؤول النظام العام", en: "System Administrator" },
+        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+      }, true);
       return;
     }
 
@@ -259,45 +370,45 @@ export function useAuthStore() {
       const effectiveRole = roles && roles.length > 0 && roles[0] ? roles[0].role : "admin";
 
       if (effectiveRole === "pos_cashier") {
-        globalUser = {
+        persistSession({
           ...POS_CASHIER_ACCOUNT,
           id: userId,
           email: cleanEmail,
-        };
+          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+        }, true);
       } else if (effectiveRole === "admin") {
-        globalUser = {
+        persistSession({
           ...DEFAULT_USER,
           id: userId,
           email: cleanEmail,
           role: "admin",
+          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
           name: {
             ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
             en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
           },
-        };
+        }, true);
       } else {
-        globalUser = {
+        persistSession({
           ...DEFAULT_USER,
           id: userId,
           email: cleanEmail,
           role: effectiveRole as any,
-          allowedPages: ["/", "/sales", "/pos"],
+          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/", "/sales", "/pos"],
           name: {
             ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
             en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
           },
-        };
+        }, true);
       }
     } catch (_) {
-      globalUser = {
+      persistSession({
         ...DEFAULT_USER,
         id: userId,
         email: cleanEmail,
-      };
+        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+      }, true);
     }
-
-    globalIsAuth = true;
-    emit();
   };
 
   useEffect(() => {
@@ -307,16 +418,14 @@ export function useAuthStore() {
       // Sync user profiles from Supabase
       syncAccountsFromSupabase();
 
-      // Check live session with Supabase Auth
+      // Check live session with Supabase Auth (preserving local stored session on refresh)
       supabase.auth
         .getSession()
         .then(({ data: { session } }) => {
           if (session?.user) {
             loadUserProfile(session.user.id, session.user.email || "");
-          } else if (!globalUser) {
-            globalUser = null;
-            globalIsAuth = false;
-            emit();
+          } else if (!globalUser && !readStoredAuth()) {
+            persistSession(null, false);
           }
         })
         .catch(() => {});
@@ -326,6 +435,58 @@ export function useAuthStore() {
           loadUserProfile(session.user.id, session.user.email || "");
         }
       });
+
+      // Subscribe ONCE to real-time changes on public.user_pages table
+      try {
+        supabase
+          .channel("auth_user_pages_realtime_sync")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "user_pages" },
+            async (payload: any) => {
+              const current = globalUser;
+              if (!current) return;
+              const targetUserId = payload.new?.user_id || payload.old?.user_id;
+
+              let matchesCurrent = current.id === targetUserId;
+              if (!matchesCurrent && current.email) {
+                const { data: prof } = await supabase
+                  .from("profiles")
+                  .select("id")
+                  .eq("email", current.email.toLowerCase().trim())
+                  .maybeSingle();
+                if (prof?.id === targetUserId) {
+                  matchesCurrent = true;
+                }
+              }
+
+              if (matchesCurrent && targetUserId) {
+                const { data: dbPages } = await supabase
+                  .from("user_pages")
+                  .select("page_path")
+                  .eq("user_id", targetUserId);
+
+                const freshPages =
+                  dbPages && dbPages.length > 0
+                    ? dbPages.map((p: any) => p.page_path)
+                    : current.role === "admin"
+                    ? DEFAULT_USER.allowedPages
+                    : ["/pos"];
+
+                persistSession(
+                  {
+                    ...current,
+                    allowedPages: freshPages,
+                  },
+                  true
+                );
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn("[Auth Store] Realtime channel setup error:", err);
+      }
     }
   }, []);
 
@@ -345,9 +506,7 @@ export function useAuthStore() {
         pass === "123456");
 
     if (isDefaultCashier) {
-      globalUser = { ...POS_CASHIER_ACCOUNT };
-      globalIsAuth = true;
-      emit();
+      await loadUserProfile(POS_CASHIER_ACCOUNT.id, email);
       return true;
     }
 
@@ -359,25 +518,7 @@ export function useAuthStore() {
     );
 
     if (branchCashier) {
-      globalUser = {
-        id: `usr-cashier-${branchCashier.branchCode}`,
-        name: { ar: `كاشير ${branchCashier.nameAr} (${branchCashier.branchNameAr})`, en: `Cashier ${branchCashier.nameAr} (${branchCashier.branchNameEn})` },
-        email: branchCashier.email,
-        role: "pos_cashier",
-        roleLabel: { ar: `كاشير فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Cashier` },
-        department: { ar: `فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Branch` },
-        position: { ar: "كاشير فرع معتمد", en: "Branch Cashier" },
-        avatarBg: "from-emerald-600 to-teal-700",
-        description: {
-          ar: `حساب تشغيل كاشير معتمد لفرع ${branchCashier.branchNameAr}`,
-          en: `Authorized cashier account for ${branchCashier.branchNameEn} Branch`,
-        },
-        allowedPages: ["/pos"],
-        branchCode: branchCashier.branchCode,
-        branchName: { ar: `فرع ${branchCashier.branchNameAr}`, en: `${branchCashier.branchNameEn} Branch` },
-      };
-      globalIsAuth = true;
-      emit();
+      await loadUserProfile(`usr-cashier-${branchCashier.branchCode}`, branchCashier.email);
       return true;
     }
 
@@ -393,61 +534,26 @@ export function useAuthStore() {
     // Check provisioned accounts synced from Supabase
     const prov = getProvisionedAccount(email);
     if (prov && (!prov.passwordPlain || pass === prov.passwordPlain)) {
-      const roleMap: Record<string, { ar: string; en: string }> = {
-        sales: { ar: "نقطة بيع ومبيعات الفروع", en: "POS & Sales" },
-        pos_cashier: { ar: "كاشير نقطة بيع", en: "POS Cashier" },
-        admin: { ar: "مسؤول النظام", en: "System Administrator" },
-        accountant: { ar: "محاسب ومراجع مالي", en: "Accountant" },
-        inventory_manager: { ar: "أمين مخزن ومستودعات", en: "Inventory Manager" },
-        hr_manager: { ar: "مدير موارد بشرية", en: "HR Manager" },
-        branch_manager: { ar: "مدير فرع / تشغيل", en: "Branch Manager" },
-      };
-
-      const allowedPagesMap: Record<string, string[]> = {
-        sales: ["/pos", "/sales"],
-        pos_cashier: ["/pos"],
-        accountant: ["/", "/accounting", "/sales", "/purchases", "/reports"],
-        inventory_manager: ["/", "/inventory", "/purchases", "/manufacturing"],
-        hr_manager: ["/", "/hr", "/reports"],
-        branch_manager: ["/", "/pos", "/sales", "/inventory", "/reports"],
-        admin: [
-          "/", "/pos", "/pos-shifts", "/sales", "/purchases", "/accounting", "/inventory",
-          "/manufacturing", "/dispatch", "/partners", "/hr", "/reports",
-          "/audit", "/helpdesk", "/ai", "/ai-modules", "/settings"
-        ],
-      };
-
-      globalUser = {
-        id: prov.userId,
-        name: prov.name,
-        email: prov.email,
-        role: prov.role,
-        roleLabel: roleMap[prov.role] || { ar: prov.role, en: prov.role },
-        department: prov.department || { ar: "العام", en: "General" },
-        position: prov.position || { ar: "موظف معتمد", en: "Staff" },
-        avatarBg: "from-blue-600 to-indigo-700",
-        description: { ar: "حساب دخول نظام الـ ERP", en: "ERP Access Account" },
-        allowedPages: allowedPagesMap[prov.role] || ["/", "/pos", "/sales"],
-      };
-      globalIsAuth = true;
-      emit();
+      await loadUserProfile(prov.userId, prov.email);
       return true;
     }
 
-    // Admin fallback credentials
+    // Admin fallback credentials (including official credentials wazeerAdmin@erp.org / #786$Wazeri)
     const isAdmin =
-      (email === "hafez@wazeer-elhelw.com" ||
+      (email === "wazeeradmin@erp.org" ||
+        email === "wazeeradmin" ||
+        email === "hafez@wazeer-elhelw.com" ||
         email === "admin@wazeer-elhelw.com" ||
         email === "admin") &&
-      (pass === "admin123" ||
+      (pass === "#786$Wazeri" ||
+        pass === "admin123" ||
         pass === "wazeer123" ||
         pass === "123456" ||
         pass === "Pos@123456");
 
     if (isAdmin) {
-      globalUser = { ...DEFAULT_USER };
-      globalIsAuth = true;
-      emit();
+      const cleanAdminEmail = email.includes("@") ? email : "wazeeradmin@erp.org";
+      await loadUserProfile("usr-wazeer-admin", cleanAdminEmail);
       return true;
     }
 
@@ -461,23 +567,30 @@ export function useAuthStore() {
     try {
       await supabase.auth.signOut();
     } catch (_) {}
-    globalUser = null;
-    globalIsAuth = false;
-    emit();
+    persistSession(null, false);
   };
 
   const setAuthenticated = (val: boolean) => {
-    globalIsAuth = val;
     if (!val) {
-      globalUser = null;
+      persistSession(null, false);
+    } else {
+      persistSession(globalUser || readStoredUser() || DEFAULT_USER, true);
     }
-    emit();
+  };
+
+  const adminAccount: AppUser = {
+    ...DEFAULT_USER,
+    id: "usr-wazeer-admin",
+    name: { ar: "أدمين وزير الحلو", en: "Wazeer Admin" },
+    email: "wazeerAdmin@erp.org",
+    role: "admin",
+    roleLabel: { ar: "مسؤول النظام (لوحة التحكم)", en: "System Administrator" },
   };
 
   return {
     currentUser: currentUser || DEFAULT_USER,
     isAuthenticated,
-    demoAccounts: [POS_CASHIER_ACCOUNT] as AppUser[],
+    demoAccounts: [adminAccount, POS_CASHIER_ACCOUNT] as AppUser[],
     login: loginSync,
     loginAsync: login,
     loginAs,

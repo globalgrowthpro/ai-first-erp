@@ -152,9 +152,10 @@ function useDocumentsStore(type: 'invoice' | 'purchase', prefix: string) {
   useEffect(() => {
     fetchDocs();
 
-    // Setup live subscription on sales_invoices
+    // Setup live subscription on sales_invoices with unique channel id per hook instance
+    const channelId = `live_documents_${type}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase
-      .channel(`live_documents_${type}`)
+      .channel(channelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sales_invoices" },
@@ -162,7 +163,9 @@ function useDocumentsStore(type: 'invoice' | 'purchase', prefix: string) {
           fetchDocs();
         }
       )
-      .subscribe();
+      .subscribe((status: string, err?: any) => {
+        if (err) console.warn("[Documents Store] Realtime error:", status, err);
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -6,6 +6,7 @@ import { Btn, DataTable, PageHeader, Panel, Td } from "@/components/kit";
 import { CompanyBrandingSettings } from "@/components/settings/CompanyBrandingSettings";
 import { UsersManagement } from "@/components/settings/UsersManagement";
 import { GatewaySettings } from "@/components/settings/GatewaySettings";
+import { SecurityCenter } from "@/components/settings/SecurityCenter";
 import { useSecurityStore } from "@/lib/security-store";
 import { useOrgStore } from "@/lib/org-store";
 
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/settings")({
 
 function Settings() {
   const { t, pick, n } = useI18n();
-  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways">("branding");
+  const [activeTab, setActiveTab] = useState<"branding" | "users" | "roles" | "gateways" | "security">("branding");
   const { security } = useSecurityStore();
   const { permissionMatrix, highRiskActions } = security;
   const { roles, users } = useOrgStore();
@@ -74,6 +75,14 @@ function Settings() {
         >
           <Radio className="size-4" />
           {pick("بوابات الرسائل والبريد (SMS & SMTP)", "Gateways & Notifications")}
+        </Btn>
+        <Btn
+          variant={activeTab === "security" ? "solid" : "outline"}
+          onClick={() => setActiveTab("security")}
+          className="text-xs border-primary/30"
+        >
+          <ShieldAlert className="size-4 text-primary" />
+          {pick("مركز الأمان والحماية (OWASP & APIs)", "Security Center & OWASP")}
         </Btn>
       </div>
 
@@ -142,6 +151,9 @@ function Settings() {
           </Panel>
         </div>
       )}
+
+      {/* Tab 5: Enterprise Security & OWASP Center */}
+      {activeTab === "security" && <SecurityCenter />}
     </div>
   );
 }

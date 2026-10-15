@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
-import { useAuthStore, POS_CASHIER_CREDENTIALS } from "@/lib/auth-store";
+import { useAuthStore } from "@/lib/auth-store";
 import { cn } from "@/lib/utils";
 
 interface LoginOverlayProps {
@@ -304,69 +304,69 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
         </div>
 
         {/* ============================================================ */}
-        {/* Right Side: Login Form & 1-Click Demo Accounts (Compact 4 cols) */}
+        {/* Right Side: Clean Professional Login Form */}
         {/* ============================================================ */}
-        <div className="lg:col-span-5 xl:col-span-4 p-4 sm:p-5 space-y-2.5 bg-card flex flex-col justify-between">
+        <div className="lg:col-span-5 xl:col-span-4 p-6 sm:p-8 space-y-4 bg-card flex flex-col justify-center">
           <div>
             {/* Form Header - Centered with Logo */}
-            <div className="flex flex-col items-center text-center pb-1">
-              <div className="mb-2 p-1.5 px-3 rounded-2xl bg-white shadow-xs border border-border/50 inline-flex items-center justify-center">
+            <div className="flex flex-col items-center text-center pb-2">
+              <div className="mb-2.5 p-2 px-3.5 rounded-2xl bg-white shadow-xs border border-border/50 inline-flex items-center justify-center">
                 <img
                   src={companyLogo}
                   alt={companyName}
                   className="h-9 sm:h-10 w-auto max-w-[130px] object-contain"
                 />
               </div>
-              <h1 className="text-lg font-black text-foreground tracking-tight">
+              <h1 className="text-xl font-black text-foreground tracking-tight">
                 {pick("تسجيل الدخول للنظام", "Sign In to ERP Workspace")}
               </h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                 {pick(
-                  "أدخل بريدك الإلكتروني وكلمة المرور للدخول",
+                  "أدخل بريدك الإلكتروني وكلمة المرور للدخول إلى المنظومة",
                   "Enter your credentials to securely access your workspace"
                 )}
               </p>
             </div>
 
             {error && (
-              <div className="mt-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="size-3.5 shrink-0" />
+              <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="size-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Manual Form */}
-            <form onSubmit={handleManualLogin} className="space-y-2.5 mt-3">
+            {/* Form */}
+            <form onSubmit={handleManualLogin} className="space-y-3.5 mt-4">
               <div>
-                <label className="block text-[11px] font-bold text-muted-foreground mb-0.5">
+                <label className="block text-xs font-bold text-foreground mb-1">
                   {pick("اسم المستخدم أو البريد الإلكتروني", "Username or Email")}
                 </label>
                 <div className="relative">
-                  <User className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <User className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <input
                     type="text"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="cashier@wazeer-elhelw.com"
-                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
+                    placeholder={pick("البريد الإلكتروني أو اسم المستخدم", "user@company.com")}
+                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-3 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10 transition-all text-foreground placeholder:text-muted-foreground/60"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-muted-foreground mb-0.5">
+                <label className="block text-xs font-bold text-foreground mb-1">
                   {pick("كلمة المرور", "Password")}
                 </label>
                 <div className="relative">
-                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-8 pe-3 py-1.5 text-xs font-mono outline-none focus:border-primary focus:bg-card transition-colors"
+                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-3 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10 transition-all text-foreground placeholder:text-muted-foreground/60"
                   />
                 </div>
               </div>
@@ -374,45 +374,20 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 transition-opacity flex items-center justify-center gap-2 cursor-pointer mt-1"
+                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
-                <KeyRound className="size-3.5" />
+                <KeyRound className="size-4" />
                 <span>{loading ? pick("جاري التحقق...", "Signing in...") : pick("تسجيل الدخول", "Sign In")}</span>
               </button>
             </form>
 
-            {/* Quick POS Cashier Credentials Card */}
-            <div className="mt-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold text-xs">
-                  <Store className="size-3.5" />
-                  <span>{pick("حساب كاشير نقطة البيع (POS Only)", "POS Cashier Account (POS Only)")}</span>
-                </div>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                  {pick("وصول حصري للـ POS", "POS Screen Only")}
-                </span>
-              </div>
-              <div className="text-[11px] space-y-1 text-muted-foreground bg-card/70 rounded-xl p-2 border border-border/60 font-mono">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-sans text-muted-foreground/80">{pick("المستخدم:", "User:")}</span>
-                  <span className="font-bold text-foreground">{POS_CASHIER_CREDENTIALS.email}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-sans text-muted-foreground/80">{pick("كلمة المرور:", "Pass:")}</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{POS_CASHIER_CREDENTIALS.password}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail(POS_CASHIER_CREDENTIALS.email);
-                  setPassword(POS_CASHIER_CREDENTIALS.password);
-                }}
-                className="w-full py-1.5 rounded-xl border border-emerald-500/40 bg-card text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Check className="size-3" />
-                <span>{pick("تعبئة بيانات الكاشير بنقرة واحدة", "Fill Cashier Credentials (1-Click)")}</span>
-              </button>
+            <div className="mt-6 pt-4 border-t border-border/50 text-center">
+              <p className="text-[11px] text-muted-foreground/80">
+                {pick(
+                  "منظومة تخطيط موارد المؤسسة الموحدة • وزير الحلو",
+                  "Unified Enterprise Resource Planning • Wazeer El-Helw"
+                )}
+              </p>
             </div>
           </div>
         </div>

@@ -164,3 +164,27 @@ AND NOT EXISTS (
   SELECT 1 FROM public.user_roles ur 
   WHERE ur.user_id = u.id AND ur.role = 'pos_cashier'::public.app_role
 );
+
+-- 4. Populate public.user_pages (POS cashiers allowed page: /pos)
+INSERT INTO public.user_pages (user_id, page_path)
+SELECT u.id, '/pos'
+FROM auth.users u
+WHERE u.email IN (
+  'cashier.korba@wazeer-elhelw.com',
+  'cashier.abbas@wazeer-elhelw.com',
+  'cashier.helmeya@wazeer-elhelw.com',
+  'cashier.khosoos@wazeer-elhelw.com',
+  'cashier.downtown@wazeer-elhelw.com',
+  'cashier.giza@wazeer-elhelw.com',
+  'cashier.faisal@wazeer-elhelw.com',
+  'cashier.darsalam@wazeer-elhelw.com',
+  'cashier.october@wazeer-elhelw.com',
+  'cashier.ahram@wazeer-elhelw.com',
+  'cashier.hosary@wazeer-elhelw.com',
+  'cashier.zayed@wazeer-elhelw.com',
+  'cashier.mansoura@wazeer-elhelw.com',
+  'cashier.banha@wazeer-elhelw.com',
+  'cashier.tenth@wazeer-elhelw.com'
+)
+ON CONFLICT (user_id, page_path) DO NOTHING;
+

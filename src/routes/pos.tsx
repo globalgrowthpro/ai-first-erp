@@ -2155,7 +2155,11 @@ export function PosPage() {
           {!hasOnlyPosPermission && (
             <Link
               to="/"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-all shadow-2xs h-10"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate({ to: "/" });
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-all shadow-2xs h-10 cursor-pointer"
               title={lang === "ar" ? "العودة للوحة تحكم النظام" : "Exit to ERP Dashboard"}
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-primary" />

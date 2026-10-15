@@ -148,9 +148,106 @@ function tryServeStatic(req, res) {
   return false;
 }
 
+// --- Enterprise Security & Hardening Middleware ---
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_GENERAL_REQ_PER_MIN = 180;
+const MAX_AUTH_REQ_PER_MIN = 10;
+const ipRequestHistory = new Map();
+
+// Periodic cleanup of expired rate limit buckets (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, timestamps] of ipRequestHistory.entries()) {
+    const valid = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+    if (valid.length === 0) {
+      ipRequestHistory.delete(ip);
+    } else {
+      ipRequestHistory.set(ip, valid);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (forwarded) {
+    const list = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(",")[0];
+    return list.trim();
+  }
+  return req.socket?.remoteAddress || "127.0.0.1";
+}
+
+function checkRateLimit(req, res) {
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const url = (req.url || "").toLowerCase();
+  const isAuthRoute = url.includes("/auth") || url.includes("/login") || url.includes("/sign-in");
+  const limit = isAuthRoute ? MAX_AUTH_REQ_PER_MIN : MAX_GENERAL_REQ_PER_MIN;
+
+  let timestamps = ipRequestHistory.get(ip) || [];
+  timestamps = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+
+  if (timestamps.length >= limit) {
+    res.statusCode = 429;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Retry-After", "60");
+    res.end(
+      JSON.stringify({
+        error: "Too Many Requests",
+        message: "Security rate limit exceeded. Please wait 60 seconds before retrying.",
+        status: 429,
+        ip,
+      })
+    );
+    return true; // blocked
+  }
+
+  timestamps.push(now);
+  ipRequestHistory.set(ip, timestamps);
+  return false;
+}
+
+function applySecurityHeaders(res) {
+  // 1. Content Security Policy (Prevents Cross-Site Scripting XSS & injection)
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://apis.google.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com data:; " +
+      "img-src 'self' data: blob: https://*.supabase.co; " +
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co; " +
+      "frame-ancestors 'none'; " +
+      "base-uri 'self'; " +
+      "form-action 'self';"
+  );
+
+  // 2. Strict Transport Security (HSTS - Force HTTPS)
+  res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+
+  // 3. Anti-Clickjacking
+  res.setHeader("X-Frame-Options", "DENY");
+
+  // 4. Anti-MIME Sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
+  // 5. Referrer Policy (Prevent internal URL leaks)
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // 6. Permissions Policy
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+}
+
 // Main HTTP Request Handler
 const server = http.createServer(async (req, res) => {
   try {
+    // A. Apply Enterprise Security Headers to all responses
+    applySecurityHeaders(res);
+
+    // B. Check IP Rate Limit (Brute Force & DoS Shield)
+    if (checkRateLimit(req, res)) {
+      return;
+    }
+
     // 1. Check if it is a static file in dist/client
     if (tryServeStatic(req, res)) {
       return;

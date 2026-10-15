@@ -501,7 +501,7 @@ export function SalesReportsHub() {
                                 <td key={col.key} className="py-2.5 px-3">
                                   <span
                                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                      colorStyles[b.color] || colorStyles.brand
+                                      colorStyles[b.color] || colorStyles["brand"]
                                     }`}
                                   >
                                     {lang === "ar" ? b.label.ar : b.label.en}

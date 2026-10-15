@@ -147,12 +147,27 @@ export function useOrgStore() {
         .order("created_at", { ascending: true });
 
       const { data: roles } = await supabase.from("user_roles").select("*");
+      const { data: allUserPages } = await supabase.from("user_pages").select("user_id, page_path");
+
+      const pagesByUser = new Map<string, string[]>();
+      if (allUserPages) {
+        for (const up of allUserPages) {
+          if (!up.user_id || !up.page_path) continue;
+          const list = pagesByUser.get(up.user_id) || [];
+          list.push(up.page_path);
+          pagesByUser.set(up.user_id, list);
+        }
+      }
 
       if (profiles && profiles.length > 0) {
         const dbUsers: UserItem[] = profiles.map((p: any) => {
           const roleRecord = roles?.find((r: any) => r.user_id === p.id);
           const dbRole = roleRecord?.role;
           const resolvedRole = dbRole ? fromDbRole(dbRole) : "sales";
+          const userDbPages = pagesByUser.get(p.id);
+          const effectivePages = userDbPages && userDbPages.length > 0
+            ? userDbPages
+            : (resolvedRole === "admin" ? ["*"] : ["/pos"]);
 
           return {
             id: p.id,
@@ -162,7 +177,7 @@ export function useOrgStore() {
             departmentId: p.department_id || "",
             positionId: p.position_id || "",
             role: resolvedRole,
-            allowedPages: ["*"],
+            allowedPages: effectivePages,
             allowedActions: ["*"],
             status: p.is_active ? "active" : "inactive",
             lastActive: p.updated_at
@@ -189,6 +204,18 @@ export function useOrgStore() {
         setLoading(false);
       }
     );
+
+    const channelName = "org_user_pages_live_" + Math.random().toString(36).slice(2);
+    const channel = supabase
+      .channel(channelName)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_pages" }, () => fetchUsers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchUsers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchUsers())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchDepartments, fetchPositions, fetchUsers]);
 
   // ================= USERS CRUD =================
@@ -239,6 +266,21 @@ export function useOrgStore() {
               user_id: userId,
               role: toDbRole(user.role) as any,
             });
+          }
+        }
+
+        // Sync allowed pages to public.user_pages in database
+        if (user.allowedPages && user.allowedPages.length > 0) {
+          try {
+            await supabase.from("user_pages").delete().eq("user_id", userId);
+            const validPages = user.allowedPages.filter((p) => p && p !== "*");
+            if (validPages.length > 0) {
+              await supabase.from("user_pages").insert(
+                validPages.map((pagePath) => ({ user_id: userId, page_path: pagePath }))
+              );
+            }
+          } catch (pageErr) {
+            console.warn("Error inserting user_pages:", pageErr);
           }
         }
       } catch (e) {
@@ -298,6 +340,21 @@ export function useOrgStore() {
             });
           }
         }
+
+        // 4. Dynamically sync allowedPages to public.user_pages
+        if (updates.allowedPages !== undefined) {
+          try {
+            await supabase.from("user_pages").delete().eq("user_id", id);
+            const validPages = updates.allowedPages.filter((p) => p && p !== "*");
+            if (validPages.length > 0) {
+              await supabase.from("user_pages").insert(
+                validPages.map((pagePath) => ({ user_id: id, page_path: pagePath }))
+              );
+            }
+          } catch (pageErr) {
+            console.warn("Error updating user_pages in DB:", pageErr);
+          }
+        }
       } catch (e) {
         console.warn("Supabase profile update error:", e);
       }
@@ -313,6 +370,7 @@ export function useOrgStore() {
       setUsers((prev) => prev.filter((u) => u.id !== id));
 
       try {
+        await supabase.from("user_pages").delete().eq("user_id", id);
         await supabase.from("user_roles").delete().eq("user_id", id);
         const { error } = await supabase.from("profiles").delete().eq("id", id);
         if (error) {
