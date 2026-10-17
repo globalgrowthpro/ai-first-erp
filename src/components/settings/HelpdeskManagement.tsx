@@ -30,12 +30,7 @@ import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, Panel, Td } from "@/components/kit";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -147,7 +142,9 @@ export function HelpdeskManagement() {
         const [empRes, profRes] = await Promise.all([
           (supabase as any)
             .from("employees")
-            .select("id, name_ar, name_en, email, positions(title_ar, title_en), departments(name_ar, name_en)")
+            .select(
+              "id, name_ar, name_en, email, positions(title_ar, title_en), departments(name_ar, name_en)",
+            )
             .eq("is_active", true),
           (supabase as any)
             .from("profiles")
@@ -302,7 +299,7 @@ export function HelpdeskManagement() {
               ar: c.name_ar,
               en: c.name_en || c.name_ar,
               isCustom: true,
-            }))
+            })),
           );
         }
       } catch (e) {
@@ -391,7 +388,9 @@ export function HelpdeskManagement() {
         setNewLocation(data[0].name_ar);
         setNewBranchNameAr("");
         setIsAddBranchOpen(false);
-        toast.success(pick(`تمت إضافة فرع "${trimmed}" بنجاح!`, `Branch "${trimmed}" created successfully!`));
+        toast.success(
+          pick(`تمت إضافة فرع "${trimmed}" بنجاح!`, `Branch "${trimmed}" created successfully!`),
+        );
       } else if (error) {
         toast.error(error.message);
       }
@@ -440,11 +439,11 @@ export function HelpdeskManagement() {
     return tickets.find((t) => t.id === selectedTicket.id) || selectedTicket;
   }, [tickets, selectedTicket]);
 
-  const handleCreateTicket = (e: React.FormEvent) => {
+  const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    addTicket({
+    const created = await addTicket({
       title: newTitle.trim(),
       description: newDesc.trim() || newTitle.trim(),
       category: newCategory,
@@ -463,17 +462,26 @@ export function HelpdeskManagement() {
     setNewDesc("");
     setNewSubmitter("");
     setNewPhone("");
+    toast.success(
+      pick(
+        `تم حفظ التذكرة (${created.ticketNumber}) وتثبيتها بنجاح`,
+        `Ticket (${created.ticketNumber}) saved and confirmed successfully`,
+      ),
+    );
   };
 
-  const handleSendReply = () => {
+  const handleSendReply = async () => {
     if (!activeTicket || !replyMessage.trim()) return;
-    addResponse(activeTicket.id, {
+    await addResponse(activeTicket.id, {
       sender: "مسؤول النظام (Admin)",
       senderRole: "مدير الدعم الفني",
       message: replyMessage.trim(),
       isInternal: isInternalNote,
     });
     setReplyMessage("");
+    toast.success(
+      pick("تم إرسال الرد وتثبيته في قاعدة البيانات", "Reply saved to database successfully"),
+    );
   };
 
   const excelInputRef = useRef<HTMLInputElement>(null);
@@ -482,31 +490,33 @@ export function HelpdeskManagement() {
   const handleExportExcel = () => {
     const listToExport = filteredTickets.length > 0 ? filteredTickets : tickets;
     if (listToExport.length === 0) {
-      toast.warning(pick("لا توجد تذاكر لتصديرها وفق الفلاتر المحددة", "No tickets available to export"));
+      toast.warning(
+        pick("لا توجد تذاكر لتصديرها وفق الفلاتر المحددة", "No tickets available to export"),
+      );
       return;
     }
 
     const exportRows = listToExport.map((tkt, idx) => ({
-      "م": idx + 1,
+      م: idx + 1,
       "رقم التذكرة": tkt.ticketNumber,
       "عنوان المشكلة": tkt.title,
-      "التصنيف": getCategoryLabel(tkt.category),
+      التصنيف: getCategoryLabel(tkt.category),
       "مستوى الأولوية":
         tkt.priority === "urgent"
           ? "عاجل جداً"
           : tkt.priority === "high"
-          ? "مرتفع"
-          : tkt.priority === "medium"
-          ? "متوسط"
-          : "منخفض",
-      "الحالة":
+            ? "مرتفع"
+            : tkt.priority === "medium"
+              ? "متوسط"
+              : "منخفض",
+      الحالة:
         tkt.status === "open"
           ? "مفتوحة"
           : tkt.status === "in_progress"
-          ? "قيد المعالجة"
-          : tkt.status === "resolved"
-          ? "تم الحل"
-          : "مغلقة",
+            ? "قيد المعالجة"
+            : tkt.status === "resolved"
+              ? "تم الحل"
+              : "مغلقة",
       "الفرع أو المنشأة": tkt.branchOrLocation,
       "المسؤول بالدعم": tkt.assignedTo,
       "مقدم البلاغ": tkt.submitterName,
@@ -540,7 +550,9 @@ export function HelpdeskManagement() {
     XLSX.utils.book_append_sheet(wb, ws, "تذاكر_الدعم_الفني");
     const dateSuffix = new Date().toISOString().slice(0, 10);
     safeDownloadWorkbook(wb, `تذاكر_الدعم_الفني_Helpdesk_${dateSuffix}.xlsx`);
-    toast.success(pick("تم تصدير التذاكر إلى ملف Excel بنجاح!", "Exported tickets to Excel successfully!"));
+    toast.success(
+      pick("تم تصدير التذاكر إلى ملف Excel بنجاح!", "Exported tickets to Excel successfully!"),
+    );
   };
 
   // Download Ready-made Template for Bulk Import
@@ -548,7 +560,7 @@ export function HelpdeskManagement() {
     const templateRows = [
       {
         "عنوان المشكلة *": "عطل في شاشة لمس الكاشير رقم 2",
-        "التصنيف": "نقاط البيع والفروع (POS)",
+        التصنيف: "نقاط البيع والفروع (POS)",
         "مستوى الأولوية": "مرتفع",
         "الفرع أو المنشأة *": "فرع الكوربة — مصر الجديدة",
         "المسؤول بالدعم": "فريق الدعم الفني المركزي",
@@ -556,11 +568,12 @@ export function HelpdeskManagement() {
         "المسمى الوظيفي": "مشرف الفرع",
         "رقم الهاتف": "+20 102 000 0000",
         "مهلة الحل (ساعات)": 4,
-        "تفاصيل المشكلة *": "الشاشة لا تستجيب للمس بعد إعادة التشغيل، تم فحص كابل الطاقة والـ USB دون جدوى.",
+        "تفاصيل المشكلة *":
+          "الشاشة لا تستجيب للمس بعد إعادة التشغيل، تم فحص كابل الطاقة والـ USB دون جدوى.",
       },
       {
         "عنوان المشكلة *": "طلب صيانة دورية لفرن المعجنات المركزي",
-        "التصنيف": "المطبخ المركزي والأفران",
+        التصنيف: "المطبخ المركزي والأفران",
         "مستوى الأولوية": "عاجل جداً",
         "الفرع أو المنشأة *": "المطبخ المركزي ومصنع العاشر",
         "المسؤول بالدعم": "م. إسلام حمدي (دعم النظم)",
@@ -588,7 +601,9 @@ export function HelpdeskManagement() {
     ];
     XLSX.utils.book_append_sheet(wb, ws, "قالب_استيراد_التذاكر");
     safeDownloadWorkbook(wb, "قالب_استيراد_تذاكر_الدعم_الفني.xlsx");
-    toast.info(pick("تم تحميل قالب استيراد التذاكر بنجاح", "Excel template downloaded successfully"));
+    toast.info(
+      pick("تم تحميل قالب استيراد التذاكر بنجاح", "Excel template downloaded successfully"),
+    );
   };
 
   // Import Helpdesk Tickets from Excel File
@@ -610,7 +625,9 @@ export function HelpdeskManagement() {
         if (!sheet) return;
         const rawRows = XLSX.utils.sheet_to_json(sheet) as Record<string, any>[];
         if (!rawRows.length) {
-          toast.warning(pick("الملف لا يحتوي على أي صفوف بيانات للاستيراد", "File contains no rows"));
+          toast.warning(
+            pick("الملف لا يحتوي على أي صفوف بيانات للاستيراد", "File contains no rows"),
+          );
           return;
         }
 
@@ -618,51 +635,61 @@ export function HelpdeskManagement() {
         for (const row of rawRows) {
           const title = String(
             row["عنوان المشكلة *"] ||
-            row["عنوان المشكلة"] ||
-            row["عنوان التذكرة"] ||
-            row["العنوان"] ||
-            row["Title"] ||
-            row["Subject"] ||
-            ""
+              row["عنوان المشكلة"] ||
+              row["عنوان التذكرة"] ||
+              row["العنوان"] ||
+              row["Title"] ||
+              row["Subject"] ||
+              "",
           ).trim();
 
           if (!title) continue;
 
           const desc = String(
             row["تفاصيل المشكلة *"] ||
-            row["تفاصيل المشكلة"] ||
-            row["التفاصيل"] ||
-            row["الوصف"] ||
-            row["Description"] ||
-            title
+              row["تفاصيل المشكلة"] ||
+              row["التفاصيل"] ||
+              row["الوصف"] ||
+              row["Description"] ||
+              title,
           ).trim();
 
-          const rawCategory = String(
-            row["التصنيف"] ||
-            row["Category"] ||
-            "branch_pos"
-          ).trim();
+          const rawCategory = String(row["التصنيف"] || row["Category"] || "branch_pos").trim();
 
           // match category
           let category: TicketCategory = "general_inquiry";
           const matched = allCategories.find(
-            (c) => c.ar === rawCategory || c.en === rawCategory || c.key === rawCategory
+            (c) => c.ar === rawCategory || c.en === rawCategory || c.key === rawCategory,
           );
           if (matched) {
             category = matched.key;
-          } else if (rawCategory.includes("POS") || rawCategory.includes("بيع") || rawCategory.includes("فروع")) {
+          } else if (
+            rawCategory.includes("POS") ||
+            rawCategory.includes("بيع") ||
+            rawCategory.includes("فروع")
+          ) {
             category = "branch_pos";
           } else if (rawCategory.includes("مطبخ") || rawCategory.includes("kitchen")) {
             category = "central_kitchen";
           } else if (rawCategory.includes("مخزون") || rawCategory.includes("supply")) {
             category = "inventory_supply";
-          } else if (rawCategory.includes("حساب") || rawCategory.includes("مالي") || rawCategory.includes("finance")) {
+          } else if (
+            rawCategory.includes("حساب") ||
+            rawCategory.includes("مالي") ||
+            rawCategory.includes("finance")
+          ) {
             category = "billing_accounting";
-          } else if (rawCategory.includes("نظام") || rawCategory.includes("عطل") || rawCategory.includes("bug")) {
+          } else if (
+            rawCategory.includes("نظام") ||
+            rawCategory.includes("عطل") ||
+            rawCategory.includes("bug")
+          ) {
             category = "system_bug";
           }
 
-          const rawPriority = String(row["مستوى الأولوية"] || row["الأولوية"] || row["Priority"] || "").trim();
+          const rawPriority = String(
+            row["مستوى الأولوية"] || row["الأولوية"] || row["Priority"] || "",
+          ).trim();
           let priority: TicketPriority = "medium";
           if (rawPriority.includes("عاجل") || rawPriority.toLowerCase().includes("urgent")) {
             priority = "urgent";
@@ -674,43 +701,37 @@ export function HelpdeskManagement() {
 
           const location = String(
             row["الفرع أو المنشأة *"] ||
-            row["الفرع أو المنشأة"] ||
-            row["الفرع"] ||
-            row["الموقع"] ||
-            row["Branch"] ||
-            row["Location"] ||
-            "المقر الإداري الرئيسي"
+              row["الفرع أو المنشأة"] ||
+              row["الفرع"] ||
+              row["الموقع"] ||
+              row["Branch"] ||
+              row["Location"] ||
+              "المقر الإداري الرئيسي",
           ).trim();
 
           const assignee = String(
             row["المسؤول بالدعم"] ||
-            row["المسؤول"] ||
-            row["Assignee"] ||
-            row["AssignedTo"] ||
-            "فريق الدعم الفني المركزي"
+              row["المسؤول"] ||
+              row["Assignee"] ||
+              row["AssignedTo"] ||
+              "فريق الدعم الفني المركزي",
           ).trim();
 
           const submitter = String(
             row["مقدم البلاغ *"] ||
-            row["مقدم البلاغ"] ||
-            row["الاسم"] ||
-            row["Submitter"] ||
-            row["SubmitterName"] ||
-            "موظف مسؤول"
+              row["مقدم البلاغ"] ||
+              row["الاسم"] ||
+              row["Submitter"] ||
+              row["SubmitterName"] ||
+              "موظف مسؤول",
           ).trim();
 
           const submitterRole = String(
-            row["المسمى الوظيفي"] ||
-            row["الوظيفة"] ||
-            row["Role"] ||
-            "مشرف"
+            row["المسمى الوظيفي"] || row["الوظيفة"] || row["Role"] || "مشرف",
           ).trim();
 
           const submitterPhone = String(
-            row["رقم الهاتف"] ||
-            row["الهاتف"] ||
-            row["Phone"] ||
-            ""
+            row["رقم الهاتف"] || row["الهاتف"] || row["Phone"] || "",
           ).trim();
 
           const sla = Number(row["مهلة الحل (ساعات)"] || row["مهلة الحل"] || row["SLA"]) || 4;
@@ -736,11 +757,16 @@ export function HelpdeskManagement() {
           toast.success(
             pick(
               `تم استيراد ${importedCount} تذكرة دعم فني من Excel بنجاح!`,
-              `Successfully imported ${importedCount} tickets from Excel!`
-            )
+              `Successfully imported ${importedCount} tickets from Excel!`,
+            ),
           );
         } else {
-          toast.warning(pick("لم يتم العثور على تذاكر مطابقة للاستيراد في الملف", "No valid tickets found to import"));
+          toast.warning(
+            pick(
+              "لم يتم العثور على تذاكر مطابقة للاستيراد في الملف",
+              "No valid tickets found to import",
+            ),
+          );
         }
       } catch (err: any) {
         console.error("Excel import error:", err);
@@ -823,12 +849,17 @@ export function HelpdeskManagement() {
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <LifeBuoy className="size-5 text-primary" />
-            <span>{pick("مركز الدعم الفني والتذاكر الموحد (Helpdesk)", "Unified Helpdesk & Support Tickets")}</span>
+            <span>
+              {pick(
+                "مركز الدعم الفني والتذاكر الموحد (Helpdesk)",
+                "Unified Helpdesk & Support Tickets",
+              )}
+            </span>
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {pick(
               "متابعة شكاوى وأعطال الفروع، طلبات المطبخ المركزي، مشكلات نقاط البيع، واتفاقيات مستوى الخدمة (SLA)",
-              "Track branch IT tickets, central kitchen issues, POS breakdowns, and service level agreements (SLA)"
+              "Track branch IT tickets, central kitchen issues, POS breakdowns, and service level agreements (SLA)",
             )}
           </p>
         </div>
@@ -849,7 +880,10 @@ export function HelpdeskManagement() {
             size="sm"
             onClick={handleDownloadTemplate}
             className="text-xs text-muted-foreground hover:text-foreground"
-            title={pick("تحميل قالب Excel جاهز للاستيراد المجمع", "Download ready Excel template for bulk import")}
+            title={pick(
+              "تحميل قالب Excel جاهز للاستيراد المجمع",
+              "Download ready Excel template for bulk import",
+            )}
           >
             <FileSpreadsheet className="size-3.5 text-emerald-600" />
             <span className="hidden sm:inline">{pick("قالب Excel", "Template")}</span>
@@ -884,7 +918,12 @@ export function HelpdeskManagement() {
             <span className="hidden md:inline">{pick("استعادة التذاكر", "Reset Samples")}</span>
           </Btn>
 
-          <Btn variant="solid" size="sm" onClick={() => setIsNewTicketOpen(true)} className="text-xs">
+          <Btn
+            variant="solid"
+            size="sm"
+            onClick={() => setIsNewTicketOpen(true)}
+            className="text-xs"
+          >
             <Plus className="size-4" />
             <span>{pick("فتح تذكرة دعم جديدة", "New Ticket")}</span>
           </Btn>
@@ -953,7 +992,10 @@ export function HelpdeskManagement() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={pick("بحث برقم التذكرة، العنوان، الفرع، أو صاحب الطلب...", "Search ticket #, title, branch, submitter...")}
+              placeholder={pick(
+                "بحث برقم التذكرة، العنوان، الفرع، أو صاحب الطلب...",
+                "Search ticket #, title, branch, submitter...",
+              )}
               className="w-full text-xs ps-9 pe-3 py-2 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -1015,7 +1057,10 @@ export function HelpdeskManagement() {
           {filteredTickets.length === 0 ? (
             <tr>
               <td colSpan={7} className="py-8 text-center text-muted-foreground text-xs">
-                {pick("لا توجد تذاكر تطابق معايير البحث المحددة.", "No tickets match your filter criteria.")}
+                {pick(
+                  "لا توجد تذاكر تطابق معايير البحث المحددة.",
+                  "No tickets match your filter criteria.",
+                )}
               </td>
             </tr>
           ) : (
@@ -1064,16 +1109,14 @@ export function HelpdeskManagement() {
                       <User className="size-3 text-muted-foreground" />
                       <span>{tkt.submitterName}</span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {tkt.submitterRole}
-                    </div>
+                    <div className="text-[11px] text-muted-foreground">{tkt.submitterRole}</div>
                   </Td>
 
                   <Td className="py-3 px-4">
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border",
-                        pBadge.bg
+                        pBadge.bg,
                       )}
                     >
                       <span className={cn("size-1.5 rounded-full", pBadge.dot)} />
@@ -1085,7 +1128,7 @@ export function HelpdeskManagement() {
                     <span
                       className={cn(
                         "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border",
-                        sBadge.bg
+                        sBadge.bg,
                       )}
                     >
                       {sBadge.label}
@@ -1135,7 +1178,12 @@ export function HelpdeskManagement() {
                       <span className="font-mono text-sm font-bold text-primary">
                         {activeTicket.ticketNumber}
                       </span>
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border", getPriorityBadge(activeTicket.priority).bg)}>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-medium border",
+                          getPriorityBadge(activeTicket.priority).bg,
+                        )}
+                      >
                         {getPriorityBadge(activeTicket.priority).label}
                       </span>
                     </div>
@@ -1145,10 +1193,14 @@ export function HelpdeskManagement() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{pick("تغيير الحالة:", "Status:")}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {pick("تغيير الحالة:", "Status:")}
+                    </span>
                     <select
                       value={activeTicket.status}
-                      onChange={(e) => updateTicketStatus(activeTicket.id, e.target.value as TicketStatus)}
+                      onChange={(e) =>
+                        updateTicketStatus(activeTicket.id, e.target.value as TicketStatus)
+                      }
                       className="text-xs px-2.5 py-1.5 rounded-md bg-background border border-border font-medium focus:outline-none"
                     >
                       <option value="open">{pick("مفتوحة", "Open")}</option>
@@ -1163,14 +1215,18 @@ export function HelpdeskManagement() {
               {/* Submitter & Location Box */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-muted/40 border border-border/60 text-xs">
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">{pick("الموقع / الفرع", "Branch")}</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    {pick("الموقع / الفرع", "Branch")}
+                  </span>
                   <span className="font-semibold text-foreground flex items-center gap-1 mt-0.5">
                     <Building2 className="size-3 text-primary" />
                     {activeTicket.branchOrLocation}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">{pick("مقدم البلاغ", "Submitter")}</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    {pick("مقدم البلاغ", "Submitter")}
+                  </span>
                   <span className="font-semibold text-foreground mt-0.5 block">
                     {activeTicket.submitterName} ({activeTicket.submitterRole})
                   </span>
@@ -1181,7 +1237,9 @@ export function HelpdeskManagement() {
                   )}
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">{pick("المسؤول بالدعم", "Assigned To")}</span>
+                  <span className="text-muted-foreground block text-[10px]">
+                    {pick("المسؤول بالدعم", "Assigned To")}
+                  </span>
                   <span className="font-semibold text-foreground mt-0.5 block">
                     {activeTicket.assignedTo}
                   </span>
@@ -1190,7 +1248,9 @@ export function HelpdeskManagement() {
 
               {/* Problem Description */}
               <div className="space-y-1">
-                <h4 className="text-xs font-bold text-foreground">{pick("تفاصيل البلاغ والطلب:", "Ticket Description:")}</h4>
+                <h4 className="text-xs font-bold text-foreground">
+                  {pick("تفاصيل البلاغ والطلب:", "Ticket Description:")}
+                </h4>
                 <div className="p-3 rounded-lg bg-background border border-border/80 text-xs text-foreground leading-relaxed whitespace-pre-wrap">
                   {activeTicket.description}
                 </div>
@@ -1211,12 +1271,17 @@ export function HelpdeskManagement() {
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <MessageSquare className="size-3.5 text-primary" />
-                  <span>{pick("سجل المتابعة والردود الفنية:", "Updates & Discussion Thread:")}</span>
+                  <span>
+                    {pick("سجل المتابعة والردود الفنية:", "Updates & Discussion Thread:")}
+                  </span>
                 </h4>
 
                 {activeTicket.responses.length === 0 ? (
                   <div className="py-4 text-center text-xs text-muted-foreground border border-dashed rounded-lg">
-                    {pick("لا توجد ردود بعد. يمكنك كتابة أول رد فني بالأسفل.", "No responses yet. Add the first reply below.")}
+                    {pick(
+                      "لا توجد ردود بعد. يمكنك كتابة أول رد فني بالأسفل.",
+                      "No responses yet. Add the first reply below.",
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2.5 max-h-56 overflow-y-auto pe-1">
@@ -1227,13 +1292,15 @@ export function HelpdeskManagement() {
                           "p-3 rounded-xl border text-xs space-y-1",
                           resp.isInternal
                             ? "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200"
-                            : "bg-muted/40 border-border/70 text-foreground"
+                            : "bg-muted/40 border-border/70 text-foreground",
                         )}
                       >
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-bold flex items-center gap-1.5">
                             {resp.sender}
-                            <span className="font-normal text-muted-foreground">({resp.senderRole})</span>
+                            <span className="font-normal text-muted-foreground">
+                              ({resp.senderRole})
+                            </span>
                             {resp.isInternal && (
                               <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 rounded text-[10px]">
                                 {pick("ملاحظة داخلية", "Internal Note")}
@@ -1251,7 +1318,9 @@ export function HelpdeskManagement() {
                 {/* Reply Form */}
                 <div className="p-3 rounded-xl border border-border/80 bg-card space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">{pick("إضافة رد فني أو متابعة:", "Add Response / Update:")}</span>
+                    <span className="font-semibold text-foreground">
+                      {pick("إضافة رد فني أو متابعة:", "Add Response / Update:")}
+                    </span>
                     <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                       <input
                         type="checkbox"
@@ -1259,18 +1328,29 @@ export function HelpdeskManagement() {
                         onChange={(e) => setIsInternalNote(e.target.checked)}
                         className="rounded border-border text-primary focus:ring-primary"
                       />
-                      <span>{pick("ملاحظة داخلية (لفريق الدعم فقط)", "Internal note (Support only)")}</span>
+                      <span>
+                        {pick("ملاحظة داخلية (لفريق الدعم فقط)", "Internal note (Support only)")}
+                      </span>
                     </label>
                   </div>
                   <textarea
                     rows={2}
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
-                    placeholder={pick("اكتب التحديث أو الإجراء الذي تم اتخاذه هنا...", "Write update or action taken here...")}
+                    placeholder={pick(
+                      "اكتب التحديث أو الإجراء الذي تم اتخاذه هنا...",
+                      "Write update or action taken here...",
+                    )}
                     className="w-full text-xs p-2.5 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <div className="flex justify-end">
-                    <Btn variant="solid" size="sm" onClick={handleSendReply} disabled={!replyMessage.trim()} className="text-xs">
+                    <Btn
+                      variant="solid"
+                      size="sm"
+                      onClick={handleSendReply}
+                      disabled={!replyMessage.trim()}
+                      className="text-xs"
+                    >
                       <Send className="size-3.5" />
                       <span>{pick("إرسال الرد", "Send Reply")}</span>
                     </Btn>
@@ -1295,7 +1375,7 @@ export function HelpdeskManagement() {
                 <div className="text-xs text-muted-foreground font-normal mt-0.5">
                   {pick(
                     "تسجيل بلاغ عطل فني أو استفسار أو طلب صيانة جديد وتعيين المسؤول المباشر من النظام",
-                    "Submit an issue, service request, or inquiry with direct assignee and SLA assignment"
+                    "Submit an issue, service request, or inquiry with direct assignee and SLA assignment",
                   )}
                 </div>
               </div>
@@ -1313,7 +1393,10 @@ export function HelpdeskManagement() {
                 required
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={pick("مثال: عطل في شاشة لمس الكاشير / نقص خامات عاجل بالفرع", "e.g., POS terminal touch screen failure")}
+                placeholder={pick(
+                  "مثال: عطل في شاشة لمس الكاشير / نقص خامات عاجل بالفرع",
+                  "e.g., POS terminal touch screen failure",
+                )}
                 className="w-full text-xs sm:text-sm p-3 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -1340,21 +1423,32 @@ export function HelpdeskManagement() {
                   <div className="p-3 mb-2.5 rounded-xl bg-primary/5 border border-primary/20 space-y-2.5 animate-in fade-in slide-in-from-top-1">
                     <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                       <Tag className="size-3.5 text-primary" />
-                      <span>{pick("إضافة تصنيف دعم فني جديد لقاعدة البيانات", "Add New Support Category to DB")}</span>
+                      <span>
+                        {pick(
+                          "إضافة تصنيف دعم فني جديد لقاعدة البيانات",
+                          "Add New Support Category to DB",
+                        )}
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="text"
                         value={newCatNameAr}
                         onChange={(e) => setNewCatNameAr(e.target.value)}
-                        placeholder={pick("اسم التصنيف بالعربية (مثال: صيانة دورية)", "Category name in Arabic")}
+                        placeholder={pick(
+                          "اسم التصنيف بالعربية (مثال: صيانة دورية)",
+                          "Category name in Arabic",
+                        )}
                         className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <input
                         type="text"
                         value={newCatNameEn}
                         onChange={(e) => setNewCatNameEn(e.target.value)}
-                        placeholder={pick("اسم التصنيف بالإنجليزية (اختياري)", "Category name in English (optional)")}
+                        placeholder={pick(
+                          "اسم التصنيف بالإنجليزية (اختياري)",
+                          "Category name in English (optional)",
+                        )}
                         className="w-full text-xs p-2 rounded-lg bg-background border border-border/80 focus:outline-none"
                       />
                     </div>
@@ -1376,7 +1470,11 @@ export function HelpdeskManagement() {
                         disabled={!newCatNameAr.trim() || isSavingCat}
                         className="text-xs h-7 px-3.5"
                       >
-                        {isSavingCat ? <RefreshCw className="size-3 animate-spin" /> : <Check className="size-3" />}
+                        {isSavingCat ? (
+                          <RefreshCw className="size-3 animate-spin" />
+                        ) : (
+                          <Check className="size-3" />
+                        )}
                         <span>{pick("حفظ التصنيف", "Save Category")}</span>
                       </Btn>
                     </div>
@@ -1402,7 +1500,9 @@ export function HelpdeskManagement() {
                     ))}
                   </optgroup>
                   {customCategories.length > 0 && (
-                    <optgroup label={pick("التصنيفات المضافة (قاعدة البيانات)", "Custom Categories (DB)")}>
+                    <optgroup
+                      label={pick("التصنيفات المضافة (قاعدة البيانات)", "Custom Categories (DB)")}
+                    >
                       {customCategories.map((cat) => (
                         <option key={cat.key} value={cat.key}>
                           {pick(cat.ar, cat.en)}
@@ -1425,7 +1525,9 @@ export function HelpdeskManagement() {
                   onChange={(e) => setNewPriority(e.target.value as TicketPriority)}
                   className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value="urgent">{pick("عاجل جداً (طارئ - ساعتين SLA)", "Urgent (2h SLA)")}</option>
+                  <option value="urgent">
+                    {pick("عاجل جداً (طارئ - ساعتين SLA)", "Urgent (2h SLA)")}
+                  </option>
                   <option value="high">{pick("مرتفع (4 ساعات SLA)", "High (4h SLA)")}</option>
                   <option value="medium">{pick("متوسط (8 ساعات SLA)", "Medium (8h SLA)")}</option>
                   <option value="low">{pick("منخفض (24 ساعة SLA)", "Low (24h SLA)")}</option>
@@ -1463,7 +1565,9 @@ export function HelpdeskManagement() {
                   className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
                   {facilities.some((f) => f.type === "branch") && (
-                    <optgroup label={pick("فروع البيع بالتجزئة (قاعدة البيانات)", "Retail Branches (DB)")}>
+                    <optgroup
+                      label={pick("فروع البيع بالتجزئة (قاعدة البيانات)", "Retail Branches (DB)")}
+                    >
                       {facilities
                         .filter((f) => f.type === "branch")
                         .map((f) => (
@@ -1474,7 +1578,12 @@ export function HelpdeskManagement() {
                     </optgroup>
                   )}
                   {facilities.some((f) => f.type === "warehouse") && (
-                    <optgroup label={pick("المصانع والمستودعات المركزية (قاعدة البيانات)", "Central Factory & Warehouses (DB)")}>
+                    <optgroup
+                      label={pick(
+                        "المصانع والمستودعات المركزية (قاعدة البيانات)",
+                        "Central Factory & Warehouses (DB)",
+                      )}
+                    >
                       {facilities
                         .filter((f) => f.type === "warehouse")
                         .map((f) => (
@@ -1502,9 +1611,16 @@ export function HelpdeskManagement() {
                     <div className="font-bold text-foreground flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-primary">
                         <Store className="size-3.5" />
-                        <span>{pick("إضافة فرع جديد سريعاً لقاعدة البيانات", "Quick Add Branch to Database")}</span>
+                        <span>
+                          {pick(
+                            "إضافة فرع جديد سريعاً لقاعدة البيانات",
+                            "Quick Add Branch to Database",
+                          )}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-muted-foreground font-mono">table: branches</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        table: branches
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
@@ -1513,7 +1629,10 @@ export function HelpdeskManagement() {
                         </label>
                         <input
                           type="text"
-                          placeholder={pick("مثال: فرع المهندسين — شارع البطل", "e.g. Mohandessin Branch")}
+                          placeholder={pick(
+                            "مثال: فرع المهندسين — شارع البطل",
+                            "e.g. Mohandessin Branch",
+                          )}
                           value={newBranchNameAr}
                           onChange={(e) => setNewBranchNameAr(e.target.value)}
                           className="w-full p-2 rounded-lg bg-background border border-border text-xs focus:ring-1 focus:ring-primary outline-none"
@@ -1547,7 +1666,9 @@ export function HelpdeskManagement() {
                         className="px-3.5 py-1 text-xs font-bold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         {isSavingBranch && <RefreshCw className="size-2.5 animate-spin" />}
-                        {isSavingBranch ? pick("جاري الحفظ...", "Saving...") : pick("حفظ واختيار الفرع", "Save & Select")}
+                        {isSavingBranch
+                          ? pick("جاري الحفظ...", "Saving...")
+                          : pick("حفظ واختيار الفرع", "Save & Select")}
                       </button>
                     </div>
                   </div>
@@ -1573,7 +1694,12 @@ export function HelpdeskManagement() {
                 >
                   {supportStaff.map((staff) => (
                     <option key={staff.id} value={staff.name}>
-                      {staff.name} {staff.roleTitle ? `— ${staff.roleTitle}` : staff.departmentName ? `— ${staff.departmentName}` : ""}
+                      {staff.name}{" "}
+                      {staff.roleTitle
+                        ? `— ${staff.roleTitle}`
+                        : staff.departmentName
+                          ? `— ${staff.departmentName}`
+                          : ""}
                     </option>
                   ))}
                 </select>
@@ -1650,7 +1776,7 @@ export function HelpdeskManagement() {
                 onChange={(e) => setNewDesc(e.target.value)}
                 placeholder={pick(
                   "يرجى ذكر تفاصيل العطل، الخطوات المتبعة، وأي رسائل خطأ ظهرت، والأثر التشغيلي على الفرع...",
-                  "Describe symptoms, error messages, actions taken, and operational impact..."
+                  "Describe symptoms, error messages, actions taken, and operational impact...",
                 )}
                 className="w-full text-xs sm:text-sm p-3 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30 leading-relaxed"
               />

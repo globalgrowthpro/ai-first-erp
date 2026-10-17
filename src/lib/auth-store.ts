@@ -5,7 +5,8 @@ export interface AppUser {
   id: string;
   name: { ar: string; en: string };
   email: string;
-  role: "admin" | "cfo" | "kitchen" | "sales" | "warehouse" | "ai" | "user" | "pos_cashier" | string;
+  role:
+    "admin" | "cfo" | "kitchen" | "sales" | "warehouse" | "ai" | "user" | "pos_cashier" | string;
   roleLabel: { ar: string; en: string };
   department: { ar: string; en: string };
   position: { ar: string; en: string };
@@ -44,21 +45,156 @@ export const BRANCH_CASHIERS_REGISTRY: Array<{
   nameAr: string;
   code: string;
 }> = [
-  { branchCode: "korba", branchNameAr: "الكوربة", branchNameEn: "Korba", email: "cashier.korba@wazeer-elhelw.com", username: "cashier_korba", password: "Korba@2026", nameAr: "أحمد سالم", code: "101" },
-  { branchCode: "abbas", branchNameAr: "عباس العقاد", branchNameEn: "Abbas El-Akkad", email: "cashier.abbas@wazeer-elhelw.com", username: "cashier_abbas", password: "Abbas@2026", nameAr: "محمد فتحي", code: "102" },
-  { branchCode: "helmeya", branchNameAr: "الحلمية", branchNameEn: "Helmeya", email: "cashier.helmeya@wazeer-elhelw.com", username: "cashier_helmeya", password: "Helmeya@2026", nameAr: "خالد سعيد", code: "103" },
-  { branchCode: "khosoos", branchNameAr: "الخصوص", branchNameEn: "El-Khosoos", email: "cashier.khosoos@wazeer-elhelw.com", username: "cashier_khosoos", password: "Khosoos@2026", nameAr: "محمود بدوي", code: "104" },
-  { branchCode: "wost_elbalad", branchNameAr: "وسط البلد", branchNameEn: "Downtown", email: "cashier.downtown@wazeer-elhelw.com", username: "cashier_downtown", password: "Balad@2026", nameAr: "أشرف عثمان", code: "105" },
-  { branchCode: "giza", branchNameAr: "الجيزة", branchNameEn: "Giza", email: "cashier.giza@wazeer-elhelw.com", username: "cashier_giza", password: "Giza@2026", nameAr: "حسام حسن", code: "106" },
-  { branchCode: "faisal", branchNameAr: "فيصل", branchNameEn: "Faisal", email: "cashier.faisal@wazeer-elhelw.com", username: "cashier_faisal", password: "Faisal@2026", nameAr: "عادل رمزي", code: "107" },
-  { branchCode: "dar_elsalam", branchNameAr: "دار السلام", branchNameEn: "Dar El-Salam", email: "cashier.darsalam@wazeer-elhelw.com", username: "cashier_darsalam", password: "Salam@2026", nameAr: "كرم عبد العظيم", code: "108" },
-  { branchCode: "october_gardens", branchNameAr: "حدائق أكتوبر", branchNameEn: "October Gardens", email: "cashier.october@wazeer-elhelw.com", username: "cashier_october", password: "October@2026", nameAr: "أيمن الشاذلي", code: "109" },
-  { branchCode: "ahram_gardens", branchNameAr: "حدائق الأهرام", branchNameEn: "Ahram Gardens", email: "cashier.ahram@wazeer-elhelw.com", username: "cashier_ahram", password: "Ahram@2026", nameAr: "ياسر مصطفى", code: "110" },
-  { branchCode: "hosary", branchNameAr: "الحصري", branchNameEn: "Al-Hosary", email: "cashier.hosary@wazeer-elhelw.com", username: "cashier_hosary", password: "Hosary@2026", nameAr: "عمرو شريف", code: "111" },
-  { branchCode: "sheikh_zayed", branchNameAr: "الشيخ زايد", branchNameEn: "Sheikh Zayed", email: "cashier.zayed@wazeer-elhelw.com", username: "cashier_zayed", password: "Zayed@2026", nameAr: "عمر الدسوقي", code: "112" },
-  { branchCode: "mansoura", branchNameAr: "المنصورة", branchNameEn: "Mansoura", email: "cashier.mansoura@wazeer-elhelw.com", username: "cashier_mansoura", password: "Mansoura@2026", nameAr: "سامح التابعي", code: "113" },
-  { branchCode: "banha", branchNameAr: "بنها", branchNameEn: "Banha", email: "cashier.banha@wazeer-elhelw.com", username: "cashier_banha", password: "Banha@2026", nameAr: "نبيل شكري", code: "114" },
-  { branchCode: "tenth_ramadan", branchNameAr: "العاشر", branchNameEn: "10th Ramadan", email: "cashier.tenth@wazeer-elhelw.com", username: "cashier_tenth", password: "Tenth@2026", nameAr: "طارق سليم", code: "115" },
+  {
+    branchCode: "korba",
+    branchNameAr: "الكوربة",
+    branchNameEn: "Korba",
+    email: "cashier.korba@wazeer-elhelw.com",
+    username: "cashier_korba",
+    password: "Korba@2026",
+    nameAr: "أحمد سالم",
+    code: "101",
+  },
+  {
+    branchCode: "abbas",
+    branchNameAr: "عباس العقاد",
+    branchNameEn: "Abbas El-Akkad",
+    email: "cashier.abbas@wazeer-elhelw.com",
+    username: "cashier_abbas",
+    password: "Abbas@2026",
+    nameAr: "محمد فتحي",
+    code: "102",
+  },
+  {
+    branchCode: "helmeya",
+    branchNameAr: "الحلمية",
+    branchNameEn: "Helmeya",
+    email: "cashier.helmeya@wazeer-elhelw.com",
+    username: "cashier_helmeya",
+    password: "Helmeya@2026",
+    nameAr: "خالد سعيد",
+    code: "103",
+  },
+  {
+    branchCode: "khosoos",
+    branchNameAr: "الخصوص",
+    branchNameEn: "El-Khosoos",
+    email: "cashier.khosoos@wazeer-elhelw.com",
+    username: "cashier_khosoos",
+    password: "Khosoos@2026",
+    nameAr: "محمود بدوي",
+    code: "104",
+  },
+  {
+    branchCode: "wost_elbalad",
+    branchNameAr: "وسط البلد",
+    branchNameEn: "Downtown",
+    email: "cashier.downtown@wazeer-elhelw.com",
+    username: "cashier_downtown",
+    password: "Balad@2026",
+    nameAr: "أشرف عثمان",
+    code: "105",
+  },
+  {
+    branchCode: "giza",
+    branchNameAr: "الجيزة",
+    branchNameEn: "Giza",
+    email: "cashier.giza@wazeer-elhelw.com",
+    username: "cashier_giza",
+    password: "Giza@2026",
+    nameAr: "حسام حسن",
+    code: "106",
+  },
+  {
+    branchCode: "faisal",
+    branchNameAr: "فيصل",
+    branchNameEn: "Faisal",
+    email: "cashier.faisal@wazeer-elhelw.com",
+    username: "cashier_faisal",
+    password: "Faisal@2026",
+    nameAr: "عادل رمزي",
+    code: "107",
+  },
+  {
+    branchCode: "dar_elsalam",
+    branchNameAr: "دار السلام",
+    branchNameEn: "Dar El-Salam",
+    email: "cashier.darsalam@wazeer-elhelw.com",
+    username: "cashier_darsalam",
+    password: "Salam@2026",
+    nameAr: "كرم عبد العظيم",
+    code: "108",
+  },
+  {
+    branchCode: "october_gardens",
+    branchNameAr: "حدائق أكتوبر",
+    branchNameEn: "October Gardens",
+    email: "cashier.october@wazeer-elhelw.com",
+    username: "cashier_october",
+    password: "October@2026",
+    nameAr: "أيمن الشاذلي",
+    code: "109",
+  },
+  {
+    branchCode: "ahram_gardens",
+    branchNameAr: "حدائق الأهرام",
+    branchNameEn: "Ahram Gardens",
+    email: "cashier.ahram@wazeer-elhelw.com",
+    username: "cashier_ahram",
+    password: "Ahram@2026",
+    nameAr: "ياسر مصطفى",
+    code: "110",
+  },
+  {
+    branchCode: "hosary",
+    branchNameAr: "الحصري",
+    branchNameEn: "Al-Hosary",
+    email: "cashier.hosary@wazeer-elhelw.com",
+    username: "cashier_hosary",
+    password: "Hosary@2026",
+    nameAr: "عمرو شريف",
+    code: "111",
+  },
+  {
+    branchCode: "sheikh_zayed",
+    branchNameAr: "الشيخ زايد",
+    branchNameEn: "Sheikh Zayed",
+    email: "cashier.zayed@wazeer-elhelw.com",
+    username: "cashier_zayed",
+    password: "Zayed@2026",
+    nameAr: "عمر الدسوقي",
+    code: "112",
+  },
+  {
+    branchCode: "mansoura",
+    branchNameAr: "المنصورة",
+    branchNameEn: "Mansoura",
+    email: "cashier.mansoura@wazeer-elhelw.com",
+    username: "cashier_mansoura",
+    password: "Mansoura@2026",
+    nameAr: "سامح التابعي",
+    code: "113",
+  },
+  {
+    branchCode: "banha",
+    branchNameAr: "بنها",
+    branchNameEn: "Banha",
+    email: "cashier.banha@wazeer-elhelw.com",
+    username: "cashier_banha",
+    password: "Banha@2026",
+    nameAr: "نبيل شكري",
+    code: "114",
+  },
+  {
+    branchCode: "tenth_ramadan",
+    branchNameAr: "العاشر",
+    branchNameEn: "10th Ramadan",
+    email: "cashier.tenth@wazeer-elhelw.com",
+    username: "cashier_tenth",
+    password: "Tenth@2026",
+    nameAr: "طارق سليم",
+    code: "115",
+  },
 ];
 
 export const POS_CASHIER_CREDENTIALS = {
@@ -84,9 +220,23 @@ export const DEFAULT_USER: AppUser = {
   avatarBg: "from-purple-600 to-indigo-700",
   description: { ar: "كامل صلاحيات النظام والتحكم", en: "Full administrative control" },
   allowedPages: [
-    "/", "/pos", "/pos-shifts", "/sales", "/purchases", "/accounting", "/inventory",
-    "/manufacturing", "/dispatch", "/partners", "/hr", "/reports",
-    "/audit", "/helpdesk", "/ai", "/ai-modules", "/settings"
+    "/",
+    "/pos",
+    "/pos-shifts",
+    "/sales",
+    "/purchases",
+    "/accounting",
+    "/inventory",
+    "/manufacturing",
+    "/dispatch",
+    "/partners",
+    "/hr",
+    "/reports",
+    "/audit",
+    "/helpdesk",
+    "/ai",
+    "/ai-modules",
+    "/settings",
   ],
 };
 
@@ -151,9 +301,9 @@ export async function saveProvisionedAccount(account: {
         await supabase.from("user_pages").delete().eq("user_id", account.userId);
         const valid = account.allowedPages.filter((p) => p && p !== "*");
         if (valid.length > 0) {
-          await supabase.from("user_pages").insert(
-            valid.map((pagePath) => ({ user_id: account.userId, page_path: pagePath }))
-          );
+          await supabase
+            .from("user_pages")
+            .insert(valid.map((pagePath) => ({ user_id: account.userId, page_path: pagePath })));
         }
       } catch (pageErr) {
         console.warn("[Auth Store] Could not sync user_pages to Supabase:", pageErr);
@@ -237,7 +387,8 @@ async function syncAccountsFromSupabase() {
           (p.full_name_ar && p.full_name_ar.includes("أدمين")) ||
           (p.full_name_en && p.full_name_en.toLowerCase().includes("admin"));
 
-        const role = roles?.find((r) => r.user_id === p.id)?.role || (isProfileAdmin ? "admin" : "sales");
+        const role =
+          roles?.find((r) => r.user_id === p.id)?.role || (isProfileAdmin ? "admin" : "sales");
         if (!provisionedAccountsMap.has(normalized)) {
           provisionedAccountsMap.set(normalized, {
             email: normalized,
@@ -272,13 +423,19 @@ export function useAuthStore() {
     };
   }, []);
 
-  const getDynamicPagesForUser = async (userId: string, email?: string): Promise<string[] | null> => {
+  const getDynamicPagesForUser = async (
+    userId: string,
+    email?: string,
+  ): Promise<string[] | null> => {
     try {
       let targetId = userId;
       const cleanEmail = email?.trim().toLowerCase();
 
       // If userId is not a UUID, resolve it from profiles via email
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId) && cleanEmail) {
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId) &&
+        cleanEmail
+      ) {
         const { data: prof } = await supabase
           .from("profiles")
           .select("id")
@@ -287,7 +444,10 @@ export function useAuthStore() {
         if (prof?.id) targetId = prof.id;
       }
 
-      if (targetId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+      if (
+        targetId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
+      ) {
         const { data: dbPages } = await supabase
           .from("user_pages")
           .select("page_path")
@@ -312,27 +472,42 @@ export function useAuthStore() {
         bc.email.toLowerCase() === cleanEmail ||
         bc.username.toLowerCase() === cleanEmail ||
         cleanEmail.includes(bc.branchCode) ||
-        userId.includes(bc.branchCode)
+        userId.includes(bc.branchCode),
     );
 
     if (branchReg) {
-      persistSession({
-        id: userId || `usr-cashier-${branchReg.branchCode}`,
-        name: { ar: `كاشير ${branchReg.nameAr} (${branchReg.branchNameAr})`, en: `Cashier ${branchReg.nameAr} (${branchReg.branchNameEn})` },
-        email: cleanEmail,
-        role: "pos_cashier",
-        roleLabel: { ar: `كاشير فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Cashier` },
-        department: { ar: `فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Branch` },
-        position: { ar: "كاشير فرع معتمد", en: "Branch Cashier" },
-        avatarBg: "from-emerald-600 to-teal-700",
-        description: {
-          ar: `حساب تشغيل كاشير معتمد لفرع ${branchReg.branchNameAr}`,
-          en: `Authorized cashier account for ${branchReg.branchNameEn} Branch`,
+      persistSession(
+        {
+          id: userId || `usr-cashier-${branchReg.branchCode}`,
+          name: {
+            ar: `كاشير ${branchReg.nameAr} (${branchReg.branchNameAr})`,
+            en: `Cashier ${branchReg.nameAr} (${branchReg.branchNameEn})`,
+          },
+          email: cleanEmail,
+          role: "pos_cashier",
+          roleLabel: {
+            ar: `كاشير فرع ${branchReg.branchNameAr}`,
+            en: `${branchReg.branchNameEn} Cashier`,
+          },
+          department: {
+            ar: `فرع ${branchReg.branchNameAr}`,
+            en: `${branchReg.branchNameEn} Branch`,
+          },
+          position: { ar: "كاشير فرع معتمد", en: "Branch Cashier" },
+          avatarBg: "from-emerald-600 to-teal-700",
+          description: {
+            ar: `حساب تشغيل كاشير معتمد لفرع ${branchReg.branchNameAr}`,
+            en: `Authorized cashier account for ${branchReg.branchNameEn} Branch`,
+          },
+          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+          branchCode: branchReg.branchCode,
+          branchName: {
+            ar: `فرع ${branchReg.branchNameAr}`,
+            en: `${branchReg.branchNameEn} Branch`,
+          },
         },
-        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
-        branchCode: branchReg.branchCode,
-        branchName: { ar: `فرع ${branchReg.branchNameAr}`, en: `${branchReg.branchNameEn} Branch` },
-      }, true);
+        true,
+      );
       return;
     }
 
@@ -342,72 +517,101 @@ export function useAuthStore() {
       cleanEmail === "pos@wazeer-elhelw.com" ||
       cleanEmail === "cashier"
     ) {
-      persistSession({
-        ...POS_CASHIER_ACCOUNT,
-        id: userId || POS_CASHIER_ACCOUNT.id,
-        email: cleanEmail,
-        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
-      }, true);
+      persistSession(
+        {
+          ...POS_CASHIER_ACCOUNT,
+          id: userId || POS_CASHIER_ACCOUNT.id,
+          email: cleanEmail,
+          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+        },
+        true,
+      );
       return;
     }
 
     // 3. Check if Admin account by email (wazeerAdmin@erp.org)
-    if (cleanEmail === "wazeeradmin@erp.org" || cleanEmail === "wazeeradmin" || cleanEmail.includes("admin")) {
-      persistSession({
-        ...DEFAULT_USER,
-        id: userId || "usr-wazeer-admin",
-        email: cleanEmail,
-        name: { ar: "أدمين وزير الحلو", en: "Wazeer Admin" },
-        role: "admin",
-        roleLabel: { ar: "مسؤول النظام العام", en: "System Administrator" },
-        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
-      }, true);
+    if (
+      cleanEmail === "wazeeradmin@erp.org" ||
+      cleanEmail === "wazeeradmin" ||
+      cleanEmail.includes("admin")
+    ) {
+      persistSession(
+        {
+          ...DEFAULT_USER,
+          id: userId || "usr-wazeer-admin",
+          email: cleanEmail,
+          name: { ar: "أدمين وزير الحلو", en: "Wazeer Admin" },
+          role: "admin",
+          roleLabel: { ar: "مسؤول النظام العام", en: "System Administrator" },
+          allowedPages:
+            dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+        },
+        true,
+      );
       return;
     }
 
     try {
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
       const effectiveRole = roles && roles.length > 0 && roles[0] ? roles[0].role : "admin";
 
       if (effectiveRole === "pos_cashier") {
-        persistSession({
-          ...POS_CASHIER_ACCOUNT,
-          id: userId,
-          email: cleanEmail,
-          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
-        }, true);
+        persistSession(
+          {
+            ...POS_CASHIER_ACCOUNT,
+            id: userId,
+            email: cleanEmail,
+            allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+          },
+          true,
+        );
       } else if (effectiveRole === "admin") {
-        persistSession({
-          ...DEFAULT_USER,
-          id: userId,
-          email: cleanEmail,
-          role: "admin",
-          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
-          name: {
-            ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
-            en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+        persistSession(
+          {
+            ...DEFAULT_USER,
+            id: userId,
+            email: cleanEmail,
+            role: "admin",
+            allowedPages:
+              dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+            name: {
+              ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+              en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+            },
           },
-        }, true);
+          true,
+        );
       } else {
-        persistSession({
-          ...DEFAULT_USER,
-          id: userId,
-          email: cleanEmail,
-          role: effectiveRole as any,
-          allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/", "/sales", "/pos"],
-          name: {
-            ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
-            en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+        persistSession(
+          {
+            ...DEFAULT_USER,
+            id: userId,
+            email: cleanEmail,
+            role: effectiveRole as any,
+            allowedPages:
+              dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/", "/sales", "/pos"],
+            name: {
+              ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+              en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+            },
           },
-        }, true);
+          true,
+        );
       }
     } catch (_) {
-      persistSession({
-        ...DEFAULT_USER,
-        id: userId,
-        email: cleanEmail,
-        allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
-      }, true);
+      persistSession(
+        {
+          ...DEFAULT_USER,
+          id: userId,
+          email: cleanEmail,
+          allowedPages:
+            dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+        },
+        true,
+      );
     }
   };
 
@@ -470,18 +674,18 @@ export function useAuthStore() {
                   dbPages && dbPages.length > 0
                     ? dbPages.map((p: any) => p.page_path)
                     : current.role === "admin"
-                    ? DEFAULT_USER.allowedPages
-                    : ["/pos"];
+                      ? DEFAULT_USER.allowedPages
+                      : ["/pos"];
 
                 persistSession(
                   {
                     ...current,
                     allowedPages: freshPages,
                   },
-                  true
+                  true,
                 );
               }
-            }
+            },
           )
           .subscribe();
       } catch (err) {
@@ -500,10 +704,7 @@ export function useAuthStore() {
         email === "pos@wazeer-elhelw.com" ||
         email === "cashier" ||
         email === "pos") &&
-      (pass === "Pos@123456" ||
-        pass === "pos123" ||
-        pass === "cashier123" ||
-        pass === "123456");
+      (pass === "Pos@123456" || pass === "pos123" || pass === "cashier123" || pass === "123456");
 
     if (isDefaultCashier) {
       await loadUserProfile(POS_CASHIER_ACCOUNT.id, email);
@@ -514,10 +715,20 @@ export function useAuthStore() {
     const branchCashier = BRANCH_CASHIERS_REGISTRY.find(
       (bc) =>
         (email === bc.email.toLowerCase() || email === bc.username.toLowerCase()) &&
-        (pass === bc.password || pass === "123456" || pass === "Pos@123456")
+        (pass === bc.password || pass === "123456" || pass === "Pos@123456"),
     );
 
     if (branchCashier) {
+      try {
+        const { data } = await supabase.auth.signInWithPassword({
+          email: branchCashier.email,
+          password: branchCashier.password,
+        });
+        if (data?.user) {
+          await loadUserProfile(data.user.id, branchCashier.email);
+          return true;
+        }
+      } catch (_) {}
       await loadUserProfile(`usr-cashier-${branchCashier.branchCode}`, branchCashier.email);
       return true;
     }
