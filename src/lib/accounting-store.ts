@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { type AccountItem, type JournalEntry, chartOfAccounts, journal as initialJournalEntries } from "@/lib/demo-data";
+import {
+  type AccountItem,
+  type JournalEntry,
+  chartOfAccounts,
+  journal as initialJournalEntries,
+} from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useAccountsStore() {
@@ -8,7 +13,7 @@ export function useAccountsStore() {
 
   const fetchAccounts = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('accounts').select('*');
+      const { data, error } = await supabase.from("accounts").select("*");
       if (!error && data && data.length > 0) {
         const mapped: AccountItem[] = data.map((a) => {
           const defaultAcc = chartOfAccounts.find((c) => c.code === a.code);
@@ -46,7 +51,7 @@ export function useAccountsStore() {
         const existingCodes = new Set(mapped.map((m) => m.code));
         const missingDefaults = chartOfAccounts.filter((c) => !existingCodes.has(c.code));
         const combined = [...mapped, ...missingDefaults].sort((a, b) =>
-          a.code.localeCompare(b.code, undefined, { numeric: true })
+          a.code.localeCompare(b.code, undefined, { numeric: true }),
         );
 
         setAccounts(combined);
@@ -61,28 +66,34 @@ export function useAccountsStore() {
   const addAccount = useCallback(async (account: AccountItem) => {
     setAccounts((prev) => {
       const updated = prev.map((a) =>
-        account.parentId && a.code === account.parentId ? { ...a, isParent: true } : a
+        account.parentId && a.code === account.parentId ? { ...a, isParent: true } : a,
       );
-      const next = [...updated, account].sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+      const next = [...updated, account].sort((a, b) =>
+        a.code.localeCompare(b.code, undefined, { numeric: true }),
+      );
       return next;
     });
 
     try {
       let parentUuid = null;
       if (account.parentId) {
-        const { data: parentData } = await supabase.from('accounts').select('id').eq('code', account.parentId).single();
+        const { data: parentData } = await supabase
+          .from("accounts")
+          .select("id")
+          .eq("code", account.parentId)
+          .single();
         if (parentData) parentUuid = parentData.id;
       }
 
-      await supabase.from('accounts').insert({
+      await supabase.from("accounts").insert({
         code: account.code,
         name_ar: account.name.ar,
         name_en: account.name.en,
         type: account.type as any,
         parent_id: parentUuid,
         is_parent: account.isParent || false,
-        is_active: account.status === 'active',
-        opening_balance: account.balance
+        is_active: account.status === "active",
+        opening_balance: account.balance,
       });
     } catch {}
   }, []);
@@ -97,32 +108,39 @@ export function useAccountsStore() {
 
     try {
       const dbUpdate: any = {};
-      if (updates.name) { dbUpdate.name_ar = updates.name.ar; dbUpdate.name_en = updates.name.en; }
+      if (updates.name) {
+        dbUpdate.name_ar = updates.name.ar;
+        dbUpdate.name_en = updates.name.en;
+      }
       if (updates.type) dbUpdate.type = updates.type as any;
       if (updates.parentId !== undefined) {
-        if (updates.parentId === null || updates.parentId === '') {
+        if (updates.parentId === null || updates.parentId === "") {
           dbUpdate.parent_id = null;
         } else {
-          const { data: parentData } = await supabase.from('accounts').select('id').eq('code', updates.parentId).single();
+          const { data: parentData } = await supabase
+            .from("accounts")
+            .select("id")
+            .eq("code", updates.parentId)
+            .single();
           if (parentData) dbUpdate.parent_id = parentData.id;
         }
       }
-      if (updates.status !== undefined) dbUpdate.is_active = updates.status === 'active';
+      if (updates.status !== undefined) dbUpdate.is_active = updates.status === "active";
       if (updates.balance !== undefined) dbUpdate.opening_balance = updates.balance;
-      
+
       if (Object.keys(dbUpdate).length > 0) {
-        await supabase.from('accounts').update(dbUpdate).eq('code', code);
+        await supabase.from("accounts").update(dbUpdate).eq("code", code);
       }
     } catch {}
   }, []);
 
   const deleteAccount = useCallback(async (code: string) => {
     setAccounts((prev) => {
-      const next = prev.filter(a => a.code !== code);
+      const next = prev.filter((a) => a.code !== code);
       return next;
     });
     try {
-      await supabase.from('accounts').delete().eq('code', code);
+      await supabase.from("accounts").delete().eq("code", code);
     } catch {}
   }, []);
 
@@ -440,57 +458,69 @@ export function useJournalStore() {
     fetchJournal();
   }, [fetchJournal]);
 
-  const addEntries = useCallback(async (newEntries: JournalEntry[]) => {
-    setEntries((prev) => [...newEntries, ...prev]);
+  const addEntries = useCallback(
+    async (newEntries: JournalEntry[]) => {
+      setEntries((prev) => [...newEntries, ...prev]);
 
-    try {
-      const grouped = new Map<string, JournalEntry[]>();
-      for (const ent of newEntries) {
-        const key = ent.id || ent.reference || `JV-${Date.now()}`;
-        if (!grouped.has(key)) grouped.set(key, []);
-        grouped.get(key)!.push(ent);
-      }
-
-      const { data: accs } = await supabase.from("accounts").select("id, code");
-      const accMap = new Map((accs || []).map((a) => [a.code, a.id]));
-      const defaultAccountId = accs && accs.length > 0 && accs[0] ? accs[0].id : null;
-
-      for (const [entryId, lines] of grouped.entries()) {
-        if (!lines || lines.length === 0) continue;
-        const first = lines[0];
-        if (!first) continue;
-
-        const { data: jeData, error: jeErr } = await supabase
-          .from("journal_entries")
-          .insert({
-            entry_no: entryId,
-            entry_date: first.date || new Date().toISOString().slice(0, 10),
-            reference: first.reference || entryId,
-            description_ar: first.memo?.ar || "قيد محاسبي معتمد",
-            description_en: first.memo?.en || "Journal Entry",
-            is_posted: true,
-          })
-          .select()
-          .single();
-
-        if (!jeErr && jeData?.id && defaultAccountId) {
-          const lineInserts = lines.map((l, idx) => ({
-            entry_id: jeData.id,
-            account_id: accMap.get(l.accountCode || '') || defaultAccountId,
-            debit: Number(l.debit || 0),
-            credit: Number(l.credit || 0),
-            line_no: idx + 1,
-            memo: l.memo?.ar || l.memo?.en || null,
-          }));
-
-          await supabase.from("journal_lines").insert(lineInserts);
+      try {
+        const grouped = new Map<string, JournalEntry[]>();
+        for (const ent of newEntries) {
+          const key = ent.id || ent.reference || `JV-${Date.now()}`;
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key)!.push(ent);
         }
+
+        const { data: accs } = await supabase.from("accounts").select("id, code");
+        const accMap = new Map((accs || []).map((a) => [a.code, a.id]));
+
+        for (const [entryId, lines] of grouped.entries()) {
+          if (!lines || lines.length === 0) continue;
+          const first = lines[0];
+          if (!first) continue;
+
+          const totalDebitAmount = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
+
+          const { data: jeData, error: jeErr } = await supabase
+            .from("journal_entries")
+            .insert({
+              entry_no: entryId,
+              entry_date: first.date || new Date().toISOString().slice(0, 10),
+              reference: first.reference || entryId,
+              description_ar: first.memo?.ar || "قيد محاسبي معتمد",
+              description_en: first.memo?.en || "Journal Entry",
+              branch_id: first.branchId || null,
+              branch_name_ar: first.branchName?.ar || null,
+              branch_name_en: first.branchName?.en || null,
+              total_amount: totalDebitAmount,
+              status: first.status || "posted",
+              is_posted: true,
+            })
+            .select()
+            .maybeSingle();
+
+          if (!jeErr && jeData?.id) {
+            const lineInserts = lines.map((l, idx) => ({
+              entry_id: jeData.id,
+              account_id: accMap.get(l.accountCode || "") || null,
+              account_code: l.accountCode || null,
+              account_name_ar: l.account?.ar || null,
+              account_name_en: l.account?.en || null,
+              debit: Number(l.debit || 0),
+              credit: Number(l.credit || 0),
+              line_no: idx + 1,
+              memo: l.memo?.ar || l.memo?.en || null,
+            }));
+
+            await supabase.from("journal_lines").insert(lineInserts);
+          }
+        }
+        fetchJournal();
+      } catch (err) {
+        console.warn("[Journal Store] Failed to persist journal entry to Supabase:", err);
       }
-      fetchJournal();
-    } catch (err) {
-      console.warn("[Journal Store] Failed to persist journal entry to Supabase:", err);
-    }
-  }, [fetchJournal]);
+    },
+    [fetchJournal],
+  );
 
   const resetToDefaultEntries = useCallback(() => {
     fetchJournal();

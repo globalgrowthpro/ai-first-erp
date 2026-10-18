@@ -20,9 +20,19 @@ import {
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
-import { Btn, DataTable, KpiCard, PageHeader, Panel, Td, TablePagination, usePagination } from "@/components/kit";
+import {
+  Btn,
+  DataTable,
+  KpiCard,
+  PageHeader,
+  Panel,
+  Td,
+  TablePagination,
+  usePagination,
+} from "@/components/kit";
 import { ChartOfAccounts } from "@/components/accounting/ChartOfAccounts";
 import { JournalEntryForm } from "@/components/accounting/JournalEntryForm";
+import { JournalEntriesTable } from "@/components/accounting/JournalEntriesTable";
 import { useJournalStore } from "@/lib/accounting-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -54,7 +64,10 @@ const BRANCH_FILTER_OPTIONS = [
   { id: "tagamoa", label: { ar: "فرع التجمع الخامس — التسعين", en: "New Cairo — 90th St." } },
   { id: "sahel", label: { ar: "فرع الساحل الشمالي — مارينا", en: "North Coast — Marina" } },
   { id: "alex", label: { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha" } },
-  { id: "kitchen", label: { ar: "المطبخ المركزي — تشغيل وتوصيل", en: "Central Kitchen Delivery Hub" } },
+  {
+    id: "kitchen",
+    label: { ar: "المطبخ المركزي — تشغيل وتوصيل", en: "Central Kitchen Delivery Hub" },
+  },
   { id: "hq", label: { ar: "الإدارة العامة — الخزينة المركزية", en: "Executive HQ Safe" } },
 ];
 
@@ -65,7 +78,9 @@ function Accounting() {
   const { entries, loading, isLive, fetchJournal } = useJournalStore();
 
   // Dynamic Branches from Supabase
-  const [branchesList, setBranchesList] = useState<{ id: string; code: string; label: { ar: string; en: string } }[]>([]);
+  const [branchesList, setBranchesList] = useState<
+    { id: string; code: string; label: { ar: string; en: string } }[]
+  >([]);
 
   useEffect(() => {
     supabase
@@ -78,7 +93,7 @@ function Accounting() {
               id: b.code || b.id,
               code: b.code,
               label: { ar: b.name_ar, en: b.name_en },
-            }))
+            })),
           );
         }
       });
@@ -198,17 +213,20 @@ function Accounting() {
   // Financial Summary KPIs for Filtered Entries
   const totalDebit = useMemo(
     () => filteredEntries.reduce((s, r) => s + (Number(r.debit) || 0), 0),
-    [filteredEntries]
+    [filteredEntries],
   );
   const totalCredit = useMemo(
     () => filteredEntries.reduce((s, r) => s + (Number(r.credit) || 0), 0),
-    [filteredEntries]
+    [filteredEntries],
   );
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
 
   // Dynamic Real Trial Balance calculated from filteredEntries
   const realTrialBalance = useMemo(() => {
-    const map = new Map<string, { code: string; name: { ar: string; en: string }; debit: number; credit: number }>();
+    const map = new Map<
+      string,
+      { code: string; name: { ar: string; en: string }; debit: number; credit: number }
+    >();
 
     for (const item of filteredEntries) {
       const code = item.accountCode || "1000";
@@ -224,26 +242,26 @@ function Accounting() {
     }
 
     return Array.from(map.values()).sort((a, b) =>
-      a.code.localeCompare(b.code, undefined, { numeric: true })
+      a.code.localeCompare(b.code, undefined, { numeric: true }),
     );
   }, [filteredEntries]);
 
   // Trial Balance Totals
   const trialTotalDebit = useMemo(
     () => realTrialBalance.reduce((s, r) => s + (Number(r.debit) || 0), 0),
-    [realTrialBalance]
+    [realTrialBalance],
   );
   const trialTotalCredit = useMemo(
     () => realTrialBalance.reduce((s, r) => s + (Number(r.credit) || 0), 0),
-    [realTrialBalance]
+    [realTrialBalance],
   );
 
   // Excel Export Handler
   const handleExportToExcel = () => {
     const exportRows = filteredEntries.map((line, idx) => ({
-      "م": idx + 1,
+      م: idx + 1,
       "رقم القيد": line.id,
-      "التاريخ": line.date,
+      التاريخ: line.date,
       "المرجع / المستند": line.reference || "-",
       "الفرع / المركز": pick(line.branchName?.ar || "الإدارة العامة", line.branchName?.en || "HQ"),
       "البيان والشرح": pick(line.memo?.ar || "-", line.memo?.en || "-"),
@@ -251,13 +269,13 @@ function Accounting() {
       "اسم الحساب": pick(line.account?.ar || "غير محدد", line.account?.en || "Unknown"),
       "مدين (ج.م)": Number(line.debit) || 0,
       "دائن (ج.م)": Number(line.credit) || 0,
-      "الحالة": line.status === "posted" ? "مرحل ومعتمد" : "مسودة",
+      الحالة: line.status === "posted" ? "مرحل ومعتمد" : "مسودة",
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportRows);
     ws["!cols"] = [
-      { wch: 5 },  // م
+      { wch: 5 }, // م
       { wch: 14 }, // رقم القيد
       { wch: 12 }, // التاريخ
       { wch: 16 }, // المرجع
@@ -271,7 +289,10 @@ function Accounting() {
     ];
     XLSX.utils.book_append_sheet(wb, ws, "قيود_اليومية_العامة");
 
-    const dateSuffix = dateFrom || dateTo ? `_من_${dateFrom || "البداية"}_إلى_${dateTo || "اليوم"}` : `_${new Date().toISOString().slice(0, 10)}`;
+    const dateSuffix =
+      dateFrom || dateTo
+        ? `_من_${dateFrom || "البداية"}_إلى_${dateTo || "اليوم"}`
+        : `_${new Date().toISOString().slice(0, 10)}`;
     safeDownloadWorkbook(wb, `دفتر_قيود_اليومية_العامة${dateSuffix}.xlsx`);
   };
 
@@ -348,10 +369,17 @@ function Accounting() {
               type="button"
               onClick={() => fetchJournal()}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/15 text-primary text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-              title={pick("مزامنة وتحديث البيانات الحية من قاعدة البيانات", "Sync live operational journal")}
+              title={pick(
+                "مزامنة وتحديث البيانات الحية من قاعدة البيانات",
+                "Sync live operational journal",
+              )}
             >
               <RefreshCw className={cn("size-3", loading && "animate-spin")} />
-              <span>{loading ? pick("جاري المزامنة...", "Syncing...") : pick("مزامنة البيانات الحية", "Sync Live")}</span>
+              <span>
+                {loading
+                  ? pick("جاري المزامنة...", "Syncing...")
+                  : pick("مزامنة البيانات الحية", "Sync Live")}
+              </span>
             </button>
           </div>
         )}
@@ -360,298 +388,12 @@ function Accounting() {
       {/* Tab 1: Chart of Accounts */}
       {activeTab === "coa" && <ChartOfAccounts />}
 
-      {/* Tab 2: Journal Entries (Rich Multi-Branch Ledger) */}
+      {/* Tab 2: Journal Entries (جدول قيود اليومية المحاسبي المعتمد) */}
       {activeTab === "journal" && (
-        <div className="space-y-5">
-          {/* Financial KPIs */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
-              label={pick("إجمالي الحركات المدينة", "Total Debit")}
-              value={money(totalDebit)}
-              accent="brand"
-            />
-            <KpiCard
-              label={pick("إجمالي الحركات الدائنة", "Total Credit")}
-              value={money(totalCredit)}
-              accent="primary"
-            />
-            <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs space-y-1">
-              <span className="text-[11px] font-bold text-muted-foreground block">
-                {pick("حالة توازن القيود", "Ledger Balance Status")}
-              </span>
-              <div className="flex items-center gap-2">
-                {isBalanced ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-black text-sm">
-                    <CheckCircle2 className="size-4" />
-                    <span>{pick("متزن بنسبة 100%", "100% Balanced")}</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 font-black text-sm">
-                    <span>{pick(`غير متزن: ${money(Math.abs(totalDebit - totalCredit))}`, `Diff: ${money(Math.abs(totalDebit - totalCredit))}`)}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-            <KpiCard
-              label={pick("عدد قيود اليومية", "Journal Entries Count")}
-              value={pick(`${n(groupedEntries.length)} قيد محاسبي حي`, `${n(groupedEntries.length)} Live Entries`)}
-              accent="gold"
-            />
-          </div>
-
-          {/* Filters Bar: Search, Branch, Date Range, View Mode */}
-          <div className="p-3.5 rounded-2xl border border-border/70 bg-card shadow-2xs space-y-3">
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Search Box */}
-              <div className="relative flex-1 min-w-[220px]">
-                <Search className="size-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={pick("بحث برقم القيد، المرجع، البيان، كود أو اسم الحساب...", "Search by JV #, reference, memo, account...")}
-                  className="w-full rounded-xl border border-border/70 bg-background ps-9 pe-3 py-2 text-xs font-medium outline-none focus:border-primary shadow-xs"
-                />
-              </div>
-
-              {/* Branch Filter */}
-              <div className="relative min-w-[200px]">
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="w-full text-xs font-bold py-2 ps-3 pe-8 rounded-xl border border-border/70 bg-background text-foreground focus:border-primary outline-none appearance-none cursor-pointer shadow-xs"
-                >
-                  {branchFilterOptions.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {pick(b.label.ar, b.label.en)}
-                    </option>
-                  ))}
-                </select>
-                <Building2 className="size-3.5 absolute end-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none" />
-              </div>
-
-              {/* Date Pickers */}
-              <div className="flex items-center gap-1.5 bg-background border border-border/70 rounded-xl px-2.5 py-1 shadow-xs text-xs">
-                <Calendar className="size-3.5 text-primary shrink-0" />
-                <span className="text-[11px] font-bold text-muted-foreground">{pick("من", "From")}:</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
-                />
-                <span className="text-muted-foreground/40 font-bold">|</span>
-                <span className="text-[11px] font-bold text-muted-foreground">{pick("إلى", "To")}:</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
-                />
-                {(dateFrom || dateTo) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDateFrom("");
-                      setDateTo("");
-                    }}
-                    className="text-muted-foreground hover:text-foreground text-xs px-1"
-                    title={pick("إلغاء تحديد التاريخ", "Clear date filter")}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              {/* View Mode Toggle: Grouped vs Flat */}
-              <div className="inline-flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/60 ms-auto">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grouped")}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    viewMode === "grouped" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title={pick("عرض مجمع حسب كل قيد محاسبي", "Grouped by Journal Entry")}
-                >
-                  <Layers className="size-3.5" />
-                  <span className="hidden sm:inline">{pick("عرض القيود", "By Entry")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("flat")}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    viewMode === "flat" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title={pick("عرض سطور دفتر الأستاذ العام بالتفصيل", "Detailed Ledger Rows")}
-                >
-                  <List className="size-3.5" />
-                  <span className="hidden sm:inline">{pick("دفتر أستاذ تفصيلي", "Detailed Lines")}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Grouped View: Modern Entry Cards */}
-          {viewMode === "grouped" && (
-            <div className="space-y-4">
-              {groupedEntries.length === 0 ? (
-                <div className="p-8 text-center bg-card rounded-2xl border border-border text-muted-foreground text-xs">
-                  <BookOpen className="size-8 mx-auto opacity-30 mb-2" />
-                  <p>{pick("لا توجد قيود يومية مطابقة لخيارات البحث المحددة", "No journal entries match the filter criteria")}</p>
-                </div>
-              ) : (
-                paginatedGroupedEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs hover:shadow-xs transition-shadow"
-                  >
-                    {/* Entry Header */}
-                    <div className="p-3 sm:px-4 bg-secondary/35 border-b border-border/70 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-black text-sm text-foreground px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                          {entry.id}
-                        </span>
-
-                        <span className="font-mono font-bold text-muted-foreground text-[11px]" dir="ltr">
-                          📅 {entry.date}
-                        </span>
-
-                        {entry.branchName && (
-                          <span className="px-2 py-0.5 rounded-lg bg-card border border-border text-[11px] font-bold text-foreground">
-                            📍 {pick(entry.branchName.ar, entry.branchName.en)}
-                          </span>
-                        )}
-
-                        {entry.reference && (
-                          <span className="px-2 py-0.5 rounded-lg bg-muted text-muted-foreground font-mono text-[10px] font-bold">
-                            #{entry.reference}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3 ms-auto">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                          <CheckCircle2 className="size-3.5" />
-                          <span>{pick("مرحل ومعتمد", "Posted")}</span>
-                        </span>
-
-                        <span className="text-[11px] font-mono font-black text-foreground/90">
-                          {pick("المجموع:", "Total:")} {money(entry.totalDebit)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Entry Memo */}
-                    {entry.memo && (
-                      <div className="px-4 py-2 bg-background/50 border-b border-border/40 text-xs font-semibold text-foreground/80">
-                        💬 {pick(entry.memo.ar, entry.memo.en)}
-                      </div>
-                    )}
-
-                    {/* Entry Lines Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead className="bg-secondary/20 text-muted-foreground/80 border-b border-border/40 text-[11px]">
-                          <tr>
-                            <th className="p-2.5 text-start font-bold w-28">{pick("كود الحساب", "Code")}</th>
-                            <th className="p-2.5 text-start font-bold">{pick("اسم الحساب", "Account Name")}</th>
-                            <th className="p-2.5 text-start font-bold w-36">{pick("مدين (ج.م)", "Debit")}</th>
-                            <th className="p-2.5 text-start font-bold w-36">{pick("دائن (ج.م)", "Credit")}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/30">
-                          {entry.lines.map((ln, idx) => (
-                            <tr key={`${entry.id}-${idx}`} className="hover:bg-secondary/20">
-                              <td className="p-2.5 font-mono font-bold text-primary">
-                                {ln.accountCode || "-"}
-                              </td>
-                              <td className="p-2.5 font-semibold text-foreground">
-                                {pick(ln.account.ar, ln.account.en)}
-                              </td>
-                              <td className="p-2.5 font-mono font-bold">
-                                {ln.debit > 0 ? (
-                                  <span className="text-emerald-600 dark:text-emerald-400">
-                                    {money(ln.debit)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground/30">—</span>
-                                )}
-                              </td>
-                              <td className="p-2.5 font-mono font-bold">
-                                {ln.credit > 0 ? (
-                                  <span className="text-sky-600 dark:text-sky-400">
-                                    {money(ln.credit)}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground/30">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ))
-              )}
-              {groupedEntries.length > 0 && (
-                <div className="rounded-2xl border border-border/80 bg-card overflow-hidden">
-                  <TablePagination
-                    currentPage={groupedPage}
-                    totalItems={groupedEntries.length}
-                    pageSize={30}
-                    onPageChange={setGroupedPage}
-                    itemLabel={{ ar: "قيد يومية", en: "Journal Entries" }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Flat Ledger Table View */}
-          {viewMode === "flat" && (
-            <Panel title={pick("دفتر الأستاذ التفصيلي لقيود اليومية", "Detailed Journal Ledger")}>
-              <DataTable
-                head={[
-                  pick("رقم القيد", "JV #"),
-                  pick("التاريخ", "Date"),
-                  pick("الفرع", "Branch"),
-                  pick("المرجع", "Ref"),
-                  pick("كود الحساب", "Code"),
-                  pick("الحساب المحاسبي", "Account Name"),
-                  pick("مدين (Debit)", "Debit"),
-                  pick("دائن (Credit)", "Credit"),
-                ]}
-              >
-                {paginatedFlatEntries.map((j, idx) => (
-                  <tr key={`${j.id}-${idx}`} className="hover:bg-secondary/40">
-                    <Td className="num font-bold text-primary">{j.id}</Td>
-                    <Td className="num text-muted-foreground font-mono text-[11px]">{j.date}</Td>
-                    <Td className="text-xs font-semibold">
-                      {pick(j.branchName?.ar || "الإدارة", j.branchName?.en || "HQ")}
-                    </Td>
-                    <Td className="font-mono text-[10px] text-muted-foreground">{j.reference || "-"}</Td>
-                    <Td className="font-mono text-primary font-bold text-xs">{j.accountCode || "-"}</Td>
-                    <Td className="font-medium text-foreground text-xs">{pick(j.account.ar, j.account.en)}</Td>
-                    <Td className="num font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      {j.debit ? money(j.debit) : "—"}
-                    </Td>
-                    <Td className="num font-mono font-bold text-sky-600 dark:text-sky-400">
-                      {j.credit ? money(j.credit) : "—"}
-                    </Td>
-                  </tr>
-                ))}
-              </DataTable>
-              <TablePagination
-                currentPage={flatPage}
-                totalItems={filteredEntries.length}
-                pageSize={30}
-                onPageChange={setFlatPage}
-                itemLabel={{ ar: "سطر أستاذ", en: "Ledger Rows" }}
-              />
-            </Panel>
-          )}
-        </div>
+        <JournalEntriesTable
+          branchOptions={branchFilterOptions}
+          onOpenNewEntry={() => setIsJournalFormOpen(true)}
+        />
       )}
 
       {/* Tab 3: Trial Balance (ميزان المراجعة بالمجاميع والأرصدة) */}
@@ -674,20 +416,35 @@ function Accounting() {
               </span>
               <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-sm">
                 <CheckCircle2 className="size-4" />
-                <span>{pick("متوازن محاسبياً (المدين = الدائن)", "Balanced (Debit = Credit)")}</span>
+                <span>
+                  {pick("متوازن محاسبياً (المدين = الدائن)", "Balanced (Debit = Credit)")}
+                </span>
               </div>
             </div>
           </div>
 
           <Panel
-            title={pick("ميزان المراجعة العام بالمجاميع والأرصدة (بيانات حية)", "General Ledger Trial Balance (Live Data)")}
+            title={pick(
+              "ميزان المراجعة العام بالمجاميع والأرصدة (بيانات حية)",
+              "General Ledger Trial Balance (Live Data)",
+            )}
             aside={
               <span className="text-xs font-semibold text-muted-foreground">
-                {pick("محسوب ديناميكياً من قيود العمليات اليومية الحية", "Dynamically computed from live operational journals")}
+                {pick(
+                  "محسوب ديناميكياً من قيود العمليات اليومية الحية",
+                  "Dynamically computed from live operational journals",
+                )}
               </span>
             }
           >
-            <DataTable head={[t("account"), pick("كود الحساب", "Code"), pick("مدين (ج.م)", "Debit"), pick("دائن (ج.م)", "Credit")]}>
+            <DataTable
+              head={[
+                t("account"),
+                pick("كود الحساب", "Code"),
+                pick("مدين (ج.م)", "Debit"),
+                pick("دائن (ج.م)", "Credit"),
+              ]}
+            >
               {realTrialBalance.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-muted-foreground text-xs">
@@ -697,7 +454,9 @@ function Accounting() {
               ) : (
                 realTrialBalance.map((r, i) => (
                   <tr key={`${r.code}-${i}`} className="hover:bg-secondary/40">
-                    <Td className="font-semibold text-xs text-foreground">{pick(r.name.ar, r.name.en)}</Td>
+                    <Td className="font-semibold text-xs text-foreground">
+                      {pick(r.name.ar, r.name.en)}
+                    </Td>
                     <Td className="font-mono text-xs text-primary font-bold">{r.code}</Td>
                     <Td className="num font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       {r.debit ? money(r.debit) : "—"}
@@ -709,9 +468,15 @@ function Accounting() {
                 ))
               )}
               <tr className="bg-secondary/60 font-black text-sm border-t-2 border-border">
-                <Td colSpan={2} className="font-black uppercase">{pick("الإجمالي العام المعتمد", "Grand Total Balance")}</Td>
-                <Td className="num font-mono font-black text-emerald-600 dark:text-emerald-400">{money(trialTotalDebit)}</Td>
-                <Td className="num font-mono font-black text-sky-600 dark:text-sky-400">{money(trialTotalCredit)}</Td>
+                <Td colSpan={2} className="font-black uppercase">
+                  {pick("الإجمالي العام المعتمد", "Grand Total Balance")}
+                </Td>
+                <Td className="num font-mono font-black text-emerald-600 dark:text-emerald-400">
+                  {money(trialTotalDebit)}
+                </Td>
+                <Td className="num font-mono font-black text-sky-600 dark:text-sky-400">
+                  {money(trialTotalCredit)}
+                </Td>
               </tr>
             </DataTable>
           </Panel>
