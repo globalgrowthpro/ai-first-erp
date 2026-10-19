@@ -197,7 +197,7 @@ export function useHelpdeskStore() {
       };
 
       if (currentUserId) {
-        payload.created_by = currentUserId;
+        payload["created_by"] = currentUserId;
       }
 
       // 3. Database Insert
@@ -343,7 +343,7 @@ export function useHelpdeskStore() {
           sender_role: response.senderRole,
         };
 
-        if (currentAuthorId) respPayload.author_id = currentAuthorId;
+        if (currentAuthorId) respPayload["author_id"] = currentAuthorId;
 
         const { data: insertedResp, error } = await (supabase as any)
           .from("helpdesk_ticket_responses")

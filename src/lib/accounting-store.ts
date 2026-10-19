@@ -7,6 +7,8 @@ import {
 } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 
+export type { JournalEntry, AccountItem };
+
 export function useAccountsStore() {
   const [accounts, setAccounts] = useState<AccountItem[]>(chartOfAccounts);
   const [loading, setLoading] = useState(false);
@@ -429,8 +431,21 @@ export async function fetchLiveOperationalJournal(): Promise<JournalEntry[]> {
   }
 }
 
+export let cachedLatestJournalEntries: JournalEntry[] = [];
+
+export function getLatestJournalEntries(): JournalEntry[] {
+  return cachedLatestJournalEntries;
+}
+
+// Background prefetch for reports and exports
+fetchLiveOperationalJournal()
+  .then((data) => {
+    if (data && data.length > 0) cachedLatestJournalEntries = data;
+  })
+  .catch(() => {});
+
 export function useJournalStore() {
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [entries, setEntries] = useState<JournalEntry[]>(cachedLatestJournalEntries);
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(true);
 
@@ -439,15 +454,16 @@ export function useJournalStore() {
     try {
       const liveEntries = await fetchLiveOperationalJournal();
       if (liveEntries && liveEntries.length > 0) {
+        cachedLatestJournalEntries = liveEntries;
         setEntries(liveEntries);
         setIsLive(true);
       } else {
-        // Fallback to initial demo data only if database is completely empty
-        setEntries(initialJournalEntries);
-        setIsLive(false);
+        cachedLatestJournalEntries = [];
+        setEntries([]);
+        setIsLive(true);
       }
     } catch {
-      setEntries(initialJournalEntries);
+      setEntries([]);
       setIsLive(false);
     } finally {
       setLoading(false);
@@ -480,8 +496,8 @@ export function useJournalStore() {
 
           const totalDebitAmount = lines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
 
-          const { data: jeData, error: jeErr } = await supabase
-            .from("journal_entries")
+          const { data: jeData, error: jeErr } = await (supabase
+            .from("journal_entries") as any)
             .insert({
               entry_no: entryId,
               entry_date: first.date || new Date().toISOString().slice(0, 10),
@@ -511,7 +527,7 @@ export function useJournalStore() {
               memo: l.memo?.ar || l.memo?.en || null,
             }));
 
-            await supabase.from("journal_lines").insert(lineInserts);
+            await (supabase.from("journal_lines") as any).insert(lineInserts);
           }
         }
         fetchJournal();

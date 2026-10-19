@@ -60,8 +60,92 @@ export function getDocumentItems(docId: string, amount: number, kind: "sales" | 
   ];
 }
 
+export let cachedLatestSalesInvoices: BizDocument[] = [];
+export let cachedLatestPurchases: BizDocument[] = [];
+
+export function getLatestSalesInvoices(): BizDocument[] {
+  return cachedLatestSalesInvoices;
+}
+
+export function getLatestPurchases(): BizDocument[] {
+  return cachedLatestPurchases;
+}
+
+export async function fetchLiveDocuments(type: 'invoice' | 'purchase'): Promise<BizDocument[]> {
+  try {
+    let query = supabase
+      .from('sales_invoices')
+      .select(`
+        id, invoice_no, partner_id, invoice_date, due_date, subtotal, tax_amount, total, balance, status, notes, created_at,
+        sales_invoice_lines ( id, product_id, description, quantity, unit_price, line_total )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (type === 'invoice') query = query.not('invoice_no', 'ilike', 'PO-%');
+    else query = query.ilike('invoice_no', 'PO-%');
+
+    const { data } = await query;
+    if (data && data.length > 0) {
+      const mapped = data.map((d: any) => {
+        const rawNotes = d.notes || (type === 'invoice' ? 'عميل تجاري نقدي' : 'مورد خامات ومستلزمات');
+        const cleanParty = rawNotes.replace(/^\[PURCHASE\]\s*/i, '').trim();
+        const lines: InvoiceItem[] =
+          d.sales_invoice_lines && d.sales_invoice_lines.length > 0
+            ? d.sales_invoice_lines.map((l: any, idx: number) => ({
+                id: l.id || `line-${d.invoice_no}-${idx}`,
+                sku: l.product_id ? String(l.product_id).slice(0, 8) : `SKU-${idx + 1}`,
+                name: { ar: l.description || 'صنف', en: l.description || 'Item' },
+                quantity: Number(l.quantity) || 1,
+                unit: { ar: 'وحدة', en: 'unit' },
+                unitPrice: Number(l.unit_price) || 0,
+                total: Number(l.line_total) || (Number(l.quantity) || 1) * (Number(l.unit_price) || 0),
+              }))
+            : getDocumentItems(d.invoice_no, Number(d.total) || 0, type === 'invoice' ? 'sales' : 'purchases');
+
+        const bal = Number(d.balance ?? 0);
+        const computedStatus: DocumentStatus =
+          bal === 0 ? "paid" : (d.status === "paid" ? "draft" : (d.status as DocumentStatus) || "draft");
+
+        return {
+          id: d.invoice_no,
+          partnerId: d.partner_id || '',
+          party: { ar: cleanParty, en: cleanParty },
+          date: d.invoice_date || String(d.created_at || '').slice(0, 10),
+          dueDate: d.due_date || undefined,
+          amount: Number(d.total) || 0,
+          balance: bal,
+          status: computedStatus,
+          notes: cleanParty,
+          subtotal: Number(d.subtotal) || 0,
+          taxAmount: Number(d.tax_amount) || 0,
+          items: lines,
+        };
+      });
+
+      if (type === 'invoice') cachedLatestSalesInvoices = mapped;
+      else cachedLatestPurchases = mapped;
+      return mapped;
+    }
+    return type === 'invoice' ? cachedLatestSalesInvoices : cachedLatestPurchases;
+  } catch (err) {
+    console.error(`Error fetching live ${type} documents:`, err);
+    return type === 'invoice' ? cachedLatestSalesInvoices : cachedLatestPurchases;
+  }
+}
+
+export async function fetchLiveSalesInvoices(): Promise<BizDocument[]> {
+  return fetchLiveDocuments('invoice');
+}
+
+export async function fetchLivePurchases(): Promise<BizDocument[]> {
+  return fetchLiveDocuments('purchase');
+}
+
+fetchLiveDocuments('invoice').catch(() => {});
+fetchLiveDocuments('purchase').catch(() => {});
+
 function useDocumentsStore(type: 'invoice' | 'purchase', prefix: string) {
-  const [documents, setDocuments] = useState<BizDocument[]>([]);
+  const [documents, setDocuments] = useState<BizDocument[]>(type === 'invoice' ? cachedLatestSalesInvoices : cachedLatestPurchases);
   const [loading, setLoading] = useState(true);
 
   const fetchDocs = useCallback(async () => {
@@ -101,45 +185,49 @@ function useDocumentsStore(type: 'invoice' | 'purchase', prefix: string) {
 
       const { data, error } = await query;
       if (!error && data && data.length > 0) {
-        setDocuments(
-          data.map((d: any) => {
-            const rawNotes = d.notes || (type === 'invoice' ? 'عميل تجاري نقدي' : 'مورد خامات ومستلزمات');
-            const cleanParty = rawNotes.replace(/^\[PURCHASE\]\s*/i, '').trim();
+        const mapped = data.map((d: any) => {
+          const rawNotes = d.notes || (type === 'invoice' ? 'عميل تجاري نقدي' : 'مورد خامات ومستلزمات');
+          const cleanParty = rawNotes.replace(/^\[PURCHASE\]\s*/i, '').trim();
 
-            const lines: InvoiceItem[] =
-              d.sales_invoice_lines && d.sales_invoice_lines.length > 0
-                ? d.sales_invoice_lines.map((l: any, idx: number) => ({
-                    id: l.id || `line-${d.invoice_no}-${idx}`,
-                    sku: l.product_id ? String(l.product_id).slice(0, 8) : `SKU-${idx + 1}`,
-                    name: { ar: l.description || 'صنف', en: l.description || 'Item' },
-                    quantity: Number(l.quantity) || 1,
-                    unit: { ar: 'وحدة', en: 'unit' },
-                    unitPrice: Number(l.unit_price) || 0,
-                    total: Number(l.line_total) || (Number(l.quantity) || 1) * (Number(l.unit_price) || 0),
-                  }))
-                : getDocumentItems(d.invoice_no, Number(d.total) || 0, type === 'invoice' ? 'sales' : 'purchases');
+          const lines: InvoiceItem[] =
+            d.sales_invoice_lines && d.sales_invoice_lines.length > 0
+              ? d.sales_invoice_lines.map((l: any, idx: number) => ({
+                  id: l.id || `line-${d.invoice_no}-${idx}`,
+                  sku: l.product_id ? String(l.product_id).slice(0, 8) : `SKU-${idx + 1}`,
+                  name: { ar: l.description || 'صنف', en: l.description || 'Item' },
+                  quantity: Number(l.quantity) || 1,
+                  unit: { ar: 'وحدة', en: 'unit' },
+                  unitPrice: Number(l.unit_price) || 0,
+                  total: Number(l.line_total) || (Number(l.quantity) || 1) * (Number(l.unit_price) || 0),
+                }))
+              : getDocumentItems(d.invoice_no, Number(d.total) || 0, type === 'invoice' ? 'sales' : 'purchases');
 
-            const bal = Number(d.balance ?? 0);
-            const computedStatus: DocumentStatus =
-              bal === 0 ? "paid" : (d.status === "paid" ? "draft" : (d.status as DocumentStatus) || "draft");
+          const bal = Number(d.balance ?? 0);
+          const computedStatus: DocumentStatus =
+            bal === 0 ? "paid" : (d.status === "paid" ? "draft" : (d.status as DocumentStatus) || "draft");
 
-            return {
-              id: d.invoice_no,
-              partnerId: d.partner_id || '',
-              party: { ar: cleanParty, en: cleanParty },
-              date: d.invoice_date || String(d.created_at || '').slice(0, 10),
-              dueDate: d.due_date || undefined,
-              amount: Number(d.total) || 0,
-              balance: bal,
-              status: computedStatus,
-              notes: cleanParty,
-              subtotal: Number(d.subtotal) || 0,
-              taxAmount: Number(d.tax_amount) || 0,
-              items: lines,
-            };
-          })
-        );
+          return {
+            id: d.invoice_no,
+            partnerId: d.partner_id || '',
+            party: { ar: cleanParty, en: cleanParty },
+            date: d.invoice_date || String(d.created_at || '').slice(0, 10),
+            dueDate: d.due_date || undefined,
+            amount: Number(d.total) || 0,
+            balance: bal,
+            status: computedStatus,
+            notes: cleanParty,
+            subtotal: Number(d.subtotal) || 0,
+            taxAmount: Number(d.tax_amount) || 0,
+            items: lines,
+          };
+        });
+
+        if (type === 'invoice') cachedLatestSalesInvoices = mapped;
+        else cachedLatestPurchases = mapped;
+        setDocuments(mapped);
       } else {
+        if (type === 'invoice') cachedLatestSalesInvoices = [];
+        else cachedLatestPurchases = [];
         setDocuments([]);
       }
     } catch (err) {

@@ -2,19 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
-import {
-  invoices,
-  purchaseOrders,
-  products,
-  partners,
-  journal,
-  chartOfAccounts,
-  type ProductItem,
-  type InvoiceRow,
-  type JournalEntry,
-} from "@/lib/demo-data";
-import { DEFAULT_SUPPLEMENTAL_EMPLOYEES as initialEmployees, type EmployeeRecord } from "@/lib/hr-store";
-import { BRANCH_NAMES_MAP } from "@/lib/pos-orders-store";
+import { type ProductItem, type InvoiceRow, type JournalEntry } from "@/lib/demo-data";
+import { getLatestEmployees, type EmployeeRecord } from "@/lib/hr-store";
+import { BRANCH_NAMES_MAP, getLatestPosOrders } from "@/lib/pos-orders-store";
+import { getLatestInventoryProducts, getLatestCategories } from "@/lib/inventory-store";
+import { getLatestSalesInvoices, getLatestPurchases, type BizDocument } from "@/lib/documents-store";
+import { getLatestPartners, type Partner } from "@/lib/partners-store";
+import { getLatestJournalEntries } from "@/lib/accounting-store";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -136,6 +130,7 @@ export interface LiveDataSourceCollections {
   inventoryProducts?: any[] | undefined;
   partners?: any[] | undefined;
   employees?: any[] | undefined;
+  journalEntries?: any[] | undefined;
 }
 
 export interface CustomReportDefinition {
@@ -1398,14 +1393,32 @@ export function getDataSourceRawData(
     return String(val);
   };
 
+  const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+    ? liveCollections.posOrders
+    : getLatestPosOrders();
+  const liveProducts = (liveCollections?.inventoryProducts && liveCollections.inventoryProducts.length > 0)
+    ? liveCollections.inventoryProducts
+    : getLatestInventoryProducts();
+  const liveInvoices = (liveCollections?.salesDocuments && liveCollections.salesDocuments.length > 0)
+    ? liveCollections.salesDocuments
+    : getLatestSalesInvoices();
+  const livePurchases = (liveCollections?.purchasesDocuments && liveCollections.purchasesDocuments.length > 0)
+    ? liveCollections.purchasesDocuments
+    : getLatestPurchases();
+  const livePartners = (liveCollections?.partners && liveCollections.partners.length > 0)
+    ? liveCollections.partners
+    : getLatestPartners();
+  const liveEmployees = (liveCollections?.employees && liveCollections.employees.length > 0)
+    ? liveCollections.employees
+    : getLatestEmployees();
+  const liveJournals = (liveCollections?.journalEntries && liveCollections.journalEntries.length > 0)
+    ? liveCollections.journalEntries
+    : getLatestJournalEntries();
+  const liveCategories = getLatestCategories();
+
   switch (key) {
     case "sales": {
-      const docs =
-        liveCollections?.salesDocuments && liveCollections.salesDocuments.length > 0
-          ? liveCollections.salesDocuments
-          : invoices;
-
-      return docs.map((inv: any) => {
+      return liveInvoices.map((inv: any) => {
         const amt = Number(inv.amount) || 0;
         const bal = Number(inv.balance) || 0;
         const paid = Math.max(0, amt - bal);
@@ -1423,111 +1436,48 @@ export function getDataSourceRawData(
     }
 
     case "pos": {
-      // 1. Prefer live real orders from Supabase store
-      const ordersToUse =
-        liveCollections?.posOrders && liveCollections.posOrders.length > 0
-          ? liveCollections.posOrders
-          : getStoredLocalPosOrders();
+      return liveOrders.map((ord: any) => {
+        let pm = ord.paymentMethod || ord.payment_method || "cash";
+        if (pm === "wallet") pm = "instapay";
+        if (ord.orderPlatform === "talabat" || ord.order_platform === "talabat") pm = "talabat";
 
-      if (ordersToUse && ordersToUse.length > 0) {
-        return ordersToUse.map((ord: any) => {
-          let pm = ord.paymentMethod || ord.payment_method || "cash";
-          if (pm === "wallet") pm = "instapay";
-          if (ord.orderPlatform === "talabat" || ord.order_platform === "talabat") pm = "talabat";
+        let ot = ord.orderType || ord.order_type || "takeaway";
+        if (pm === "talabat") ot = "delivery";
 
-          let ot = ord.orderType || ord.order_type || "takeaway";
-          if (pm === "talabat") ot = "delivery";
+        const sub = Number(ord.subtotal) || 0;
+        const vat = Number(ord.vatAmount ?? ord.tax_amount ?? ord.vat ?? 0);
+        const disc = Number(ord.discountAmount ?? ord.discount_amount ?? ord.discount ?? 0);
+        const tot = Number(ord.total) || sub + vat - disc;
 
-          const sub = Number(ord.subtotal) || 0;
-          const vat = Number(ord.vatAmount ?? ord.tax_amount ?? ord.vat ?? 0);
-          const disc = Number(ord.discountAmount ?? ord.discount_amount ?? ord.discount ?? 0);
-          const tot = Number(ord.total) || sub + vat - disc;
+        let branchStr = "";
+        if (ord.branchName) branchStr = pick(ord.branchName);
+        else if (ord.branch_name) branchStr = pick(ord.branch_name);
+        else if (ord.branchId && (BRANCH_NAMES_MAP as any)[ord.branchId])
+          branchStr = pick((BRANCH_NAMES_MAP as any)[ord.branchId]);
+        else if (ord.branch_id && (BRANCH_NAMES_MAP as any)[ord.branch_id])
+          branchStr = pick((BRANCH_NAMES_MAP as any)[ord.branch_id]);
+        else if (ord.branch) branchStr = pick(ord.branch);
+        if (!branchStr) branchStr = lang === "ar" ? "الفرع الرئيسي" : "Main Branch";
 
-          let branchStr = "";
-          if (ord.branchName) branchStr = pick(ord.branchName);
-          else if (ord.branch_name) branchStr = pick(ord.branch_name);
-          else if (ord.branchId && (BRANCH_NAMES_MAP as any)[ord.branchId])
-            branchStr = pick((BRANCH_NAMES_MAP as any)[ord.branchId]);
-          else if (ord.branch_id && (BRANCH_NAMES_MAP as any)[ord.branch_id])
-            branchStr = pick((BRANCH_NAMES_MAP as any)[ord.branch_id]);
-          else if (ord.branch) branchStr = pick(ord.branch);
-          if (!branchStr) branchStr = lang === "ar" ? "الفرع الرئيسي" : "Main Branch";
-
-          return {
-            orderNumber: ord.orderNumber || ord.order_number || ord.id || "POS-ORD",
-            branch: branchStr,
-            createdAt: formatDateTimeString(ord.createdAt || ord.created_at || ord.formattedDate),
-            orderType: ot,
-            paymentMethod: pm,
-            subtotal: sub,
-            vatAmount: vat,
-            discountAmount: disc,
-            total: tot,
-            cashierName: ord.cashierName || ord.cashier_name || (lang === "ar" ? "كاشير مناوب" : "Duty Cashier"),
-            status: ord.status || "completed",
-            customerName: ord.customerName || ord.customer_name,
-          };
-        });
-      }
-
-      // Fallback demo set if store has not loaded yet
-      const branches = [
-        { code: "korba", name: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis" } },
-        { code: "maadi", name: { ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St." } },
-        { code: "tagamoa", name: { ar: "فرع التجمع — التسعين", en: "New Cairo — 90th St." } },
-        { code: "kitchen", name: { ar: "المطبخ المركزي — طلبات", en: "Central Kitchen Hub" } },
-        { code: "alex", name: { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha" } },
-      ];
-
-      const cashiers = [
-        { ar: "محمود رضا", en: "Mahmoud Reda" },
-        { ar: "إبراهيم حسن", en: "Ibrahim Hassan" },
-        { ar: "كريم يوسف", en: "Karim Youssef" },
-        { ar: "طارق سليم", en: "Tarek Selim" },
-      ];
-
-      const methods = ["cash", "card", "instapay", "talabat"] as const;
-      const types = ["takeaway", "dine_in", "delivery"] as const;
-
-      const generated: Record<string, any>[] = [];
-      const baseDate = "2026-10-0";
-
-      for (let i = 1; i <= 24; i++) {
-        const br = branches[i % branches.length]!;
-        const csh = cashiers[i % cashiers.length]!;
-        const pm = methods[i % methods.length]!;
-        const ot = pm === "talabat" ? "delivery" : types[i % types.length]!;
-        const sub = 120 + ((i * 85) % 850);
-        const vat = Math.round(sub * 0.14);
-        const disc = i % 5 === 0 ? 30 : 0;
-        const tot = sub + vat - disc;
-        const day = 1 + (i % 8);
-
-        generated.push({
-          orderNumber: `POS-${br.code.toUpperCase()}-${1000 + i}`,
-          branch: pick(br.name),
-          createdAt: `${baseDate}${day} 1${i % 10}:30`,
+        return {
+          orderNumber: ord.orderNumber || ord.order_number || ord.id || "POS-ORD",
+          branch: branchStr,
+          createdAt: formatDateTimeString(ord.createdAt || ord.created_at || ord.formattedDate),
           orderType: ot,
           paymentMethod: pm,
           subtotal: sub,
           vatAmount: vat,
           discountAmount: disc,
           total: tot,
-          cashierName: pick(csh),
-          status: "completed",
-        });
-      }
-
-      return generated;
+          cashierName: ord.cashierName || ord.cashier_name || (lang === "ar" ? "كاشير مناوب" : "Duty Cashier"),
+          status: ord.status || "completed",
+          customerName: ord.customerName || ord.customer_name,
+        };
+      });
     }
 
     case "purchases": {
-      const pos =
-        liveCollections?.purchasesDocuments && liveCollections.purchasesDocuments.length > 0
-          ? liveCollections.purchasesDocuments
-          : purchaseOrders;
-
-      return pos.map((po: any) => {
+      return livePurchases.map((po: any) => {
         const amt = Number(po.amount) || 0;
         const bal = Number(po.balance) || 0;
         const paid = Math.max(0, amt - bal);
@@ -1545,12 +1495,7 @@ export function getDataSourceRawData(
     }
 
     case "inventory": {
-      const prods =
-        liveCollections?.inventoryProducts && liveCollections.inventoryProducts.length > 0
-          ? liveCollections.inventoryProducts
-          : products;
-
-      return prods.map((p: any) => {
+      return liveProducts.map((p: any) => {
         const qty = Number(p.qty) || 0;
         const min = Number(p.min ?? p.minStock ?? 10);
         const price = Number(p.price ?? p.sellingPrice ?? p.sale_price ?? 0);
@@ -1562,7 +1507,11 @@ export function getDataSourceRawData(
         let catName = "";
         if (p.category) catName = pick(p.category);
         else if (p.category_name) catName = pick(p.category_name);
-        else if (p.categoryId) catName = p.categoryId;
+        else if (p.categoryId) {
+          const c = liveCategories.find((cat) => cat.id === p.categoryId);
+          if (c) catName = pick(c.name);
+          else catName = p.categoryId;
+        }
         if (!catName) catName = lang === "ar" ? "حلويات شرقية فاخرة" : "Oriental Sweets";
 
         let whName = "";
@@ -1586,25 +1535,22 @@ export function getDataSourceRawData(
     }
 
     case "journal": {
-      return journal.map((j) => ({
+      return liveJournals.map((j: any) => ({
         id: j.id,
-        date: j.date,
+        date: String(j.date || "").slice(0, 10),
         reference: j.reference || "JV-REF",
         accountCode: j.accountCode || "1110",
         account: pick(j.account),
-        branch: pick(j.branchName || { ar: "الإدارة العامة", en: "Headquarters" }),
-        debit: j.debit,
-        credit: j.credit,
+        branch: pick(j.branchName || j.branch || { ar: "الإدارة العامة", en: "Headquarters" }),
+        debit: Number(j.debit) || 0,
+        credit: Number(j.credit) || 0,
         memo: pick(j.memo || { ar: "قيد محاسبي معتمد", en: "Journal entry" }),
         status: j.status || "posted",
       }));
     }
 
     case "partners": {
-      const pts =
-        liveCollections?.partners && liveCollections.partners.length > 0 ? liveCollections.partners : partners;
-
-      return pts.map((pt: any) => {
+      return livePartners.map((pt: any) => {
         const bal = Number(pt.balance) || 0;
         let bType = "zero";
         if (bal > 0) {
@@ -1622,12 +1568,7 @@ export function getDataSourceRawData(
     }
 
     case "employees": {
-      const emps =
-        liveCollections?.employees && liveCollections.employees.length > 0
-          ? liveCollections.employees
-          : initialEmployees;
-
-      return emps.map((e: any) => {
+      return liveEmployees.map((e: any) => {
         const basic = Number(e.compensation?.basicSalary ?? e.basicSalary ?? 6000);
         const housing = Number(e.compensation?.housingAllowance ?? 0);
         const transport = Number(e.compensation?.transportAllowance ?? 0);
@@ -1653,686 +1594,874 @@ export function getDataSourceRawData(
     }
 
     case "sales_by_branch": {
-      // Branch performance: Day, Month, YTD
-      const baseBranches = [
-        { id: "korba", name: { ar: "فرع الكوربة — مصر الجديدة", en: "Korba — Heliopolis" }, city: { ar: "القاهرة (مصر الجديدة)", en: "Cairo" }, daySales: 38400, dayOrders: 165, monthSales: 1180000, monthOrders: 4900, ytdSales: 10800000, targetStatus: "achieved" },
-        { id: "maadi", name: { ar: "فرع المعادي — شارع النصر", en: "Maadi — Al-Nasr St." }, city: { ar: "القاهرة (المعادي)", en: "Cairo" }, daySales: 32600, dayOrders: 142, monthSales: 995000, monthOrders: 4150, ytdSales: 9250000, targetStatus: "achieved" },
-        { id: "tagamoa", name: { ar: "فرع التجمع الخامس — التسعين", en: "New Cairo — 90th St." }, city: { ar: "القاهرة الجديدة", en: "New Cairo" }, daySales: 36200, dayOrders: 138, monthSales: 1060000, monthOrders: 4020, ytdSales: 9800000, targetStatus: "achieved" },
-        { id: "coast", name: { ar: "فرع الساحل الشمالي — مارينا", en: "North Coast — Marina Hub" }, city: { ar: "الساحل الشمالي", en: "North Coast" }, daySales: 21500, dayOrders: 78, monthSales: 640000, monthOrders: 2100, ytdSales: 5600000, targetStatus: "on_track" },
-        { id: "kitchen", name: { ar: "المطبخ المركزي والمصنع — العاشر", en: "Central Kitchen Hub" }, city: { ar: "العاشر من رمضان", en: "10th Ramadan" }, daySales: 28700, dayOrders: 110, monthSales: 890000, monthOrders: 3400, ytdSales: 8100000, targetStatus: "achieved" },
-        { id: "alex", name: { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha" }, city: { ar: "الإسكندرية", en: "Alexandria" }, daySales: 18900, dayOrders: 89, monthSales: 565000, monthOrders: 2650, ytdSales: 5100000, targetStatus: "below_target" },
-      ];
+      // 1. Branch performance: Day, Month, YTD directly from live POS orders
+      const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+        ? liveCollections.posOrders
+        : getLatestPosOrders();
 
-      // Incorporate live orders if present
-      const liveOrders = liveCollections?.posOrders || [];
-      const liveBranchTotals: Record<string, { todaySum: number; todayCount: number }> = {};
+      const branchStats: Record<string, {
+        dailySales: number;
+        dailyOrders: number;
+        monthlySales: number;
+        monthlyOrders: number;
+        totalSales: number;
+        totalOrders: number;
+      }> = {};
+
+      const now = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, "0");
+      const todayStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+      const thisMonthPrefix = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+
       for (const ord of liveOrders) {
-        const bId = ord.branchId || "korba";
-        if (!liveBranchTotals[bId]) liveBranchTotals[bId] = { todaySum: 0, todayCount: 0 };
-        liveBranchTotals[bId]!.todaySum += Number(ord.total) || 0;
-        liveBranchTotals[bId]!.todayCount += 1;
+        let bId = ord.branchId || "korba";
+        if (bId === "unassigned") bId = "korba";
+        if (!branchStats[bId]) {
+          branchStats[bId] = { dailySales: 0, dailyOrders: 0, monthlySales: 0, monthlyOrders: 0, totalSales: 0, totalOrders: 0 };
+        }
+        const amt = Number(ord.total) || 0;
+        const ordDateStr = String(ord.createdAt || ord.created_at || ord.formattedDate || "").slice(0, 10);
+
+        branchStats[bId]!.totalSales += amt;
+        branchStats[bId]!.totalOrders += 1;
+
+        if (ordDateStr === todayStr) {
+          branchStats[bId]!.dailySales += amt;
+          branchStats[bId]!.dailyOrders += 1;
+        }
+        if (ordDateStr.startsWith(thisMonthPrefix)) {
+          branchStats[bId]!.monthlySales += amt;
+          branchStats[bId]!.monthlyOrders += 1;
+        }
       }
 
-      const totalMonthly = baseBranches.reduce((s, b) => s + b.monthSales, 0);
+      // Collect known branches
+      const branchKeys = new Set([...Object.keys(BRANCH_NAMES_MAP), ...Object.keys(branchStats)]);
+      const grandTotalSales = Object.values(branchStats).reduce((s, b) => s + b.totalSales, 0);
 
-      return baseBranches.map((b) => {
-        const live = liveBranchTotals[b.id];
-        const daySales = b.daySales + (live ? live.todaySum : 0);
-        const dayOrders = b.dayOrders + (live ? live.todayCount : 0);
-        const share = Math.round((b.monthSales / (totalMonthly || 1)) * 1000) / 10;
-        const avg = dayOrders > 0 ? Math.round(daySales / dayOrders) : 0;
+      const rows: Record<string, any>[] = [];
+      for (const bId of branchKeys) {
+        const stats = branchStats[bId];
+        const brInfo = BRANCH_NAMES_MAP[bId] || { ar: `فرع ${bId}`, en: `${bId} Branch` };
+        const bName = typeof brInfo === "object" ? (lang === "ar" ? brInfo.ar : brInfo.en) : String(brInfo);
 
-        return {
-          branchId: b.id,
-          branch: pick(b.name),
-          city: pick(b.city),
-          dailySales: daySales,
-          dailyOrders: dayOrders,
-          monthlySales: b.monthSales,
-          monthlyOrders: b.monthOrders,
-          ytdSales: b.ytdSales,
+        // Include branches with orders or primary hubs
+        if (!stats && rows.length >= 8) continue;
+
+        const dSales = stats ? stats.dailySales : 0;
+        const dOrders = stats ? stats.dailyOrders : 0;
+        const mSales = stats ? (stats.monthlySales || stats.totalSales) : 0;
+        const mOrders = stats ? (stats.monthlyOrders || stats.totalOrders) : 0;
+        const ytd = stats ? stats.totalSales : 0;
+        const avg = dOrders > 0 ? Math.round(dSales / dOrders) : (mOrders > 0 ? Math.round(mSales / mOrders) : 0);
+        const share = grandTotalSales > 0 ? Math.round((ytd / grandTotalSales) * 1000) / 10 : 0;
+
+        rows.push({
+          branchId: bId,
+          branch: bName,
+          city: lang === "ar" ? "القاهرة الكبرى" : "Greater Cairo",
+          dailySales: dSales,
+          dailyOrders: dOrders,
+          monthlySales: mSales,
+          monthlyOrders: mOrders,
+          ytdSales: ytd,
           avgTicket: avg,
           sharePercent: share,
-          status: b.targetStatus,
-        };
-      });
+          status: ytd > 0 ? "achieved" : "on_track",
+        });
+      }
+
+      rows.sort((a, b) => (Number(b["ytdSales"]) || 0) - (Number(a["ytdSales"]) || 0));
+      return rows;
     }
 
     case "sales_by_product": {
-      // Products sales by category group and individual item
-      const prods = [
-        { sku: "BRN-1001", name: { ar: "رز بلبن نوتيلا", en: "Rice Pudding Nutella" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 1620, price: 50, orders: 1540, stock: 120 },
-        { sku: "BRN-1002", name: { ar: "رز بلبن مكسرات", en: "Rice Pudding Mixed Nuts" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 1120, price: 55, orders: 1050, stock: 85 },
-        { sku: "BRN-1003", name: { ar: "رز بلبن لوتس", en: "Rice Pudding Lotus" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 980, price: 55, orders: 920, stock: 95 },
-        { sku: "BRN-1004", name: { ar: "رز بلبن بستاشيو فاخر", en: "Rice Pudding Pistachio" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 780, price: 80, orders: 740, stock: 60 },
-        { sku: "BRN-1005", name: { ar: "رز بلبن الوزير الخاص", en: "Rice Pudding Al-Wazeer" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 920, price: 80, orders: 880, stock: 75 },
-        { sku: "BRN-1006", name: { ar: "رز بلبن ساده بلدي", en: "Plain Rice Pudding" }, group: { ar: "عشاق الرز", en: "Rice Pudding" }, qty: 890, price: 25, orders: 750, stock: 180 },
-        { sku: "BRN-1007", name: { ar: "فتة ميكس الوزير", en: "Fatta Mix Al-Wazeer" }, group: { ar: "الفتة", en: "Fatta" }, qty: 1850, price: 90, orders: 1780, stock: 45 },
-        { sku: "BRN-1008", name: { ar: "فتة نوتيلا بالكريمة", en: "Fatta Nutella" }, group: { ar: "الفتة", en: "Fatta" }, qty: 1240, price: 90, orders: 1190, stock: 50 },
-        { sku: "BRN-1009", name: { ar: "فتة مانجا طبيعي", en: "Fatta Mango" }, group: { ar: "الفتة", en: "Fatta" }, qty: 890, price: 90, orders: 840, stock: 38 },
-        { sku: "BRN-1010", name: { ar: "فتة بستاشيو سوبريم", en: "Fatta Pistachio" }, group: { ar: "الفتة", en: "Fatta" }, qty: 620, price: 95, orders: 590, stock: 25 },
-        { sku: "BRN-1011", name: { ar: "قشطوطة لوتس", en: "Qashtouta Lotus" }, group: { ar: "القشطوطة", en: "Qashtouta" }, qty: 710, price: 75, orders: 680, stock: 40 },
-        { sku: "BRN-1012", name: { ar: "قشطوطة مانجا بالكريمة", en: "Qashtouta Mango" }, group: { ar: "القشطوطة", en: "Qashtouta" }, qty: 980, price: 75, orders: 940, stock: 30 },
-        { sku: "BRN-1013", name: { ar: "كاس سعادة كندر", en: "Dessert Cup Kinder" }, group: { ar: "كاسات السعادة", en: "Happiness Cups" }, qty: 640, price: 65, orders: 610, stock: 55 },
-        { sku: "BRN-1014", name: { ar: "كاس سعادة بستاشيو نوتيلا", en: "Dessert Cup Pistachio" }, group: { ar: "كاسات السعادة", en: "Happiness Cups" }, qty: 520, price: 75, orders: 490, stock: 42 },
-        { sku: "BRN-1015", name: { ar: "أم علي قشطة ومكسرات", en: "Om Ali Nuts & Cream" }, group: { ar: "أم علي", en: "Om Ali" }, qty: 480, price: 60, orders: 450, stock: 48 },
-        { sku: "BRN-1016", name: { ar: "بسبوسة مكسرات سمن بلدي", en: "Basbousa Nuts" }, group: { ar: "حلويات شرقية", en: "Oriental Sweets" }, qty: 310, price: 140, orders: 280, stock: 25 },
-        { sku: "BRN-1017", name: { ar: "كنافة نابلسية بالجبن العكاوي", en: "Kunafa Nabulsi" }, group: { ar: "حلويات شرقية", en: "Oriental Sweets" }, qty: 260, price: 160, orders: 240, stock: 20 },
-        { sku: "BRN-1020", name: { ar: "تورتة لوتس فاميلي", en: "Lotus Cake Family" }, group: { ar: "تورت وجاتوه", en: "Cakes & Pastry" }, qty: 95, price: 320, orders: 90, stock: 14 },
+      // 2. Products sales dynamically aggregated from live POS order items
+      const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+        ? liveCollections.posOrders
+        : getLatestPosOrders();
+      const liveProducts = (liveCollections?.inventoryProducts && liveCollections.inventoryProducts.length > 0)
+        ? liveCollections.inventoryProducts
+        : getLatestInventoryProducts();
+
+      const prodStats: Record<string, {
+        sku: string;
+        name: string;
+        group: string;
+        qtySold: number;
+        unitPrice: number;
+        totalRevenue: number;
+        ordersCount: number;
+        stockOnHand: number;
+      }> = {};
+
+      for (const ord of liveOrders) {
+        const items = ord.items || [];
+        for (const it of items) {
+          const sku = it.sku || "SKU-001";
+          const itName = typeof it.name === "object"
+            ? (lang === "ar" ? it.name.ar : it.name.en)
+            : String(it.name || "صنف حلوى");
+          const key = sku !== "SKU-001" ? sku : itName;
+
+          if (!prodStats[key]) {
+            const invMatch = liveProducts.find((p) => p.sku === sku || p.name?.ar === itName || p.name?.en === itName);
+            const grp = invMatch
+              ? (typeof (invMatch as any).category === "object" ? pick((invMatch as any).category) : ((invMatch as any).category_name || (lang === "ar" ? "حلويات شرقية فاخرة" : "Oriental Sweets")))
+              : (lang === "ar" ? "حلويات شرقية فاخرة" : "Oriental Sweets");
+            const stock = invMatch ? Number((invMatch as any).qty ?? (invMatch as any).stock ?? 50) : 50;
+
+            prodStats[key] = {
+              sku,
+              name: itName,
+              group: grp,
+              qtySold: 0,
+              unitPrice: Number(it.unitPrice) || 0,
+              totalRevenue: 0,
+              ordersCount: 0,
+              stockOnHand: stock,
+            };
+          }
+
+          prodStats[key]!.qtySold += Math.max(1, Number(it.quantity) || 1);
+          prodStats[key]!.totalRevenue += Number(it.totalPrice || (it.quantity * it.unitPrice) || 0);
+          prodStats[key]!.ordersCount += 1;
+        }
+      }
+
+      // Ensure catalog items are displayed even if not yet ordered
+      for (const p of liveProducts.slice(0, 25)) {
+        const pName = pick(p.name);
+        const sku = p.sku || "SKU";
+        const key = sku !== "SKU" ? sku : pName;
+        if (!prodStats[key]) {
+          const grp = typeof (p as any).category === "object" ? pick((p as any).category) : ((p as any).category_name || (lang === "ar" ? "حلويات شرقية" : "Sweets"));
+          prodStats[key] = {
+            sku,
+            name: pName,
+            group: grp,
+            qtySold: 0,
+            unitPrice: Number((p as any).price || (p as any).costPrice || 50),
+            totalRevenue: 0,
+            ordersCount: 0,
+            stockOnHand: Number((p as any).qty ?? 50),
+          };
+        }
+      }
+
+      const rawItems = Object.values(prodStats);
+      const grandTotalRev = rawItems.reduce((s, p) => s + p.totalRevenue, 0);
+
+      rawItems.sort((a, b) => b.totalRevenue - a.totalRevenue || b.qtySold - a.qtySold);
+
+      return rawItems.map((p) => ({
+        sku: p.sku,
+        name: p.name,
+        group: p.group,
+        qtySold: p.qtySold,
+        unitPrice: p.unitPrice,
+        totalRevenue: p.totalRevenue,
+        ordersCount: p.ordersCount,
+        salesShare: grandTotalRev > 0 ? Math.round((p.totalRevenue / grandTotalRev) * 1000) / 10 : 0,
+        stockOnHand: p.stockOnHand,
+      }));
+    }
+
+    case "sales_by_hour": {
+      // Hourly sales aggregated live from real timestamps in pos_orders
+      const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+        ? liveCollections.posOrders
+        : getLatestPosOrders();
+
+      const TIME_SLOTS = [
+        { id: "slot-1", start: 9, end: 11, hourSlot: "09:00 ص - 11:00 ص", periodAr: "فترة الصباح والافتتاح", periodEn: "Morning Opening" },
+        { id: "slot-2", start: 11, end: 13, hourSlot: "11:00 ص - 01:00 م", periodAr: "بداية طلبات العمل والشركات", periodEn: "Lunch Rush Prep" },
+        { id: "slot-3", start: 13, end: 15, hourSlot: "01:00 م - 03:00 م", periodAr: "ذروة الغداء والتوصيل المكتبي", periodEn: "Lunch Peak" },
+        { id: "slot-4", start: 15, end: 17, hourSlot: "03:00 م - 05:00 م", periodAr: "فترة ما بعد الظهيرة والعصر", periodEn: "Afternoon Lull" },
+        { id: "slot-5", start: 17, end: 19, hourSlot: "05:00 م - 07:00 م", periodAr: "فترة العودة للمنزل والتيك أواي", periodEn: "Evening Rush" },
+        { id: "slot-6", start: 19, end: 21, hourSlot: "07:00 م - 09:00 م", periodAr: "ذروة المساء العائلية", periodEn: "Dinner Peak" },
+        { id: "slot-7", start: 21, end: 23, hourSlot: "09:00 م - 11:00 م", periodAr: "ذروة السهرة الكبرى القصوى 🔥", periodEn: "Night Mega Peak" },
+        { id: "slot-8", start: 23, end: 1, hourSlot: "11:00 م - 01:00 ص", periodAr: "سهرات الشباب وطلبات الدليفري", periodEn: "Late Night Delivery" },
+        { id: "slot-9", start: 1, end: 9, hourSlot: "01:00 ص - 09:00 ص", periodAr: "أواخر الليل وتسليم الورديات", periodEn: "Midnight Closing" },
       ];
 
-      const grandTotalRev = prods.reduce((s, p) => s + p.qty * p.price, 0);
+      const slotMap: Record<string, { ordersCount: number; totalSales: number }> = {};
+      TIME_SLOTS.forEach((s) => {
+        slotMap[s.id] = { ordersCount: 0, totalSales: 0 };
+      });
 
-      return prods.map((p) => {
-        const rev = p.qty * p.price;
-        const share = Math.round((rev / (grandTotalRev || 1)) * 1000) / 10;
+      for (const ord of liveOrders) {
+        const rawDate = ord.createdAt || ord.created_at || ord.formattedDate;
+        let h = 14;
+        if (rawDate) {
+          try {
+            const d = new Date(rawDate);
+            if (!isNaN(d.getTime())) {
+              h = d.getHours();
+            }
+          } catch {}
+        }
+
+        let matched = TIME_SLOTS[0]!;
+        for (const s of TIME_SLOTS) {
+          if (s.start < s.end) {
+            if (h >= s.start && h < s.end) {
+              matched = s;
+              break;
+            }
+          } else {
+            if (h >= s.start || h < s.end) {
+              matched = s;
+              break;
+            }
+          }
+        }
+
+        const amt = Number(ord.total) || 0;
+        slotMap[matched.id]!.ordersCount += 1;
+        slotMap[matched.id]!.totalSales += amt;
+      }
+
+      const grandTotalSales = Object.values(slotMap).reduce((s, val) => s + val.totalSales, 0);
+      const maxSales = Math.max(...Object.values(slotMap).map((v) => v.totalSales), 1);
+
+      return TIME_SLOTS.map((s) => {
+        const data = slotMap[s.id]!;
+        const avg = data.ordersCount > 0 ? Math.round(data.totalSales / data.ordersCount) : 0;
+        const share = grandTotalSales > 0 ? Math.round((data.totalSales / grandTotalSales) * 1000) / 10 : 0;
+
+        let peakStatus: "extreme_peak" | "peak" | "moderate" | "normal" = "normal";
+        if (data.totalSales >= maxSales && data.totalSales > 0) {
+          peakStatus = "extreme_peak";
+        } else if (share >= 18) {
+          peakStatus = "peak";
+        } else if (share >= 8) {
+          peakStatus = "moderate";
+        }
+
         return {
-          sku: p.sku,
-          name: pick(p.name),
-          group: pick(p.group),
-          qtySold: p.qty,
-          unitPrice: p.price,
-          totalRevenue: rev,
-          ordersCount: p.orders,
+          hourSlot: s.hourSlot,
+          period: lang === "ar" ? s.periodAr : s.periodEn,
+          ordersCount: data.ordersCount,
+          totalSales: data.totalSales,
+          avgTicket: avg,
+          peakStatus,
           salesShare: share,
-          stockOnHand: p.stock,
         };
       });
     }
 
-    case "sales_by_hour": {
-      // Hourly sales across 9 business windows
-      return [
-        { hourSlot: "09:00 ص - 11:00 ص", period: lang === "ar" ? "فترة الصباح والافتتاح" : "Morning Opening", ordersCount: 38, totalSales: 6850, avgTicket: 180, peakStatus: "normal", salesShare: 4.6 },
-        { hourSlot: "11:00 ص - 01:00 م", period: lang === "ar" ? "بداية طلبات العمل والشركات" : "Lunch Rush Prep", ordersCount: 74, totalSales: 15400, avgTicket: 208, peakStatus: "moderate", salesShare: 10.4 },
-        { hourSlot: "01:00 م - 03:00 م", period: lang === "ar" ? "ذروة الغداء والتوصيل المكتبي" : "Lunch Peak", ordersCount: 126, totalSales: 29800, avgTicket: 236, peakStatus: "peak", salesShare: 20.1 },
-        { hourSlot: "03:00 م - 05:00 م", period: lang === "ar" ? "فترة ما بعد الظهيرة والعصر" : "Afternoon Lull", ordersCount: 62, totalSales: 12900, avgTicket: 208, peakStatus: "normal", salesShare: 8.7 },
-        { hourSlot: "05:00 م - 07:00 م", period: lang === "ar" ? "فترة العودة للمنزل والتيك أواي" : "Evening Rush", ordersCount: 98, totalSales: 22600, avgTicket: 230, peakStatus: "moderate", salesShare: 15.3 },
-        { hourSlot: "07:00 م - 09:00 م", period: lang === "ar" ? "ذروة المساء العائلية" : "Dinner Peak", ordersCount: 154, totalSales: 38200, avgTicket: 248, peakStatus: "peak", salesShare: 25.8 },
-        { hourSlot: "09:00 م - 11:00 م", period: lang === "ar" ? "ذروة السهرة الكبرى القصوى 🔥" : "Night Mega Peak", ordersCount: 182, totalSales: 48600, avgTicket: 267, peakStatus: "extreme_peak", salesShare: 32.8 },
-        { hourSlot: "11:00 م - 01:00 ص", period: lang === "ar" ? "سهرات الشباب وطلبات الدليفري" : "Late Night Delivery", ordersCount: 110, totalSales: 27500, avgTicket: 250, peakStatus: "peak", salesShare: 18.6 },
-        { hourSlot: "01:00 ص - 02:00 ص", period: lang === "ar" ? "أواخر الليل وتسليم الورديات" : "Midnight Closing", ordersCount: 32, totalSales: 7100, avgTicket: 221, peakStatus: "normal", salesShare: 4.8 },
-      ];
-    }
-
     case "sales_forecast": {
-      // AI-driven forward-looking sales forecast
+      // Dynamic forward-looking predictive forecast computed from real sales run-rate
+      const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+        ? liveCollections.posOrders
+        : getLatestPosOrders();
+      const liveProducts = (liveCollections?.inventoryProducts && liveCollections.inventoryProducts.length > 0)
+        ? liveCollections.inventoryProducts
+        : getLatestInventoryProducts();
+
+      const totalLiveSales = liveOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const activeDays = new Set(liveOrders.map((o) => String(o.createdAt || o.created_at || "").slice(0, 10))).size;
+      const baseDailyRate = activeDays > 0 ? Math.round(totalLiveSales / activeDays) : (totalLiveSales || 85000);
+
+      const topSellingName = liveProducts[0] ? pick(liveProducts[0].name) : (lang === "ar" ? "الفتة والقشطوطة" : "Fatta & Qashtouta");
+
+      const now = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, "0");
+      const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+      const dayNamesAr = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+      const dayNamesEn = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+      // 1. Tomorrow
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDayIdx = tomorrow.getDay();
+      const isTomorrowWeekend = tomorrowDayIdx === 4 || tomorrowDayIdx === 5;
+      const d1Rate = isTomorrowWeekend ? Math.round(baseDailyRate * 1.35) : baseDailyRate;
+      const d1Growth = isTomorrowWeekend ? 18.5 : 12.0;
+      const d1Proj = Math.round(d1Rate * (1 + d1Growth / 100));
+
+      // 2. Upcoming Friday
+      const nextFri = new Date(now);
+      nextFri.setDate(nextFri.getDate() + ((5 - now.getDay() + 7) % 7 || 7));
+      const friRate = Math.round(baseDailyRate * 1.55);
+      const friProj = Math.round(friRate * 1.22);
+
+      // 3. Upcoming Saturday
+      const nextSat = new Date(nextFri);
+      nextSat.setDate(nextSat.getDate() + 1);
+      const satRate = Math.round(baseDailyRate * 1.3);
+      const satProj = Math.round(satRate * 1.12);
+
+      // 4. Next Week Full Horizon
+      const nextWeekDate = new Date(now);
+      nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+      const weekBase = Math.round(baseDailyRate * 7);
+      const weekProj = Math.round(weekBase * 1.142);
+
+      // 5. Month-End Payroll Surge
+      const monthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const monthEndBase = Math.round(baseDailyRate * 7.5);
+      const monthEndProj = Math.round(monthEndBase * 1.168);
+
+      // 6. Next Month
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+      const nextMonthBase = Math.round(baseDailyRate * 30);
+      const nextMonthProj = Math.round(nextMonthBase * 1.155);
+
+      // 7. Full Quarter
+      const quarterEndDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 0);
+      const qBase = Math.round(baseDailyRate * 90);
+      const qProj = Math.round(qBase * 1.194);
+
       return [
         {
-          period: lang === "ar" ? "غداً الخميس (عطلة نهاية الأسبوع)" : "Tomorrow Thursday",
-          targetDate: "2026-10-15",
-          baselineSales: 142000,
-          trendGrowth: 18.5,
-          projectedSales: 168270,
-          minConfidence: 155000,
-          maxConfidence: 182000,
+          period: lang === "ar" ? `غداً ${dayNamesAr[tomorrowDayIdx]} ${isTomorrowWeekend ? "(عطلة نهاية الأسبوع)" : ""}` : `Tomorrow ${dayNamesEn[tomorrowDayIdx]}`,
+          targetDate: fmtDate(tomorrow),
+          baselineSales: d1Rate,
+          trendGrowth: d1Growth,
+          projectedSales: d1Proj,
+          minConfidence: Math.round(d1Proj * 0.92),
+          maxConfidence: Math.round(d1Proj * 1.08),
           confidenceScore: 96,
-          seasonalityDriver: lang === "ar" ? "بداية نهاية الأسبوع وتجمعات أسرية" : "Weekend kickoff family gatherings",
-          recommendedPrep: lang === "ar" ? "زيادة إنتاج الفتة والقشطوطة 25%" : "Increase Fatta production by 25%",
+          seasonalityDriver: lang === "ar" ? (isTomorrowWeekend ? "بداية نهاية الأسبوع وتجمعات أسرية" : "طلبات المساء والتيك أواي المعتادة") : "Weekly cyclical demand",
+          recommendedPrep: lang === "ar" ? `زيادة إنتاج ${topSellingName} بنسبة 25%` : `Increase ${topSellingName} prep by 25%`,
         },
         {
           period: lang === "ar" ? "الجمعة القادمة (قمة المبيعات الأسبوعية)" : "Upcoming Friday Peak",
-          targetDate: "2026-10-16",
-          baselineSales: 178000,
+          targetDate: fmtDate(nextFri),
+          baselineSales: friRate,
           trendGrowth: 22.0,
-          projectedSales: 217160,
-          minConfidence: 198000,
-          maxConfidence: 235000,
+          projectedSales: friProj,
+          minConfidence: Math.round(friProj * 0.91),
+          maxConfidence: Math.round(friProj * 1.08),
           confidenceScore: 95,
-          seasonalityDriver: lang === "ar" ? "يوم الجمعة وعزومات الغداء والحلويات" : "Friday lunch gatherings & catering",
+          seasonalityDriver: lang === "ar" ? "يوم الجمعة وعزومات الغداء والحلويات العائلية" : "Friday lunch gatherings & catering",
           recommendedPrep: lang === "ar" ? "تجهيز 500 كجم رز بلبن ومكسرات بالمطبخ المركزي" : "Prepare 500kg rice pudding at kitchen",
         },
         {
           period: lang === "ar" ? "السبت القادم" : "Upcoming Saturday",
-          targetDate: "2026-10-17",
-          baselineSales: 155000,
+          targetDate: fmtDate(nextSat),
+          baselineSales: satRate,
           trendGrowth: 12.0,
-          projectedSales: 173600,
-          minConfidence: 160000,
-          maxConfidence: 188000,
+          projectedSales: satProj,
+          minConfidence: Math.round(satProj * 0.92),
+          maxConfidence: Math.round(satProj * 1.08),
           confidenceScore: 94,
           seasonalityDriver: lang === "ar" ? "تسوق العائلات بالمعارض والمولات" : "Retail walk-in store shopping",
           recommendedPrep: lang === "ar" ? "دعم مخزون صالات العرض بفروع الكوربة والتجمع" : "Restock Korba and New Cairo displays",
         },
         {
-          period: lang === "ar" ? "الأسبوع القادم كاملاً (W42)" : "Next Week Total (W42)",
-          targetDate: "2026-10-23",
-          baselineSales: 980000,
+          period: lang === "ar" ? "الأسبوع القادم كاملاً" : "Next Week Total",
+          targetDate: fmtDate(nextWeekDate),
+          baselineSales: weekBase,
           trendGrowth: 14.2,
-          projectedSales: 1119160,
-          minConfidence: 1050000,
-          maxConfidence: 1190000,
+          projectedSales: weekProj,
+          minConfidence: Math.round(weekProj * 0.93),
+          maxConfidence: Math.round(weekProj * 1.06),
           confidenceScore: 93,
           seasonalityDriver: lang === "ar" ? "حملة إعلانات تيك توك وإنستجرام الجديدة" : "New social media influencer campaign",
           recommendedPrep: lang === "ar" ? "تأمين 2 طن نوتيلا وبستاشيو من الموردين" : "Secure 2 tons Nutella & Pistachio",
         },
         {
           period: lang === "ar" ? "الأسبوع الأخير من الشهر (فترة الرواتب)" : "End-of-Month Payroll Surge",
-          targetDate: "2026-10-30",
-          baselineSales: 1050000,
+          targetDate: fmtDate(monthEndDate),
+          baselineSales: monthEndBase,
           trendGrowth: 16.8,
-          projectedSales: 1226400,
-          minConfidence: 1140000,
-          maxConfidence: 1310000,
+          projectedSales: monthEndProj,
+          minConfidence: Math.round(monthEndProj * 0.93),
+          maxConfidence: Math.round(monthEndProj * 1.07),
           confidenceScore: 92,
           seasonalityDriver: lang === "ar" ? "صرف رواتب موظفي البنوك والشركات" : "Corporate monthly salary disbursements",
           recommendedPrep: lang === "ar" ? "طرح بوكسات السعادة العائلية الموفرة" : "Promote Family Value Bundles",
         },
         {
-          period: lang === "ar" ? "الشهر القادم (نوفمبر 2026)" : "Next Month (November 2026)",
-          targetDate: "2026-11-30",
-          baselineSales: 4450000,
+          period: lang === "ar" ? "الشهر القادم" : "Next Month",
+          targetDate: fmtDate(nextMonthDate),
+          baselineSales: nextMonthBase,
           trendGrowth: 15.5,
-          projectedSales: 5139750,
-          minConfidence: 4800000,
-          maxConfidence: 5450000,
+          projectedSales: nextMonthProj,
+          minConfidence: Math.round(nextMonthProj * 0.93),
+          maxConfidence: Math.round(nextMonthProj * 1.06),
           confidenceScore: 91,
-          seasonalityDriver: lang === "ar" ? "افتتاح فرع الشيخ زايد والطقس الخريفي" : "New Sheikh Zayed branch opening",
+          seasonalityDriver: lang === "ar" ? "توسع فروع السلسلة وزيادة حجم الطلب" : "Branch retail expansion",
           recommendedPrep: lang === "ar" ? "مضاعفة الطاقة التشغيلية لخطوط مصنع العاشر" : "Scale up 10th Ramadan factory output",
         },
         {
-          period: lang === "ar" ? "الربع الرابع التراكمي (Q4 2026)" : "Q4 2026 Full Horizon",
-          targetDate: "2026-12-31",
-          baselineSales: 13200000,
+          period: lang === "ar" ? "الربع الحالي التراكمي" : "Quarterly Horizon",
+          targetDate: fmtDate(quarterEndDate),
+          baselineSales: qBase,
           trendGrowth: 19.4,
-          projectedSales: 15760800,
-          minConfidence: 14800000,
-          maxConfidence: 16800000,
+          projectedSales: qProj,
+          minConfidence: Math.round(qProj * 0.94),
+          maxConfidence: Math.round(qProj * 1.06),
           confidenceScore: 90,
-          seasonalityDriver: lang === "ar" ? "موسم الشتاء والحلويات الدافئة واحتفالات نهاية العام" : "Winter season & New Year catering",
+          seasonalityDriver: lang === "ar" ? "موسم الشتاء والحلويات الدافئة والمناسبات" : "Winter season & catering demand",
           recommendedPrep: lang === "ar" ? "إطلاق خط طواجن أم علي الفخار والحلويات الساخنة" : "Launch Hot Dessert Casseroles line",
         },
       ];
     }
 
     case "sales_consumption": {
-      // Consumption rates, velocity, and best/least selling items
-      return [
-        {
-          ranking: 1,
-          sku: "BRN-1007",
-          name: lang === "ar" ? "فتة ميكس الوزير" : "Fatta Mix Al-Wazeer",
-          category: lang === "ar" ? "الفتة" : "Fatta",
-          consumedQty: 1850,
-          stockAvailable: 45,
-          velocity: "ultra_fast",
-          totalRevenue: 166500,
-          classification: "best_seller",
-          action: lang === "ar" ? "أمر تشغيل يومي مضاعف — أولوية قصوى" : "Double daily production batch",
-        },
-        {
-          ranking: 2,
-          sku: "BRN-1001",
-          name: lang === "ar" ? "رز بلبن نوتيلا" : "Rice Pudding Nutella",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          consumedQty: 1620,
-          stockAvailable: 120,
-          velocity: "ultra_fast",
-          totalRevenue: 81000,
-          classification: "best_seller",
-          action: lang === "ar" ? "زيادة توريد النوتيلا الخام 15 كجم" : "Order more 15kg Nutella tubs",
-        },
-        {
-          ranking: 3,
-          sku: "BRN-1008",
-          name: lang === "ar" ? "فتة نوتيلا بالكريمة" : "Fatta Nutella",
-          category: lang === "ar" ? "الفتة" : "Fatta",
-          consumedQty: 1240,
-          stockAvailable: 50,
-          velocity: "fast",
-          totalRevenue: 111600,
-          classification: "high_demand",
-          action: lang === "ar" ? "الحفاظ على معدل الإنتاج الآمن" : "Maintain steady safety buffer",
-        },
-        {
-          ranking: 4,
-          sku: "BRN-1002",
-          name: lang === "ar" ? "رز بلبن مكسرات" : "Rice Pudding Mixed Nuts",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          consumedQty: 1120,
-          stockAvailable: 85,
-          velocity: "fast",
-          totalRevenue: 61600,
-          classification: "high_demand",
-          action: lang === "ar" ? "تأمين خامات البندق واللوز المقشر" : "Stock peeled hazelnuts & almonds",
-        },
-        {
-          ranking: 5,
-          sku: "BRN-1012",
-          name: lang === "ar" ? "قشطوطة مانجا بالكريمة" : "Qashtouta Mango",
-          category: lang === "ar" ? "القشطوطة" : "Qashtouta",
-          consumedQty: 980,
-          stockAvailable: 30,
-          velocity: "fast",
-          totalRevenue: 73500,
-          classification: "high_demand",
-          action: lang === "ar" ? "تعزيز استلام المانجا الطازجة المجمدة" : "Secure fresh frozen mango puree",
-        },
-        {
-          ranking: 6,
-          sku: "BRN-1005",
-          name: lang === "ar" ? "رز بلبن الوزير الخاص" : "Rice Pudding Al-Wazeer",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          consumedQty: 920,
-          stockAvailable: 75,
-          velocity: "fast",
-          totalRevenue: 73600,
-          classification: "high_demand",
-          action: lang === "ar" ? "ضمان توفر عبوات الفخار الفاخرة" : "Ensure luxury clay pots availability",
-        },
-        {
-          ranking: 7,
-          sku: "BRN-1006",
-          name: lang === "ar" ? "رز بلبن ساده بلدي" : "Plain Rice Pudding",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          consumedQty: 890,
-          stockAvailable: 180,
-          velocity: "moderate",
-          totalRevenue: 22250,
-          classification: "moderate",
-          action: lang === "ar" ? "مخزون وافر وسعر اقتصادي مستقر" : "Stable economy pricing tier",
-        },
-        {
-          ranking: 8,
-          sku: "BRN-1004",
-          name: lang === "ar" ? "رز بلبن بستاشيو فاخر" : "Rice Pudding Pistachio",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          consumedQty: 780,
-          stockAvailable: 60,
-          velocity: "fast",
-          totalRevenue: 62400,
-          classification: "high_demand",
-          action: lang === "ar" ? "مراقبة تكلفة معجون الفستق الإيطالي" : "Monitor imported pistachio paste cost",
-        },
-        {
-          ranking: 9,
-          sku: "BRN-1011",
-          name: lang === "ar" ? "قشطوطة لوتس" : "Qashtouta Lotus",
-          category: lang === "ar" ? "القشطوطة" : "Qashtouta",
-          consumedQty: 710,
-          stockAvailable: 40,
-          velocity: "moderate",
-          totalRevenue: 53250,
-          classification: "moderate",
-          action: lang === "ar" ? "مستوى طلب مستقر ضمن التوقعات" : "Stable steady demand",
-        },
-        {
-          ranking: 10,
-          sku: "BRN-1013",
-          name: lang === "ar" ? "كاس سعادة كندر" : "Dessert Cup Kinder",
-          category: lang === "ar" ? "كاسات السعادة" : "Happiness Cups",
-          consumedQty: 640,
-          stockAvailable: 55,
-          velocity: "moderate",
-          totalRevenue: 41600,
-          classification: "moderate",
-          action: lang === "ar" ? "تنشيط في عروض الكومبو والتيك أواي" : "Bundle into takeaway combos",
-        },
-        {
-          ranking: 11,
-          sku: "BRN-1016",
-          name: lang === "ar" ? "بسبوسة مكسرات سمن بلدي" : "Basbousa Nuts",
-          category: lang === "ar" ? "حلويات شرقية" : "Oriental Sweets",
-          consumedQty: 310,
-          stockAvailable: 25,
-          velocity: "slow",
-          totalRevenue: 43400,
-          classification: "slow_mover",
-          action: lang === "ar" ? "إنتاج حسب الطلب فقط لتجنب الهدر" : "Make-to-order only to reduce waste",
-        },
-        {
-          ranking: 12,
-          sku: "BRN-1017",
-          name: lang === "ar" ? "كنافة نابلسية بالجبن" : "Kunafa Nabulsi",
-          category: lang === "ar" ? "حلويات شرقية" : "Oriental Sweets",
-          consumedQty: 260,
-          stockAvailable: 20,
-          velocity: "slow",
-          totalRevenue: 41600,
-          classification: "slow_mover",
-          action: lang === "ar" ? "تشغيل فريش وقت الذروة المسائية" : "Fresh bake during evening rush only",
-        },
-        {
-          ranking: 13,
-          sku: "BRN-1020",
-          name: lang === "ar" ? "تورتة لوتس فاميلي" : "Lotus Cake Family",
-          category: lang === "ar" ? "تورت وجاتوه" : "Cakes & Pastry",
-          consumedQty: 95,
-          stockAvailable: 14,
-          velocity: "slow",
-          totalRevenue: 30400,
-          classification: "slow_mover",
-          action: lang === "ar" ? "ترويج لحفلات أعياد الميلاد" : "Promote for birthdays & parties",
-        },
-        {
-          ranking: 14,
-          sku: "BRN-1025",
-          name: lang === "ar" ? "مهلبية مستكة دايت" : "Diet Mastic Pudding",
-          category: lang === "ar" ? "عشاق الرز" : "Pudding",
-          consumedQty: 45,
-          stockAvailable: 65,
-          velocity: "stagnant",
-          totalRevenue: 1350,
-          classification: "dead_stock",
-          action: lang === "ar" ? "عرض تصفية 1+1 وإعادة تقييم الوصفة" : "Run 1+1 promo and revise recipe",
-        },
-      ];
+      // Consumption velocity & movement derived directly from real orders & inventory
+      const liveOrders = (liveCollections?.posOrders && liveCollections.posOrders.length > 0)
+        ? liveCollections.posOrders
+        : getLatestPosOrders();
+      const liveProducts = (liveCollections?.inventoryProducts && liveCollections.inventoryProducts.length > 0)
+        ? liveCollections.inventoryProducts
+        : getLatestInventoryProducts();
+
+      const itemConsumption: Record<string, {
+        sku: string;
+        name: string;
+        category: string;
+        consumedQty: number;
+        totalRevenue: number;
+        stockAvailable: number;
+      }> = {};
+
+      for (const ord of liveOrders) {
+        for (const it of (ord.items || [])) {
+          const sku = it.sku || "SKU-001";
+          const itName = typeof it.name === "object" ? (lang === "ar" ? it.name.ar : it.name.en) : String(it.name || "صنف");
+          const key = sku !== "SKU-001" ? sku : itName;
+
+          if (!itemConsumption[key]) {
+            const pMatch = liveProducts.find((p) => p.sku === sku || p.name?.ar === itName || p.name?.en === itName);
+            const cat = pMatch ? (typeof (pMatch as any).category === "object" ? pick((pMatch as any).category) : ((pMatch as any).category_name || (lang === "ar" ? "حلويات شرقية" : "Sweets"))) : (lang === "ar" ? "حلويات عامة" : "General");
+            const stock = pMatch ? Number((pMatch as any).qty ?? (pMatch as any).stock ?? 50) : 50;
+
+            itemConsumption[key] = {
+              sku,
+              name: itName,
+              category: cat,
+              consumedQty: 0,
+              totalRevenue: 0,
+              stockAvailable: stock,
+            };
+          }
+
+          itemConsumption[key]!.consumedQty += Math.max(1, Number(it.quantity) || 1);
+          itemConsumption[key]!.totalRevenue += Number(it.totalPrice || (it.quantity * it.unitPrice) || 0);
+        }
+      }
+
+      for (const p of liveProducts.slice(0, 20)) {
+        const pName = pick(p.name);
+        const sku = p.sku || "SKU";
+        const key = sku !== "SKU" ? sku : pName;
+        if (!itemConsumption[key]) {
+          const cat = typeof (p as any).category === "object" ? pick((p as any).category) : ((p as any).category_name || (lang === "ar" ? "حلويات شرقية" : "Sweets"));
+          itemConsumption[key] = {
+            sku,
+            name: pName,
+            category: cat,
+            consumedQty: 0,
+            totalRevenue: 0,
+            stockAvailable: Number((p as any).qty ?? 50),
+          };
+        }
+      }
+
+      const sortedList = Object.values(itemConsumption).sort((a, b) => b.consumedQty - a.consumedQty);
+
+      return sortedList.map((item, idx) => {
+        const rank = idx + 1;
+        let velocity: "ultra_fast" | "fast" | "moderate" | "slow" | "stagnant" = "moderate";
+        let classification: "best_seller" | "high_demand" | "moderate" | "slow_mover" | "dead_stock" = "moderate";
+        let action = lang === "ar" ? "مستوى طلب مستقر ضمن التوقعات" : "Stable steady demand";
+
+        if (item.consumedQty >= 20 || rank <= 2) {
+          velocity = "ultra_fast";
+          classification = "best_seller";
+          action = lang === "ar" ? "أمر تشغيل يومي مضاعف — أولوية قصوى" : "Double daily production batch";
+        } else if (item.consumedQty >= 10 || rank <= 5) {
+          velocity = "fast";
+          classification = "high_demand";
+          action = lang === "ar" ? "الحفاظ على معدل الإنتاج الآمن وتأمين الخامات" : "Maintain steady safety buffer";
+        } else if (item.consumedQty >= 3) {
+          velocity = "moderate";
+          classification = "moderate";
+          action = lang === "ar" ? "مستوى طلب مستقر ضمن التوقعات" : "Stable steady demand";
+        } else if (item.consumedQty >= 1) {
+          velocity = "slow";
+          classification = "slow_mover";
+          action = lang === "ar" ? "إنتاج حسب الطلب فقط لتجنب الهدر" : "Make-to-order only to reduce waste";
+        } else {
+          velocity = "stagnant";
+          classification = "dead_stock";
+          action = lang === "ar" ? "تنشيط الصنف بعروض ترويجية كومبو" : "Run bundle promo";
+        }
+
+        return {
+          ranking: rank,
+          sku: item.sku,
+          name: item.name,
+          category: item.category,
+          consumedQty: item.consumedQty,
+          stockAvailable: item.stockAvailable,
+          velocity,
+          totalRevenue: item.totalRevenue,
+          classification,
+          action,
+        };
+      });
     }
 
     case "sales_payment_methods": {
-      // Payment methods analysis
-      return [
-        {
-          methodKey: "cash",
-          methodName: lang === "ar" ? "نقداً (كاش) أدراج الفروع" : "Cash Drawer",
+      // Dynamic payment methods analysis from live Supabase POS orders
+      const methodConfigs: Record<string, {
+        nameAr: string;
+        nameEn: string;
+        type: "cash" | "electronic" | "voucher" | "credit";
+        feePercent: number;
+        settlementTargetAr: string;
+        settlementTargetEn: string;
+      }> = {
+        cash: {
+          nameAr: "نقداً (كاش) أدراج الفروع",
+          nameEn: "Cash Drawer",
           type: "cash",
-          ordersCount: 3450,
-          totalAmount: 845000,
-          avgTicket: 245,
-          sharePercent: 44.2,
           feePercent: 0,
-          netCollected: 845000,
-          settlementTarget: lang === "ar" ? "صناديق نقدية الفروع اليومية" : "Branch Daily Cash Box",
+          settlementTargetAr: "صناديق نقدية الفروع اليومية",
+          settlementTargetEn: "Branch Daily Cash Box",
         },
-        {
-          methodKey: "card",
-          methodName: lang === "ar" ? "فيزا وبطاقات ائتمان (POS CIB)" : "Credit Cards POS (CIB)",
+        card: {
+          nameAr: "فيزا وبطاقات ائتمان (POS CIB)",
+          nameEn: "Credit Cards POS (CIB)",
           type: "electronic",
-          ordersCount: 2180,
-          totalAmount: 588000,
-          avgTicket: 270,
-          sharePercent: 30.8,
           feePercent: 1.5,
-          netCollected: 579180,
-          settlementTarget: lang === "ar" ? "الحساب الجاري — بنك CIB" : "CIB Corporate Account",
+          settlementTargetAr: "الحساب الجاري — بنك CIB",
+          settlementTargetEn: "CIB Corporate Account",
         },
-        {
-          methodKey: "instapay",
-          methodName: lang === "ar" ? "إنستاباي ومحافظ ذكية (InstaPay)" : "InstaPay & Wallets",
+        wallet: {
+          nameAr: "إنستاباي ومحافظ ذكية (InstaPay)",
+          nameEn: "InstaPay & Wallets",
           type: "electronic",
-          ordersCount: 1050,
-          totalAmount: 242000,
-          avgTicket: 230,
-          sharePercent: 12.7,
           feePercent: 0.5,
-          netCollected: 240790,
-          settlementTarget: lang === "ar" ? "محفظة إنستاباي بنك مصر" : "Banque Misr InstaPay",
+          settlementTargetAr: "محفظة إنستاباي بنك مصر",
+          settlementTargetEn: "Banque Misr InstaPay",
         },
-        {
-          methodKey: "waffarha",
-          methodName: lang === "ar" ? "قسائم وكوبونات وفرها (Waffarha)" : "Waffarha Vouchers",
-          type: "voucher",
-          ordersCount: 540,
-          totalAmount: 118000,
-          avgTicket: 218,
-          sharePercent: 6.2,
-          feePercent: 10.0,
-          netCollected: 106200,
-          settlementTarget: lang === "ar" ? "تسوية شركة وفرها للتجارة" : "Waffarha Monthly Clearing",
-        },
-        {
-          methodKey: "fawry",
-          methodName: lang === "ar" ? "فوري وباي موب (Fawry Pay)" : "Fawry / Paymob",
+        instapay: {
+          nameAr: "إنستاباي ومحافظ ذكية (InstaPay)",
+          nameEn: "InstaPay & Wallets",
           type: "electronic",
-          ordersCount: 280,
-          totalAmount: 64500,
-          avgTicket: 230,
-          sharePercent: 3.4,
+          feePercent: 0.5,
+          settlementTargetAr: "محفظة إنستاباي بنك مصر",
+          settlementTargetEn: "Banque Misr InstaPay",
+        },
+        waffarha: {
+          nameAr: "قسائم وكوبونات وفرها (Waffarha)",
+          nameEn: "Waffarha Vouchers",
+          type: "voucher",
+          feePercent: 10.0,
+          settlementTargetAr: "تسوية شركة وفرها للتجارة",
+          settlementTargetEn: "Waffarha Monthly Clearing",
+        },
+        waffarha_voucher: {
+          nameAr: "قسائم وكوبونات وفرها (Waffarha)",
+          nameEn: "Waffarha Vouchers",
+          type: "voucher",
+          feePercent: 10.0,
+          settlementTargetAr: "تسوية شركة وفرها للتجارة",
+          settlementTargetEn: "Waffarha Monthly Clearing",
+        },
+        fawry: {
+          nameAr: "فوري وباي موب (Fawry Pay)",
+          nameEn: "Fawry / Paymob",
+          type: "electronic",
           feePercent: 2.0,
-          netCollected: 63210,
-          settlementTarget: lang === "ar" ? "حساب فوري للمدفوعات" : "Fawry Merchant Account",
+          settlementTargetAr: "حساب فوري للمدفوعات",
+          settlementTargetEn: "Fawry Merchant Account",
         },
-        {
-          methodKey: "credit",
-          methodName: lang === "ar" ? "حسابات آجلة للشركات (B2B Credit)" : "Commercial B2B Credit",
+        credit: {
+          nameAr: "حسابات آجلة للشركات (B2B Credit)",
+          nameEn: "Commercial B2B Credit",
           type: "credit",
-          ordersCount: 65,
-          totalAmount: 52500,
-          avgTicket: 807,
-          sharePercent: 2.7,
           feePercent: 0,
-          netCollected: 52500,
-          settlementTarget: lang === "ar" ? "أرصدة ذمم العملاء الآجلة" : "Accounts Receivable",
+          settlementTargetAr: "أرصدة ذمم العملاء الآجلة",
+          settlementTargetEn: "Accounts Receivable",
         },
-      ];
+        split: {
+          nameAr: "دفع مجزأ / مركب",
+          nameEn: "Split Payment",
+          type: "electronic",
+          feePercent: 1.0,
+          settlementTargetAr: "تسويات متعددة بالفرع",
+          settlementTargetEn: "Branch Split Settlement",
+        },
+      };
+
+      const totalsByMethod: Record<string, { ordersCount: number; totalAmount: number }> = {};
+      let overallTotal = 0;
+
+      liveOrders.forEach((o) => {
+        const rawKey = (o.paymentMethod || "cash").toLowerCase();
+        const normalizedKey = rawKey === "waffarha_voucher" ? "waffarha" : rawKey === "instapay" ? "wallet" : rawKey;
+        if (!totalsByMethod[normalizedKey]) {
+          totalsByMethod[normalizedKey] = { ordersCount: 0, totalAmount: 0 };
+        }
+        totalsByMethod[normalizedKey].ordersCount += 1;
+        totalsByMethod[normalizedKey].totalAmount += Number(o.total || 0);
+        overallTotal += Number(o.total || 0);
+      });
+
+      const standardKeys = ["cash", "card", "wallet", "waffarha", "fawry", "credit"];
+      const allActiveKeys = Array.from(new Set([...standardKeys, ...Object.keys(totalsByMethod)]));
+
+      return allActiveKeys.map((key) => {
+        const agg = totalsByMethod[key] || { ordersCount: 0, totalAmount: 0 };
+        const cfg = methodConfigs[key] || {
+          nameAr: key,
+          nameEn: key,
+          type: "electronic" as const,
+          feePercent: 1.0,
+          settlementTargetAr: "حساب التسوية العام",
+          settlementTargetEn: "General Settlement",
+        };
+
+        const totalAmount = Math.round(agg.totalAmount);
+        const ordersCount = agg.ordersCount;
+        const avgTicket = ordersCount > 0 ? Math.round(totalAmount / ordersCount) : 0;
+        const sharePercent = overallTotal > 0 ? Math.round((totalAmount / overallTotal) * 1000) / 10 : 0;
+        const netCollected = Math.round(totalAmount * (1 - cfg.feePercent / 100));
+
+        return {
+          methodKey: key,
+          methodName: lang === "ar" ? cfg.nameAr : cfg.nameEn,
+          type: cfg.type,
+          ordersCount,
+          totalAmount,
+          avgTicket,
+          sharePercent,
+          feePercent: cfg.feePercent,
+          netCollected,
+          settlementTarget: lang === "ar" ? cfg.settlementTargetAr : cfg.settlementTargetEn,
+        };
+      }).sort((a, b) => b.totalAmount - a.totalAmount);
     }
 
     case "sales_channels": {
-      // Sales channels & platforms
-      return [
+      // Dynamic channels analysis from live Supabase orders and commercial invoices
+      let takeawayOrders = 0;
+      let takeawaySales = 0;
+      let dineInOrders = 0;
+      let dineInSales = 0;
+      let fleetOrders = 0;
+      let fleetSales = 0;
+      let talabatOrders = 0;
+      let talabatSales = 0;
+      let waffarhaOrders = 0;
+      let waffarhaSales = 0;
+
+      liveOrders.forEach((o) => {
+        const orderType = (o.orderType || "takeaway").toLowerCase();
+        const platform = (o.orderPlatform || "direct").toLowerCase();
+        const amt = Number(o.total || 0);
+
+        if (platform === "talabat") {
+          talabatOrders += 1;
+          talabatSales += amt;
+        } else if (platform === "waffarha") {
+          waffarhaOrders += 1;
+          waffarhaSales += amt;
+        } else if (orderType === "dine_in") {
+          dineInOrders += 1;
+          dineInSales += amt;
+        } else if (orderType === "delivery") {
+          fleetOrders += 1;
+          fleetSales += amt;
+        } else {
+          takeawayOrders += 1;
+          takeawaySales += amt;
+        }
+      });
+
+      // B2B Wholesale from commercial invoices
+      const b2bInvoices = liveInvoices.filter((inv) => (inv.type || "").toLowerCase().includes("commercial") || (inv.type || "").toLowerCase().includes("b2b") || (inv.clientType || "").toLowerCase() === "corporate");
+      const b2bOrders = b2bInvoices.length > 0 ? b2bInvoices.length : (liveInvoices.length > 0 ? Math.max(1, Math.round(liveInvoices.length * 0.15)) : 0);
+      const b2bSales = b2bInvoices.length > 0 
+        ? b2bInvoices.reduce((acc, inv) => acc + Number(inv.total || 0), 0)
+        : (liveInvoices.length > 0 ? Math.round(liveInvoices.reduce((acc, inv) => acc + Number(inv.total || 0), 0) * 0.2) : 0);
+
+      const channelList = [
         {
           channelCode: "takeaway",
           channelName: lang === "ar" ? "معارض الفروع — تيك أواي واستلام" : "Store Walk-in / Takeaway",
-          channelType: "direct_branch",
-          ordersCount: 3120,
-          grossSales: 748000,
-          commissions: 0,
-          netSales: 748000,
-          avgTicket: 240,
-          sharePercent: 39.2,
+          channelType: "direct_branch" as const,
+          ordersCount: takeawayOrders,
+          grossSales: Math.round(takeawaySales),
+          commissionRate: 0,
           growthRate: 14.5,
         },
         {
           channelCode: "dine_in",
           channelName: lang === "ar" ? "معارض الفروع — طلبات صالة" : "Dine-in Parlor",
-          channelType: "direct_branch",
-          ordersCount: 1840,
-          grossSales: 478000,
-          commissions: 0,
-          netSales: 478000,
-          avgTicket: 260,
-          sharePercent: 25.0,
+          channelType: "direct_branch" as const,
+          ordersCount: dineInOrders,
+          grossSales: Math.round(dineInSales),
+          commissionRate: 0,
           growthRate: 11.2,
         },
         {
           channelCode: "own_fleet",
           channelName: lang === "ar" ? "أسطول التوصيل الخاص (الوزير دليفري)" : "Al-Wazeer Direct Delivery",
-          channelType: "own_fleet",
-          ordersCount: 1150,
-          grossSales: 298000,
-          commissions: 12000,
-          netSales: 286000,
-          avgTicket: 259,
-          sharePercent: 15.6,
+          channelType: "own_fleet" as const,
+          ordersCount: fleetOrders,
+          grossSales: Math.round(fleetSales),
+          commissionRate: 0.04,
           growthRate: 24.8,
         },
         {
           channelCode: "talabat",
           channelName: lang === "ar" ? "تطبيق طلبات مصر (Talabat App)" : "Talabat Egypt",
-          channelType: "food_app",
-          ordersCount: 980,
-          grossSales: 235000,
-          commissions: 42300,
-          netSales: 192700,
-          avgTicket: 240,
-          sharePercent: 12.3,
+          channelType: "food_app" as const,
+          ordersCount: talabatOrders,
+          grossSales: Math.round(talabatSales),
+          commissionRate: 0.18,
           growthRate: 18.0,
         },
         {
           channelCode: "waffarha",
           channelName: lang === "ar" ? "تطبيق وفرها (Waffarha Deals)" : "Waffarha Coupons",
-          channelType: "food_app",
-          ordersCount: 340,
-          grossSales: 78000,
-          commissions: 11700,
-          netSales: 66300,
-          avgTicket: 229,
-          sharePercent: 4.1,
+          channelType: "food_app" as const,
+          ordersCount: waffarhaOrders,
+          grossSales: Math.round(waffarhaSales),
+          commissionRate: 0.15,
           growthRate: 8.5,
         },
         {
           channelCode: "b2b",
           channelName: lang === "ar" ? "عقود الشركات وحفلات الفنادق (B2B)" : "Corporate & Hotel Catering",
-          channelType: "b2b",
-          ordersCount: 48,
-          grossSales: 73000,
-          commissions: 0,
-          netSales: 73000,
-          avgTicket: 1520,
-          sharePercent: 3.8,
+          channelType: "b2b" as const,
+          ordersCount: b2bOrders,
+          grossSales: Math.round(b2bSales),
+          commissionRate: 0,
           growthRate: 32.0,
         },
       ];
+
+      const totalGross = channelList.reduce((acc, c) => acc + c.grossSales, 0);
+
+      return channelList.map((c) => {
+        const commissions = Math.round(c.grossSales * c.commissionRate);
+        const netSales = c.grossSales - commissions;
+        const avgTicket = c.ordersCount > 0 ? Math.round(c.grossSales / c.ordersCount) : 0;
+        const sharePercent = totalGross > 0 ? Math.round((c.grossSales / totalGross) * 1000) / 10 : 0;
+
+        return {
+          channelCode: c.channelCode,
+          channelName: c.channelName,
+          channelType: c.channelType,
+          ordersCount: c.ordersCount,
+          grossSales: c.grossSales,
+          commissions,
+          netSales,
+          avgTicket,
+          sharePercent,
+          growthRate: c.growthRate,
+        };
+      });
     }
 
     case "sales_cogs": {
-      // Cost of goods sold & gross margins
-      return [
-        {
-          sku: "BRN-1001",
-          itemName: lang === "ar" ? "رز بلبن نوتيلا" : "Rice Pudding Nutella",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          unitsSold: 1620,
-          sellingPrice: 50,
-          salesRevenue: 81000,
-          unitCost: 16.5,
-          totalCogs: 26730,
-          grossProfit: 54270,
-          grossMarginPercent: 67.0,
-          markupPercent: 203,
-          profitabilityRating: "exceptional",
-        },
-        {
-          sku: "BRN-1007",
-          itemName: lang === "ar" ? "فتة ميكس الوزير" : "Fatta Mix Al-Wazeer",
-          category: lang === "ar" ? "الفتة" : "Fatta",
-          unitsSold: 1850,
-          sellingPrice: 90,
-          salesRevenue: 166500,
-          unitCost: 32.0,
-          totalCogs: 59200,
-          grossProfit: 107300,
-          grossMarginPercent: 64.4,
-          markupPercent: 181,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1008",
-          itemName: lang === "ar" ? "فتة نوتيلا بالكريمة" : "Fatta Nutella",
-          category: lang === "ar" ? "الفتة" : "Fatta",
-          unitsSold: 1240,
-          sellingPrice: 90,
-          salesRevenue: 111600,
-          unitCost: 31.0,
-          totalCogs: 38440,
-          grossProfit: 73160,
-          grossMarginPercent: 65.6,
-          markupPercent: 190,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1012",
-          itemName: lang === "ar" ? "قشطوطة مانجا بالكريمة" : "Qashtouta Mango",
-          category: lang === "ar" ? "القشطوطة" : "Qashtouta",
-          unitsSold: 980,
-          sellingPrice: 75,
-          salesRevenue: 73500,
-          unitCost: 24.5,
-          totalCogs: 24010,
-          grossProfit: 49490,
-          grossMarginPercent: 67.3,
-          markupPercent: 206,
-          profitabilityRating: "exceptional",
-        },
-        {
-          sku: "BRN-1004",
-          itemName: lang === "ar" ? "رز بلبن بستاشيو فاخر" : "Rice Pudding Pistachio",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          unitsSold: 780,
-          sellingPrice: 80,
-          salesRevenue: 62400,
-          unitCost: 34.0,
-          totalCogs: 26520,
-          grossProfit: 35880,
-          grossMarginPercent: 57.5,
-          markupPercent: 135,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1005",
-          itemName: lang === "ar" ? "رز بلبن الوزير الخاص" : "Rice Pudding Al-Wazeer",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          unitsSold: 920,
-          sellingPrice: 80,
-          salesRevenue: 73600,
-          unitCost: 28.0,
-          totalCogs: 25760,
-          grossProfit: 47840,
-          grossMarginPercent: 65.0,
-          markupPercent: 186,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1006",
-          itemName: lang === "ar" ? "رز بلبن ساده بلدي" : "Plain Rice Pudding",
-          category: lang === "ar" ? "عشاق الرز" : "Rice Pudding",
-          unitsSold: 890,
-          sellingPrice: 25,
-          salesRevenue: 22250,
-          unitCost: 8.5,
-          totalCogs: 7565,
-          grossProfit: 14685,
-          grossMarginPercent: 66.0,
-          markupPercent: 194,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1013",
-          itemName: lang === "ar" ? "كاس سعادة كندر" : "Dessert Cup Kinder",
-          category: lang === "ar" ? "كاسات السعادة" : "Happiness Cups",
-          unitsSold: 640,
-          sellingPrice: 65,
-          salesRevenue: 41600,
-          unitCost: 22.0,
-          totalCogs: 14080,
-          grossProfit: 27520,
-          grossMarginPercent: 66.2,
-          markupPercent: 195,
-          profitabilityRating: "high",
-        },
-        {
-          sku: "BRN-1016",
-          itemName: lang === "ar" ? "بسبوسة مكسرات سمن بلدي" : "Basbousa Nuts",
-          category: lang === "ar" ? "حلويات شرقية" : "Oriental Sweets",
-          unitsSold: 310,
-          sellingPrice: 140,
-          salesRevenue: 43400,
-          unitCost: 68.0,
-          totalCogs: 21080,
-          grossProfit: 22320,
-          grossMarginPercent: 51.4,
-          markupPercent: 106,
-          profitabilityRating: "healthy",
-        },
-        {
-          sku: "BRN-1017",
-          itemName: lang === "ar" ? "كنافة نابلسية بالجبن العكاوي" : "Kunafa Nabulsi",
-          category: lang === "ar" ? "حلويات شرقية" : "Oriental Sweets",
-          unitsSold: 260,
-          sellingPrice: 160,
-          salesRevenue: 41600,
-          unitCost: 82.0,
-          totalCogs: 21320,
-          grossProfit: 20280,
-          grossMarginPercent: 48.8,
-          markupPercent: 95,
-          profitabilityRating: "healthy",
-        },
-        {
-          sku: "BRN-1020",
-          itemName: lang === "ar" ? "تورتة لوتس فاميلي" : "Lotus Cake Family",
-          category: lang === "ar" ? "تورت وجاتوه" : "Cakes & Pastry",
-          unitsSold: 95,
-          sellingPrice: 320,
-          salesRevenue: 30400,
-          unitCost: 175.0,
-          totalCogs: 16625,
-          grossProfit: 13775,
-          grossMarginPercent: 45.3,
-          markupPercent: 83,
-          profitabilityRating: "healthy",
-        },
-      ];
+      // Dynamic COGS and gross margins derived from live POS item sales and inventory costs
+      const itemAgg: Record<string, {
+        sku: string;
+        name: string;
+        category: string;
+        unitsSold: number;
+        salesRevenue: number;
+        unitCost: number;
+        sellingPrice: number;
+      }> = {};
+
+      liveOrders.forEach((order) => {
+        (order.items || []).forEach((item: any) => {
+          const sku = item.sku || `ITEM-${item.id}`;
+          const itemName = typeof item.name === "object" ? (lang === "ar" ? item.name?.ar : item.name?.en) || "صنف" : String(item.name || "صنف");
+          const qty = Number(item.quantity || 0);
+          const price = Number(item.unitPrice || 0);
+          const lineTotal = Number(item.totalPrice || qty * price);
+
+          if (!itemAgg[sku]) {
+            const catalogProd = liveProducts.find((p) => p.sku === sku || p.name?.ar === itemName || p.name?.en === itemName);
+            const cat = catalogProd ? liveCategories.find((c) => c.id === catalogProd.categoryId) : undefined;
+            const categoryName = cat ? (lang === "ar" ? cat.name?.ar : cat.name?.en) : (lang === "ar" ? "أصناف الحلويات" : "Sweets");
+            
+            const costPrice = catalogProd?.costPrice && catalogProd.costPrice > 0 
+              ? catalogProd.costPrice 
+              : Math.round(price * 0.35 * 10) / 10;
+
+            itemAgg[sku] = {
+              sku,
+              name: itemName,
+              category: categoryName || (lang === "ar" ? "حلويات" : "Desserts"),
+              unitsSold: 0,
+              salesRevenue: 0,
+              unitCost: costPrice,
+              sellingPrice: price,
+            };
+          }
+
+          itemAgg[sku].unitsSold += qty;
+          itemAgg[sku].salesRevenue += lineTotal;
+        });
+      });
+
+      // If few sales are recorded yet, supplement with top catalog products so report has complete overview
+      if (Object.keys(itemAgg).length < 6) {
+        liveProducts.slice(0, 10).forEach((prod) => {
+          if (!itemAgg[prod.sku]) {
+            const cat = liveCategories.find((c) => c.id === prod.categoryId);
+            const categoryName = cat ? (lang === "ar" ? cat.name?.ar : cat.name?.en) : (lang === "ar" ? "أصناف الحلويات" : "Sweets");
+            const sellingPrice = Number(prod.sellingPrice || 50);
+            const unitCost = Number(prod.costPrice || Math.round(sellingPrice * 0.35 * 10) / 10);
+            itemAgg[prod.sku] = {
+              sku: prod.sku,
+              name: lang === "ar" ? prod.name?.ar : prod.name?.en,
+              category: categoryName || (lang === "ar" ? "حلويات" : "Desserts"),
+              unitsSold: 0,
+              salesRevenue: 0,
+              unitCost,
+              sellingPrice,
+            };
+          }
+        });
+      }
+
+      return Object.values(itemAgg).map((item) => {
+        const unitsSold = item.unitsSold;
+        const salesRevenue = Math.round(item.salesRevenue);
+        const sellingPrice = unitsSold > 0 ? Math.round(salesRevenue / unitsSold) : item.sellingPrice;
+        const unitCost = item.unitCost;
+        const totalCogs = Math.round(unitsSold * unitCost);
+        const grossProfit = salesRevenue - totalCogs;
+        const grossMarginPercent = salesRevenue > 0 ? Math.round((grossProfit / salesRevenue) * 1000) / 10 : (sellingPrice > 0 ? Math.round(((sellingPrice - unitCost) / sellingPrice) * 1000) / 10 : 0);
+        const markupPercent = totalCogs > 0 ? Math.round((grossProfit / totalCogs) * 100) : (unitCost > 0 ? Math.round(((sellingPrice - unitCost) / unitCost) * 100) : 0);
+
+        let profitabilityRating: "exceptional" | "high" | "healthy" | "tight" = "healthy";
+        if (grossMarginPercent >= 70) profitabilityRating = "exceptional";
+        else if (grossMarginPercent >= 55) profitabilityRating = "high";
+        else if (grossMarginPercent >= 40) profitabilityRating = "healthy";
+        else profitabilityRating = "tight";
+
+        return {
+          sku: item.sku,
+          itemName: item.name,
+          category: item.category,
+          unitsSold,
+          sellingPrice,
+          salesRevenue,
+          unitCost,
+          totalCogs,
+          grossProfit,
+          grossMarginPercent,
+          markupPercent,
+          profitabilityRating,
+        };
+      }).sort((a, b) => b.salesRevenue - a.salesRevenue);
     }
 
     default:

@@ -30,10 +30,10 @@ import { cn } from "@/lib/utils";
 interface GroupedJournalVoucher {
   id: string;
   date: string;
-  reference?: string;
-  memo?: { ar: string; en: string };
-  branchId?: string;
-  branchName?: { ar: string; en: string };
+  reference?: string | undefined;
+  memo?: { ar: string; en: string } | undefined;
+  branchId?: string | undefined;
+  branchName?: { ar: string; en: string } | undefined;
   status: "posted" | "approved" | "draft";
   lines: JournalEntry[];
   totalDebit: number;

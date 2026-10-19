@@ -675,7 +675,7 @@ export function PosPage() {
   const activeBranch = assignedBranch;
 
   // Selected Branch — derived from assigned branch.
-  // If not assigned to any branch, defaults to empty.
+  // If not assigned to any branch, defaults to Main Branch (Korba).
   const selectedBranch = useMemo(() => {
     if (activeBranch) {
       return {
@@ -685,11 +685,12 @@ export function PosPage() {
         phone: (activeBranch as any).phone || "",
       };
     }
+    const defaultBr = POS_BRANCHES[0]!;
     return {
-      id: "unassigned",
-      ar: "",
-      en: "",
-      phone: "",
+      id: defaultBr.id,
+      ar: defaultBr.ar,
+      en: defaultBr.en,
+      phone: defaultBr.phone || "",
     };
   }, [activeBranch]);
 
@@ -2007,7 +2008,7 @@ export function PosPage() {
             <span className="truncate max-w-[200px] text-xs font-medium min-h-[16px]">
               {activeBranch
                 ? (lang === "ar" ? activeBranch.name.ar : activeBranch.name.en)
-                : ""}
+                : (lang === "ar" ? selectedBranch.ar : selectedBranch.en)}
             </span>
             <Lock className="w-3 h-3 text-muted-foreground opacity-50 ms-0.5 shrink-0" />
           </div>

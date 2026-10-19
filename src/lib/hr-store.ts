@@ -380,6 +380,10 @@ export const DEFAULT_SUPPLEMENTAL_EMPLOYEES: EmployeeRecord[] = [
 
 // Singleton shared state across the application
 let globalEmployees: EmployeeRecord[] = [];
+
+export function getLatestEmployees(): EmployeeRecord[] {
+  return globalEmployees;
+}
 let globalAttendance: AttendanceRecord[] = [];
 let globalLeaves: LeaveRequest[] = [];
 let globalPayrollRuns: PayrollRun[] = [];
@@ -532,32 +536,9 @@ function buildPayrollRunForPeriod(period: string, emps: EmployeeRecord[], att: A
   };
 }
 
-export function useHrStore() {
-  const [employees, setEmployees] = useState<EmployeeRecord[]>(globalEmployees);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(globalAttendance);
-  const [leaves, setLeaves] = useState<LeaveRequest[]>(globalLeaves);
-  const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>(globalPayrollRuns);
-  const [insights, setInsights] = useState<HrAiInsight[]>(globalInsights);
-  const [loading, setLoading] = useState<boolean>(globalLoading);
-
-  useEffect(() => {
-    const update = () => {
-      setEmployees([...globalEmployees]);
-      setAttendance([...globalAttendance]);
-      setLeaves([...globalLeaves]);
-      setPayrollRuns([...globalPayrollRuns]);
-      setInsights([...globalInsights]);
-      setLoading(globalLoading);
-    };
-    listeners.add(update);
-    return () => {
-      listeners.delete(update);
-    };
-  }, []);
-
-  const fetchAllHrData = useCallback(async () => {
-    globalLoading = true;
-    notify();
+export async function fetchLiveAllHrData() {
+  globalLoading = true;
+  notify();
 
     try {
       // 1. Fetch live relations in parallel from Supabase
@@ -792,13 +773,47 @@ export function useHrStore() {
       }
 
       persistToStorage();
+      return mergedEmployees;
     } catch (err) {
       console.error("[HR Store] Supabase fetch error, fallback to cache:", err);
       restoreFromStorage();
+      return globalEmployees;
     } finally {
       globalLoading = false;
       notify();
     }
+}
+
+// Prefetch live HR data on module load
+if (typeof window !== "undefined") {
+  fetchLiveAllHrData().catch(() => {});
+}
+
+export function useHrStore() {
+  const [employees, setEmployees] = useState<EmployeeRecord[]>(globalEmployees);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(globalAttendance);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>(globalLeaves);
+  const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>(globalPayrollRuns);
+  const [insights, setInsights] = useState<HrAiInsight[]>(globalInsights);
+  const [loading, setLoading] = useState<boolean>(globalLoading);
+
+  useEffect(() => {
+    const update = () => {
+      setEmployees([...globalEmployees]);
+      setAttendance([...globalAttendance]);
+      setLeaves([...globalLeaves]);
+      setPayrollRuns([...globalPayrollRuns]);
+      setInsights([...globalInsights]);
+      setLoading(globalLoading);
+    };
+    listeners.add(update);
+    return () => {
+      listeners.delete(update);
+    };
+  }, []);
+
+  const fetchAllHrData = useCallback(async () => {
+    return fetchLiveAllHrData();
   }, []);
 
   // Initialize once on mount

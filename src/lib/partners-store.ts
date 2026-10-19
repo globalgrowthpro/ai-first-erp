@@ -61,15 +61,53 @@ export interface Partner {
   transactions: PartnerTransaction[];
 }
 
+export let cachedLatestPartners: Partner[] = [];
+
+export function getLatestPartners(): Partner[] {
+  return cachedLatestPartners;
+}
+
+// Fetch and prefetch live partners from Supabase
+export async function fetchLivePartners(): Promise<Partner[]> {
+  try {
+    const { data } = await supabase.from('partners').select('*');
+    if (data && data.length > 0) {
+      cachedLatestPartners = data.map((p) => ({
+        id: p.id,
+        code: p.code || '',
+        name: { ar: p.name_ar, en: p.name_en },
+        type: p.type as PartnerType,
+        group: 'retail' as PartnerGroup,
+        taxNumber: p.tax_number || '',
+        phone: p.phone || '',
+        email: p.email || '',
+        address: { ar: p.address || '', en: p.address || '' },
+        contactPerson: p.contact_person || '',
+        creditLimit: Number(p.credit_limit || 0),
+        balance: Number(p.balance || 0),
+        paymentTerms: 'immediate' as PaymentTerms,
+        status: p.is_active ? 'active' : 'inactive',
+        createdAt: p.created_at,
+        transactions: [],
+      }));
+    }
+    return cachedLatestPartners;
+  } catch {
+    return cachedLatestPartners;
+  }
+}
+
+fetchLivePartners().catch(() => {});
+
 export function usePartnersStore() {
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<Partner[]>(cachedLatestPartners);
   const [loading, setLoading] = useState(true);
 
   const fetchPartners = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('partners').select('*');
     if (data) {
-      setPartners(data.map(p => ({
+      const mapped: Partner[] = data.map(p => ({
         id: p.id,
         code: p.code || '',
         name: { ar: p.name_ar, en: p.name_en },
@@ -86,7 +124,9 @@ export function usePartnersStore() {
         status: p.is_active ? 'active' : 'inactive',
         createdAt: p.created_at,
         transactions: [] // Would fetch from transactions table if exists
-      })));
+      }));
+      cachedLatestPartners = mapped;
+      setPartners(mapped);
     }
     setLoading(false);
   }, []);

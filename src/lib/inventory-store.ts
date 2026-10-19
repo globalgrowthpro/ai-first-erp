@@ -315,7 +315,7 @@ function notify() {
 }
 
 // Fetch all live records directly from Supabase Database
-async function fetchDatabaseState() {
+export async function fetchDatabaseState() {
   try {
     const [catRes, whRes, unRes, prodRes, stockRes, bomRes, branchRes, movesRes] = await Promise.all([
       supabase.from("categories").select("*").order("name_ar"),
@@ -1010,4 +1010,12 @@ export function useInventoryStore() {
     importBoms,
     resetToSeed,
   };
+}
+
+export function getLatestInventoryProducts(): InventoryProduct[] {
+  return dbProducts;
+}
+
+export function getLatestCategories(): InventoryCategory[] {
+  return dbCategories;
 }

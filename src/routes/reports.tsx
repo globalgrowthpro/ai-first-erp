@@ -38,7 +38,7 @@ import { useSalesStore, usePurchasesStore } from "@/lib/documents-store";
 import { useInventoryStore } from "@/lib/inventory-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import { useHrStore } from "@/lib/hr-store";
-import { useAccountsStore } from "@/lib/accounting-store";
+import { useAccountsStore, useJournalStore } from "@/lib/accounting-store";
 import {
   useReportsStore,
   STANDARD_REPORTS,
@@ -126,9 +126,10 @@ function ReportsHubPage() {
   const { products: inventoryProducts, loading: inventoryLoading } = useInventoryStore();
   const { partners: livePartners, loading: partnersLoading } = usePartnersStore();
   const { employees: liveEmployees, loading: hrLoading } = useHrStore();
+  const { entries: liveJournalEntries, loading: journalLoading } = useJournalStore();
   const { accounts } = useAccountsStore();
 
-  const isAnyLiveLoading = posLoading || salesLoading || purchasesLoading || inventoryLoading || partnersLoading || hrLoading;
+  const isAnyLiveLoading = posLoading || salesLoading || purchasesLoading || inventoryLoading || partnersLoading || hrLoading || journalLoading;
 
   // Aggregate live collections for reports query engine
   const liveData = useMemo<LiveDataSourceCollections>(() => ({
@@ -138,7 +139,8 @@ function ReportsHubPage() {
     inventoryProducts,
     partners: livePartners,
     employees: liveEmployees,
-  }), [posOrders, salesDocuments, purchasesDocuments, inventoryProducts, livePartners, liveEmployees]);
+    journalEntries: liveJournalEntries,
+  }), [posOrders, salesDocuments, purchasesDocuments, inventoryProducts, livePartners, liveEmployees, liveJournalEntries]);
 
   // Active Navigation Tab: 'catalog' | 'viewer' | 'custom' | 'executive'
   const [activeTab, setActiveTab] = useState<"catalog" | "viewer" | "custom" | "executive">("catalog");
