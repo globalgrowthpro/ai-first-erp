@@ -636,13 +636,19 @@ export function AdminPosShiftsView() {
       if (selectedStatus === "surplus" && s.varianceStatus !== "surplus") return false;
       if (selectedStatus === "balanced" && s.varianceStatus !== "balanced") return false;
 
-      // 5. Date Filter (Normalized ISO Date Comparison)
+      // 5. Date Filter (Normalized ISO Date Comparison including active/closed window)
       if (dateFrom || dateTo) {
-        const shiftD = normalizeDateOnly(s.dateStr || s.openedAt);
         const normFrom = dateFrom ? normalizeDateOnly(dateFrom) : "";
         const normTo = dateTo ? normalizeDateOnly(dateTo) : "";
-        if (normFrom && shiftD < normFrom) return false;
-        if (normTo && shiftD > normTo) return false;
+
+        const openD = normalizeDateOnly(s.openedAt || s.dateStr);
+        const closeD = s.closedAt
+          ? normalizeDateOnly(s.closedAt)
+          : (s.status === "open" ? normalizeDateOnly(new Date()) : openD);
+
+        // A shift is active/relevant in the range if it opened before/on the end date AND closed after/on the start date
+        if (normFrom && closeD < normFrom) return false;
+        if (normTo && openD > normTo) return false;
       }
 
       return true;
