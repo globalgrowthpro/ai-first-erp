@@ -1455,10 +1455,14 @@ export interface DepartmentItem {
 
 export const departments: DepartmentItem[] = [
   { id: "dept-exec", name: { ar: "الإدارة التنفيذية والعامة", en: "Executive Management" }, code: "EXEC", manager: { ar: "وزير الحلو", en: "Hafez Rahim" }, headcount: 3 },
+  { id: "dept-it", name: { ar: "تقنية المعلومات والدعم الفني", en: "IT & Technical Support" }, code: "IT", manager: { ar: "مهندس نظم المعلومات", en: "IT Systems Director" }, headcount: 7 },
+  { id: "dept-maint", name: { ar: "التشغيل والصيانة الفنية", en: "Operations & Technical Maintenance" }, code: "MAINT", manager: { ar: "مدير الصيانة المركزية", en: "Maintenance Director" }, headcount: 8 },
+  { id: "dept-support", name: { ar: "خدمة العملاء ومكتب المساعدة", en: "Help Desk & Customer Care" }, code: "SUPPORT", manager: { ar: "مشرف مكتب المساعدة", en: "Help Desk Supervisor" }, headcount: 6 },
   { id: "dept-retail", name: { ar: "المبيعات ونقاط البيع والفروع", en: "Sales, POS & Branches" }, code: "RETAIL", manager: { ar: "أحمد سالم", en: "Ahmed Salem" }, headcount: 14 },
   { id: "dept-kitchen", name: { ar: "المطبخ المركزي والتصنيع", en: "Central Kitchen & Production" }, code: "KITCHEN", manager: { ar: "الشيف علاء السعيد", en: "Chef Alaa El-Saeed" }, headcount: 22 },
   { id: "dept-supply", name: { ar: "سلاسل الإمداد والمخازن", en: "Supply Chain & Warehousing" }, code: "SUPPLY", manager: { ar: "طارق فؤاد", en: "Tarek Fouad" }, headcount: 8 },
   { id: "dept-finance", name: { ar: "الإدارة المالية والحسابات", en: "Finance & Accounting" }, code: "FINANCE", manager: { ar: "منى خليل", en: "Mona Khalil" }, headcount: 5 },
+  { id: "dept-hr", name: { ar: "الموارد البشرية والشؤون الإدارية", en: "Human Resources & Administration" }, code: "HR", manager: { ar: "مدير الموارد البشرية", en: "HR Director" }, headcount: 4 },
   { id: "dept-qc", name: { ar: "الجودة والرقابة الداخلية", en: "Quality Control & Audit" }, code: "AUDIT", manager: { ar: "سارة نبيل", en: "Sarah Nabil" }, headcount: 3 },
 ];
 
@@ -1471,14 +1475,36 @@ export interface PositionItem {
 }
 
 export const positions: PositionItem[] = [
-  { id: "pos-gm", title: { ar: "المدير العام والمالك", en: "General Manager & Owner" }, departmentId: "dept-exec", level: "c-level" },
-  { id: "pos-cfo", title: { ar: "المدير المالي ورئيس الحسابات", en: "Chief Financial Officer" }, departmentId: "dept-finance", level: "c-level" },
-  { id: "pos-chef", title: { ar: "الشيف التنفيذي لحلويات الوزير", en: "Executive Pastry Chef" }, departmentId: "dept-kitchen", level: "manager" },
-  { id: "pos-branch-mgr", title: { ar: "مدير فرع ونقاط بيع", en: "Branch Sales Manager" }, departmentId: "dept-retail", level: "manager" },
-  { id: "pos-storekeeper", title: { ar: "أمين مخزن خامات ومستلزمات", en: "Raw Materials Storekeeper" }, departmentId: "dept-supply", level: "specialist" },
-  { id: "pos-accountant", title: { ar: "محاسب تكاليف وفروع", en: "Branch & Cost Accountant" }, departmentId: "dept-finance", level: "specialist" },
-  { id: "pos-cashier", title: { ar: "كاشير ومسؤول بيع فوري", en: "Retail Cashier & Sales Rep" }, departmentId: "dept-retail", level: "staff" },
-  { id: "pos-auditor", title: { ar: "مراجع داخلي ورقابة مالية", en: "Internal Compliance Auditor" }, departmentId: "dept-qc", level: "specialist" },
+  // C-Level & Executives
+  { id: "pos-gm", code: "EXEC-01", title: { ar: "المدير العام والمالك", en: "General Manager & Owner" }, departmentId: "dept-exec", level: "c-level" },
+  { id: "pos-cfo", code: "FIN-01", title: { ar: "المدير المالي ورئيس الحسابات", en: "Chief Financial Officer" }, departmentId: "dept-finance", level: "c-level" },
+
+  // IT & Technical Support
+  { id: "pos-it-mgr", code: "IT-01", title: { ar: "مدير تقنية المعلومات ونظم ERP", en: "IT & ERP Director" }, departmentId: "dept-it", level: "manager" },
+  { id: "pos-it-tech", code: "IT-02", title: { ar: "فني دعم فني وشبكات (IT Support Tech)", en: "IT Support & Networks Technician" }, departmentId: "dept-it", level: "specialist" },
+  { id: "pos-pos-tech", code: "IT-03", title: { ar: "فني أجهزة نقاط البيع وكاشير (POS Hardware Tech)", en: "POS Hardware Technician" }, departmentId: "dept-it", level: "specialist" },
+  { id: "pos-erp-spec", code: "IT-04", title: { ar: "أخصائي نظم وقواعد بيانات (System Admin)", en: "ERP & Database Administrator" }, departmentId: "dept-it", level: "specialist" },
+
+  // Maintenance & Field Operations
+  { id: "pos-maint-mgr", code: "MNT-01", title: { ar: "مدير التشغيل والصيانة الفنية", en: "Technical Maintenance Manager" }, departmentId: "dept-maint", level: "manager" },
+  { id: "pos-kitchen-tech", code: "MNT-02", title: { ar: "فني تبريد وأفران مطبخ مركزي (Kitchen Technician)", en: "Kitchen & Refrigeration Technician" }, departmentId: "dept-maint", level: "specialist" },
+  { id: "pos-elec-tech", code: "MNT-03", title: { ar: "فني كهرباء ومعدات فروع (Electrical Technician)", en: "Electrical & Facilities Technician" }, departmentId: "dept-maint", level: "specialist" },
+
+  // Help Desk & Customer Support
+  { id: "pos-helpdesk-spec", code: "SUP-01", title: { ar: "أخصائي مكتب مساعدة ودعم فني (Help Desk Specialist)", en: "Help Desk Support Specialist" }, departmentId: "dept-support", level: "specialist" },
+  { id: "pos-callcenter-rep", code: "SUP-02", title: { ar: "ممثل خدمة عملاء وبلاغات طارئة", en: "Customer Care Representative" }, departmentId: "dept-support", level: "staff" },
+
+  // Retail, Kitchen, Finance & Supply
+  { id: "pos-chef", code: "KIT-01", title: { ar: "الشيف التنفيذي لحلويات الوزير", en: "Executive Pastry Chef" }, departmentId: "dept-kitchen", level: "manager" },
+  { id: "pos-branch-mgr", code: "RET-01", title: { ar: "مدير فرع ونقاط بيع", en: "Branch Sales Manager" }, departmentId: "dept-retail", level: "manager" },
+  { id: "pos-storekeeper", code: "SUP-01", title: { ar: "أمين مخزن خامات ومستلزمات", en: "Raw Materials Storekeeper" }, departmentId: "dept-supply", level: "specialist" },
+  { id: "pos-accountant", code: "FIN-02", title: { ar: "محاسب تكاليف وفروع", en: "Branch & Cost Accountant" }, departmentId: "dept-finance", level: "specialist" },
+  { id: "pos-cashier", code: "RET-02", title: { ar: "كاشير ومسؤول بيع فوري", en: "Retail Cashier & Sales Rep" }, departmentId: "dept-retail", level: "staff" },
+
+  // HR & Compliance
+  { id: "pos-hr-mgr", code: "HR-01", title: { ar: "مدير الموارد البشرية والشؤون الإدارية", en: "Human Resources Manager" }, departmentId: "dept-hr", level: "manager" },
+  { id: "pos-hr-spec", code: "HR-02", title: { ar: "أخصائي شؤون موظفين ورواتب", en: "HR & Payroll Specialist" }, departmentId: "dept-hr", level: "specialist" },
+  { id: "pos-auditor", code: "QC-01", title: { ar: "مراجع داخلي ورقابة جودة", en: "Internal Compliance Auditor" }, departmentId: "dept-qc", level: "specialist" },
 ];
 
 export interface SystemPage {
@@ -1523,6 +1549,16 @@ export const systemActions: SystemAction[] = [
   { id: "reports.export", name: { ar: "تصدير القوائم المالية والأرباح", en: "Export Financial Statements" }, category: "admin" },
   { id: "users.manage", name: { ar: "إدارة المستخدمين والأقسام والصلاحيات", en: "Manage Users & Permissions" }, category: "admin" },
   { id: "ai.configure", name: { ar: "إعداد وكلاء الذكاء ومفاتيح API", en: "Configure AI Modules & Keys" }, category: "ai" },
+  { id: "helpdesk.create", name: { ar: "إنشاء التذاكر (Create)", en: "Create Tickets" }, category: "support" },
+  { id: "helpdesk.view", name: { ar: "استعراض وقراءة التذاكر (View)", en: "View Tickets" }, category: "support" },
+  { id: "helpdesk.edit", name: { ar: "تعديل بيانات التذكرة (Edit)", en: "Edit Tickets" }, category: "support" },
+  { id: "helpdesk.delete", name: { ar: "حذف التذاكر (Delete)", en: "Delete Tickets" }, category: "support" },
+  { id: "helpdesk.reply", name: { ar: "الرد وإضافة ملاحظات (Reply)", en: "Reply to Tickets" }, category: "support" },
+  { id: "helpdesk.attachments", name: { ar: "رفع وإدارة المرفقات (Attachments)", en: "Manage Attachments" }, category: "support" },
+  { id: "helpdesk.assign", name: { ar: "إسناد وتوجيه التذاكر (Assign)", en: "Assign Tickets" }, category: "support" },
+  { id: "helpdesk.resolve", name: { ar: "حل وتسجيل معالجة التذكرة (Resolve)", en: "Resolve Tickets" }, category: "support" },
+  { id: "helpdesk.close", name: { ar: "إغلاق التذكرة نهائياً (Close)", en: "Close Tickets" }, category: "support" },
+  { id: "helpdesk.report", name: { ar: "تقارير وإحصائيات الدعم (Report)", en: "Helpdesk Reports" }, category: "support" },
 ];
 
 export type AppUserRole =
@@ -1712,6 +1748,7 @@ export interface UserItem {
   avatar?: string | undefined;
   departmentId: string;
   positionId: string;
+  branch?: string | undefined;
   role: AppUserRole;
   allowedPages: string[];
   allowedActions: string[];
@@ -1721,6 +1758,8 @@ export interface UserItem {
   employeeId?: string | undefined;
   employeeCode?: string | undefined;
   erpPassword?: string | undefined;
+  helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+  helpdeskBranch?: string | undefined;
 }
 
 export const users: UserItem[] = [

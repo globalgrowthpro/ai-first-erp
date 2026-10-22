@@ -7,6 +7,8 @@ import {
   type RoleItem,
   defaultRoles,
   users as defaultUsers,
+  departments as defaultDepartments,
+  positions as defaultPositions,
 } from "@/lib/demo-data";
 
 export type { UserItem, DepartmentItem, PositionItem, RoleItem };
@@ -86,10 +88,31 @@ export function fromDbRole(dbRole: string): UserItem["role"] {
   }
 }
 
+const USERS_STORAGE_KEY = "wazeer_org_users_v2";
+
+function readCachedOrgUsers(): UserItem[] {
+  if (typeof window === "undefined") return defaultUsers;
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return defaultUsers;
+}
+
+function writeCachedOrgUsers(users: UserItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  } catch {}
+}
+
 export function useOrgStore() {
-  const [users, setUsers] = useState<UserItem[]>(defaultUsers);
-  const [departments, setDepartments] = useState<DepartmentItem[]>([]);
-  const [positions, setPositions] = useState<PositionItem[]>([]);
+  const [users, setUsers] = useState<UserItem[]>(() => readCachedOrgUsers());
+  const [departments, setDepartments] = useState<DepartmentItem[]>(() => defaultDepartments);
+  const [positions, setPositions] = useState<PositionItem[]>(() => defaultPositions);
   const [roles, setRoles] = useState<RoleItem[]>(defaultRoles);
   const [loading, setLoading] = useState(false);
 
@@ -110,9 +133,12 @@ export function useOrgStore() {
             headcount: 0,
           }))
         );
+      } else {
+        setDepartments(defaultDepartments);
       }
     } catch (e) {
       console.warn("Failed to fetch departments from supabase:", e);
+      setDepartments(defaultDepartments);
     }
   }, []);
 
@@ -133,11 +159,18 @@ export function useOrgStore() {
             level: (p.level || "staff") as PositionItem["level"],
           }))
         );
+      } else {
+        setPositions(defaultPositions);
       }
     } catch (e) {
       console.warn("Failed to fetch positions from supabase:", e);
+      setPositions(defaultPositions);
     }
   }, []);
+
+  const isUuid = (val?: string | null): boolean =>
+    typeof val === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -160,37 +193,71 @@ export function useOrgStore() {
       }
 
       if (profiles && profiles.length > 0) {
-        const dbUsers: UserItem[] = profiles.map((p: any) => {
-          const roleRecord = roles?.find((r: any) => r.user_id === p.id);
-          const dbRole = roleRecord?.role;
-          const resolvedRole = dbRole ? fromDbRole(dbRole) : "sales";
-          const userDbPages = pagesByUser.get(p.id);
-          const effectivePages = userDbPages && userDbPages.length > 0
-            ? userDbPages
-            : (resolvedRole === "admin" ? ["*"] : ["/pos"]);
-
-          return {
-            id: p.id,
-            name: { ar: p.full_name_ar || "", en: p.full_name_en || "" },
-            email: p.email || "",
-            avatar: p.avatar_url || "",
-            departmentId: p.department_id || "",
-            positionId: p.position_id || "",
-            role: resolvedRole,
-            allowedPages: effectivePages,
-            allowedActions: ["*"],
-            status: p.is_active ? "active" : "inactive",
-            lastActive: p.updated_at
-              ? new Date(p.updated_at).toLocaleTimeString()
-              : "الآن / Active",
-            sidebarVisible: p.sidebar_visible ?? true,
-          };
-        });
-
         setUsers((prev) => {
+          const prevMapById = new Map(prev.map((u) => [u.id, u]));
+          const prevMapByEmail = new Map(
+            prev.filter((u) => u.email).map((u) => [u.email.toLowerCase(), u])
+          );
+
+          const dbUsers: UserItem[] = profiles.map((p: any) => {
+            const roleRecord = roles?.find((r: any) => r.user_id === p.id);
+            const dbRole = roleRecord?.role;
+            const userDbPages = pagesByUser.get(p.id);
+            const cached = prevMapById.get(p.id) || (p.email ? prevMapByEmail.get(p.email.toLowerCase()) : undefined);
+            const resolvedRole = dbRole ? fromDbRole(dbRole) : (cached?.role || "sales");
+
+            const resolvedNameAr = p.full_name_ar || cached?.name?.ar || "";
+            const resolvedNameEn = p.full_name_en || cached?.name?.en || resolvedNameAr;
+            const resolvedDept = p.department_id || cached?.departmentId || "";
+            const resolvedPos = p.position_id || cached?.positionId || "";
+            const resolvedBranch = p.branch || p.helpdesk_branch || cached?.branch || cached?.helpdeskBranch || undefined;
+            const resolvedPages =
+              userDbPages && userDbPages.length > 0
+                ? userDbPages
+                : cached?.allowedPages && cached.allowedPages.length > 0
+                ? cached.allowedPages
+                : resolvedRole === "admin"
+                ? ["*"]
+                : ["/pos"];
+            const resolvedActions =
+              p.allowed_actions && Array.isArray(p.allowed_actions) && p.allowed_actions.length > 0
+                ? p.allowed_actions
+                : cached?.allowedActions && cached.allowedActions.length > 0
+                ? cached.allowedActions
+                : resolvedRole === "admin"
+                ? ["*"]
+                : [];
+
+            return {
+              id: p.id,
+              name: { ar: resolvedNameAr, en: resolvedNameEn },
+              email: p.email || cached?.email || "",
+              avatar: p.avatar_url || cached?.avatar || "",
+              departmentId: resolvedDept,
+              positionId: resolvedPos,
+              branch: resolvedBranch,
+              role: resolvedRole,
+              allowedPages: resolvedPages,
+              allowedActions: resolvedActions,
+              status: p.is_active !== undefined ? (p.is_active ? "active" : "inactive") : (cached?.status || "active"),
+              lastActive: p.updated_at
+                ? new Date(p.updated_at).toLocaleTimeString()
+                : (cached?.lastActive || "الآن / Active"),
+              sidebarVisible: p.sidebar_visible ?? cached?.sidebarVisible ?? true,
+              employeeId: cached?.employeeId,
+              employeeCode: cached?.employeeCode,
+              erpPassword: cached?.erpPassword,
+              helpdeskScope: p.helpdesk_scope || cached?.helpdeskScope || (resolvedRole === "admin" ? "all_tickets" : "own_created_only"),
+              helpdeskBranch: p.helpdesk_branch || cached?.helpdeskBranch || resolvedBranch,
+            };
+          });
+
           const dbIds = new Set(dbUsers.map((u) => u.id));
-          const localOnly = prev.filter((u) => !dbIds.has(u.id));
-          return [...dbUsers, ...localOnly];
+          const dbEmails = new Set(dbUsers.map((u) => u.email.toLowerCase()).filter(Boolean));
+          const localOnly = prev.filter((u) => !dbIds.has(u.id) && !dbEmails.has(u.email.toLowerCase()));
+          const merged = [...dbUsers, ...localOnly];
+          writeCachedOrgUsers(merged);
+          return merged;
         });
       }
     } catch (e) {
@@ -221,11 +288,8 @@ export function useOrgStore() {
   // ================= USERS CRUD =================
   const addUser = useCallback(
     async (user: UserItem) => {
-      const isUuid =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          user.id
-        );
-      const userId = isUuid ? user.id : crypto.randomUUID();
+      const validUuid = isUuid(user.id);
+      const userId = validUuid ? user.id : crypto.randomUUID();
 
       const createdUser: UserItem = {
         ...user,
@@ -234,7 +298,18 @@ export function useOrgStore() {
       };
 
       // Optimistic update
-      setUsers((prev) => [createdUser, ...prev.filter((u) => u.id !== userId)]);
+      setUsers((prev) => {
+        const next = [
+          createdUser,
+          ...prev.filter(
+            (u) =>
+              u.id !== userId &&
+              (!user.email || u.email.toLowerCase() !== user.email.toLowerCase())
+          ),
+        ];
+        writeCachedOrgUsers(next);
+        return next;
+      });
 
       try {
         await supabase.from("profiles").upsert({
@@ -242,11 +317,15 @@ export function useOrgStore() {
           full_name_ar: user.name.ar,
           full_name_en: user.name.en || user.name.ar,
           email: user.email,
-          department_id: user.departmentId || null,
-          position_id: user.positionId || null,
+          department_id: isUuid(user.departmentId) ? user.departmentId : null,
+          position_id: isUuid(user.positionId) ? user.positionId : null,
           is_active: user.status === "active",
           sidebar_visible: user.sidebarVisible ?? true,
-        });
+          branch: user.branch || user.helpdeskBranch || null,
+          helpdesk_scope: user.helpdeskScope || null,
+          helpdesk_branch: user.branch || user.helpdeskBranch || null,
+          allowed_actions: user.allowedActions || null,
+        } as any);
 
         if (user.role) {
           // Delete old role rows first
@@ -287,16 +366,25 @@ export function useOrgStore() {
         console.warn("Supabase profile upsert error:", e);
       }
 
-      fetchUsers();
       return createdUser;
     },
-    [fetchUsers]
+    []
   );
 
   const updateUser = useCallback(
     async (id: string, updates: Partial<UserItem>) => {
       // Optimistic update
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...updates } : u)));
+      setUsers((prev) => {
+        const next = prev.map((u) => {
+          const matchById = u.id === id;
+          const matchByEmail = Boolean(
+            updates.email && u.email && u.email.toLowerCase() === updates.email.toLowerCase()
+          );
+          return matchById || matchByEmail ? { ...u, ...updates } : u;
+        });
+        writeCachedOrgUsers(next);
+        return next;
+      });
 
       try {
         const payload: any = {};
@@ -306,28 +394,54 @@ export function useOrgStore() {
           payload.full_name_en = updates.name.en;
         if (updates.email !== undefined) payload.email = updates.email;
         if (updates.departmentId !== undefined)
-          payload.department_id = updates.departmentId || null;
+          payload.department_id = isUuid(updates.departmentId) ? updates.departmentId : null;
         if (updates.positionId !== undefined)
-          payload.position_id = updates.positionId || null;
+          payload.position_id = isUuid(updates.positionId) ? updates.positionId : null;
         if (updates.status !== undefined)
           payload.is_active = updates.status === "active";
         if (updates.sidebarVisible !== undefined)
           payload.sidebar_visible = updates.sidebarVisible;
+        if (updates.branch !== undefined || updates.helpdeskBranch !== undefined) {
+          payload.branch = updates.branch || updates.helpdeskBranch || null;
+          payload.helpdesk_branch = updates.branch || updates.helpdeskBranch || null;
+        }
+        if (updates.helpdeskScope !== undefined) {
+          payload.helpdesk_scope = updates.helpdeskScope;
+        }
+        if (updates.allowedActions !== undefined) {
+          payload.allowed_actions = updates.allowedActions;
+        }
         payload.updated_at = new Date().toISOString();
 
         if (Object.keys(payload).length > 0) {
-          await supabase.from("profiles").update(payload).eq("id", id);
+          if (isUuid(id)) {
+            await supabase.from("profiles").update(payload).eq("id", id);
+          } else if (updates.email) {
+            await supabase.from("profiles").update(payload).eq("email", updates.email);
+          }
         }
 
-        if (updates.role) {
+        let targetUserId = isUuid(id) ? id : null;
+        if (!targetUserId && updates.email) {
+          const { data: matched } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", updates.email)
+            .maybeSingle();
+          if (matched?.id && isUuid(matched.id)) {
+            targetUserId = matched.id;
+          }
+        }
+
+        if (updates.role && targetUserId) {
           // 1. Delete previous role rows for this user
-          await supabase.from("user_roles").delete().eq("user_id", id);
+          await supabase.from("user_roles").delete().eq("user_id", targetUserId);
 
           // 2. Try direct role insert (if enum supports it)
           const { error: directErr } = await supabase
             .from("user_roles")
             .insert({
-              user_id: id,
+              user_id: targetUserId,
               role: updates.role as any,
             });
 
@@ -335,20 +449,20 @@ export function useOrgStore() {
           if (directErr) {
             const mappedRole = toDbRole(updates.role);
             await supabase.from("user_roles").insert({
-              user_id: id,
+              user_id: targetUserId,
               role: mappedRole as any,
             });
           }
         }
 
         // 4. Dynamically sync allowedPages to public.user_pages
-        if (updates.allowedPages !== undefined) {
+        if (updates.allowedPages !== undefined && targetUserId) {
           try {
-            await supabase.from("user_pages").delete().eq("user_id", id);
+            await supabase.from("user_pages").delete().eq("user_id", targetUserId);
             const validPages = updates.allowedPages.filter((p) => p && p !== "*");
             if (validPages.length > 0) {
               await supabase.from("user_pages").insert(
-                validPages.map((pagePath) => ({ user_id: id, page_path: pagePath }))
+                validPages.map((pagePath) => ({ user_id: targetUserId, page_path: pagePath }))
               );
             }
           } catch (pageErr) {
@@ -358,10 +472,8 @@ export function useOrgStore() {
       } catch (e) {
         console.warn("Supabase profile update error:", e);
       }
-
-      fetchUsers();
     },
-    [fetchUsers]
+    []
   );
 
   const deleteUser = useCallback(

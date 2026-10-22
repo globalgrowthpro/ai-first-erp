@@ -24,6 +24,9 @@ import {
   Download,
   FileSpreadsheet,
   Store,
+  Paperclip,
+  FileText,
+  ShieldCheck,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
@@ -33,6 +36,7 @@ import { Btn, DataTable, Panel, Td } from "@/components/kit";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthStore, getActiveAuthUser } from "@/lib/auth-store";
 import {
   useHelpdeskStore,
   type HelpdeskTicket,
@@ -82,9 +86,33 @@ export function HelpdeskManagement() {
     updateTicketStatus,
     assignTicket,
     addResponse,
+    addAttachment,
     deleteTicket,
     resetToSeed,
   } = useHelpdeskStore();
+
+  const { currentUser } = useAuthStore();
+  const activeUser = currentUser || getActiveAuthUser();
+  const isAdmin = activeUser?.role === "admin";
+
+  const hasPerm = (action: string) => {
+    if (isAdmin || activeUser?.allowedActions?.includes("*")) return true;
+    return Boolean(activeUser?.allowedActions?.includes(action));
+  };
+
+  const canCreate = hasPerm("helpdesk.create");
+  const canView = hasPerm("helpdesk.view");
+  const canEdit = hasPerm("helpdesk.edit");
+  const canDelete = hasPerm("helpdesk.delete");
+  const canReply = hasPerm("helpdesk.reply");
+  const canAttach = hasPerm("helpdesk.attachments");
+  const canAssign = hasPerm("helpdesk.assign");
+  const canResolve = hasPerm("helpdesk.resolve");
+  const canClose = hasPerm("helpdesk.close");
+  const canReport = hasPerm("helpdesk.report");
+
+  const currentScope = activeUser?.helpdeskScope || (isAdmin ? "all_tickets" : "assigned_to_me_only");
+  const currentBranch = activeUser?.helpdeskBranch || "";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -122,12 +150,24 @@ export function HelpdeskManagement() {
   const [newDesc, setNewDesc] = useState("");
   const [newCategory, setNewCategory] = useState<TicketCategory>("branch_pos");
   const [newPriority, setNewPriority] = useState<TicketPriority>("high");
-  const [newLocation, setNewLocation] = useState("فرع الكوربة — مصر الجديدة");
-  const [newSubmitter, setNewSubmitter] = useState("");
-  const [newRole, setNewRole] = useState("مشرف الفرع");
+  const [newLocation, setNewLocation] = useState(currentBranch || "فرع الكوربة — مصر الجديدة");
+  const [newSubmitter, setNewSubmitter] = useState(activeUser?.name?.ar || activeUser?.name?.en || "");
+  const [newRole, setNewRole] = useState(activeUser?.position?.ar || "مشرف الفرع");
   const [newPhone, setNewPhone] = useState("");
   const [newAssignee, setNewAssignee] = useState("فريق الدعم الفني المركزي");
   const [newSlaHours, setNewSlaHours] = useState(4);
+
+  // Synchronize new ticket defaults with current user scope
+  useEffect(() => {
+    if (isNewTicketOpen) {
+      if (currentScope === "branch_only" && currentBranch) {
+        setNewLocation(currentBranch);
+      }
+      if (!newSubmitter && activeUser) {
+        setNewSubmitter(activeUser.name?.ar || activeUser.name?.en || activeUser.email || "");
+      }
+    }
+  }, [isNewTicketOpen, currentScope, currentBranch, activeUser]);
 
   // Quick Reply inside Drawer
   const [replyMessage, setReplyMessage] = useState("");
@@ -441,7 +481,13 @@ export function HelpdeskManagement() {
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreate && !isAdmin) {
+      toast.error(pick("ليس لديك صلاحية إنشاء تذاكر (helpdesk.create)", "No permission to create tickets"));
+      return;
+    }
     if (!newTitle.trim()) return;
+
+    const finalBranch = currentScope === "branch_only" && currentBranch ? currentBranch : newLocation;
 
     const created = await addTicket({
       title: newTitle.trim(),
@@ -449,8 +495,8 @@ export function HelpdeskManagement() {
       category: newCategory,
       priority: newPriority,
       status: "open",
-      branchOrLocation: newLocation,
-      submitterName: newSubmitter.trim() || "موظف مسؤول",
+      branchOrLocation: finalBranch,
+      submitterName: newSubmitter.trim() || activeUser?.name?.ar || activeUser?.name?.en || "موظف مسؤول",
       submitterRole: newRole.trim() || "طاقم العمل",
       submitterPhone: newPhone.trim(),
       assignedTo: newAssignee.trim() || "مهندس الدعم المناوب",
@@ -462,19 +508,26 @@ export function HelpdeskManagement() {
     setNewDesc("");
     setNewSubmitter("");
     setNewPhone("");
+    const ticketNum = created?.ticketNumber || "";
     toast.success(
       pick(
-        `تم حفظ التذكرة (${created.ticketNumber}) وتثبيتها بنجاح`,
-        `Ticket (${created.ticketNumber}) saved and confirmed successfully`,
+        `تم حفظ التذكرة ${ticketNum ? `(${ticketNum}) ` : ""}وتثبيتها بنجاح`,
+        `Ticket ${ticketNum ? `(${ticketNum}) ` : ""}saved and confirmed successfully`,
       ),
     );
   };
 
   const handleSendReply = async () => {
     if (!activeTicket || !replyMessage.trim()) return;
+    if (!canReply && !isAdmin) {
+      toast.error(pick("ليس لديك صلاحية الرد على التذاكر (helpdesk.reply)", "No permission to reply to tickets"));
+      return;
+    }
+    const senderName = activeUser?.name?.ar || activeUser?.name?.en || (isAdmin ? "مسؤول النظام (Admin)" : "فني الدعم");
+    const senderRoleTitle = isAdmin ? "مدير النظام" : "فني دعم";
     await addResponse(activeTicket.id, {
-      sender: "مسؤول النظام (Admin)",
-      senderRole: "مدير الدعم الفني",
+      sender: senderName,
+      senderRole: senderRoleTitle,
       message: replyMessage.trim(),
       isInternal: isInternalNote,
     });
@@ -484,10 +537,37 @@ export function HelpdeskManagement() {
     );
   };
 
+  const handleUploadAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeTicket) return;
+    if (!canAttach && !isAdmin) {
+      toast.error(pick("ليس لديك صلاحية رفع مرفقات (helpdesk.attachments)", "No permission to upload attachments"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      await addAttachment(activeTicket.id, {
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        url: dataUrl || URL.createObjectURL(file),
+      });
+      toast.success(pick(`تم إرفاق الملف بنجاح: ${file.name}`, `File attached: ${file.name}`));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const excelInputRef = useRef<HTMLInputElement>(null);
 
   // Export Helpdesk Tickets to Excel (.xlsx)
   const handleExportExcel = () => {
+    if (!canReport && !isAdmin) {
+      toast.error(pick("ليس لديك صلاحية تصدير تقارير الدعم الفني (helpdesk.report)", "No permission to export reports"));
+      return;
+    }
     const listToExport = filteredTickets.length > 0 ? filteredTickets : tickets;
     if (listToExport.length === 0) {
       toast.warning(
@@ -902,33 +982,117 @@ export function HelpdeskManagement() {
           </Btn>
 
           {/* Export to Excel */}
-          <Btn
-            variant="outline"
-            size="sm"
-            onClick={handleExportExcel}
-            className="text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10"
-            title={pick("تصدير التذاكر إلى ملف Excel", "Export tickets to Excel file")}
-          >
-            <Download className="size-3.5" />
-            <span>{pick("تصدير Excel", "Export Excel")}</span>
-          </Btn>
+          {(canReport || isAdmin) && (
+            <Btn
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              className="text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-500/10"
+              title={pick("تصدير التذاكر إلى ملف Excel", "Export tickets to Excel file")}
+            >
+              <Download className="size-3.5" />
+              <span>{pick("تصدير Excel", "Export Excel")}</span>
+            </Btn>
+          )}
 
           <Btn variant="outline" size="sm" onClick={resetToSeed} className="text-xs">
             <RefreshCw className="size-3.5" />
             <span className="hidden md:inline">{pick("استعادة التذاكر", "Reset Samples")}</span>
           </Btn>
 
-          <Btn
-            variant="solid"
-            size="sm"
-            onClick={() => setIsNewTicketOpen(true)}
-            className="text-xs"
-          >
-            <Plus className="size-4" />
-            <span>{pick("فتح تذكرة دعم جديدة", "New Ticket")}</span>
-          </Btn>
+          {(canCreate || isAdmin) && (
+            <Btn
+              variant="solid"
+              size="sm"
+              onClick={() => setIsNewTicketOpen(true)}
+              className="text-xs"
+            >
+              <Plus className="size-4" />
+              <span>{pick("فتح تذكرة دعم جديدة", "New Ticket")}</span>
+            </Btn>
+          )}
         </div>
       </div>
+
+      {/* Active Help Desk Data Scope Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-card to-background text-xs shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-xs">
+            <ShieldCheck className="size-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground">
+                {pick("نطاق رؤية وتداول البيانات (Data Scope):", "Help Desk Data Scope:")}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold text-[11px]">
+                {currentScope === "branch_only"
+                  ? pick(`الفرع فقط: ${currentBranch || "الفرع المخصص"}`, `Branch Only: ${currentBranch || "Assigned Branch"}`)
+                  : currentScope === "own_created_only"
+                  ? pick("التذاكر المنشأة بواسطتي فقط", "Own Created Only")
+                  : currentScope === "assigned_to_me_only"
+                  ? pick("المسندة إليّ فقط (فني - كافة الفروع)", "Assigned to Me Only (Technician - All Branches)")
+                  : pick("كافة التذاكر (مسؤول النظام)", "All Tickets (Administrator)")}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {currentScope === "branch_only"
+                ? pick(
+                    `مطبق ومقيد على مستوى قاعدة البيانات بالفرع المصرّح به [${currentBranch || "الفرع المحدد"}]`,
+                    `Enforced at query & database level: Restricted to branch [${currentBranch || "Assigned Branch"}]`
+                  )
+                : currentScope === "own_created_only"
+                ? pick(
+                    "يقتصر الاستعلام على التذاكر المسجلة والمقدمة بواسطة هذا الحساب فقط",
+                    "Database query restricted to tickets created by this user"
+                  )
+                : currentScope === "assigned_to_me_only"
+                ? pick(
+                    "الفنيون غير مقيدين بفرع؛ يستعلم النظام عن كافة التذاكر المسندة لهذا الفني عبر جميع الفروع",
+                    "Technicians are not bound to a branch; queries all tickets assigned to this technician across all branches"
+                  )
+                : pick(
+                    "صلاحية إدارية عليا: استعراض شامل لكافة الفروع مع إمكانية الإسناد لأي فني أو للنفس وإغلاق التذاكر",
+                    "Full administrative access: Views all tickets, assigns to any technician or self, and closes tickets"
+                  )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-muted-foreground">
+            {pick("الحساب الحالي:", "Active Account:")}
+          </span>
+          <span className="font-semibold text-foreground">
+            {activeUser?.name?.ar || activeUser?.name?.en || activeUser?.email}
+          </span>
+          {currentScope === "branch_only" && currentBranch && (
+            <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30">
+              📍 {currentBranch}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {!canView && !isAdmin ? (
+        <div className="p-8 sm:p-12 text-center rounded-2xl border-2 border-dashed border-rose-500/30 bg-rose-500/5 space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-600 mx-auto flex items-center justify-center">
+            <ShieldAlert className="size-7" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-foreground">
+              {pick("لا تملك صلاحية استعراض تذاكر الدعم الفني", "Permission Required: View Support Tickets")}
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-lg mx-auto mt-1 leading-relaxed">
+              {pick(
+                "لم يتم منح حسابك صلاحية 'استعراض التذاكر (helpdesk.view)'. في نموذج الصلاحيات الحالي، لا يتم منح أي صلاحية تلقائياً. يرجى من مسؤول النظام تفعيل خيار 'استعراض (View)' من صفحة إدارة المستخدمين.",
+                "Your account has not been granted 'View Tickets (helpdesk.view)' permission. Under the current security model, permissions are strictly manual and never auto-granted. Please contact your system administrator."
+              )}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1150,13 +1314,15 @@ export function HelpdeskManagement() {
                         <MessageSquare className="size-3" />
                         <span>{pick("عرض والمتابعة", "View")}</span>
                       </Btn>
-                      <button
-                        onClick={() => deleteTicket(tkt.id)}
-                        className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 transition-colors"
-                        title={pick("حذف التذكرة", "Delete Ticket")}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {(canDelete || isAdmin) && (
+                        <button
+                          onClick={() => deleteTicket(tkt.id)}
+                          className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-600 transition-colors"
+                          title={pick("حذف التذكرة", "Delete Ticket")}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1165,6 +1331,8 @@ export function HelpdeskManagement() {
           )}
         </DataTable>
       </div>
+      </>
+      )}
 
       {/* Ticket Details & Discussion Modal */}
       <Dialog open={!!activeTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
@@ -1198,15 +1366,28 @@ export function HelpdeskManagement() {
                     </span>
                     <select
                       value={activeTicket.status}
-                      onChange={(e) =>
-                        updateTicketStatus(activeTicket.id, e.target.value as TicketStatus)
-                      }
+                      onChange={(e) => {
+                        const targetStatus = e.target.value as TicketStatus;
+                        if (targetStatus === "resolved" && !canResolve && !isAdmin) {
+                          toast.error(pick("ليس لديك صلاحية حل التذاكر (helpdesk.resolve)", "No permission to resolve tickets"));
+                          return;
+                        }
+                        if (targetStatus === "closed" && !canClose && !isAdmin) {
+                          toast.error(pick("ليس لديك صلاحية إغلاق التذاكر (helpdesk.close)", "No permission to close tickets"));
+                          return;
+                        }
+                        updateTicketStatus(activeTicket.id, targetStatus);
+                      }}
                       className="text-xs px-2.5 py-1.5 rounded-md bg-background border border-border font-medium focus:outline-none"
                     >
                       <option value="open">{pick("مفتوحة", "Open")}</option>
                       <option value="in_progress">{pick("قيد المعالجة", "In Progress")}</option>
-                      <option value="resolved">{pick("تم الحل", "Resolved")}</option>
-                      <option value="closed">{pick("مغلقة", "Closed")}</option>
+                      {(canResolve || isAdmin) && (
+                        <option value="resolved">{pick("تم الحل", "Resolved")}</option>
+                      )}
+                      {(canClose || isAdmin) && (
+                        <option value="closed">{pick("مغلقة", "Closed")}</option>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -1240,9 +1421,39 @@ export function HelpdeskManagement() {
                   <span className="text-muted-foreground block text-[10px]">
                     {pick("المسؤول بالدعم", "Assigned To")}
                   </span>
-                  <span className="font-semibold text-foreground mt-0.5 block">
-                    {activeTicket.assignedTo}
-                  </span>
+                  {(canAssign || isAdmin) ? (
+                    <div className="mt-1 space-y-1.5">
+                      <select
+                        value={activeTicket.assignedTo}
+                        onChange={(e) => assignTicket(activeTicket.id, e.target.value)}
+                        className="text-xs px-2 py-1 rounded bg-background border border-border w-full text-foreground"
+                      >
+                        {supportStaff.map((staff) => (
+                          <option key={staff.id} value={staff.name}>
+                            {staff.name} {staff.roleTitle ? `(${staff.roleTitle})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const myName = activeUser?.name?.ar || activeUser?.name?.en || activeUser?.email || "مسؤول النظام";
+                            assignTicket(activeTicket.id, myName);
+                            toast.success(pick("تم إسناد التذكرة إليك بنجاح", "Ticket assigned to you"));
+                          }}
+                          className="px-2 py-1 rounded text-[11px] font-bold bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all w-full flex items-center justify-center gap-1"
+                        >
+                          <User className="size-3" />
+                          <span>{pick("إسناد إليّ (Assign to Me)", "Assign to Me")}</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {activeTicket.assignedTo}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1315,47 +1526,117 @@ export function HelpdeskManagement() {
                   </div>
                 )}
 
-                {/* Reply Form */}
-                <div className="p-3 rounded-xl border border-border/80 bg-card space-y-2.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground">
-                      {pick("إضافة رد فني أو متابعة:", "Add Response / Update:")}
-                    </span>
-                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isInternalNote}
-                        onChange={(e) => setIsInternalNote(e.target.checked)}
-                        className="rounded border-border text-primary focus:ring-primary"
-                      />
+                {/* Attachments Section */}
+                <div className="space-y-2.5 p-3.5 rounded-xl border border-border/80 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Paperclip className="size-3.5 text-primary" />
                       <span>
-                        {pick("ملاحظة داخلية (لفريق الدعم فقط)", "Internal note (Support only)")}
+                        {pick("المرفقات والمستندات (Attachments):", "Attachments & Files:")}
                       </span>
-                    </label>
-                  </div>
-                  <textarea
-                    rows={2}
-                    value={replyMessage}
-                    onChange={(e) => setReplyMessage(e.target.value)}
-                    placeholder={pick(
-                      "اكتب التحديث أو الإجراء الذي تم اتخاذه هنا...",
-                      "Write update or action taken here...",
+                      {activeTicket.attachments && activeTicket.attachments.length > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary font-bold">
+                          {activeTicket.attachments.length}
+                        </span>
+                      )}
+                    </h4>
+
+                    {(canAttach || isAdmin) && (
+                      <label className="cursor-pointer px-2.5 py-1 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all flex items-center gap-1">
+                        <Upload className="size-3" />
+                        <span>{pick("رفع مرفق", "Upload File")}</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={handleUploadAttachment}
+                        />
+                      </label>
                     )}
-                    className="w-full text-xs p-2.5 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <div className="flex justify-end">
-                    <Btn
-                      variant="solid"
-                      size="sm"
-                      onClick={handleSendReply}
-                      disabled={!replyMessage.trim()}
-                      className="text-xs"
-                    >
-                      <Send className="size-3.5" />
-                      <span>{pick("إرسال الرد", "Send Reply")}</span>
-                    </Btn>
                   </div>
+
+                  {(!activeTicket.attachments || activeTicket.attachments.length === 0) ? (
+                    <div className="text-[11px] text-muted-foreground py-3 text-center border border-dashed rounded-lg bg-card/40">
+                      {pick("لا توجد مرفقات لهذه التذكرة حتى الآن", "No attachments uploaded for this ticket yet")}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {activeTicket.attachments.map((att) => (
+                        <a
+                          key={att.id}
+                          href={att.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={att.name}
+                          className="p-2.5 rounded-lg border border-border bg-card hover:bg-secondary/60 flex items-center justify-between text-xs transition-colors group"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="size-4 text-primary shrink-0" />
+                            <div className="min-w-0">
+                              <div className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                {att.name}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-mono">
+                                {Math.round((att.size || 0) / 1024)} KB • {att.uploadedAt ? new Date(att.uploadedAt).toLocaleDateString() : ""}
+                              </div>
+                            </div>
+                          </div>
+                          <Download className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Reply Form */}
+                {(canReply || isAdmin) ? (
+                  <div className="p-3 rounded-xl border border-border/80 bg-card space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-foreground">
+                        {pick("إضافة رد فني أو متابعة:", "Add Response / Update:")}
+                      </span>
+                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isInternalNote}
+                          onChange={(e) => setIsInternalNote(e.target.checked)}
+                          className="rounded border-border text-primary focus:ring-primary"
+                        />
+                        <span>
+                          {pick("ملاحظة داخلية (لفريق الدعم فقط)", "Internal note (Support only)")}
+                        </span>
+                      </label>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={replyMessage}
+                      onChange={(e) => setReplyMessage(e.target.value)}
+                      placeholder={pick(
+                        "اكتب التحديث أو الإجراء الذي تم اتخاذه هنا...",
+                        "Write update or action taken here...",
+                      )}
+                      className="w-full text-xs p-2.5 rounded-lg bg-background border border-border/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <div className="flex justify-end">
+                      <Btn
+                        variant="solid"
+                        size="sm"
+                        onClick={handleSendReply}
+                        disabled={!replyMessage.trim()}
+                        className="text-xs"
+                      >
+                        <Send className="size-3.5" />
+                        <span>{pick("إرسال الرد", "Send Reply")}</span>
+                      </Btn>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl border border-dashed border-border text-center text-xs text-muted-foreground bg-muted/20">
+                    {pick(
+                      "🔒 خاصية كتابة الردود غير مفعّلة لحسابك (صلاحية helpdesk.reply غير ممنوحة)",
+                      "🔒 Replying is disabled for your account (helpdesk.reply permission required)"
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1559,12 +1840,23 @@ export function HelpdeskManagement() {
                     </button>
                   </div>
                 </div>
-                <select
-                  value={newLocation}
-                  onChange={(e) => setNewLocation(e.target.value)}
-                  className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  {facilities.some((f) => f.type === "branch") && (
+                {currentScope === "branch_only" && currentBranch ? (
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="size-4 text-amber-600" />
+                      <span className="font-bold">{currentBranch}</span>
+                    </div>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                      {pick("مقيد بالفرع المصرّح به لحسابك", "Locked to your authorized branch")}
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    className="w-full text-xs sm:text-sm p-2.5 rounded-xl bg-background border border-border/80 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {facilities.some((f) => f.type === "branch") && (
                     <optgroup
                       label={pick("فروع البيع بالتجزئة (قاعدة البيانات)", "Retail Branches (DB)")}
                     >
@@ -1605,6 +1897,7 @@ export function HelpdeskManagement() {
                     </optgroup>
                   )}
                 </select>
+                )}
 
                 {isAddBranchOpen && (
                   <div className="mt-2.5 p-3 rounded-xl border border-primary/25 bg-primary/5 space-y-2.5 text-xs animate-in fade-in duration-200 shadow-sm">

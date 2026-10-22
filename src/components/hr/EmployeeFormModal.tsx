@@ -40,6 +40,7 @@ import {
 import { useOrgStore } from "@/lib/org-store";
 import { useInventoryStore } from "@/lib/inventory-store";
 import { supabase } from "@/integrations/supabase/client";
+import { getProvisionedAccount } from "@/lib/auth-store";
 
 interface EmployeeFormModalProps {
   open: boolean;
@@ -213,7 +214,8 @@ export function EmployeeFormModal({
       setHealthCertStatus(editing.healthCert.status);
       setAvatarUrl(editing.avatarUrl || getDefaultAvatar(editing.gender, editing.code));
       setGrantErpAccess(Boolean(editing.userId));
-      setErpPassword("");
+      const provPass = (editing.email ? getProvisionedAccount(editing.email)?.passwordPlain : "") || (editing.userId ? "Wazeer@2026#" : "");
+      setErpPassword(provPass);
       setShowErpPassword(false);
     } else {
       const newCode = suggestedCode || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -934,9 +936,9 @@ export function EmployeeFormModal({
                         />
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <div className="md:col-span-2 lg:col-span-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase text-foreground flex items-center gap-1.5">
                             <KeyRound className="size-3.5 text-primary" />
                             {pick("تعيين كلمة مرور الحساب", "Set Account Password")}
                           </label>
@@ -950,10 +952,10 @@ export function EmployeeFormModal({
                               setErpPassword(pass);
                               setShowErpPassword(true);
                             }}
-                            className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                            className="text-[11px] text-primary hover:text-primary/80 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Sparkles className="size-3" />
-                            {pick("توليد عشوائي", "Generate")}
+                            {pick("توليد كلمة مرور عشوائية", "Generate Password")}
                           </button>
                         </div>
 
@@ -962,8 +964,8 @@ export function EmployeeFormModal({
                             type={showErpPassword ? "text" : "password"}
                             value={erpPassword}
                             onChange={(e) => setErpPassword(e.target.value)}
-                            placeholder={pick("أدخل كلمة مرور (الافتراضية: Wazeer@2026#)", "Custom password or default Wazeer@2026#")}
-                            className="w-full rounded-md border border-input bg-background ps-3 pe-10 py-2 text-xs font-mono"
+                            placeholder={pick("أدخل كلمة مرور مخصصة أو اتركها فارغة للافتراضية (Wazeer@2026#)", "Enter custom password or leave blank for default (Wazeer@2026#)")}
+                            className="w-full px-3 pe-10 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono focus:border-primary focus:outline-none transition-colors"
                           />
                           <button
                             type="button"
@@ -974,14 +976,13 @@ export function EmployeeFormModal({
                             {showErpPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                           </button>
                         </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {pick(
+                            "يمكن للمستخدم تسجيل الدخول فوراً باستخدام بريده الإلكتروني وكلمة المرور المحددة هنا.",
+                            "The user can immediately log in using their email and the password specified here."
+                          )}
+                        </p>
                       </div>
-                    </div>
-
-                    <div className="text-[10.5px] text-muted-foreground">
-                      {pick(
-                        "يتم استخدام هذا البريد وكلمة المرور لتسجيل دخول الموظف إلى النظام فور الحفظ بحسب الصلاحيات المحددة.",
-                        "The employee will use this email and password to log in immediately upon save according to assigned role."
-                      )}
                     </div>
                   </div>
                 )}

@@ -13,8 +13,12 @@ export interface AppUser {
   avatarBg: string;
   description: { ar: string; en: string };
   allowedPages: string[];
+  allowedActions?: string[] | undefined;
   branchCode?: string;
   branchName?: { ar: string; en: string };
+  helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+  helpdeskBranch?: string | undefined;
+  branch?: string | undefined;
 }
 
 export type DemoUser = AppUser;
@@ -249,20 +253,59 @@ export interface ProvisionedAccount {
   department?: { ar: string; en: string } | undefined;
   position?: { ar: string; en: string } | undefined;
   updatedAt: string;
+  allowedActions?: string[] | undefined;
+  helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+  helpdeskBranch?: string | undefined;
+  branch?: string | undefined;
 }
 
-// In-memory registry synced live with Supabase
-const provisionedAccountsMap = new Map<string, ProvisionedAccount>();
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val?: string | null): boolean {
+  return typeof val === "string" && UUID_REGEX.test(val);
+}
+
+const PROV_STORAGE_KEY = "wazeer_provisioned_accounts_v1";
+
+function readCachedProvisionedAccounts(): Map<string, ProvisionedAccount> {
+  const map = new Map<string, ProvisionedAccount>();
+  if (typeof window === "undefined") return map;
+  try {
+    const raw = localStorage.getItem(PROV_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          if (item?.email) map.set(item.email.toLowerCase(), item);
+        }
+      }
+    }
+  } catch {}
+  return map;
+}
+
+function writeCachedProvisionedAccounts(map: Map<string, ProvisionedAccount>) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(Array.from(map.values())));
+  } catch {}
+}
+
+// In-memory registry backed by localStorage & synced with Supabase
+const provisionedAccountsMap = readCachedProvisionedAccounts();
 
 export async function saveProvisionedAccount(account: {
   email: string;
-  password?: string;
+  password?: string | undefined;
   role: string;
   userId: string;
-  name?: { ar: string; en: string };
-  department?: { ar: string; en: string };
-  position?: { ar: string; en: string };
-  allowedPages?: string[];
+  name?: { ar: string; en: string } | undefined;
+  department?: { ar: string; en: string } | undefined;
+  position?: { ar: string; en: string } | undefined;
+  allowedPages?: string[] | undefined;
+  allowedActions?: string[] | undefined;
+  helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+  helpdeskBranch?: string | undefined;
+  branch?: string | undefined;
 }) {
   const normalizedEmail = account.email.trim().toLowerCase();
   const entry: ProvisionedAccount = {
@@ -274,36 +317,69 @@ export async function saveProvisionedAccount(account: {
     department: account.department,
     position: account.position,
     updatedAt: new Date().toISOString(),
+    allowedActions: account.allowedActions,
+    helpdeskScope: account.helpdeskScope,
+    helpdeskBranch: account.helpdeskBranch,
+    branch: account.branch,
   };
 
   provisionedAccountsMap.set(normalizedEmail, entry);
+  writeCachedProvisionedAccounts(provisionedAccountsMap);
 
   // Synchronize directly to Supabase profiles, user_roles & user_pages tables
   try {
-    await supabase.from("profiles").upsert({
-      id: account.userId,
+    let targetUserId = isUuid(account.userId) ? account.userId : null;
+    if (!targetUserId) {
+      const { data: matched } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+      if (matched?.id && isUuid(matched.id)) {
+        targetUserId = matched.id;
+      } else {
+        targetUserId = crypto.randomUUID();
+      }
+    }
+
+    const { error: profErr } = await supabase.from("profiles").upsert({
+      id: targetUserId,
       email: normalizedEmail,
       full_name_ar: account.name?.ar || "مستخدم النظام",
       full_name_en: account.name?.en || "System User",
       is_active: true,
+      branch: account.branch || account.helpdeskBranch || null,
+      helpdesk_scope: account.helpdeskScope || null,
+      helpdesk_branch: account.branch || account.helpdeskBranch || null,
+      allowed_actions: account.allowedActions || null,
       updated_at: new Date().toISOString(),
-    });
+    } as any);
+    if (profErr) {
+      console.warn("[Auth Store] Error upserting profile:", profErr);
+    }
 
     if (account.role) {
-      await supabase.from("user_roles").upsert({
-        user_id: account.userId,
+      await supabase.from("user_roles").delete().eq("user_id", targetUserId);
+      const { error: roleErr } = await supabase.from("user_roles").insert({
+        user_id: targetUserId,
         role: account.role as any,
       });
+      if (roleErr) {
+        console.warn("[Auth Store] Error inserting user_roles:", roleErr);
+      }
     }
 
     if (account.allowedPages && account.allowedPages.length > 0) {
       try {
-        await supabase.from("user_pages").delete().eq("user_id", account.userId);
+        await supabase.from("user_pages").delete().eq("user_id", targetUserId);
         const valid = account.allowedPages.filter((p) => p && p !== "*");
         if (valid.length > 0) {
-          await supabase
+          const { error: pageErr } = await supabase
             .from("user_pages")
-            .insert(valid.map((pagePath) => ({ user_id: account.userId, page_path: pagePath })));
+            .insert(valid.map((pagePath) => ({ user_id: targetUserId, page_path: pagePath })));
+          if (pageErr) {
+            console.warn("[Auth Store] Error inserting user_pages:", pageErr);
+          }
         }
       } catch (pageErr) {
         console.warn("[Auth Store] Could not sync user_pages to Supabase:", pageErr);
@@ -342,6 +418,10 @@ function readStoredAuth(): boolean {
 
 let globalUser: AppUser | null = readStoredUser();
 let globalIsAuth = readStoredAuth();
+
+export function getActiveAuthUser(): AppUser {
+  return globalUser || readStoredUser() || DEFAULT_USER;
+}
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -529,11 +609,10 @@ export function useAuthStore() {
       return;
     }
 
-    // 3. Check if Admin account by email (wazeerAdmin@erp.org)
+    // 3. Check if primary Master Admin account by email (wazeerAdmin@erp.org)
     if (
       cleanEmail === "wazeeradmin@erp.org" ||
-      cleanEmail === "wazeeradmin" ||
-      cleanEmail.includes("admin")
+      cleanEmail === "wazeeradmin"
     ) {
       persistSession(
         {
@@ -552,19 +631,76 @@ export function useAuthStore() {
     }
 
     try {
+      // Resolve UUID from profiles if needed
+      let targetUserId = userId;
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetUserId) &&
+        cleanEmail
+      ) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", cleanEmail)
+          .maybeSingle();
+        if (prof?.id) targetUserId = prof.id;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", targetUserId)
+        .maybeSingle();
+
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId);
-      const effectiveRole = roles && roles.length > 0 && roles[0] ? roles[0].role : "admin";
+        .eq("user_id", targetUserId);
+
+      const prov = getProvisionedAccount(cleanEmail);
+      const effectiveRole =
+        roles && roles.length > 0 && roles[0]?.role
+          ? roles[0].role
+          : prov?.role || "employee";
+
+      const profAny = profile as any;
+      const userAllowedActions =
+        profAny?.allowed_actions && Array.isArray(profAny.allowed_actions) && profAny.allowed_actions.length > 0
+          ? profAny.allowed_actions
+          : prov?.allowedActions || (effectiveRole === "admin" ? ["*"] : []);
+
+      const userHelpdeskScope =
+        profAny?.helpdesk_scope ||
+        prov?.helpdeskScope ||
+        (effectiveRole === "admin" ? "all_tickets" : "assigned_to_me_only");
+
+      const userHelpdeskBranch =
+        profAny?.branch || profAny?.helpdesk_branch || prov?.helpdeskBranch || undefined;
+
+      const resolvedPages =
+        dynamicPages && dynamicPages.length > 0
+          ? dynamicPages
+          : effectiveRole === "admin"
+          ? DEFAULT_USER.allowedPages
+          : effectiveRole === "pos_cashier"
+          ? ["/pos"]
+          : ["/pos"];
+
+      const resolvedNameAr =
+        profile?.full_name_ar || (cleanEmail ? cleanEmail.split("@")[0] || "User" : "User");
+      const resolvedNameEn =
+        profile?.full_name_en || (cleanEmail ? cleanEmail.split("@")[0] || "User" : "User");
 
       if (effectiveRole === "pos_cashier") {
         persistSession(
           {
             ...POS_CASHIER_ACCOUNT,
-            id: userId,
+            id: targetUserId,
             email: cleanEmail,
-            allowedPages: dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
+            allowedPages: resolvedPages,
+            allowedActions: userAllowedActions,
+            helpdeskScope: userHelpdeskScope,
+            helpdeskBranch: userHelpdeskBranch,
+            name: { ar: resolvedNameAr, en: resolvedNameEn },
           },
           true,
         );
@@ -572,15 +708,15 @@ export function useAuthStore() {
         persistSession(
           {
             ...DEFAULT_USER,
-            id: userId,
+            id: targetUserId,
             email: cleanEmail,
             role: "admin",
-            allowedPages:
-              dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
-            name: {
-              ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
-              en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
-            },
+            roleLabel: { ar: "مسؤول النظام العام", en: "System Administrator" },
+            allowedPages: resolvedPages,
+            allowedActions: userAllowedActions,
+            helpdeskScope: userHelpdeskScope,
+            helpdeskBranch: userHelpdeskBranch,
+            name: { ar: resolvedNameAr, en: resolvedNameEn },
           },
           true,
         );
@@ -588,15 +724,18 @@ export function useAuthStore() {
         persistSession(
           {
             ...DEFAULT_USER,
-            id: userId,
+            id: targetUserId,
             email: cleanEmail,
             role: effectiveRole as any,
-            allowedPages:
-              dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/", "/sales", "/pos"],
-            name: {
-              ar: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
-              en: cleanEmail ? cleanEmail.split("@")[0] || "User" : "User",
+            roleLabel: {
+              ar: effectiveRole === "helpdesk" ? "مسؤول الدعم الفني" : "موظف معتمد",
+              en: effectiveRole === "helpdesk" ? "Help Desk Technician" : "Staff Member",
             },
+            allowedPages: resolvedPages,
+            allowedActions: userAllowedActions,
+            helpdeskScope: userHelpdeskScope,
+            helpdeskBranch: userHelpdeskBranch,
+            name: { ar: resolvedNameAr, en: resolvedNameEn },
           },
           true,
         );
@@ -607,8 +746,10 @@ export function useAuthStore() {
           ...DEFAULT_USER,
           id: userId,
           email: cleanEmail,
+          role: "employee",
+          roleLabel: { ar: "موظف معتمد", en: "Staff Member" },
           allowedPages:
-            dynamicPages && dynamicPages.length > 0 ? dynamicPages : DEFAULT_USER.allowedPages,
+            dynamicPages && dynamicPages.length > 0 ? dynamicPages : ["/pos"],
         },
         true,
       );
@@ -622,17 +763,23 @@ export function useAuthStore() {
       // Sync user profiles from Supabase
       syncAccountsFromSupabase();
 
-      // Check live session with Supabase Auth (preserving local stored session on refresh)
+      // Check live session with Supabase Auth or refresh custom ERP account session from DB
       supabase.auth
         .getSession()
         .then(({ data: { session } }) => {
           if (session?.user) {
             loadUserProfile(session.user.id, session.user.email || "");
+          } else if (globalUser?.email) {
+            loadUserProfile(globalUser.id, globalUser.email);
           } else if (!globalUser && !readStoredAuth()) {
             persistSession(null, false);
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          if (globalUser?.email) {
+            loadUserProfile(globalUser.id, globalUser.email);
+          }
+        });
 
       supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) {

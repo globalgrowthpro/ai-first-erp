@@ -40,8 +40,18 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Copy,
+  SlidersHorizontal,
+  Mail,
+  Lock,
+  CheckCircle2,
+  RotateCcw,
+  Save,
+  LifeBuoy,
+  MapPin,
+  Headphones,
 } from "lucide-react";
-import { saveProvisionedAccount } from "@/lib/auth-store";
+import { saveProvisionedAccount, getProvisionedAccount } from "@/lib/auth-store";
 
 export const AVAILABLE_ROLES = [
   { value: "admin", ar: "Admin (مدير نظام / إدارة عليا)", en: "Admin (Administrator)" },
@@ -261,44 +271,71 @@ export function UsersManagement() {
     }));
   };
 
-  // Handle Add User
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.nameAr || !newUser.email) return;
-
+  // Handle Add User submit
+  const handleAddUserSubmit = async (formData: {
+    name: { ar: string; en: string };
+    email: string;
+    departmentId: string;
+    positionId: string;
+    branch?: string | undefined;
+    role: UserItem["role"];
+    password?: string | undefined;
+    erpPassword?: string | undefined;
+    status: "active" | "inactive";
+    sidebarVisible: boolean;
+    allowedPages: string[];
+    allowedActions: string[];
+    employeeId?: string | undefined;
+    employeeCode?: string | undefined;
+    helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+    helpdeskBranch?: string | undefined;
+  }) => {
+    const userPassword = formData.password?.trim() || formData.erpPassword || "Wazeer@2026#";
     const user: UserItem = {
       id: crypto.randomUUID(),
-      name: { ar: newUser.nameAr, en: newUser.nameEn || newUser.nameAr },
-      email: newUser.email,
-      departmentId: newUser.departmentId,
-      positionId: newUser.positionId,
-      role: newUser.role,
-      allowedPages: newUser.allowedPages,
-      allowedActions: newUser.allowedActions,
-      status: newUser.status,
+      name: formData.name,
+      email: formData.email,
+      departmentId: formData.departmentId,
+      positionId: formData.positionId,
+      branch: formData.branch || undefined,
+      role: formData.role,
+      allowedPages: formData.allowedPages,
+      allowedActions: formData.allowedActions,
+      status: formData.status,
       lastActive: lang === "ar" ? "تمت إضافته الآن" : "Just created",
-      sidebarVisible: newUser.sidebarVisible,
-      employeeId: selectedLinkedEmployeeId || undefined,
-      employeeCode: employees.find((e) => e.id === selectedLinkedEmployeeId)?.code,
+      sidebarVisible: formData.sidebarVisible,
+      employeeId: formData.employeeId || undefined,
+      employeeCode: formData.employeeCode || undefined,
+      erpPassword: userPassword,
+      helpdeskScope: formData.helpdeskScope || undefined,
+      helpdeskBranch: formData.helpdeskBranch || undefined,
     };
 
-    addUser(user);
+    await addUser(user);
 
-    const userPassword = newUser.password?.trim() || "Wazeer@2026#";
-    saveProvisionedAccount({
-      email: user.email,
-      password: userPassword,
-      role: user.role,
-      userId: user.id,
-      name: user.name,
-    });
+    try {
+      await saveProvisionedAccount({
+        email: user.email,
+        password: userPassword,
+        role: user.role,
+        userId: user.id,
+        name: user.name,
+        branch: user.branch,
+        allowedPages: user.allowedPages,
+        allowedActions: user.allowedActions,
+        helpdeskScope: user.helpdeskScope,
+        helpdeskBranch: user.helpdeskBranch,
+      });
+    } catch (err) {
+      console.warn("Could not sync provisioned account", err);
+    }
 
-    if (selectedLinkedEmployeeId) {
-      updateEmployee(selectedLinkedEmployeeId, { userId: user.id });
+    if (formData.employeeId) {
+      updateEmployee(formData.employeeId, { userId: user.id });
       supabase
         .from("employees")
         .update({ user_id: user.id } as any)
-        .eq("id", selectedLinkedEmployeeId)
+        .eq("id", formData.employeeId)
         .then();
     }
     toast.success(
@@ -307,21 +344,6 @@ export function UsersManagement() {
         : `User added successfully! Password: ${userPassword}`
     );
     setShowAddUserModal(false);
-    setSelectedLinkedEmployeeId("");
-    setShowNewUserPassword(false);
-    setNewUser({
-      nameAr: "",
-      nameEn: "",
-      email: "",
-      departmentId: deptList[0]?.id || "",
-      positionId: posList[0]?.id || "",
-      role: "sales",
-      password: "",
-      allowedPages: ["/", "/sales", "/inventory"],
-      allowedActions: ["invoice.create"],
-      status: "active",
-      sidebarVisible: true,
-    });
   };
 
   // Handle Add Department
@@ -393,10 +415,73 @@ export function UsersManagement() {
   };
 
   // Handle Edit User submit
-  const handleEditUserSubmit = (updatedData: Partial<UserItem>) => {
+  const handleEditUserSubmit = async (
+    updatedData: Partial<UserItem> & {
+      password?: string | undefined;
+      employeeId?: string | undefined;
+      employeeCode?: string | undefined;
+      helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+      helpdeskBranch?: string | undefined;
+      branch?: string | undefined;
+    }
+  ) => {
     if (!editingUser) return;
-    updateUser(editingUser.id, updatedData);
-    toast.success(lang === "ar" ? "تم حفظ تعديلات المستخدم بنجاح" : "User updated successfully");
+    const finalPassword =
+      updatedData.password?.trim() ||
+      updatedData.erpPassword ||
+      editingUser.erpPassword ||
+      "Wazeer@2026#";
+
+    const editPayload: Partial<UserItem> = {
+      ...updatedData,
+      branch: updatedData.branch !== undefined ? updatedData.branch : editingUser.branch,
+      erpPassword: finalPassword,
+      helpdeskScope: updatedData.helpdeskScope !== undefined ? updatedData.helpdeskScope : editingUser.helpdeskScope,
+      helpdeskBranch: updatedData.helpdeskBranch !== undefined ? updatedData.helpdeskBranch : editingUser.helpdeskBranch,
+    };
+
+    await updateUser(editingUser.id, editPayload);
+
+    setSelectedUserForDetail((prev) =>
+      prev && prev.id === editingUser.id
+        ? {
+            ...prev,
+            ...editPayload,
+          }
+        : prev
+    );
+
+    try {
+      await saveProvisionedAccount({
+        email: updatedData.email || editingUser.email,
+        password: finalPassword,
+        role: updatedData.role || editingUser.role,
+        userId: editingUser.id,
+        name: updatedData.name || editingUser.name,
+        branch: updatedData.branch !== undefined ? updatedData.branch : editingUser.branch,
+        allowedPages: updatedData.allowedPages || editingUser.allowedPages,
+        allowedActions: updatedData.allowedActions || editingUser.allowedActions,
+        helpdeskScope: updatedData.helpdeskScope !== undefined ? updatedData.helpdeskScope : editingUser.helpdeskScope,
+        helpdeskBranch: updatedData.helpdeskBranch !== undefined ? updatedData.helpdeskBranch : editingUser.helpdeskBranch,
+      });
+    } catch (err) {
+      console.warn("Could not sync provisioned account", err);
+    }
+
+    if (updatedData.employeeId) {
+      updateEmployee(updatedData.employeeId, { userId: editingUser.id });
+      supabase
+        .from("employees")
+        .update({ user_id: editingUser.id } as any)
+        .eq("id", updatedData.employeeId)
+        .then();
+    }
+
+    toast.success(
+      lang === "ar"
+        ? `تم حفظ تعديلات المستخدم بنجاح! كلمة المرور: ${finalPassword}`
+        : `User updated successfully! Password: ${finalPassword}`
+    );
     setEditingUser(null);
   };
 
@@ -757,12 +842,20 @@ export function UsersManagement() {
                         )}
                       </td>
 
-                      {/* Department */}
+                      {/* Department & Branch */}
                       <td className="p-3">
-                        <span className="inline-flex items-center gap-1 font-bold">
-                          <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                          {dept ? pick(dept.name.ar, dept.name.en) : user.departmentId || "—"}
-                        </span>
+                        <div className="space-y-0.5">
+                          <span className="inline-flex items-center gap-1 font-bold">
+                            <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                            {dept ? pick(dept.name.ar, dept.name.en) : user.departmentId || "—"}
+                          </span>
+                          {user.branch && (
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <MapPin className="w-2.5 h-2.5 text-primary/70 shrink-0" />
+                              <span className="truncate max-w-[140px]">{user.branch}</span>
+                            </div>
+                          )}
+                        </div>
                       </td>
 
                       {/* Position */}
@@ -1313,388 +1406,15 @@ export function UsersManagement() {
 
       {/* ================= MODAL: ADD USER ================= */}
       {showAddUserModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-card rounded-2xl border border-border/80 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
-                <h2 className="font-bold text-base">{t("addUser")}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddUserModal(false)}
-                className="hover:opacity-80 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="p-6 space-y-6">
-              {/* Link to HR Employee Picker */}
-              <div className="p-3 bg-primary/5 border border-primary/30 rounded-xl space-y-1.5">
-                <label className="block text-xs font-bold uppercase text-primary flex items-center gap-1.5">
-                  <User className="size-4" />
-                  {lang === "ar" ? "ربط بملف موظف من سجل الموارد البشرية (HR)" : "Link to HR Employee Record"}
-                </label>
-                <select
-                  value={selectedLinkedEmployeeId}
-                  onChange={(e) => handleSelectEmployeeForUser(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-primary/40 bg-background font-semibold text-foreground focus:border-primary focus:outline-none"
-                >
-                  <option value="">{lang === "ar" ? "— إنشاء مستخدم مستقل (غير مرتبط بموظف) —" : "— Standalone User (Unlinked) —"}</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.code} — {pick(emp.name.ar, emp.name.en)} ({pick(emp.positionName.ar, emp.positionName.en)})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-muted-foreground">
-                  {lang === "ar"
-                    ? "اختيار الموظف سيقوم بملء الاسم والبريد والقسم والمسمى وتعيين الصلاحيات تلقائياً"
-                    : "Selecting an employee will auto-fill name, email, department, position, and suggested role"}
-                </p>
-              </div>
-
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {lang === "ar" ? "الاسم الكامل (عربي) *" : "Full Name (Arabic) *"}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.nameAr}
-                    onChange={(e) => setNewUser({ ...newUser, nameAr: e.target.value })}
-                    placeholder="مثال: كريم عبد العزيز"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {lang === "ar" ? "الاسم (إنجليزي)" : "Full Name (English)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.nameEn}
-                    onChange={(e) => setNewUser({ ...newUser, nameEn: e.target.value })}
-                    placeholder="e.g. Karim Abdelaziz"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {lang === "ar" ? "البريد الإلكتروني *" : "Email Address *"}
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="k.aziz@wazeer-elhelw.com"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {t("roles")}
-                  </label>
-                  <select
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserItem["role"] })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-                  >
-                    {(rolesList && rolesList.length > 0
-                      ? rolesList.map((r) => ({ value: r.key, label: pick(r.name.ar, r.name.en) }))
-                      : AVAILABLE_ROLES.map((r) => ({ value: r.value, label: lang === "ar" ? r.ar : r.en }))
-                    ).map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {t("departments")}
-                  </label>
-                  <select
-                    value={newUser.departmentId}
-                    onChange={(e) => setNewUser({ ...newUser, departmentId: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-                  >
-                    {deptList.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {pick(d.name.ar, d.name.en)} ({d.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1">
-                    {t("positions")}
-                  </label>
-                  <select
-                    value={newUser.positionId}
-                    onChange={(e) => setNewUser({ ...newUser, positionId: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-                  >
-                    {posList.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {pick(p.title.ar, p.title.en)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Account Password Field */}
-                <div className="md:col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase text-foreground flex items-center gap-1.5">
-                      <KeyRound className="size-3.5 text-primary" />
-                      {lang === "ar" ? "تعيين كلمة مرور الحساب" : "Set Account Password"}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const chars = "abcdefghjkmnpqrstuvwxyz23456789";
-                        let rnd = "";
-                        for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
-                        const pass = `Wz@${rnd}#26`;
-                        setNewUser((prev) => ({ ...prev, password: pass }));
-                        setShowNewUserPassword(true);
-                      }}
-                      className="text-[11px] text-primary hover:text-primary/80 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <Sparkles className="size-3" />
-                      {lang === "ar" ? "توليد كلمة مرور عشوائية" : "Generate Password"}
-                    </button>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type={showNewUserPassword ? "text" : "password"}
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      placeholder={lang === "ar" ? "أدخل كلمة مرور مخصصة أو اتركها فارغة للافتراضية (Wazeer@2026#)" : "Enter custom password or leave blank for default (Wazeer@2026#)"}
-                      className="w-full px-3 pe-10 py-2 text-xs rounded-lg border border-border/70 bg-background font-mono focus:border-primary focus:outline-none transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewUserPassword(!showNewUserPassword)}
-                      className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                      title={showNewUserPassword ? (lang === "ar" ? "إخفاء كلمة المرور" : "Hide password") : (lang === "ar" ? "إظهار كلمة المرور" : "Show password")}
-                    >
-                      {showNewUserPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {lang === "ar"
-                      ? "يمكن للمستخدم تسجيل الدخول فوراً باستخدام بريده الإلكتروني وكلمة المرور المحددة هنا."
-                      : "The user can immediately log in using their email and the password specified here."}
-                  </p>
-                </div>
-              </div>
-
-              {/* Sidebar Visibility */}
-              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-8 h-8 rounded-lg border flex items-center justify-center ${
-                        newUser.sidebarVisible
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted text-muted-foreground border-border"
-                      }`}
-                    >
-                      {newUser.sidebarVisible ? (
-                        <PanelLeft className="w-4 h-4" />
-                      ) : (
-                        <PanelLeftClose className="w-4 h-4" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-xs uppercase">
-                        {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
-                      </h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        {newUser.sidebarVisible
-                          ? lang === "ar"
-                            ? "القائمة الجانبية تظهر عند تسجيل الدخول"
-                            : "Sidebar is shown on login"
-                          : lang === "ar"
-                            ? "القائمة الجانبية مخفية عند تسجيل الدخول"
-                            : "Sidebar is hidden on login"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    dir="ltr"
-                    onClick={() =>
-                      setNewUser((prev) => ({
-                        ...prev,
-                        sidebarVisible: !prev.sidebarVisible,
-                      }))
-                    }
-                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
-                      newUser.sidebarVisible ? "bg-primary border-primary" : "bg-muted border-border"
-                    }`}
-                    aria-pressed={newUser.sidebarVisible}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                        newUser.sidebarVisible ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Allowed Pages Section */}
-              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    <h3 className="font-bold text-xs uppercase">{t("allowedPages")}</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const all = systemPages.map((p) => p.path);
-                      setNewUser((prev) => ({
-                        ...prev,
-                        allowedPages: prev.allowedPages.length === all.length ? [] : all,
-                      }));
-                    }}
-                    className="text-[11px] font-bold text-primary hover:underline"
-                  >
-                    {newUser.allowedPages.length === systemPages.length
-                      ? lang === "ar"
-                        ? "إلغاء تحديد الكل"
-                        : "Deselect All"
-                      : lang === "ar"
-                      ? "تحديد جميع الصفحات"
-                      : "Select All"}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {systemPages.map((page) => {
-                    const isAllowed = newUser.allowedPages.includes(page.path);
-                    return (
-                      <button
-                        key={page.id}
-                        type="button"
-                        onClick={() => togglePage(page.path)}
-                        className={`flex items-center justify-between p-2.5 text-start rounded-lg border text-xs transition-colors ${
-                          isAllowed
-                            ? "bg-primary/10 font-bold border-primary/40 text-primary"
-                            : "bg-card border-border/60 hover:bg-secondary"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-4 h-4 rounded border flex items-center justify-center ${
-                              isAllowed
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "border-border/80 bg-background"
-                            }`}
-                          >
-                            {isAllowed && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                          <span>{pick(page.name.ar, page.name.en)}</span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground">{page.path}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Allowed Actions Section */}
-              <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-accent" />
-                    <h3 className="font-bold text-xs uppercase">{t("allowedActions")}</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const all = systemActions.map((a) => a.id);
-                      setNewUser((prev) => ({
-                        ...prev,
-                        allowedActions: prev.allowedActions.length === all.length ? [] : all,
-                      }));
-                    }}
-                    className="text-[11px] font-bold text-primary hover:underline"
-                  >
-                    {newUser.allowedActions.length === systemActions.length
-                      ? lang === "ar"
-                        ? "إلغاء تحديد الكل"
-                        : "Deselect All"
-                      : lang === "ar"
-                      ? "تحديد جميع الصلاحيات"
-                      : "Select All"}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {systemActions.map((act) => {
-                    const isAllowed = newUser.allowedActions.includes(act.id);
-                    return (
-                      <button
-                        key={act.id}
-                        type="button"
-                        onClick={() => toggleAction(act.id)}
-                        className={`flex items-center justify-between p-2.5 text-start rounded-lg border text-xs transition-colors ${
-                          isAllowed ? "bg-accent/15 font-bold border-accent/40" : "bg-card border-border/60 hover:bg-secondary"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-4 h-4 rounded border flex items-center justify-center ${
-                              isAllowed
-                                ? "bg-accent text-accent-foreground border-accent"
-                                : "border-border/80 bg-background"
-                            }`}
-                          >
-                            {isAllowed && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                          <span>{pick(act.name.ar, act.name.en)}</span>
-                        </div>
-                        <span className="font-mono text-[10px] text-muted-foreground">{act.id}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex justify-end gap-3 pt-2 border-t border-border/60">
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(false)}
-                  className="px-4 py-2 rounded-lg border border-border bg-card text-xs font-bold hover:bg-secondary transition-colors"
-                >
-                  {lang === "ar" ? "إلغاء" : "Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold uppercase shadow-sm hover:opacity-95 transition-all"
-                >
-                  {t("addUser")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <UserFormModal
+          mode="add"
+          deptList={deptList}
+          posList={posList}
+          rolesList={rolesList}
+          employees={employees}
+          onClose={() => setShowAddUserModal(false)}
+          onSave={handleAddUserSubmit}
+        />
       )}
 
       {/* ================= MODAL: ADD DEPARTMENT ================= */}
@@ -1911,11 +1631,13 @@ export function UsersManagement() {
 
       {/* ================= MODAL: EDIT USER ================= */}
       {editingUser && (
-        <EditUserModal
+        <UserFormModal
+          mode="edit"
           user={editingUser}
           deptList={deptList}
           posList={posList}
           rolesList={rolesList}
+          employees={employees}
           onClose={() => setEditingUser(null)}
           onSave={handleEditUserSubmit}
         />
@@ -2194,7 +1916,7 @@ export function UsersManagement() {
 
             <div className="p-6 space-y-6">
               {/* Profile summary */}
-              <div className="grid grid-cols-3 gap-3 p-3 bg-secondary/50 rounded-xl border border-border/60 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-secondary/50 rounded-xl border border-border/60 text-xs">
                 <div>
                   <span className="text-muted-foreground block mb-0.5">{t("departments")}</span>
                   <span className="font-bold">
@@ -2211,6 +1933,15 @@ export function UsersManagement() {
                       posList.find((p) => p.id === selectedUserForDetail.positionId)?.title.ar || "—",
                       posList.find((p) => p.id === selectedUserForDetail.positionId)?.title.en || "—"
                     )}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">{lang === "ar" ? "الفرع" : "Branch"}</span>
+                  <span className="font-bold flex items-center gap-1 text-primary">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">
+                      {selectedUserForDetail.branch || selectedUserForDetail.helpdeskBranch || (lang === "ar" ? "كافة الفروع / عام" : "All Branches")}
+                    </span>
                   </span>
                 </div>
                 <div>
@@ -2371,369 +2102,1429 @@ export function UsersManagement() {
 }
 
 // =====================================================================
-// EDIT USER MODAL COMPONENT
+// UNIFIED USER FORM MODAL (ADD & EDIT)
 // =====================================================================
-function EditUserModal({
+interface UserFormModalProps {
+  mode: "add" | "edit";
+  user?: UserItem;
+  deptList: DepartmentItem[];
+  posList: PositionItem[];
+  rolesList?: RoleItem[];
+  employees?: any[];
+  onClose: () => void;
+  onSave: (formData: {
+    name: { ar: string; en: string };
+    email: string;
+    departmentId: string;
+    positionId: string;
+    branch?: string | undefined;
+    role: UserItem["role"];
+    password?: string | undefined;
+    erpPassword?: string | undefined;
+    status: "active" | "inactive";
+    sidebarVisible: boolean;
+    allowedPages: string[];
+    allowedActions: string[];
+    employeeId?: string | undefined;
+    employeeCode?: string | undefined;
+    helpdeskScope?: "branch_only" | "own_created_only" | "assigned_to_me_only" | "all_tickets" | undefined;
+    helpdeskBranch?: string | undefined;
+  }) => void;
+}
+
+const HELPDESK_PERMISSIONS: { id: string; labelAr: string; labelEn: string; descAr: string; descEn: string }[] = [
+  { id: "helpdesk.create", labelAr: "إنشاء (Create)", labelEn: "Create", descAr: "إنشاء وتسجيل تذاكر جديدة", descEn: "Submit & register new tickets" },
+  { id: "helpdesk.view", labelAr: "استعراض (View)", labelEn: "View", descAr: "عرض واستعراض تذاكر الدعم الفني", descEn: "Browse & inspect support tickets" },
+  { id: "helpdesk.edit", labelAr: "تعديل (Edit)", labelEn: "Edit", descAr: "تعديل تفاصيل وأولويات التذاكر", descEn: "Modify details & ticket priorities" },
+  { id: "helpdesk.delete", labelAr: "حذف (Delete)", labelEn: "Delete", descAr: "حذف التذاكر من النظام", descEn: "Remove tickets permanently" },
+  { id: "helpdesk.reply", labelAr: "رد ومحادثة (Reply)", labelEn: "Reply", descAr: "إرسال ردود ومراسلة المستفيدين", descEn: "Post replies and interact with clients" },
+  { id: "helpdesk.attachments", labelAr: "مرفقات (Attachments)", labelEn: "Attachments", descAr: "رفع وإدارة ملفات ومستندات التذاكر", descEn: "Upload & manage ticket attachments" },
+  { id: "helpdesk.assign", labelAr: "إسناد (Assign)", labelEn: "Assign", descAr: "إسناد التذاكر للفنيين أو النفس", descEn: "Assign tickets to technicians or self" },
+  { id: "helpdesk.resolve", labelAr: "حل التذكرة (Resolve)", labelEn: "Resolve", descAr: "تحديد حالة التذكرة كمحلولة", descEn: "Mark ticket as resolved" },
+  { id: "helpdesk.close", labelAr: "إغلاق نهائي (Close)", labelEn: "Close", descAr: "إغلاق التذكرة نهائياً في النظام", descEn: "Formally close ticket in system" },
+  { id: "helpdesk.report", labelAr: "تقارير (Report)", labelEn: "Report", descAr: "استخراج وتصدير تقارير الدعم الفني", descEn: "Export reports & support analytics" },
+];
+
+function UserFormModal({
+  mode,
   user,
   deptList,
   posList,
   rolesList,
+  employees,
   onClose,
   onSave,
-}: {
-  user: UserItem;
-  deptList: DepartmentItem[];
-  posList: PositionItem[];
-  rolesList?: RoleItem[];
-  onClose: () => void;
-  onSave: (updated: Partial<UserItem>) => void;
-}) {
+}: UserFormModalProps) {
   const { lang, t, pick } = useI18n();
+
+  const isEdit = mode === "edit";
+
+  const initialPassword =
+    user?.erpPassword ||
+    (user?.email ? getProvisionedAccount(user.email)?.passwordPlain : undefined) ||
+    "Wazeer@2026#";
+
+  const [activeTab, setActiveTab] = useState<"profile" | "pages" | "actions" | "settings">("profile");
+  const [showPassword, setShowPassword] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
+  const [pageSearch, setPageSearch] = useState("");
+  const [actionSearch, setActionSearch] = useState("");
+  const [actionCategory, setActionCategory] = useState("all");
+
+  const [branchesList, setBranchesList] = useState<{ id: string; nameAr: string; nameEn: string; code: string }[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    supabase
+      .from("branches")
+      .select("id, name_ar, name_en, code")
+      .order("name_ar")
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          if (isMounted) {
+            setBranchesList(
+              data.map((b: any) => ({
+                id: b.id,
+                nameAr: b.name_ar,
+                nameEn: b.name_en || b.name_ar,
+                code: b.code || "",
+              }))
+            );
+          }
+        } else {
+          if (isMounted) {
+            setBranchesList([
+              { id: "br-main", nameAr: "الفرع الرئيسي - الرياض", nameEn: "Main Branch - Riyadh", code: "RUH-01" },
+              { id: "br-jeddah", nameAr: "فرع جدة - طريق الملك", nameEn: "Jeddah Branch - King Rd", code: "JED-01" },
+              { id: "br-dammam", nameAr: "فرع الدمام - الكورنيش", nameEn: "Dammam Branch - Corniche", code: "DMM-01" },
+              { id: "br-khobar", nameAr: "فرع الخبر", nameEn: "Khobar Branch", code: "KHB-01" },
+            ]);
+          }
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const [selectedLinkedEmployeeId, setSelectedLinkedEmployeeId] = useState<string>(
+    user?.employeeId ||
+      employees?.find(
+        (e: any) =>
+          (user && e.userId === user.id) ||
+          (user && e.email && e.email.toLowerCase() === user.email.toLowerCase())
+      )?.id ||
+      ""
+  );
+
   const [formData, setFormData] = useState({
-    nameAr: user.name.ar,
-    nameEn: user.name.en,
-    email: user.email,
-    departmentId: user.departmentId,
-    positionId: user.positionId,
-    role: user.role,
-    status: user.status,
-    sidebarVisible: user.sidebarVisible ?? true,
-    allowedPages: [...user.allowedPages],
-    allowedActions: [...user.allowedActions],
+    nameAr: user?.name.ar || "",
+    nameEn: user?.name.en || "",
+    email: user?.email || "",
+    departmentId: user?.departmentId || (deptList[0]?.id ?? "dept-it"),
+    positionId: user?.positionId || (posList[0]?.id ?? "pos-it-1"),
+    branch: user?.branch || user?.helpdeskBranch || "",
+    role: user?.role || ("user" as UserItem["role"]),
+    password: initialPassword,
+    status: user?.status || ("active" as "active" | "inactive"),
+    sidebarVisible: user?.sidebarVisible ?? true,
+    allowedPages: user ? [...user.allowedPages] : ["/dashboard"],
+    allowedActions: user ? [...user.allowedActions] : [],
+    employeeCode: user?.employeeCode || "",
+    helpdeskScope: (user?.helpdeskScope || "assigned_to_me_only") as
+      | "branch_only"
+      | "own_created_only"
+      | "assigned_to_me_only"
+      | "all_tickets",
+    helpdeskBranch: user?.helpdeskBranch || user?.branch || "",
   });
 
-  const togglePage = (path: string) => {
+  // Calculate password strength (0 to 4)
+  const passwordStrength = useMemo(() => {
+    const pwd = formData.password || "";
+    let score = 0;
+    if (pwd.length >= 6) score++;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
+    return score;
+  }, [formData.password]);
+
+  // Handle employee link selection
+  const handleSelectEmployeeForUser = (empId: string) => {
+    setSelectedLinkedEmployeeId(empId);
+    if (!empId) {
+      setFormData((prev) => ({ ...prev, employeeCode: "" }));
+      return;
+    }
+    const emp = employees?.find((e: any) => e.id === empId);
+    if (!emp) return;
+
+    const matchedDept = deptList.find(
+      (d) =>
+        d.id === emp.departmentId ||
+        d.name.ar === emp.departmentName?.ar ||
+        d.name.en === emp.departmentName?.en
+    );
+    const matchedPos = posList.find(
+      (p) =>
+        p.id === emp.positionId ||
+        p.title.ar === emp.positionName?.ar ||
+        p.title.en === emp.positionName?.en
+    );
+
+    let suggestedRole: UserItem["role"] = formData.role;
+    const posTitle = ((emp.positionName?.ar || "") + " " + (emp.positionName?.en || "")).toLowerCase();
+    if (posTitle.includes("مدير عام") || posTitle.includes("owner") || posTitle.includes("gm")) {
+      suggestedRole = "admin";
+    } else if (posTitle.includes("موارد") || posTitle.includes("hr")) {
+      suggestedRole = "hr";
+    } else if (posTitle.includes("محاسب") || posTitle.includes("accountant") || posTitle.includes("مالي")) {
+      suggestedRole = "accountant";
+    } else if (posTitle.includes("مشتريات") || posTitle.includes("purchase")) {
+      suggestedRole = "purchase";
+    } else if (posTitle.includes("فرع") || posTitle.includes("branch")) {
+      suggestedRole = "branch_manager";
+    } else if (posTitle.includes("دعم") || posTitle.includes("helpdesk")) {
+      suggestedRole = "helpdesk";
+    } else if (posTitle.includes("تقني") || posTitle.includes("cto") || posTitle.includes("مبرمج")) {
+      suggestedRole = "cto";
+    }
+
+    const matchedBranch = branchesList.find(
+      (b) =>
+        b.id === emp.branchId ||
+        b.nameAr === emp.branchName?.ar ||
+        b.nameEn === emp.branchName?.en ||
+        b.nameAr === emp.branch
+    );
+
     setFormData((prev) => ({
       ...prev,
-      allowedPages: prev.allowedPages.includes(path)
-        ? prev.allowedPages.filter((p) => p !== path)
-        : [...prev.allowedPages, path],
+      nameAr: emp.name?.ar || emp.name || prev.nameAr,
+      nameEn: emp.name?.en || emp.nameAr || prev.nameEn,
+      email: emp.email || prev.email,
+      departmentId: matchedDept ? matchedDept.id : prev.departmentId,
+      positionId: matchedPos ? matchedPos.id : prev.positionId,
+      branch: matchedBranch ? matchedBranch.nameAr : (emp.branchName?.ar || emp.branch || prev.branch),
+      role: suggestedRole,
+      employeeCode: emp.employeeCode || emp.code || prev.employeeCode,
     }));
+
+    toast.info(
+      lang === "ar"
+        ? `تم جلب بيانات الموظف: ${emp.name?.ar || emp.name || ""}`
+        : `Fetched employee details: ${emp.name?.en || emp.name || ""}`
+    );
   };
 
-  const toggleAction = (actionId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      allowedActions: prev.allowedActions.includes(actionId)
-        ? prev.allowedActions.filter((a) => a !== actionId)
-        : [...prev.allowedActions, actionId],
-    }));
+  // Generate random password
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData((prev) => ({ ...prev, password: pwd }));
+    toast.success(lang === "ar" ? "تم توليد كلمة مرور عشوائية قوية" : "Strong random password generated");
   };
+
+  // Copy password to clipboard
+  const copyPassword = () => {
+    if (!formData.password) return;
+    navigator.clipboard.writeText(formData.password);
+    setCopiedPassword(true);
+    toast.success(lang === "ar" ? "تم نسخ كلمة المرور إلى الحافظة" : "Password copied to clipboard");
+    setTimeout(() => setCopiedPassword(false), 2000);
+  };
+
+  // Apply default pages based on role
+  const applyRoleDefaults = (role: UserItem["role"]) => {
+    if (role === "admin") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: systemPages.map((p) => p.path),
+        allowedActions: systemActions.map((a) => a.id),
+      }));
+    } else if (role === "hr") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/hr", "/attendance", "/payroll", "/tasks"],
+      }));
+    } else if (role === "accountant") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/accounting", "/sales", "/purchases", "/inventory", "/reports"],
+      }));
+    } else if (role === "branch_manager") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/pos", "/sales", "/inventory", "/attendance"],
+      }));
+    } else if (role === "purchase") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/purchases", "/inventory", "/vendors"],
+      }));
+    } else if (role === "helpdesk") {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/helpdesk", "/tasks", "/support"],
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        allowedPages: ["/dashboard", "/tasks", "/attendance"],
+      }));
+    }
+    toast.success(lang === "ar" ? "تم تطبيق الصلاحيات الافتراضية للدور" : "Applied role default permissions");
+  };
+
+  // Filtered pages for search
+  const filteredPages = useMemo(() => {
+    const q = pageSearch.trim().toLowerCase();
+    if (!q) return systemPages;
+    return systemPages.filter(
+      (p) =>
+        p.name.ar.toLowerCase().includes(q) ||
+        p.name.en.toLowerCase().includes(q) ||
+        p.path.toLowerCase().includes(q)
+    );
+  }, [pageSearch]);
+
+  // Action categories
+  const actionCategories = useMemo(() => {
+    const cats = Array.from(new Set(systemActions.map((a) => a.category)));
+    return cats.sort();
+  }, []);
+
+  // Filtered actions
+  const filteredActions = useMemo(() => {
+    const q = actionSearch.trim().toLowerCase();
+    return systemActions.filter((a) => {
+      const matchCat = actionCategory === "all" || a.category === actionCategory;
+      const matchQ =
+        !q ||
+        a.name.ar.toLowerCase().includes(q) ||
+        a.name.en.toLowerCase().includes(q) ||
+        a.id.toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+  }, [actionCategory, actionSearch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nameAr || !formData.email) return;
+    if (!formData.nameAr.trim() && !formData.nameEn.trim()) {
+      toast.error(lang === "ar" ? "يرجى إدخال اسم المستخدم" : "Please enter user name");
+      setActiveTab("profile");
+      return;
+    }
+    if (!formData.email.trim()) {
+      toast.error(lang === "ar" ? "يرجى إدخال البريد الإلكتروني" : "Please enter email");
+      setActiveTab("profile");
+      return;
+    }
+
+    const effectiveHelpdeskBranch = formData.helpdeskBranch.trim() || formData.branch.trim();
+    if (formData.allowedPages.includes("/helpdesk")) {
+      if (formData.helpdeskScope === "branch_only" && !effectiveHelpdeskBranch) {
+        toast.error(
+          lang === "ar"
+            ? "يرجى تحديد الفرع المصرّح به لقسم الدعم الفني (نطاق الفرع فقط يتطلب اختيار فرع)"
+            : "Please select an authorized branch for the Help Desk (Branch Only scope requires selecting a branch)"
+        );
+        setActiveTab("pages");
+        return;
+      }
+    }
 
     onSave({
-      name: { ar: formData.nameAr, en: formData.nameEn || formData.nameAr },
-      email: formData.email,
+      name: {
+        ar: formData.nameAr.trim() || formData.nameEn.trim(),
+        en: formData.nameEn.trim() || formData.nameAr.trim(),
+      },
+      email: formData.email.trim(),
       departmentId: formData.departmentId,
       positionId: formData.positionId,
+      branch: formData.branch.trim() || undefined,
       role: formData.role,
+      password: formData.password?.trim() || undefined,
+      erpPassword: formData.password?.trim() || undefined,
       status: formData.status,
       sidebarVisible: formData.sidebarVisible,
       allowedPages: formData.allowedPages,
       allowedActions: formData.allowedActions,
+      employeeId: selectedLinkedEmployeeId || undefined,
+      employeeCode: formData.employeeCode || undefined,
+      helpdeskScope: formData.allowedPages.includes("/helpdesk") ? formData.helpdeskScope : undefined,
+      helpdeskBranch:
+        formData.allowedPages.includes("/helpdesk") && formData.helpdeskScope === "branch_only"
+          ? effectiveHelpdeskBranch
+          : undefined,
     });
   };
 
+  const tabs = [
+    {
+      id: "profile" as const,
+      labelAr: "الملف التعريفي والحساب",
+      labelEn: "Profile & Credentials",
+      icon: User,
+    },
+    {
+      id: "pages" as const,
+      labelAr: "صلاحيات الصفحات",
+      labelEn: "Page Permissions",
+      icon: Layers,
+      count: formData.allowedPages.length,
+    },
+    {
+      id: "actions" as const,
+      labelAr: "صلاحيات العمليات",
+      labelEn: "Action Permissions",
+      icon: ShieldCheck,
+      count: formData.allowedActions.length,
+    },
+    {
+      id: "settings" as const,
+      labelAr: "الواجهة والنظام",
+      labelEn: "Interface & System",
+      icon: SlidersHorizontal,
+    },
+  ];
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card rounded-2xl border border-border/80 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-2">
-            <Edit2 className="w-5 h-5" />
-            <h2 className="font-bold text-base">
-              {lang === "ar" ? "تعديل بيانات المستخدم" : "Edit User Profile"}
-            </h2>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-card text-card-foreground rounded-2xl border border-border/70 shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-card via-secondary/30 to-card flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shadow-sm">
+              {isEdit ? <User className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-base text-foreground">
+                  {isEdit
+                    ? lang === "ar"
+                      ? `تعديل المستخدم: ${pick(formData.nameAr, formData.nameEn) || formData.email}`
+                      : `Edit User: ${pick(formData.nameEn, formData.nameAr) || formData.email}`
+                    : lang === "ar"
+                    ? "إضافة مستخدم جديد للنظام"
+                    : "Add New System User"}
+                </h2>
+                {isEdit && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/20">
+                    {formData.role.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isEdit
+                  ? lang === "ar"
+                    ? "تحديث بيانات الحساب وتعيين كلمة المرور وضبط الصلاحيات"
+                    : "Update account credentials, set ERP password, and configure permissions"
+                  : lang === "ar"
+                  ? "إنشاء حساب موظف جديد وضبط الوصول وتعيين كلمة المرور"
+                  : "Create an employee account, configure access, and set ERP password"}
+              </p>
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="hover:opacity-80 p-1">
-            <X className="w-5 h-5" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg border border-border/80 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {lang === "ar" ? "الاسم الكامل (عربي) *" : "Full Name (Arabic) *"}
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.nameAr}
-                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {lang === "ar" ? "الاسم (إنجليزي)" : "Full Name (English)"}
-              </label>
-              <input
-                type="text"
-                value={formData.nameEn}
-                onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {lang === "ar" ? "البريد الإلكتروني *" : "Email Address *"}
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background focus:border-primary focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {t("roles")}
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserItem["role"] })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-              >
-                {(rolesList && rolesList.length > 0
-                  ? rolesList.map((r) => ({ value: r.key, label: pick(r.name.ar, r.name.en) }))
-                  : AVAILABLE_ROLES.map((r) => ({ value: r.value, label: lang === "ar" ? r.ar : r.en }))
-                ).map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {t("departments")}
-              </label>
-              <select
-                value={formData.departmentId}
-                onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-              >
-                <option value="">{lang === "ar" ? "غير محدد" : "None"}</option>
-                {deptList.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {pick(d.name.ar, d.name.en)} ({d.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase mb-1">
-                {t("positions")}
-              </label>
-              <select
-                value={formData.positionId}
-                onChange={(e) => setFormData({ ...formData, positionId: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background font-bold focus:border-primary focus:outline-none"
-              >
-                <option value="">{lang === "ar" ? "غير محدد" : "None"}</option>
-                {posList.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {pick(p.title.ar, p.title.en)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Status & Sidebar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-border/60 p-4 bg-secondary/30 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-xs uppercase">{t("active")}</h3>
-                <p className="text-[11px] text-muted-foreground">
-                  {formData.status === "active"
-                    ? lang === "ar" ? "الحساب مفعل ويمكنه الدخول" : "Account is active"
-                    : lang === "ar" ? "الحساب معطل وممنوع من الدخول" : "Account is disabled"}
-                </p>
-              </div>
+        {/* Tab Navigation */}
+        <div className="px-6 pt-3 pb-2 border-b border-border/50 bg-secondary/20 flex items-center gap-2 overflow-x-auto shrink-0 scrollbar-none">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
               <button
+                key={tab.id}
                 type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    status: prev.status === "active" ? "inactive" : "active",
-                  }))
-                }
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                  formData.status === "active"
-                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-                    : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary/70 border border-border/60"
                 }`}
               >
-                {formData.status === "active" ? t("active") : lang === "ar" ? "معطل" : "Inactive"}
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-border/60 p-4 bg-secondary/30 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-xs uppercase">
-                  {lang === "ar" ? "إظهار الشريط الجانبي" : "Sidebar Visibility"}
-                </h3>
-                <p className="text-[11px] text-muted-foreground">
-                  {formData.sidebarVisible
-                    ? lang === "ar" ? "الشريط الجانبي مرئي" : "Sidebar visible"
-                    : lang === "ar" ? "الشريط الجانبي مخفي" : "Sidebar hidden"}
-                </p>
-              </div>
-              <button
-                type="button"
-                dir="ltr"
-                onClick={() => setFormData((prev) => ({ ...prev, sidebarVisible: !prev.sidebarVisible }))}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
-                  formData.sidebarVisible ? "bg-primary border-primary" : "bg-muted border-border"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                    formData.sidebarVisible ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Allowed Pages */}
-          <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" />
-                <h3 className="font-bold text-xs uppercase">{t("allowedPages")}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const all = systemPages.map((p) => p.path);
-                  setFormData((prev) => ({
-                    ...prev,
-                    allowedPages: prev.allowedPages.length === all.length ? [] : all,
-                  }));
-                }}
-                className="text-[11px] font-bold text-primary hover:underline"
-              >
-                {formData.allowedPages.length === systemPages.length
-                  ? lang === "ar" ? "إلغاء تحديد الكل" : "Deselect All"
-                  : lang === "ar" ? "تحديد جميع الصفحات" : "Select All"}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {systemPages.map((page) => {
-                const isAllowed = formData.allowedPages.includes(page.path);
-                return (
-                  <button
-                    key={page.id}
-                    type="button"
-                    onClick={() => togglePage(page.path)}
-                    className={`flex items-center justify-between p-2.5 text-start rounded-lg border text-xs transition-colors ${
-                      isAllowed
-                        ? "bg-primary/10 font-bold border-primary/40 text-primary"
-                        : "bg-card border-border/60 hover:bg-secondary"
+                <Icon className="w-3.5 h-3.5" />
+                <span>{lang === "ar" ? tab.labelAr : tab.labelEn}</span>
+                {typeof tab.count === "number" && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      isActive ? "bg-white/25 text-white" : "bg-primary/10 text-primary"
                     }`}
                   >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* ================= TAB 1: PROFILE & CREDENTIALS ================= */}
+            {activeTab === "profile" && (
+              <div className="space-y-5 animate-in fade-in-50 duration-200">
+                {/* HR Link Card */}
+                {employees && employees.length > 0 && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground">
+                          {lang === "ar"
+                            ? "ربط بسجل موظف في الموارد البشرية (اختياري)"
+                            : "Link with HR Employee Record (Optional)"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {lang === "ar"
+                            ? "يقوم بتعبئة الاسم والقسم والمنصب وتحديث حساب الموظف تلقائياً"
+                            : "Auto-fills name, department, position, and keeps employee record in sync"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-64 shrink-0">
+                      <select
+                        value={selectedLinkedEmployeeId}
+                        onChange={(e) => handleSelectEmployeeForUser(e.target.value)}
+                        className="w-full text-xs rounded-lg border border-primary/30 bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-sm"
+                      >
+                        <option value="">{lang === "ar" ? "-- بدون ربط --" : "-- Not Linked --"}</option>
+                        {employees.map((emp: any) => (
+                          <option key={emp.id} value={emp.id}>
+                            {pick(emp.name?.ar, emp.name?.en) || emp.name} (
+                            {emp.employeeCode || emp.code || "HR"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      <span>{t("fullNameAr")}</span>
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nameAr}
+                      onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                      placeholder={lang === "ar" ? "مثال: م. أحمد فايزان" : "e.g. Eng. Ahmad Faizan"}
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>{t("fullNameEn")}</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameEn}
+                      onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                      placeholder="e.g. Ahmad Faizan"
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-primary" />
+                      <span>{t("email")}</span>
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="user@wazeer.com"
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-primary" />
+                      <span>{t("systemRole")}</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.role}
+                        onChange={(e) => {
+                          const newRole = e.target.value as UserItem["role"];
+                          setFormData({ ...formData, role: newRole });
+                        }}
+                        className="flex-1 text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                      >
+                        {AVAILABLE_ROLES.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {lang === "ar" ? r.ar : r.en}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => applyRoleDefaults(formData.role)}
+                        title={lang === "ar" ? "تطبيق الصلاحيات الافتراضية لهذا الدور" : "Apply role defaults"}
+                        className="px-3 py-2 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition-all flex items-center gap-1.5 shrink-0"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">
+                          {lang === "ar" ? "صلاحيات الدور" : "Role Defaults"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      <span>{t("department")}</span>
+                    </label>
+                    <select
+                      value={formData.departmentId}
+                      onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                    >
+                      {deptList.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {pick(d.name.ar, d.name.en)} ({d.code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-primary" />
+                      <span>{t("position")}</span>
+                    </label>
+                    <select
+                      value={formData.positionId}
+                      onChange={(e) => setFormData({ ...formData, positionId: e.target.value })}
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                    >
+                      {posList.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {pick(p.title.ar, p.title.en)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Branch Selection */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <span>{lang === "ar" ? "الفرع التابع له (Branch)" : "Assigned Branch"}</span>
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-normal">
+                        {lang === "ar"
+                          ? "(اختياري — تحديد مقر عمل الموظف ونطاق عملياته)"
+                          : "(Optional — Primary work location & operational scope)"}
+                      </span>
+                    </label>
+                    <select
+                      value={formData.branch}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData((prev) => ({
+                          ...prev,
+                          branch: val,
+                          helpdeskBranch: !prev.helpdeskBranch || prev.helpdeskBranch === prev.branch ? val : prev.helpdeskBranch,
+                        }));
+                      }}
+                      className="w-full text-xs rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all shadow-sm"
+                    >
+                      <option value="">
+                        {lang === "ar" ? "-- عام / كافة الفروع / الإدارة المركزية --" : "-- General / All Branches / Headquarters --"}
+                      </option>
+                      {branchesList.map((b) => (
+                        <option key={b.id} value={b.nameAr}>
+                          {pick(b.nameAr, b.nameEn)} {b.code ? `(${b.code})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Password & Security Card */}
+                <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-card to-background p-4 sm:p-5 shadow-sm space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary border border-primary/30 flex items-center justify-center">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-foreground">
+                          {lang === "ar" ? "تعيين كلمة مرور الحساب (ERP Access)" : "Account Password (ERP Access)"}
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          {lang === "ar"
+                            ? "تُستخدم لتسجيل دخول الموظف إلى النظام فور الحفظ"
+                            : "Used for employee system login immediately upon saving"}
+                        </p>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          isAllowed
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border/80 bg-background"
+                      <button
+                        type="button"
+                        onClick={generateRandomPassword}
+                        className="px-2.5 py-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary text-[11px] font-bold hover:bg-primary/20 transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>{lang === "ar" ? "توليد كلمة عشوائية" : "Generate"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={copyPassword}
+                        className="px-2.5 py-1.5 rounded-lg border border-border bg-card text-foreground text-[11px] font-bold hover:bg-secondary transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        {copiedPassword ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              {lang === "ar" ? "تم النسخ" : "Copied"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>{lang === "ar" ? "نسخ" : "Copy"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Wazeer@2026#"
+                      className="w-full text-xs font-mono rounded-xl border border-border/80 bg-card px-3.5 py-2.5 pe-10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm tracking-wider"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Password Strength Indicator */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">
+                        {lang === "ar" ? "قوة كلمة المرور:" : "Password strength:"}
+                      </span>
+                      <span
+                        className={`font-bold ${
+                          passwordStrength <= 1
+                            ? "text-rose-500"
+                            : passwordStrength === 2
+                            ? "text-amber-500"
+                            : passwordStrength === 3
+                            ? "text-blue-500"
+                            : "text-emerald-500"
                         }`}
                       >
-                        {isAllowed && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                      <span>{pick(page.name.ar, page.name.en)}</span>
+                        {passwordStrength <= 1
+                          ? lang === "ar"
+                            ? "ضعيفة"
+                            : "Weak"
+                          : passwordStrength === 2
+                          ? lang === "ar"
+                            ? "مقبولة"
+                            : "Fair"
+                          : passwordStrength === 3
+                          ? lang === "ar"
+                            ? "جيدة"
+                            : "Good"
+                          : lang === "ar"
+                          ? "قوية جداً"
+                          : "Very Strong"}
+                      </span>
                     </div>
-                    <span className="font-mono text-[10px] text-muted-foreground">{page.path}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Allowed Actions */}
-          <div className="rounded-xl border border-border/60 p-4 bg-secondary/30">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-accent" />
-                <h3 className="font-bold text-xs uppercase">{t("allowedActions")}</h3>
+                    <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div
+                          key={step}
+                          className={`rounded-full transition-all ${
+                            passwordStrength >= step
+                              ? step <= 1
+                                ? "bg-rose-500"
+                                : step === 2
+                                ? "bg-amber-500"
+                                : step === 3
+                                ? "bg-blue-500"
+                                : "bg-emerald-500"
+                              : "bg-border/60"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const all = systemActions.map((a) => a.id);
-                  setFormData((prev) => ({
-                    ...prev,
-                    allowedActions: prev.allowedActions.length === all.length ? [] : all,
-                  }));
-                }}
-                className="text-[11px] font-bold text-primary hover:underline"
-              >
-                {formData.allowedActions.length === systemActions.length
-                  ? lang === "ar" ? "إلغاء تحديد الكل" : "Deselect All"
-                  : lang === "ar" ? "تحديد جميع الصلاحيات" : "Select All"}
-              </button>
-            </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {systemActions.map((act) => {
-                const isAllowed = formData.allowedActions.includes(act.id);
-                return (
+            {/* ================= TAB 2: ALLOWED PAGES ================= */}
+            {activeTab === "pages" && (
+              <div className="space-y-4 animate-in fade-in-50 duration-200">
+                {/* Search & Actions Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl border border-border/70 bg-secondary/30">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={pageSearch}
+                      onChange={(e) => setPageSearch(e.target.value)}
+                      placeholder={lang === "ar" ? "بحث في الصفحات والواجهات..." : "Search pages & routes..."}
+                      className="w-full text-xs rounded-lg border border-border/80 bg-background ps-9 pe-3 py-2 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          allowedPages: systemPages.map((p) => p.path),
+                        }))
+                      }
+                      className="px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-[11px] font-bold text-foreground transition-all"
+                    >
+                      {lang === "ar" ? "تحديد الكل" : "Select All"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, allowedPages: [] }))}
+                      className="px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-[11px] font-bold text-foreground transition-all"
+                    >
+                      {lang === "ar" ? "إلغاء الكل" : "Deselect All"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyRoleDefaults(formData.role)}
+                      className="px-2.5 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>{lang === "ar" ? "استعادة الافتراضي" : "Role Defaults"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span>
+                    {lang === "ar"
+                      ? `${formData.allowedPages.length} من أصل ${systemPages.length} صفحة مفعّلة`
+                      : `${formData.allowedPages.length} of ${systemPages.length} pages enabled`}
+                  </span>
+                  {pageSearch && (
+                    <span>
+                      {lang === "ar"
+                        ? `نتائج البحث: ${filteredPages.length}`
+                        : `Found: ${filteredPages.length}`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Pages Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto p-1 scrollbar-thin">
+                  {filteredPages.map((page) => {
+                    const isAllowed = formData.allowedPages.includes(page.path);
+                    return (
+                      <button
+                        key={page.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            allowedPages: isAllowed
+                              ? prev.allowedPages.filter((p) => p !== page.path)
+                              : [...prev.allowedPages, page.path],
+                          }));
+                        }}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-start transition-all ${
+                          isAllowed
+                            ? "bg-primary/10 border-primary/40 shadow-sm"
+                            : "bg-card border-border/70 hover:bg-secondary/60 hover:border-border"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                              isAllowed
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "border-border bg-background"
+                            }`}
+                          >
+                            {isAllowed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                          <div className="truncate">
+                            <div
+                              className={`text-xs truncate ${
+                                isAllowed ? "font-bold text-foreground" : "text-foreground/80"
+                              }`}
+                            >
+                              {pick(page.name.ar, page.name.en)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate font-mono mt-0.5">
+                              {page.path}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* ================= HELPDESK EXCLUSIVE PERMISSION & SCOPE BLOCK ================= */}
+                {formData.allowedPages.includes("/helpdesk") && (
+                  <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/5 via-card to-background p-4 sm:p-5 shadow-lg space-y-4 animate-in fade-in-50 duration-200 mt-4">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+                          <LifeBuoy className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-foreground">
+                              {lang === "ar" ? "صلاحيات ونطاق بيانات الدعم الفني (Help Desk)" : "Help Desk Permissions & Data Scope"}
+                            </h3>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
+                              {lang === "ar" ? "مفعّل" : "Active"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {lang === "ar"
+                              ? "حدد الصلاحيات يدويًا - لا يتم منح أي صلاحية تلقائيًا لنظام الدعم الفني"
+                              : "Configure permissions manually - no permissions are auto-granted"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const helpdeskIds = HELPDESK_PERMISSIONS.map((p) => p.id);
+                            setFormData((prev) => ({
+                              ...prev,
+                              allowedActions: Array.from(new Set([...prev.allowedActions, ...helpdeskIds])),
+                            }));
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-all shadow-sm"
+                        >
+                          {lang === "ar" ? "تحديد كل صلاحيات الدعم" : "Select All Helpdesk"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const helpdeskIds = new Set(HELPDESK_PERMISSIONS.map((p) => p.id));
+                            setFormData((prev) => ({
+                              ...prev,
+                              allowedActions: prev.allowedActions.filter((a) => !helpdeskIds.has(a)),
+                            }));
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-[11px] font-bold text-foreground transition-all shadow-sm"
+                        >
+                          {lang === "ar" ? "إلغاء التحديد" : "Clear"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Manual Data Scope Selector */}
+                    <div className="rounded-xl border border-border/80 bg-background/60 p-3.5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-bold text-foreground flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-primary" />
+                          <span>{lang === "ar" ? "نطاق رؤية البيانات (Data Scope) *" : "Data Scope Selector *"}</span>
+                        </label>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {formData.helpdeskScope}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        {[
+                          {
+                            key: "branch_only" as const,
+                            titleAr: "الفرع فقط (Branch Only)",
+                            titleEn: "Branch Only",
+                            descAr: "مقيد بفرع محدد يتم اختياره",
+                            descEn: "Bound to a selected branch",
+                          },
+                          {
+                            key: "own_created_only" as const,
+                            titleAr: "المنشأة بواسطتي فقط",
+                            titleEn: "Own Created Only",
+                            descAr: "تذاكره المنشأة فقط",
+                            descEn: "Tickets created by this user",
+                          },
+                          {
+                            key: "assigned_to_me_only" as const,
+                            titleAr: "المسندة إليّ فقط (فني)",
+                            titleEn: "Assigned to Me Only",
+                            descAr: "الفنيون (غير مقيدين بفرع)",
+                            descEn: "Technicians across all branches",
+                          },
+                          {
+                            key: "all_tickets" as const,
+                            titleAr: "كافة التذاكر (مسؤول)",
+                            titleEn: "All Tickets (Admin)",
+                            descAr: "كامل تذاكر النظام مع إسناد وإغلاق",
+                            descEn: "Full access across system",
+                          },
+                        ].map((opt) => {
+                          const isSelected = formData.helpdeskScope === opt.key;
+                          return (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  helpdeskScope: opt.key,
+                                  helpdeskBranch: opt.key === "branch_only" ? (prev.helpdeskBranch || branchesList[0]?.nameAr || "الفرع الرئيسي") : "",
+                                }))
+                              }
+                              className={`p-3 rounded-xl border text-start transition-all ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                                  : "border-border/70 bg-card hover:bg-secondary/60 hover:border-border"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                                  {lang === "ar" ? opt.titleAr : opt.titleEn}
+                                </span>
+                                <div
+                                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                    isSelected ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"
+                                  }`}
+                                >
+                                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                {lang === "ar" ? opt.descAr : opt.descEn}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* If Branch Only, require selecting a branch */}
+                      {formData.helpdeskScope === "branch_only" && (
+                        <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 space-y-2 animate-in fade-in-50 duration-150">
+                          <label className="block text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>
+                              {lang === "ar" ? "تحديد الفرع المصرّح به (إلزامي لنطاق الفرع) *" : "Authorized Branch (Mandatory for Branch Scope) *"}
+                            </span>
+                          </label>
+                          <select
+                            value={formData.helpdeskBranch}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, helpdeskBranch: e.target.value }))}
+                            className="w-full text-xs rounded-lg border border-amber-500/40 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                            required
+                          >
+                            <option value="">{lang === "ar" ? "-- اختر الفرع المصرّح به --" : "-- Select Authorized Branch --"}</option>
+                            {branchesList.map((b) => (
+                              <option key={b.id} value={b.nameAr}>
+                                {pick(b.nameAr, b.nameEn)} {b.code ? `(${b.code})` : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-amber-800 dark:text-amber-300">
+                            {lang === "ar"
+                              ? "⚠️ لن يتمكن هذا المستخدم سوى من استعراض وإدارة التذاكر التابعة لهذا الفرع فقط."
+                              : "⚠️ This user will only be permitted to view and manage tickets belonging to this branch."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 10 Checkboxes for Help Desk permissions */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-primary" />
+                          {lang === "ar" ? "صلاحيات العمليات (10 صلاحيات مخصصة للدعم الفني):" : "Operation Permissions (10 Help Desk Actions):"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-normal">
+                          {
+                            HELPDESK_PERMISSIONS.filter((p) => formData.allowedActions.includes(p.id)).length
+                          }{" "}
+                          / {HELPDESK_PERMISSIONS.length}{" "}
+                          {lang === "ar" ? "محددة" : "granted"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                        {HELPDESK_PERMISSIONS.map((perm) => {
+                          const isChecked = formData.allowedActions.includes(perm.id);
+                          return (
+                            <button
+                              key={perm.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  allowedActions: isChecked
+                                    ? prev.allowedActions.filter((a) => a !== perm.id)
+                                    : [...prev.allowedActions, perm.id],
+                                }));
+                              }}
+                              className={`p-2.5 rounded-xl border text-start flex items-start gap-2.5 transition-all ${
+                                isChecked
+                                  ? "border-primary/50 bg-primary/10 shadow-xs"
+                                  : "border-border/70 bg-card hover:bg-secondary/60"
+                              }`}
+                            >
+                              <div
+                                className={`w-4 h-4 rounded mt-0.5 border flex items-center justify-center shrink-0 transition-all ${
+                                  isChecked
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "border-border bg-background"
+                                }`}
+                              >
+                                {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className={`text-xs font-bold truncate ${isChecked ? "text-primary" : "text-foreground"}`}>
+                                  {lang === "ar" ? perm.labelAr : perm.labelEn}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                                  {lang === "ar" ? perm.descAr : perm.descEn}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ================= TAB 3: ALLOWED ACTIONS ================= */}
+            {activeTab === "actions" && (
+              <div className="space-y-4 animate-in fade-in-50 duration-200">
+                {/* Search & Category Filter Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl border border-border/70 bg-secondary/30">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={actionSearch}
+                      onChange={(e) => setActionSearch(e.target.value)}
+                      placeholder={lang === "ar" ? "بحث في العمليات والصلاحيات..." : "Search actions..."}
+                      className="w-full text-xs rounded-lg border border-border/80 bg-background ps-9 pe-3 py-2 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <select
+                      value={actionCategory}
+                      onChange={(e) => setActionCategory(e.target.value)}
+                      className="text-xs rounded-lg border border-border/80 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="all">{lang === "ar" ? "جميع الأقسام" : "All Categories"}</option>
+                      {actionCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const idsToAdd = filteredActions.map((a) => a.id);
+                        setFormData((prev) => ({
+                          ...prev,
+                          allowedActions: Array.from(new Set([...prev.allowedActions, ...idsToAdd])),
+                        }));
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-[11px] font-bold text-foreground transition-all"
+                    >
+                      {lang === "ar" ? "تحديد المعروض" : "Select Filtered"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, allowedActions: [] }))}
+                      className="px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-[11px] font-bold text-foreground transition-all"
+                    >
+                      {lang === "ar" ? "إلغاء الكل" : "Deselect All"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span>
+                    {lang === "ar"
+                      ? `${formData.allowedActions.length} من أصل ${systemActions.length} عملية مصرح بها`
+                      : `${formData.allowedActions.length} of ${systemActions.length} actions permitted`}
+                  </span>
+                  <span>
+                    {lang === "ar"
+                      ? `العمليات المعروضة: ${filteredActions.length}`
+                      : `Showing: ${filteredActions.length}`}
+                  </span>
+                </div>
+
+                {/* Actions Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto p-1 scrollbar-thin">
+                  {filteredActions.map((act) => {
+                    const isAllowed = formData.allowedActions.includes(act.id);
+                    return (
+                      <button
+                        key={act.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            allowedActions: isAllowed
+                              ? prev.allowedActions.filter((a) => a !== act.id)
+                              : [...prev.allowedActions, act.id],
+                          }));
+                        }}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-start transition-all ${
+                          isAllowed
+                            ? "bg-accent/15 border-accent/40 shadow-sm"
+                            : "bg-card border-border/70 hover:bg-secondary/60 hover:border-border"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                              isAllowed
+                                ? "bg-accent text-accent-foreground border-accent"
+                                : "border-border bg-background"
+                            }`}
+                          >
+                            {isAllowed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                          <div className="truncate">
+                            <div
+                              className={`text-xs truncate ${
+                                isAllowed ? "font-bold text-foreground" : "text-foreground/80"
+                              }`}
+                            >
+                              {pick(act.name.ar, act.name.en)}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono mt-0.5 truncate">
+                              {act.id}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-secondary text-muted-foreground shrink-0 ms-2">
+                          {act.category}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ================= TAB 4: SETTINGS & SYSTEM ================= */}
+            {activeTab === "settings" && (
+              <div className="space-y-4 animate-in fade-in-50 duration-200">
+                {/* Account Status Card */}
+                <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        formData.status === "active"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                      }`}
+                    >
+                      <Power className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-foreground">
+                        {lang === "ar" ? "حالة الحساب في النظام" : "System Account Status"}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {formData.status === "active"
+                          ? lang === "ar"
+                            ? "الحساب مفعّل ويستطيع تسجيل الدخول والعمل على النظام"
+                            : "Account is active and can log in and use the ERP"
+                          : lang === "ar"
+                          ? "الحساب معطل وممنوع من تسجيل الدخول إلى النظام"
+                          : "Account is disabled and cannot log in"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: "active" })}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        formData.status === "active"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "border border-border bg-card text-muted-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {lang === "ar" ? "نشط ومفعّل" : "Active"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: "inactive" })}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        formData.status === "inactive"
+                          ? "bg-amber-600 text-white shadow-sm"
+                          : "border border-border bg-card text-muted-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {lang === "ar" ? "معطل / موقوف" : "Inactive"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sidebar Visibility Card */}
+                <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                      {formData.sidebarVisible ? (
+                        <PanelLeft className="w-5 h-5" />
+                      ) : (
+                        <PanelLeftClose className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-foreground">
+                        {lang === "ar" ? "إظهار الشريط الجانبي (Sidebar)" : "Show Navigation Sidebar"}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {formData.sidebarVisible
+                          ? lang === "ar"
+                            ? "الشريط الجانبي يظهر بشكل افتراضي لهذا المستخدم"
+                            : "Sidebar is visible by default for this user"
+                          : lang === "ar"
+                          ? "الشريط الجانبي مخفي افتراضياً (نمط الشاشات المصغرة أو نقاط البيع)"
+                            : "Sidebar is hidden by default (POS or focused mode)"}
+                      </div>
+                    </div>
+                  </div>
                   <button
-                    key={act.id}
                     type="button"
-                    onClick={() => toggleAction(act.id)}
-                    className={`flex items-center justify-between p-2.5 text-start rounded-lg border text-xs transition-colors ${
-                      isAllowed
-                        ? "bg-accent/15 font-bold border-accent/40"
-                        : "bg-card border-border/60 hover:bg-secondary"
+                    onClick={() => setFormData({ ...formData, sidebarVisible: !formData.sidebarVisible })}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      formData.sidebarVisible
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "border border-border bg-card text-muted-foreground hover:bg-secondary"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          isAllowed
-                            ? "bg-accent text-accent-foreground border-accent"
-                            : "border-border/80 bg-background"
-                        }`}
-                      >
-                        {isAllowed && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                      <span>{pick(act.name.ar, act.name.en)}</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-muted-foreground">{act.id}</span>
+                    {formData.sidebarVisible
+                      ? lang === "ar"
+                        ? "ظاهر"
+                        : "Visible"
+                      : lang === "ar"
+                      ? "مخفي"
+                      : "Hidden"}
                   </button>
-                );
-              })}
-            </div>
+                </div>
+
+                {/* Audit & Extra Details in Edit Mode */}
+                {isEdit && user && (
+                  <div className="rounded-xl border border-border/60 bg-secondary/20 p-4 space-y-2 text-xs">
+                    <div className="font-bold text-foreground mb-1">
+                      {lang === "ar" ? "معلومات إضافية عن السجل" : "Record Metadata"}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground">
+                      <div>
+                        <span className="font-semibold text-foreground/80">User ID: </span>
+                        <span className="font-mono text-[11px]">{user.id}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-foreground/80">
+                          {lang === "ar" ? "آخر نشاط:" : "Last Active:"}{" "}
+                        </span>
+                        <span>{user.lastActive}</span>
+                      </div>
+                      {formData.employeeCode && (
+                        <div>
+                          <span className="font-semibold text-foreground/80">
+                            {lang === "ar" ? "كود الموظف:" : "Employee Code:"}{" "}
+                          </span>
+                          <span className="font-mono text-[11px] font-bold text-primary">
+                            {formData.employeeCode}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-2 border-t border-border/60">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-border bg-card text-xs font-bold hover:bg-secondary transition-colors"
-            >
-              {lang === "ar" ? "إلغاء" : "Cancel"}
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold uppercase shadow-sm hover:opacity-95 transition-all"
-            >
-              {lang === "ar" ? "حفظ التعديلات" : "Save Changes"}
-            </button>
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-border/60 bg-gradient-to-r from-card via-secondary/20 to-card flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold text-[11px]">
+                {formData.allowedPages.length} {lang === "ar" ? "صفحة" : "pages"}
+              </span>
+              <span>•</span>
+              <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent font-bold text-[11px]">
+                {formData.allowedActions.length} {lang === "ar" ? "عملية" : "actions"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-border bg-card text-xs font-bold hover:bg-secondary transition-colors"
+              >
+                {lang === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>
+                  {isEdit
+                    ? lang === "ar"
+                      ? "حفظ التعديلات"
+                      : "Save Changes"
+                    : lang === "ar"
+                    ? "إضافة المستخدم"
+                    : "Create User"}
+                </span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

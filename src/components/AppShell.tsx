@@ -143,8 +143,9 @@ function NavList({
     (tk) => tk.status === "open" || tk.status === "in_progress"
   ).length;
 
+  const hasWildcard = allowedPages.includes("*") || (isAdmin && allowedPages.length === 0);
   const visibleItems = items.filter(
-    (item) => isAdmin || allowedPages.includes("*") || allowedPages.includes(item.to)
+    (item) => hasWildcard || allowedPages.includes(item.to)
   );
   if (visibleItems.length === 0) return null;
 
@@ -206,9 +207,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const currentPath = location.pathname;
   const normalizedPath = currentPath === "/" ? "/" : currentPath.replace(/\/$/, "");
   const isAdmin = currentUser.role === "admin";
-  const isPageAllowed =
-    isAdmin ||
+  const hasWildcardAccess =
     currentUser.allowedPages.includes("*") ||
+    (isAdmin && currentUser.allowedPages.length === 0);
+
+  const isPageAllowed =
+    hasWildcardAccess ||
     currentUser.allowedPages.includes(normalizedPath) ||
     currentUser.allowedPages.some(
       (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
@@ -219,14 +223,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Check if current user only has permission for AI Workspace
   const hasOnlyAiPermission =
-    !isAdmin &&
+    !hasWildcardAccess &&
     (currentUser.role === "ai" ||
       (currentUser.allowedPages.length > 0 &&
         currentUser.allowedPages.every((p) => p === "/ai")));
 
   // Check if current user only has permission for POS Screen
   const hasOnlyPosPermission =
-    !isAdmin &&
+    !hasWildcardAccess &&
     (currentUser.role === "pos_cashier" ||
       (currentUser.allowedPages.length > 0 &&
         currentUser.allowedPages.every((p) => p === "/pos")));
