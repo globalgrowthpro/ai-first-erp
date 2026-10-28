@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -10,32 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -826,6 +801,48 @@ export type Database = {
           },
         ]
       }
+      erp_api_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          key_hash: string | null
+          key_masked: string
+          last_used_at: string | null
+          name: string
+          prefix: string
+          rate_limit_per_min: number
+          scopes: string[]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_hash?: string | null
+          key_masked: string
+          last_used_at?: string | null
+          name: string
+          prefix: string
+          rate_limit_per_min?: number
+          scopes?: string[]
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_hash?: string | null
+          key_masked?: string
+          last_used_at?: string | null
+          name?: string
+          prefix?: string
+          rate_limit_per_min?: number
+          scopes?: string[]
+          status?: string
+        }
+        Relationships: []
+      }
       gateway_settings: {
         Row: {
           id: string
@@ -857,6 +874,8 @@ export type Database = {
           id: string
           is_internal: boolean
           message: string
+          sender_name: string | null
+          sender_role: string | null
           ticket_id: string
         }
         Insert: {
@@ -865,6 +884,8 @@ export type Database = {
           id?: string
           is_internal?: boolean
           message: string
+          sender_name?: string | null
+          sender_role?: string | null
           ticket_id: string
         }
         Update: {
@@ -873,16 +894,11 @@ export type Database = {
           id?: string
           is_internal?: boolean
           message?: string
+          sender_name?: string | null
+          sender_role?: string | null
           ticket_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "helpdesk_ticket_responses_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "helpdesk_ticket_responses_ticket_id_fkey"
             columns: ["ticket_id"]
@@ -895,6 +911,7 @@ export type Database = {
       helpdesk_tickets: {
         Row: {
           assigned_to: string | null
+          attachments: Json | null
           branch_or_location: string | null
           category: Database["public"]["Enums"]["ticket_category"]
           created_at: string
@@ -914,6 +931,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          attachments?: Json | null
           branch_or_location?: string | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string
@@ -927,12 +945,13 @@ export type Database = {
           submitter_name?: string | null
           submitter_phone?: string | null
           submitter_role?: string | null
-          ticket_number: string
+          ticket_number?: string
           title: string
           updated_at?: string
         }
         Update: {
           assigned_to?: string | null
+          attachments?: Json | null
           branch_or_location?: string | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string
@@ -950,22 +969,7 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "helpdesk_tickets_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "helpdesk_tickets_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       journal_entries: {
         Row: {
@@ -1672,12 +1676,16 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed_actions: string[] | null
           avatar_url: string | null
+          branch: string | null
           created_at: string
           department_id: string | null
           email: string | null
           full_name_ar: string
           full_name_en: string
+          helpdesk_branch: string | null
+          helpdesk_scope: string | null
           id: string
           is_active: boolean
           phone: string | null
@@ -1686,12 +1694,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_actions?: string[] | null
           avatar_url?: string | null
+          branch?: string | null
           created_at?: string
           department_id?: string | null
           email?: string | null
           full_name_ar?: string
           full_name_en?: string
+          helpdesk_branch?: string | null
+          helpdesk_scope?: string | null
           id?: string
           is_active?: boolean
           phone?: string | null
@@ -1700,12 +1712,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_actions?: string[] | null
           avatar_url?: string | null
+          branch?: string | null
           created_at?: string
           department_id?: string | null
           email?: string | null
           full_name_ar?: string
           full_name_en?: string
+          helpdesk_branch?: string | null
+          helpdesk_scope?: string | null
           id?: string
           is_active?: boolean
           phone?: string | null
@@ -2324,6 +2340,45 @@ export type Database = {
           },
         ]
       }
+      security_audit_logs: {
+        Row: {
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          details: string
+          event_type: string
+          id: string
+          ip_address: string
+          is_resolved: boolean
+          metadata: Json | null
+          severity: string
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details: string
+          event_type: string
+          id?: string
+          ip_address: string
+          is_resolved?: boolean
+          metadata?: Json | null
+          severity: string
+        }
+        Update: {
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          details?: string
+          event_type?: string
+          id?: string
+          ip_address?: string
+          is_resolved?: boolean
+          metadata?: Json | null
+          severity?: string
+        }
+        Relationships: []
+      }
       serial_numbers: {
         Row: {
           created_at: string
@@ -2489,6 +2544,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_active_sessions: {
+        Row: {
+          browser: string
+          created_at: string
+          device_type: string
+          id: string
+          ip_address: string
+          is_current: boolean
+          is_revoked: boolean
+          last_active: string
+          location: string | null
+          os: string
+          user_id: string | null
+          user_name: string
+          user_role: string
+        }
+        Insert: {
+          browser: string
+          created_at?: string
+          device_type?: string
+          id?: string
+          ip_address: string
+          is_current?: boolean
+          is_revoked?: boolean
+          last_active?: string
+          location?: string | null
+          os: string
+          user_id?: string | null
+          user_name?: string
+          user_role?: string
+        }
+        Update: {
+          browser?: string
+          created_at?: string
+          device_type?: string
+          id?: string
+          ip_address?: string
+          is_current?: boolean
+          is_revoked?: boolean
+          last_active?: string
+          location?: string | null
+          os?: string
+          user_id?: string | null
+          user_name?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
       user_pages: {
         Row: {
           created_at: string
@@ -2514,19 +2617,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: string
           user_id?: string
         }
         Relationships: []
@@ -2797,6 +2900,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_user_view_helpdesk_ticket: {
+        Args: { p_ticket_id: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role:
         | {
             Args: {
@@ -2997,9 +3104,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       account_type: ["asset", "liability", "equity", "revenue", "expense"],
