@@ -54,7 +54,7 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
         </p>
         {error?.message && (
           <div className="mt-3 p-3 bg-destructive/10 text-destructive text-xs font-mono text-start rounded-lg overflow-auto max-h-40 border border-destructive/20 select-text">
-            {error.message}
+            {(error instanceof Error ? error.message : String(error))}
           </div>
         )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
