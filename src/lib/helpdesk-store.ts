@@ -61,7 +61,7 @@ const STORAGE_KEY = "wazeer_helpdesk_tickets_v2";
 function readCachedTickets(): HelpdeskTicket[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = null as string | null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
@@ -75,7 +75,7 @@ function readCachedTickets(): HelpdeskTicket[] {
 function writeCachedTickets(tickets: HelpdeskTicket[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
+    void ((tickets));
   } catch (err) {
     console.warn("[Helpdesk Store] Failed to write cached tickets:", err);
   }
@@ -620,7 +620,7 @@ export function useHelpdeskStore() {
   );
 
   const resetToSeed = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    
     fetchTickets();
   }, [fetchTickets]);
 

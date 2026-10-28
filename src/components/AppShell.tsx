@@ -193,6 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const {
     currentUser,
     isAuthenticated,
+    authReady,
     demoAccounts,
     loginAs,
     logout,
@@ -916,7 +917,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Dialog>
 
       {/* Login Screen Overlay with 1-Click Demo Accounts */}
-      {!isAuthenticated && (
+      {authReady && !isAuthenticated && (
         <LoginOverlay
           onLoginSuccess={() => {
             setAuthenticated(true);

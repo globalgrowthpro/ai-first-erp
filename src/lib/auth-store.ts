@@ -270,7 +270,9 @@ function readCachedProvisionedAccounts(): Map<string, ProvisionedAccount> {
   const map = new Map<string, ProvisionedAccount>();
   if (typeof window === "undefined") return map;
   try {
-    const raw = localStorage.getItem(PROV_STORAGE_KEY);
+    // Legacy cache removed: clear any old copy that may contain passwords
+    localStorage.removeItem(PROV_STORAGE_KEY);
+    const raw = null as string | null;
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) {
@@ -286,7 +288,7 @@ function readCachedProvisionedAccounts(): Map<string, ProvisionedAccount> {
 function writeCachedProvisionedAccounts(map: Map<string, ProvisionedAccount>) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(PROV_STORAGE_KEY, JSON.stringify(Array.from(map.values())));
+    void map; // in-memory only
   } catch {}
 }
 
@@ -310,7 +312,7 @@ export async function saveProvisionedAccount(account: {
   const normalizedEmail = account.email.trim().toLowerCase();
   const entry: ProvisionedAccount = {
     email: normalizedEmail,
-    passwordPlain: account.password,
+    passwordPlain: undefined,
     role: account.role,
     userId: account.userId,
     name: account.name || { ar: "مستخدم النظام", en: "System User" },
@@ -329,6 +331,21 @@ export async function saveProvisionedAccount(account: {
   // Synchronize directly to Supabase profiles, user_roles & user_pages tables
   try {
     let targetUserId = isUuid(account.userId) ? account.userId : null;
+    // Create / update the real sign-in account (admin only, done on the server)
+    try {
+      const { upsertAuthAccount } = await import("@/lib/accounts.functions");
+      const res = await upsertAuthAccount({
+        data: {
+          email: normalizedEmail,
+          password: account.password || undefined,
+          nameAr: account.name?.ar,
+          nameEn: account.name?.en,
+        },
+      });
+      if (res?.userId) targetUserId = res.userId;
+    } catch (authErr) {
+      console.warn("[Auth Store] Could not create sign-in account:", authErr);
+    }
     if (!targetUserId) {
       const { data: matched } = await supabase
         .from("profiles")
@@ -398,23 +415,22 @@ const AUTH_USER_KEY = "wazeer_erp_auth_user";
 const AUTH_STATUS_KEY = "wazeer_erp_is_auth";
 
 function readStoredUser(): AppUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(AUTH_USER_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
   return null;
 }
 
 function readStoredAuth(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const isAuth = localStorage.getItem(AUTH_STATUS_KEY);
-    if (isAuth === "true") return true;
-    if (localStorage.getItem(AUTH_USER_KEY)) return true;
-  } catch {}
   return false;
 }
+
+// Remove legacy locally-stored sessions; the session now lives in Supabase Auth only
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_STATUS_KEY);
+  } catch {}
+}
+
+let globalReady = false;
 
 let globalUser: AppUser | null = readStoredUser();
 let globalIsAuth = readStoredAuth();
@@ -435,13 +451,7 @@ function persistSession(user: AppUser | null, isAuth: boolean) {
   globalIsAuth = isAuth;
   if (typeof window !== "undefined") {
     try {
-      if (user && isAuth) {
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-        localStorage.setItem(AUTH_STATUS_KEY, "true");
-      } else {
-        localStorage.removeItem(AUTH_USER_KEY);
-        localStorage.removeItem(AUTH_STATUS_KEY);
-      }
+      globalReady = true;
     } catch {}
   }
   emit();
@@ -491,11 +501,13 @@ async function syncAccountsFromSupabase() {
 export function useAuthStore() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(globalUser);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(globalIsAuth);
+  const [authReady, setAuthReady] = useState<boolean>(globalReady);
 
   useEffect(() => {
     const handle = () => {
       setCurrentUser(globalUser);
       setIsAuthenticated(globalIsAuth);
+      setAuthReady(globalReady);
     };
     listeners.add(handle);
     return () => {
@@ -769,21 +781,17 @@ export function useAuthStore() {
         .then(({ data: { session } }) => {
           if (session?.user) {
             loadUserProfile(session.user.id, session.user.email || "");
-          } else if (globalUser?.email) {
-            loadUserProfile(globalUser.id, globalUser.email);
-          } else if (!globalUser && !readStoredAuth()) {
+          } else {
             persistSession(null, false);
           }
         })
-        .catch(() => {
-          if (globalUser?.email) {
-            loadUserProfile(globalUser.id, globalUser.email);
-          }
-        });
+        .catch(() => persistSession(null, false));
 
-      supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          loadUserProfile(session.user.id, session.user.email || "");
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT") {
+          persistSession(null, false);
+        } else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+          if (session?.user) loadUserProfile(session.user.id, session.user.email || "");
         }
       });
 
@@ -845,75 +853,24 @@ export function useAuthStore() {
     const email = rawEmail.trim().toLowerCase();
     const pass = rawPass.trim();
 
-    // Check POS Cashier credentials directly (Universal or per-branch)
-    const isDefaultCashier =
-      (email === "cashier@wazeer-elhelw.com" ||
-        email === "pos@wazeer-elhelw.com" ||
-        email === "cashier" ||
-        email === "pos") &&
-      (pass === "Pos@123456" || pass === "pos123" || pass === "cashier123" || pass === "123456");
-
-    if (isDefaultCashier) {
-      await loadUserProfile(POS_CASHIER_ACCOUNT.id, email);
-      return true;
-    }
-
-    // Check against 15 Branch Cashiers Registry
+    // Usernames are aliases for real accounts; the password is always checked by Supabase Auth
+    let authEmail = email;
     const branchCashier = BRANCH_CASHIERS_REGISTRY.find(
-      (bc) =>
-        (email === bc.email.toLowerCase() || email === bc.username.toLowerCase()) &&
-        (pass === bc.password || pass === "123456" || pass === "Pos@123456"),
+      (bc) => email === bc.email.toLowerCase() || email === bc.username.toLowerCase(),
     );
+    if (branchCashier) authEmail = branchCashier.email.toLowerCase();
+    else if (email === "wazeeradmin" || email === "admin") authEmail = "wazeeradmin@erp.org";
 
-    if (branchCashier) {
-      try {
-        const { data } = await supabase.auth.signInWithPassword({
-          email: branchCashier.email,
-          password: branchCashier.password,
-        });
-        if (data?.user) {
-          await loadUserProfile(data.user.id, branchCashier.email);
-          return true;
-        }
-      } catch (_) {}
-      await loadUserProfile(`usr-cashier-${branchCashier.branchCode}`, branchCashier.email);
-      return true;
-    }
-
-    // Try Supabase Auth
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: pass,
+      });
       if (!error && data?.user) {
-        await loadUserProfile(data.user.id, data.user.email || email);
+        await loadUserProfile(data.user.id, data.user.email || authEmail);
         return true;
       }
     } catch (_) {}
-
-    // Check provisioned accounts synced from Supabase
-    const prov = getProvisionedAccount(email);
-    if (prov && (!prov.passwordPlain || pass === prov.passwordPlain)) {
-      await loadUserProfile(prov.userId, prov.email);
-      return true;
-    }
-
-    // Admin fallback credentials (including official credentials wazeerAdmin@erp.org / #786$Wazeri)
-    const isAdmin =
-      (email === "wazeeradmin@erp.org" ||
-        email === "wazeeradmin" ||
-        email === "hafez@wazeer-elhelw.com" ||
-        email === "admin@wazeer-elhelw.com" ||
-        email === "admin") &&
-      (pass === "#786$Wazeri" ||
-        pass === "admin123" ||
-        pass === "wazeer123" ||
-        pass === "123456" ||
-        pass === "Pos@123456");
-
-    if (isAdmin) {
-      const cleanAdminEmail = email.includes("@") ? email : "wazeeradmin@erp.org";
-      await loadUserProfile("usr-wazeer-admin", cleanAdminEmail);
-      return true;
-    }
 
     return false;
   };
@@ -929,11 +886,7 @@ export function useAuthStore() {
   };
 
   const setAuthenticated = (val: boolean) => {
-    if (!val) {
-      persistSession(null, false);
-    } else {
-      persistSession(globalUser || readStoredUser() || DEFAULT_USER, true);
-    }
+    if (!val) void logout();
   };
 
   const adminAccount: AppUser = {
@@ -948,6 +901,7 @@ export function useAuthStore() {
   return {
     currentUser: currentUser || DEFAULT_USER,
     isAuthenticated,
+    authReady,
     demoAccounts: [adminAccount, POS_CASHIER_ACCOUNT] as AppUser[],
     login: loginSync,
     loginAsync: login,
