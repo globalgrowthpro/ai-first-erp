@@ -93,7 +93,7 @@ const USERS_STORAGE_KEY = "wazeer_org_users_v2";
 function readCachedOrgUsers(): UserItem[] {
   if (typeof window === "undefined") return defaultUsers;
   try {
-    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    const raw = null as string | null;
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -105,7 +105,7 @@ function readCachedOrgUsers(): UserItem[] {
 function writeCachedOrgUsers(users: UserItem[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    void ((users));
   } catch {}
 }
 

@@ -331,6 +331,21 @@ export async function saveProvisionedAccount(account: {
   // Synchronize directly to Supabase profiles, user_roles & user_pages tables
   try {
     let targetUserId = isUuid(account.userId) ? account.userId : null;
+    // Create / update the real sign-in account (admin only, done on the server)
+    try {
+      const { upsertAuthAccount } = await import("@/lib/accounts.functions");
+      const res = await upsertAuthAccount({
+        data: {
+          email: normalizedEmail,
+          password: account.password || undefined,
+          nameAr: account.name?.ar,
+          nameEn: account.name?.en,
+        },
+      });
+      if (res?.userId) targetUserId = res.userId;
+    } catch (authErr) {
+      console.warn("[Auth Store] Could not create sign-in account:", authErr);
+    }
     if (!targetUserId) {
       const { data: matched } = await supabase
         .from("profiles")
