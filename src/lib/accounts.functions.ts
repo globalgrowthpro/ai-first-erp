@@ -7,7 +7,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const upsertAuthAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string; password?: string; nameAr?: string; nameEn?: string }) => {
+  .inputValidator((input: { email: string; password?: string | undefined; nameAr?: string | undefined; nameEn?: string | undefined }) => {
     const email = String(input.email || "").trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("Invalid email");
     if (input.password && input.password.length < 6) throw new Error("Password too short");
