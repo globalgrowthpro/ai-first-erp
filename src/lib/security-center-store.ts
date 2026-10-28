@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getActiveAuthUser } from "@/lib/auth-store";
 
 export interface OwaspAuditItem {
   id: string;
@@ -227,9 +228,8 @@ export async function detectRealClientSession(): Promise<ActiveSession> {
   let userId = "usr_current_admin";
 
   try {
-    const stored = localStorage.getItem("hafez_erp_auth_user");
-    if (stored) {
-      const parsed = JSON.parse(stored);
+    const parsed = getActiveAuthUser() as any;
+    if (parsed) {
       if (parsed.email) userEmail = parsed.email;
       if (parsed.name) userName = parsed.name.ar || parsed.name.en || parsed.name;
       if (parsed.role) userRole = parsed.role;
@@ -325,25 +325,153 @@ export const isMockEntry = (ip?: string, actor?: string, details?: string, event
   );
 };
 
-function loadStored<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.filter((item: any) => !isMockEntry(item.ipAddress, item.actor, item.details, item.eventType)) as any;
-    }
-    return parsed;
-  } catch {
-    return fallback;
-  }
+function loadStored<T>(_key: string, fallback: T): T {
+  return fallback;
 }
 
+const isUuidStr = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
+const persistedLogIds = new Set<string>();
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Persists security-center state to Supabase tables instead of the browser. */
 function saveStored(key: string, val: any) {
   if (typeof window === "undefined") return;
+  const db = supabase as any;
+  (async () => {
+    try {
+      if (key === STORAGE_KEY_POLICIES) {
+        const { data } = await db.from("company_settings").select("id").limit(1).maybeSingle();
+        if (data?.id) await db.from("company_settings").update({ security_matrix: val }).eq("id", data.id);
+      } else if (key === STORAGE_KEY_LOGS) {
+        const list = val as SecurityEventLog[];
+        if (list.length === 0) {
+          await db.from("security_audit_logs").delete().not("id", "is", null);
+          persistedLogIds.clear();
+          return;
+        }
+        const fresh = list.filter((l) => !persistedLogIds.has(l.id));
+        if (fresh.length === 0) return;
+        const { data: auth } = await supabase.auth.getUser();
+        const rows = fresh.map((l) => {
+          const id = isUuidStr(l.id) ? l.id : crypto.randomUUID();
+          persistedLogIds.add(l.id);
+          persistedLogIds.add(id);
+          l.id = id;
+          return {
+            id,
+            severity: l.severity,
+            event_type: l.eventType,
+            ip_address: l.ipAddress || "0.0.0.0",
+            actor_id: auth.user?.id ?? null,
+            actor_email: auth.user?.email ?? l.actor,
+            details: l.details,
+            is_resolved: l.resolved,
+          };
+        });
+        await db.from("security_audit_logs").insert(rows);
+      } else if (key === STORAGE_KEY_KEYS) {
+        const list = val as (ApiKeyItem & { _fullKey?: string })[];
+        for (const k of list) {
+          if (!isUuidStr(k.id)) k.id = crypto.randomUUID();
+          const row: any = {
+            id: k.id,
+            name: k.name,
+            prefix: k.prefix,
+            key_masked: k.keyMasked,
+            scopes: k.scopes,
+            rate_limit_per_min: k.rateLimitPerMin,
+            expires_at: k.expiresAt,
+            last_used_at: k.lastUsedAt,
+            status: k.status,
+          };
+          if (k._fullKey) {
+            row.key_hash = await sha256Hex(k._fullKey);
+            delete k._fullKey;
+          }
+          await db.from("erp_api_keys").upsert(row);
+        }
+      } else if (key === STORAGE_KEY_SESSIONS) {
+        const list = val as ActiveSession[];
+        const { data: auth } = await supabase.auth.getUser();
+        const { data: existing } = await db.from("user_active_sessions").select("id").eq("is_revoked", false);
+        const keep = new Set(list.map((x) => x.id));
+        const revoked = (existing || []).map((r: any) => r.id).filter((id: string) => !keep.has(id));
+        if (revoked.length) await db.from("user_active_sessions").update({ is_revoked: true }).in("id", revoked);
+        const current = list.find((x) => x.isCurrent);
+        if (current && auth.user) {
+          if (!isUuidStr(current.id)) current.id = crypto.randomUUID();
+          await db.from("user_active_sessions").upsert({
+            id: current.id,
+            user_id: auth.user.id,
+            user_name: current.userName,
+            user_role: current.userRole,
+            device_type: current.deviceType,
+            browser: current.browser,
+            os: current.os,
+            ip_address: current.ipAddress,
+            location: current.location,
+            last_active: new Date().toISOString(),
+            is_current: false,
+            is_revoked: false,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[Security Center] Could not save to database:", err);
+    }
+  })();
+}
+
+async function loadFromDatabase() {
+  const db = supabase as any;
   try {
-    localStorage.setItem(key, JSON.stringify(val));
+    const [{ data: settings }, { data: keys }, { data: sessions }] = await Promise.all([
+      db.from("company_settings").select("security_matrix").limit(1).maybeSingle(),
+      db.from("erp_api_keys").select("*").order("created_at", { ascending: false }),
+      db.from("user_active_sessions").select("*").eq("is_revoked", false).order("last_active", { ascending: false }).limit(50),
+    ]);
+    if (settings?.security_matrix && typeof settings.security_matrix === "object") {
+      globalState.policies = { ...DEFAULT_POLICIES, ...settings.security_matrix };
+    }
+    if (keys) {
+      globalState.apiKeys = keys.map((k: any) => ({
+        id: k.id,
+        name: k.name,
+        prefix: k.prefix,
+        keyMasked: k.key_masked,
+        scopes: k.scopes || [],
+        rateLimitPerMin: k.rate_limit_per_min,
+        createdAt: String(k.created_at).split("T")[0],
+        expiresAt: k.expires_at,
+        lastUsedAt: k.last_used_at,
+        status: k.status,
+      }));
+    }
+    if (sessions) {
+      const current = globalState.sessions.find((x) => x.isCurrent);
+      const others: ActiveSession[] = sessions
+        .filter((r: any) => r.id !== current?.id)
+        .map((r: any) => ({
+          id: r.id,
+          userId: r.user_id,
+          userName: r.user_name,
+          userRole: r.user_role,
+          ipAddress: r.ip_address,
+          location: r.location || "",
+          deviceType: r.device_type,
+          browser: r.browser,
+          os: r.os,
+          lastActive: r.last_active,
+          isCurrent: false,
+          status: "active",
+        }));
+      globalState.sessions = current ? [current, ...others] : others;
+    }
+    notify();
   } catch {}
 }
 
@@ -377,6 +505,7 @@ export function useSecurityCenterStore() {
   useEffect(() => {
     if (!globalState.isInitialized) {
       globalState.isInitialized = true;
+      void loadFromDatabase();
 
       // 1. Detect Real Connected Session
       detectRealClientSession().then((realSession) => {
@@ -432,8 +561,8 @@ export function useSecurityCenterStore() {
               }));
 
             if (realDbLogs.length > 0) {
+              realDbLogs.forEach((l: SecurityEventLog) => persistedLogIds.add(l.id));
               globalState.logs = realDbLogs;
-              saveStored(STORAGE_KEY_LOGS, globalState.logs);
               notify();
             }
           }
@@ -510,7 +639,8 @@ export function useSecurityCenterStore() {
 
     const expiresAt = expiryDays > 0 ? (new Date(Date.now() + expiryDays * 86400000).toISOString().split("T")[0] ?? null) : null;
 
-    const newKey: ApiKeyItem = {
+    const newKey: ApiKeyItem & { _fullKey?: string } = {
+      _fullKey: fullKey,
       id: `key_${Date.now()}`,
       name,
       prefix,
