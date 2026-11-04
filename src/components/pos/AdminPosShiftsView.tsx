@@ -133,9 +133,10 @@ export function normalizeDateOnly(rawDate?: string | Date | number | null): stri
   try {
     if (typeof rawDate === "string") {
       const trimmed = rawDate.trim();
-      const match = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
-      if (match && match[1] && match[2] && match[3]) {
-        return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+      // If it is strictly YYYY-MM-DD or YYYY/MM/DD with NO time component
+      if (/^\d{4}[/-]\d{1,2}[/-]\d{1,2}$/.test(trimmed)) {
+        const parts = trimmed.split(/[/-]/);
+        return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
       }
     }
     const d = new Date(rawDate);
@@ -283,6 +284,7 @@ export function AdminPosShiftsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedCashier, setSelectedCashier] = useState("all");
+  const [selectedProduct, setSelectedProduct] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   // Default to "all" so all real data is immediately visible on first load
   const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
@@ -310,17 +312,23 @@ export function AdminPosShiftsView() {
   const [closeFormNotes, setCloseFormNotes] = useState("");
   const [isSubmittingClose, setIsSubmittingClose] = useState(false);
 
-  // Helper date generators
-  const getTodayStr = () => new Date().toISOString().slice(0, 10);
+  // Helper date generators using local calendar
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const getTodayStr = () => formatLocalDate(new Date());
   const getYesterdayStr = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
+    return formatLocalDate(d);
   };
   const getDaysAgoStr = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() - days);
-    return d.toISOString().slice(0, 10);
+    return formatLocalDate(d);
   };
   const getStartOfMonthStr = () => {
     const d = new Date();
@@ -592,6 +600,68 @@ export function AdminPosShiftsView() {
     return Array.from(map.values());
   }, [shifts, orders, dynamicBranchMap]);
 
+  // Unique products for filter dropdown
+  const productFilterOptions = useMemo(() => {
+    const map = new Map<string, { id: string; nameAr: string; nameEn: string; sku: string }>();
+    for (const it of orderItems) {
+      const key = (it.sku || it.nameAr || "").trim();
+      if (key && !map.has(key)) {
+        map.set(key, {
+          id: key,
+          nameAr: it.nameAr || it.sku,
+          nameEn: it.nameEn || it.nameAr || it.sku,
+          sku: it.sku || "",
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar"));
+  }, [orderItems]);
+
+  // Orders containing selected product
+  const matchingOrderIdSetForProduct = useMemo(() => {
+    if (selectedProduct === "all") return null;
+    const s = new Set<string>();
+    const selNorm = selectedProduct.toLowerCase().trim();
+    for (const it of orderItems) {
+      const itSku = (it.sku || "").toLowerCase().trim();
+      const itId = (it.productId || "").toLowerCase().trim();
+      const itNameAr = (it.nameAr || "").toLowerCase().trim();
+      const itNameEn = (it.nameEn || "").toLowerCase().trim();
+      if (
+        itSku === selNorm ||
+        itId === selNorm ||
+        itNameAr === selNorm ||
+        itNameEn === selNorm ||
+        itNameAr.includes(selNorm) ||
+        selNorm.includes(itNameAr)
+      ) {
+        s.add(it.orderId);
+      }
+    }
+    return s;
+  }, [orderItems, selectedProduct]);
+
+  // Shifts containing orders with selected product
+  const matchingShiftIdsForProduct = useMemo(() => {
+    if (selectedProduct === "all" || !matchingOrderIdSetForProduct) return null;
+    const shiftIds = new Set<string>();
+    const matchingOrdersList = orders.filter((o) => matchingOrderIdSetForProduct.has(o.id));
+    for (const o of matchingOrdersList) {
+      const orderDate = normalizeDateOnly(o.createdAt);
+      for (const s of shifts) {
+        const sOpenDate = normalizeDateOnly(s.openedAt || s.dateStr);
+        const sCloseDate = s.closedAt ? normalizeDateOnly(s.closedAt) : sOpenDate;
+        const sameCashier = s.cashierId === o.cashierId || s.cashierName === o.cashierName;
+        const sameBranch = s.branchId === o.branchId || o.branchId.includes(s.branchId) || s.branchId.includes(o.branchId);
+        const inDate = orderDate >= sOpenDate && orderDate <= sCloseDate;
+        if (sameCashier && (sameBranch || inDate)) {
+          shiftIds.add(s.id);
+        }
+      }
+    }
+    return shiftIds;
+  }, [selectedProduct, matchingOrderIdSetForProduct, orders, shifts]);
+
   // Filtered Shifts List
   const filteredShifts = useMemo(() => {
     return shifts.filter((s) => {
@@ -629,6 +699,11 @@ export function AdminPosShiftsView() {
         return false;
       }
 
+      // 3.1 Product Filter (Only shifts containing this product)
+      if (matchingShiftIdsForProduct && !matchingShiftIdsForProduct.has(s.id)) {
+        return false;
+      }
+
       // 4. Status Filter
       if (selectedStatus === "open" && s.status !== "open") return false;
       if (selectedStatus === "closed" && s.status !== "closed") return false;
@@ -636,24 +711,26 @@ export function AdminPosShiftsView() {
       if (selectedStatus === "surplus" && s.varianceStatus !== "surplus") return false;
       if (selectedStatus === "balanced" && s.varianceStatus !== "balanced") return false;
 
-      // 5. Date Filter (Normalized ISO Date Comparison including active/closed window)
+      // 5. Date Filter (Normalized Local Calendar Date Comparison)
       if (dateFrom || dateTo) {
         const normFrom = dateFrom ? normalizeDateOnly(dateFrom) : "";
         const normTo = dateTo ? normalizeDateOnly(dateTo) : "";
 
-        const openD = normalizeDateOnly(s.openedAt || s.dateStr);
-        const closeD = s.closedAt
-          ? normalizeDateOnly(s.closedAt)
-          : (s.status === "open" ? normalizeDateOnly(new Date()) : openD);
+        const openDate = normalizeDateOnly(s.openedAt || s.dateStr);
+        const closeDate = s.closedAt ? normalizeDateOnly(s.closedAt) : openDate;
 
-        // A shift is active/relevant in the range if it opened before/on the end date AND closed after/on the start date
-        if (normFrom && closeD < normFrom) return false;
-        if (normTo && openD > normTo) return false;
+        const matchOpen = (!normFrom || openDate >= normFrom) && (!normTo || openDate <= normTo);
+        const matchClose = (!normFrom || closeDate >= normFrom) && (!normTo || closeDate <= normTo);
+        const matchSpan = Boolean(normFrom && normTo && openDate <= normFrom && closeDate >= normTo);
+
+        if (!matchOpen && !matchClose && !matchSpan) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [shifts, searchQuery, selectedBranch, selectedCashier, selectedStatus, dateFrom, dateTo]);
+  }, [shifts, searchQuery, selectedBranch, selectedCashier, selectedStatus, dateFrom, dateTo, matchingShiftIdsForProduct]);
 
   // Filtered Orders List (for Hourly, Product, Branch Reports)
   const filteredOrders = useMemo(() => {
@@ -682,6 +759,11 @@ export function AdminPosShiftsView() {
         return false;
       }
 
+      // 3.1 Product Filter
+      if (matchingOrderIdSetForProduct && !matchingOrderIdSetForProduct.has(o.id)) {
+        return false;
+      }
+
       // 4. Date Filter
       if (dateFrom || dateTo) {
         const orderD = normalizeDateOnly(o.createdAt);
@@ -693,7 +775,7 @@ export function AdminPosShiftsView() {
 
       return true;
     });
-  }, [orders, searchQuery, selectedBranch, selectedCashier, dateFrom, dateTo]);
+  }, [orders, searchQuery, selectedBranch, selectedCashier, dateFrom, dateTo, matchingOrderIdSetForProduct]);
 
   // Set of matching order IDs for filtering order items
   const filteredOrderIdSet = useMemo(() => {
@@ -702,8 +784,26 @@ export function AdminPosShiftsView() {
 
   // Filtered Order Items
   const filteredOrderItems = useMemo(() => {
-    return orderItems.filter((it) => filteredOrderIdSet.has(it.orderId));
-  }, [orderItems, filteredOrderIdSet]);
+    return orderItems.filter((it) => {
+      if (!filteredOrderIdSet.has(it.orderId)) return false;
+      if (selectedProduct !== "all") {
+        const selNorm = selectedProduct.toLowerCase().trim();
+        const itSku = (it.sku || "").toLowerCase().trim();
+        const itId = (it.productId || "").toLowerCase().trim();
+        const itNameAr = (it.nameAr || "").toLowerCase().trim();
+        const itNameEn = (it.nameEn || "").toLowerCase().trim();
+        const match =
+          itSku === selNorm ||
+          itId === selNorm ||
+          itNameAr === selNorm ||
+          itNameEn === selNorm ||
+          itNameAr.includes(selNorm) ||
+          selNorm.includes(itNameAr);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [orderItems, filteredOrderIdSet, selectedProduct]);
 
   // =========================================================================
   // 1. HOURLY SALES REPORT AGGREGATION
@@ -1544,7 +1644,7 @@ export function AdminPosShiftsView() {
       {/* 4. Filter Bar (Search, Branch, Cashier, Status, and Date Presets) */}
       <div className="p-3.5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-3">
         {/* Row 1: Search & Entity Selectors */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -1591,6 +1691,23 @@ export function AdminPosShiftsView() {
             <ChevronDown className="w-3.5 h-3.5 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>
 
+          {/* Product / Item Filter */}
+          <div className="relative">
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="w-full text-xs font-bold py-2 px-3 pe-8 rounded-xl border border-border/80 bg-background text-foreground focus:outline-none cursor-pointer appearance-none"
+            >
+              <option value="all">🍰 {lang === "ar" ? "جميع الأصناف والمنتجات" : "All Products / Items"}</option>
+              {productFilterOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {pick(p.nameAr, p.nameEn)} {p.sku ? `(${p.sku})` : ""}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+          </div>
+
           {/* Status Filter */}
           <div className="relative">
             <select
@@ -1622,8 +1739,10 @@ export function AdminPosShiftsView() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("today")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "today" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "today"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {lang === "ar" ? "اليوم" : "Today"}
@@ -1631,8 +1750,10 @@ export function AdminPosShiftsView() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("yesterday")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "yesterday" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "yesterday"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {lang === "ar" ? "أمس" : "Yesterday"}
@@ -1640,8 +1761,10 @@ export function AdminPosShiftsView() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("week")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "week" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "week"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {lang === "ar" ? "آخر 7 أيام" : "Last 7 Days"}
@@ -1649,8 +1772,10 @@ export function AdminPosShiftsView() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("month")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "month" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "month"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {lang === "ar" ? "هذا الشهر" : "This Month"}
@@ -1658,8 +1783,10 @@ export function AdminPosShiftsView() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("all")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "all" ? "bg-card text-foreground shadow-2xs" : "text-muted-foreground hover:text-foreground"
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "all"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {lang === "ar" ? "كل التواريخ" : "All Dates"}
@@ -1692,13 +1819,14 @@ export function AdminPosShiftsView() {
           </div>
 
           {/* Reset Filters */}
-          {(searchQuery || selectedBranch !== "all" || selectedCashier !== "all" || selectedStatus !== "all" || datePreset !== "all") && (
+          {(searchQuery || selectedBranch !== "all" || selectedCashier !== "all" || selectedProduct !== "all" || selectedStatus !== "all" || datePreset !== "all") && (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery("");
                 setSelectedBranch("all");
                 setSelectedCashier("all");
+                setSelectedProduct("all");
                 setSelectedStatus("all");
                 handleApplyPreset("all");
               }}

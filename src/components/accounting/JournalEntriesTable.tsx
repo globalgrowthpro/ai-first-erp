@@ -57,6 +57,42 @@ export function JournalEntriesTable({
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
+
+  const handleApplyPreset = (preset: "all" | "today" | "yesterday" | "week" | "month") => {
+    setDatePreset(preset);
+    const d = new Date();
+    const formatD = (dt: Date) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const day = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const today = formatD(d);
+
+    if (preset === "all") {
+      setDateFrom("");
+      setDateTo("");
+    } else if (preset === "today") {
+      setDateFrom(today);
+      setDateTo(today);
+    } else if (preset === "yesterday") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      const yStr = formatD(y);
+      setDateFrom(yStr);
+      setDateTo(yStr);
+    } else if (preset === "week") {
+      const w = new Date();
+      w.setDate(w.getDate() - 7);
+      setDateFrom(formatD(w));
+      setDateTo(today);
+    } else if (preset === "month") {
+      const mStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      setDateFrom(mStart);
+      setDateTo(today);
+    }
+  };
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedVoucherForPrint, setSelectedVoucherForPrint] =
@@ -69,8 +105,13 @@ export function JournalEntriesTable({
       if (selectedBranch !== "all" && item.branchId && item.branchId !== selectedBranch) {
         return false;
       }
-      if (dateFrom && item.date < dateFrom) return false;
-      if (dateTo && item.date > dateTo) return false;
+      if (dateFrom || dateTo) {
+        const itemDateOnly = item.date ? (item.date.includes("T") ? item.date.slice(0, 10) : item.date) : "";
+        if (itemDateOnly) {
+          if (dateFrom && itemDateOnly < dateFrom) return false;
+          if (dateTo && itemDateOnly > dateTo) return false;
+        }
+      }
       if (statusFilter !== "all" && item.status !== statusFilter) return false;
 
       if (searchQuery.trim()) {
@@ -287,6 +328,65 @@ export function JournalEntriesTable({
             </div>
           )}
 
+          {/* Quick Presets Pills */}
+          <div className="inline-flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/60">
+            <button
+              type="button"
+              onClick={() => handleApplyPreset("today")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                datePreset === "today"
+                  ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+              }`}
+            >
+              {pick("اليوم", "Today")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyPreset("yesterday")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                datePreset === "yesterday"
+                  ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+              }`}
+            >
+              {pick("أمس", "Yesterday")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyPreset("week")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                datePreset === "week"
+                  ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+              }`}
+            >
+              {pick("آخر 7 أيام", "Last 7 Days")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyPreset("month")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                datePreset === "month"
+                  ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+              }`}
+            >
+              {pick("هذا الشهر", "This Month")}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyPreset("all")}
+              className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                datePreset === "all" && !dateFrom && !dateTo
+                  ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+              }`}
+            >
+              {pick("كل التواريخ", "All Dates")}
+            </button>
+          </div>
+
           {/* Date Range Filter */}
           <div className="flex items-center gap-1.5 bg-background border border-border/70 rounded-xl px-2.5 py-1.5 shadow-xs text-xs">
             <Calendar className="size-3.5 text-primary shrink-0" />
@@ -296,7 +396,10 @@ export function JournalEntriesTable({
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => {
+                setDatePreset("custom");
+                setDateFrom(e.target.value);
+              }}
               className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
             />
             <span className="text-muted-foreground/40 font-bold">|</span>
@@ -306,13 +409,17 @@ export function JournalEntriesTable({
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                setDatePreset("custom");
+                setDateTo(e.target.value);
+              }}
               className="bg-transparent text-foreground text-xs font-mono font-bold focus:outline-none cursor-pointer"
             />
             {(dateFrom || dateTo) && (
               <button
                 type="button"
                 onClick={() => {
+                  setDatePreset("all");
                   setDateFrom("");
                   setDateTo("");
                 }}

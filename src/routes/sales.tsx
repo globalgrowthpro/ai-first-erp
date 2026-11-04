@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
@@ -48,23 +48,110 @@ function Sales() {
   const [invSearch, setInvSearch] = useState("");
   const [invDateFrom, setInvDateFrom] = useState("");
   const [invDateTo, setInvDateTo] = useState("");
+  const [invDatePreset, setInvDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
   const [invStatus, setInvStatus] = useState("all");
+  const [invProductFilter, setInvProductFilter] = useState("all");
+
+  const handleApplyInvPreset = (preset: "all" | "today" | "yesterday" | "week" | "month") => {
+    setInvDatePreset(preset);
+    const d = new Date();
+    const formatD = (dt: Date) => {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const day = String(dt.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const today = formatD(d);
+
+    if (preset === "all") {
+      setInvDateFrom("");
+      setInvDateTo("");
+    } else if (preset === "today") {
+      setInvDateFrom(today);
+      setInvDateTo(today);
+    } else if (preset === "yesterday") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      const yStr = formatD(y);
+      setInvDateFrom(yStr);
+      setInvDateTo(yStr);
+    } else if (preset === "week") {
+      const w = new Date();
+      w.setDate(w.getDate() - 7);
+      setInvDateFrom(formatD(w));
+      setInvDateTo(today);
+    } else if (preset === "month") {
+      const mStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      setInvDateFrom(mStart);
+      setInvDateTo(today);
+    }
+  };
+
+  const salesProductOptions = useMemo(() => {
+    const map = new Map<string, { id: string; nameAr: string; nameEn: string; sku: string }>();
+    for (const doc of documents) {
+      for (const it of doc.items || []) {
+        const ar = it.name?.ar || (typeof it.name === "string" ? it.name : it.sku || it.id);
+        const en = it.name?.en || (typeof it.name === "string" ? it.name : it.sku || it.id);
+        const key = (it.sku || ar || it.id).trim();
+        if (key && !map.has(key)) {
+          map.set(key, {
+            id: key,
+            nameAr: ar,
+            nameEn: en,
+            sku: it.sku || "",
+          });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar"));
+  }, [documents]);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((inv) => {
       if (salesTab === "commercial" && !(inv.balance > 0 || inv.status !== "paid")) return false;
       if (invStatus !== "all" && inv.status !== invStatus) return false;
+      if (invProductFilter !== "all") {
+        const selNorm = invProductFilter.toLowerCase().trim();
+        const hasItem = (inv.items || []).some((it) => {
+          const itSku = (it.sku || "").toLowerCase().trim();
+          const itId = (it.id || "").toLowerCase().trim();
+          const ar = (it.name?.ar || (typeof it.name === "string" ? it.name : "")).toLowerCase().trim();
+          const en = (it.name?.en || (typeof it.name === "string" ? it.name : "")).toLowerCase().trim();
+          return (
+            itSku === selNorm ||
+            itId === selNorm ||
+            ar === selNorm ||
+            en === selNorm ||
+            ar.includes(selNorm) ||
+            selNorm.includes(ar)
+          );
+        });
+        if (!hasItem) return false;
+      }
       if (invSearch.trim()) {
         const q = invSearch.toLowerCase().trim();
         const matchId = String(inv.id || "").toLowerCase().includes(q);
         const matchParty = `${inv.party?.ar || ""} ${inv.party?.en || ""}`.toLowerCase().includes(q);
-        if (!matchId && !matchParty) return false;
+        const matchItem = (inv.items || []).some((it) => {
+          const ar = (it.name?.ar || (typeof it.name === "string" ? it.name : "")).toLowerCase();
+          const en = (it.name?.en || (typeof it.name === "string" ? it.name : "")).toLowerCase();
+          const sku = (it.sku || "").toLowerCase();
+          return ar.includes(q) || en.includes(q) || sku.includes(q);
+        });
+        if (!matchId && !matchParty && !matchItem) return false;
       }
-      if (invDateFrom && inv.date < invDateFrom) return false;
-      if (invDateTo && inv.date > invDateTo) return false;
+      if (invDateFrom || invDateTo) {
+        const invDateOnly = inv.date ? (inv.date.includes("T") ? inv.date.slice(0, 10) : inv.date) : "";
+        if (invDateOnly) {
+          if (invDateFrom && invDateOnly < invDateFrom) return false;
+          if (invDateTo && invDateOnly > invDateTo) return false;
+        }
+      }
+
       return true;
     });
-  }, [documents, salesTab, invStatus, invSearch, invDateFrom, invDateTo]);
+  }, [documents, salesTab, invStatus, invProductFilter, invSearch, invDateFrom, invDateTo]);
 
   const {
     currentPage: invPage,
@@ -496,6 +583,82 @@ function Sales() {
                 <option value="draft">{pick("مسودة", "Draft")}</option>
               </select>
 
+              {/* Product / Item Filter */}
+              <div className="relative">
+                <select
+                  value={invProductFilter}
+                  onChange={(e) => setInvProductFilter(e.target.value)}
+                  className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+                >
+                  <option value="all">🍰 {pick("جميع الأصناف والمنتجات", "All Products / Items")}</option>
+                  {salesProductOptions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {pick(p.nameAr, p.nameEn)} {p.sku ? `(${p.sku})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+              </div>
+
+              {/* Quick Presets Pills */}
+              <div className="inline-flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/60">
+                <button
+                  type="button"
+                  onClick={() => handleApplyInvPreset("today")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                    invDatePreset === "today"
+                      ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                  }`}
+                >
+                  {pick("اليوم", "Today")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyInvPreset("yesterday")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                    invDatePreset === "yesterday"
+                      ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                  }`}
+                >
+                  {pick("أمس", "Yesterday")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyInvPreset("week")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                    invDatePreset === "week"
+                      ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                  }`}
+                >
+                  {pick("آخر 7 أيام", "Last 7 Days")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyInvPreset("month")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                    invDatePreset === "month"
+                      ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                  }`}
+                >
+                  {pick("هذا الشهر", "This Month")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyInvPreset("all")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                    invDatePreset === "all" && !invDateFrom && !invDateTo
+                      ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                  }`}
+                >
+                  {pick("كل التواريخ", "All Dates")}
+                </button>
+              </div>
+
               {/* Date From & To */}
               <div className="flex items-center gap-1.5 bg-background border border-border/70 rounded-xl px-2.5 py-1.5 shadow-xs text-xs">
                 <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -530,14 +693,16 @@ function Sales() {
               </div>
 
               {/* Reset */}
-              {(invSearch || invStatus !== "all" || invDateFrom || invDateTo) && (
+              {(invSearch || invStatus !== "all" || invProductFilter !== "all" || invDateFrom || invDateTo) && (
                 <button
                   type="button"
                   onClick={() => {
                     setInvSearch("");
                     setInvStatus("all");
+                    setInvDatePreset("all");
                     setInvDateFrom("");
                     setInvDateTo("");
+                    setInvProductFilter("all");
                   }}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors cursor-pointer"
                 >

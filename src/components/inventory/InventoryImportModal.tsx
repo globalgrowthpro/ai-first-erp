@@ -35,6 +35,8 @@ import type {
   InventoryUnit,
   InventoryBom,
 } from "@/lib/inventory-store";
+import { KNOWN_VIP_CLIENTS } from "@/lib/inventory-store";
+import { usePartnersStore } from "@/lib/partners-store";
 import {
   FACTORY_PRODUCTS,
   FACTORY_BOMS,
@@ -829,6 +831,7 @@ export function InventoryImportModal({
 }: InventoryImportModalProps) {
   const { t, pick, money, n, dir } = useI18n();
   const isRtl = dir === "rtl";
+  const { partners } = usePartnersStore();
 
   const [activeTab, setActiveTab] = useState<InventoryImportTarget>(initialTarget);
   const [importMode, setImportMode] = useState<"preset" | "excel">("preset");
@@ -1094,6 +1097,9 @@ export function InventoryImportModal({
           "كود وحدة القياس": "PORTION",
           "سعر التكلفة": 45,
           "سعر البيع": 100,
+          "سعر العميل المميز (VIP)": 85,
+          "العملاء المستحقين لـ VIP": "فندق الماسة, مطاعم وكافيهات سيزار",
+          "تاريخ سريان سعر VIP": "2026-12-31",
           "الرصيد الافتتاحي": 60,
           "حد إعادة الطلب": 20,
           "مادة خام (نعم/لا)": "لا",
@@ -1111,6 +1117,9 @@ export function InventoryImportModal({
           "كود وحدة القياس": "KG",
           "سعر التكلفة": 650,
           "سعر البيع": 750,
+          "سعر العميل المميز (VIP)": 700,
+          "العملاء المستحقين لـ VIP": "جميع عملاء VIP",
+          "تاريخ سريان سعر VIP": "2026-12-31",
           "الرصيد الافتتاحي": 25,
           "حد إعادة الطلب": 10,
           "مادة خام (نعم/لا)": "نعم",
@@ -1320,6 +1329,91 @@ export function InventoryImportModal({
         const group = String(r["المجموعة (Group)"] || r["Group"] || "").trim() || undefined;
         const showOnPos = !String(r["عرض في POS (نعم/لا)"] || r["ShowOnPOS"] || "نعم").includes("لا");
         const image = String(r["رابط صورة المنتج (URL)"] || r["Image"] || "").trim() || undefined;
+
+        const vipPriceRaw =
+          r["سعر العميل المميز (VIP)"] ||
+          r["سعر VIP"] ||
+          r["سعر العميل المميز"] ||
+          r["VIP Price"] ||
+          r["VIP Price (EGP)"] ||
+          r["vipPrice"];
+        const vipPrice = vipPriceRaw
+          ? Number(String(vipPriceRaw).replace(/[^\d.-]/g, "")) || undefined
+          : undefined;
+
+        const vipClientsRaw = String(
+          r["العملاء المستحقين لـ VIP"] ||
+          r["العميل المستحق لـ VIP"] ||
+          r["عملاء VIP"] ||
+          r["عملاء VIP المستحقين"] ||
+          r["VIP Eligible Clients"] ||
+          r["VIP Eligible Client"] ||
+          r["vipClientIds"] ||
+          ""
+        ).trim();
+
+        let vipClientIds: string[] = [];
+        if (vipClientsRaw && vipClientsRaw !== "-") {
+          if (
+            vipClientsRaw.includes("جميع") ||
+            vipClientsRaw.toLowerCase().includes("all") ||
+            vipClientsRaw.includes("الكل") ||
+            vipClientsRaw.includes("شامل")
+          ) {
+            vipClientIds = ["all"];
+          } else {
+            const parts = vipClientsRaw.split(/[,،;\n]+/).map((s) => s.trim()).filter(Boolean);
+            vipClientIds = parts.map((part) => {
+              const match = partners.find(
+                (p) =>
+                  p.id === part ||
+                  p.name.ar.toLowerCase() === part.toLowerCase() ||
+                  p.name.en?.toLowerCase() === part.toLowerCase() ||
+                  p.name.ar.includes(part) ||
+                  part.includes(p.name.ar)
+              );
+              if (match) return match.id;
+              const matchKnown = KNOWN_VIP_CLIENTS.find(
+                (k) =>
+                  k.id === part ||
+                  k.name.toLowerCase() === part.toLowerCase() ||
+                  k.nameEn.toLowerCase() === part.toLowerCase() ||
+                  k.name.includes(part) ||
+                  part.includes(k.name)
+              );
+              if (matchKnown) return matchKnown.id;
+              return part;
+            });
+          }
+        }
+
+        const vipValidUntilRaw = String(
+          r["تاريخ سريان سعر VIP"] ||
+          r["تاريخ انتهاء VIP"] ||
+          r["صلاحية سعر VIP"] ||
+          r["VIP Valid Until"] ||
+          r["vipValidUntil"] ||
+          ""
+        ).trim();
+
+        let vipValidUntil: string | undefined = undefined;
+        if (vipValidUntilRaw && vipValidUntilRaw !== "-") {
+          if (/^\d{5}$/.test(vipValidUntilRaw)) {
+            const serial = Number(vipValidUntilRaw);
+            const utcDays = Math.floor(serial - 25569);
+            const utcValue = utcDays * 86400;
+            const dateInfo = new Date(utcValue * 1000);
+            vipValidUntil = dateInfo.toISOString().slice(0, 10);
+          } else {
+            const match = vipValidUntilRaw.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+            if (match) {
+              vipValidUntil = `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+            } else {
+              vipValidUntil = vipValidUntilRaw;
+            }
+          }
+        }
+
         const skuNorm = sku.toUpperCase();
 
         // Skip duplicates already in products list
@@ -1339,6 +1433,9 @@ export function InventoryImportModal({
           group,
           showOnPos,
           image,
+          vipPrice: vipPrice && vipPrice > 0 ? vipPrice : undefined,
+          vipClientIds: vipClientIds.length > 0 ? vipClientIds : undefined,
+          vipValidUntil: vipValidUntil || undefined,
         };
       }).filter(Boolean) as Omit<InventoryProduct, "id">[];
 

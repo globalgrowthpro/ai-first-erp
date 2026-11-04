@@ -1280,9 +1280,9 @@ export function CustomReportBuilderModal({
                         key={preset.id}
                         type="button"
                         onClick={() => setDateRangePreset(preset.id as any)}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? "bg-primary text-primary-foreground shadow-xs"
+                            ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
                             : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                         }`}
                       >

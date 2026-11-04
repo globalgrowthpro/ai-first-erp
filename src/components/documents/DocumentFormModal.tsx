@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import type { BizDocument, DocumentStatus, InvoiceItem } from "@/lib/documents-store";
 import { usePartnersStore } from "@/lib/partners-store";
-import { useInventoryStore } from "@/lib/inventory-store";
+import { useInventoryStore, getEffectiveProductPrice } from "@/lib/inventory-store";
+import { toast } from "sonner";
 
 interface DocumentFormModalProps {
   open: boolean;

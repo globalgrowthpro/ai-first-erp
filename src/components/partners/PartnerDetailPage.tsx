@@ -666,7 +666,7 @@ export function PartnerDetailPage({
                   onClick={() => setActiveTxTab(tab.id as any)}
                   className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
                     activeTxTab === tab.id
-                      ? "bg-card text-foreground shadow-xs"
+                      ? "bg-[#0f2744] text-white shadow-xs font-black dark:bg-blue-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >

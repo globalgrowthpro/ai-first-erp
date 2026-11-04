@@ -116,6 +116,140 @@ export interface InventoryProduct {
   group?: string | undefined;
   branchId?: string | undefined;
   showOnPos?: boolean; // defaults to true when not present (non-raw products are shown on POS by default)
+  vipPrice?: number | undefined;
+  vipClientIds?: string[] | undefined;
+  vipValidUntil?: string | undefined;
+}
+
+// ==========================================
+// VIP Client Pricing Engine & Utilities
+// ==========================================
+
+export const KNOWN_VIP_CLIENTS = [
+  { id: "cl-masa", name: "فندق الماسة", nameEn: "Al-Masa Hotel", type: "hotel", phone: "+20 100 741 9344" },
+  { id: "cl-cesar", name: "مطاعم وكافيهات سيزار", nameEn: "Cesar Restaurants", type: "restaurant", phone: "+20 122 555 8100" },
+  { id: "cl-gezira", name: "نادي الجزيرة الرياضي", nameEn: "Gezira Sporting Club", type: "club", phone: "+20 111 903 4477" },
+  { id: "cl-lusail", name: "مؤسسة لوسيل لتنظيم المناسبات", nameEn: "Lusail Events", type: "catering", phone: "+20 102 334 5566" },
+  { id: "cl-sharq", name: "شركة الشرق للمؤتمرات والمعارض", nameEn: "Al-Sharq Conferences", type: "corporate", phone: "+20 109 887 6655" },
+];
+
+const VIP_STORAGE_KEY = "wazeer_erp_product_vip_rules_v1";
+
+export interface VipPriceRule {
+  vipPrice: number;
+  vipClientIds: string[];
+  vipValidUntil?: string | undefined;
+}
+
+export function readCachedVipRules(): Map<string, VipPriceRule> {
+  const map = new Map<string, VipPriceRule>();
+  if (typeof window === "undefined") return map;
+  try {
+    const raw = localStorage.getItem(VIP_STORAGE_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      for (const [k, v] of Object.entries(obj)) {
+        if (v && typeof v === "object") {
+          map.set(k.toUpperCase(), v as VipPriceRule);
+        }
+      }
+    }
+  } catch {}
+  return map;
+}
+
+export function saveVipRule(skuOrId: string, rule: VipPriceRule) {
+  if (typeof window === "undefined" || !skuOrId) return;
+  try {
+    const map = readCachedVipRules();
+    map.set(skuOrId.toUpperCase(), rule);
+    const obj = Object.fromEntries(map.entries());
+    localStorage.setItem(VIP_STORAGE_KEY, JSON.stringify(obj));
+  } catch {}
+}
+
+/**
+ * Checks whether a client qualifies for a product's VIP price and whether the price is within the valid date.
+ */
+export function getEffectiveProductPrice(
+  product: {
+    sellingPrice?: number;
+    price?: number;
+    costPrice?: number;
+    vipPrice?: number;
+    vipClientIds?: string[];
+    vipValidUntil?: string;
+    sku?: string;
+    id?: string;
+  },
+  clientIdOrName?: string | null,
+  orderDate: string = new Date().toISOString().slice(0, 10)
+): {
+  effectivePrice: number;
+  isVipApplied: boolean;
+  standardPrice: number;
+  vipPrice?: number;
+  validUntil?: string;
+  savings: number;
+} {
+  const standardPrice = Number(product.sellingPrice ?? (product as any).price ?? 0);
+
+  let vip = Number(product.vipPrice);
+  let clientIds = product.vipClientIds || [];
+  let validUntil = product.vipValidUntil;
+
+  if ((!vip || vip <= 0) && (product.sku || product.id)) {
+    const cached = readCachedVipRules().get((product.sku || product.id || "").toUpperCase());
+    if (cached) {
+      vip = Number(cached.vipPrice);
+      clientIds = cached.vipClientIds || [];
+      validUntil = cached.vipValidUntil;
+    }
+  }
+
+  if (!vip || vip <= 0 || !clientIdOrName) {
+    return { effectivePrice: standardPrice, isVipApplied: false, standardPrice, savings: 0 };
+  }
+
+  const cleanTarget = clientIdOrName.trim().toLowerCase();
+  const isAllVip = clientIds.some((c) => c === "ALL_VIP" || c === "*");
+  const matchesClient =
+    isAllVip ||
+    clientIds.some((idOrName) => {
+      if (!idOrName) return false;
+      const clean = idOrName.trim().toLowerCase();
+      return clean === cleanTarget || cleanTarget.includes(clean) || clean.includes(cleanTarget);
+    });
+
+  if (!matchesClient) {
+    return { effectivePrice: standardPrice, isVipApplied: false, standardPrice, savings: 0 };
+  }
+
+  // Check date validity
+  if (validUntil) {
+    const todayDate = orderDate.slice(0, 10);
+    const expireDate = validUntil.slice(0, 10);
+    if (todayDate > expireDate) {
+      return {
+        effectivePrice: standardPrice,
+        isVipApplied: false,
+        standardPrice,
+        vipPrice: vip,
+        validUntil,
+        savings: 0,
+      };
+    }
+  }
+
+  const savings = Math.max(0, Math.round((standardPrice - vip) * 100) / 100);
+  return {
+    effectivePrice: vip,
+    isVipApplied: true,
+    standardPrice,
+    vipPrice: vip,
+    validUntil,
+    savings,
+  };
 }
 
 export interface BomComponentItem {
@@ -431,6 +565,9 @@ export async function fetchDatabaseState() {
           group: p.product_group || undefined,
           branchId: p.branch_id || undefined,
           showOnPos: p.show_on_pos !== undefined ? Boolean(p.show_on_pos) : (isRaw ? false : true),
+          vipPrice: p.vip_price !== undefined && p.vip_price !== null ? Number(p.vip_price) : readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipPrice,
+          vipClientIds: p.vip_client_ids || readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipClientIds || [],
+          vipValidUntil: p.vip_valid_until || readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipValidUntil || undefined,
         };
       });
     }
@@ -689,6 +826,9 @@ export function useInventoryStore() {
         product_group: prod.group || null,
         branch_id: prod.branchId || null,
         show_on_pos: prod.showOnPos !== undefined ? prod.showOnPos : true,
+        vip_price: prod.vipPrice && prod.vipPrice > 0 ? prod.vipPrice : null,
+        vip_client_ids: prod.vipClientIds || [],
+        vip_valid_until: prod.vipValidUntil || null,
       })
       .select()
       .single();
@@ -703,6 +843,16 @@ export function useInventoryStore() {
         warehouse_id: whId,
         quantity: prod.qty || 0,
       });
+    }
+
+    if (prod.vipPrice && prod.vipPrice > 0) {
+      const rule: VipPriceRule = {
+        vipPrice: prod.vipPrice,
+        vipClientIds: prod.vipClientIds || [],
+        vipValidUntil: prod.vipValidUntil,
+      };
+      saveVipRule(prod.sku, rule);
+      if (data?.id) saveVipRule(data.id, rule);
     }
 
     await fetchDatabaseState();
@@ -726,9 +876,27 @@ export function useInventoryStore() {
     if (updates.group !== undefined) dbUpdate.product_group = updates.group || null;
     if (updates.branchId !== undefined) dbUpdate.branch_id = updates.branchId || null;
     if (updates.showOnPos !== undefined) dbUpdate.show_on_pos = updates.showOnPos;
+    if (updates.vipPrice !== undefined) dbUpdate.vip_price = updates.vipPrice && updates.vipPrice > 0 ? updates.vipPrice : null;
+    if (updates.vipClientIds !== undefined) dbUpdate.vip_client_ids = updates.vipClientIds || [];
+    if (updates.vipValidUntil !== undefined) dbUpdate.vip_valid_until = updates.vipValidUntil || null;
 
     if (Object.keys(dbUpdate).length > 0) {
-      await supabase.from("products").update(dbUpdate).eq("id", id);
+      try {
+        await supabase.from("products").update(dbUpdate).eq("id", id);
+      } catch (err) {
+        console.warn("Supabase update product warning:", err);
+      }
+    }
+
+    if (updates.vipPrice !== undefined || updates.vipClientIds !== undefined || updates.vipValidUntil !== undefined) {
+      const existing = readCachedVipRules().get(id.toUpperCase()) || (updates.sku ? readCachedVipRules().get(updates.sku.toUpperCase()) : null);
+      const newRule: VipPriceRule = {
+        vipPrice: updates.vipPrice !== undefined ? updates.vipPrice : (existing?.vipPrice || 0),
+        vipClientIds: updates.vipClientIds !== undefined ? updates.vipClientIds : (existing?.vipClientIds || []),
+        vipValidUntil: updates.vipValidUntil !== undefined ? updates.vipValidUntil : existing?.vipValidUntil,
+      };
+      saveVipRule(id, newRule);
+      if (updates.sku) saveVipRule(updates.sku, newRule);
     }
 
     // Update stock level if quantity changed directly
@@ -917,11 +1085,94 @@ export function useInventoryStore() {
     await fetchDatabaseState();
   }, []);
 
-  const importProducts = useCallback(() => 0, []);
-  const importCategories = useCallback(() => 0, []);
-  const importWarehouses = useCallback(() => 0, []);
-  const importUnits = useCallback(() => 0, []);
-  const importBoms = useCallback(() => 0, []);
+  const importProducts = useCallback(
+    async (items: Omit<InventoryProduct, "id">[]) => {
+      if (!items || items.length === 0) return 0;
+      let count = 0;
+      for (const prod of items) {
+        try {
+          await addProduct(prod);
+          count++;
+        } catch (err) {
+          console.error("Failed to import product:", prod.sku, err);
+        }
+      }
+      await fetchDatabaseState();
+      return count;
+    },
+    [addProduct]
+  );
+  const importCategories = useCallback(
+    async (items: Omit<InventoryCategory, "id">[]) => {
+      if (!items || items.length === 0) return 0;
+      let count = 0;
+      for (const cat of items) {
+        try {
+          await addCategory(cat);
+          count++;
+        } catch (err) {
+          console.error("Failed to import category:", cat.code, err);
+        }
+      }
+      await fetchDatabaseState();
+      return count;
+    },
+    [addCategory]
+  );
+
+  const importWarehouses = useCallback(
+    async (items: Omit<InventoryWarehouse, "id">[]) => {
+      if (!items || items.length === 0) return 0;
+      let count = 0;
+      for (const wh of items) {
+        try {
+          await addWarehouse(wh);
+          count++;
+        } catch (err) {
+          console.error("Failed to import warehouse:", wh.code, err);
+        }
+      }
+      await fetchDatabaseState();
+      return count;
+    },
+    [addWarehouse]
+  );
+
+  const importUnits = useCallback(
+    async (items: Omit<InventoryUnit, "id">[]) => {
+      if (!items || items.length === 0) return 0;
+      let count = 0;
+      for (const un of items) {
+        try {
+          await addUnit(un);
+          count++;
+        } catch (err) {
+          console.error("Failed to import unit:", un.code, err);
+        }
+      }
+      await fetchDatabaseState();
+      return count;
+    },
+    [addUnit]
+  );
+
+  const importBoms = useCallback(
+    async (items: Omit<InventoryBom, "id">[]) => {
+      if (!items || items.length === 0) return 0;
+      let count = 0;
+      for (const b of items) {
+        try {
+          await addBom(b);
+          count++;
+        } catch (err) {
+          console.error("Failed to import BOM:", b.code, err);
+        }
+      }
+      await fetchDatabaseState();
+      return count;
+    },
+    [addBom]
+  );
 
   const recordStockMove = useCallback(
     async (payload: NewStockMovePayload) => {

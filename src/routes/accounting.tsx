@@ -123,8 +123,13 @@ function Accounting() {
       }
 
       // Date range filter
-      if (dateFrom && item.date < dateFrom) return false;
-      if (dateTo && item.date > dateTo) return false;
+      if (dateFrom || dateTo) {
+        const itemDateOnly = item.date ? (item.date.includes("T") ? item.date.slice(0, 10) : item.date) : "";
+        if (itemDateOnly) {
+          if (dateFrom && itemDateOnly < dateFrom) return false;
+          if (dateTo && itemDateOnly > dateTo) return false;
+        }
+      }
 
       // Text search
       if (searchQuery.trim()) {

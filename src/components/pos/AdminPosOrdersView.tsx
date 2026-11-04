@@ -68,6 +68,10 @@ function extractOrderDate(order: AdminPosOrder): string {
     const parsed = getOrderDateOnly(order.createdAt);
     if (parsed) return parsed;
   }
+  if (order.formattedDate) {
+    const parsed = getOrderDateOnly(order.formattedDate);
+    if (parsed) return parsed;
+  }
   const dateStr = formatOrderDateTimeEnglish(order.createdAt || order.formattedDate);
   if (dateStr) {
     const match = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
@@ -168,6 +172,7 @@ function AdminPosOrdersInner() {
   const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [selectedOrderType, setSelectedOrderType] = useState("all");
+  const [selectedProduct, setSelectedProduct] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -183,6 +188,27 @@ function AdminPosOrdersInner() {
       }
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [orders]);
+
+  // Extract unique products / items from the orders
+  const productFilterOptions = useMemo(() => {
+    const map = new Map<string, { id: string; nameAr: string; nameEn: string; sku: string }>();
+    (orders || []).forEach((o) => {
+      (o.items || []).forEach((it) => {
+        const nameAr = safePickItemName(it.name, "ar");
+        const nameEn = safePickItemName(it.name, "en");
+        const key = (it.sku || nameAr || "").trim();
+        if (key && !map.has(key)) {
+          map.set(key, {
+            id: key,
+            nameAr,
+            nameEn,
+            sku: it.sku || "",
+          });
+        }
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar"));
   }, [orders]);
 
   // Selected order for thermal receipt preview modal
@@ -226,6 +252,7 @@ function AdminPosOrdersInner() {
     setSelectedPlatform("all");
     setSelectedPayment("all");
     setSelectedOrderType("all");
+    setSelectedProduct("all");
     setSelectedStatus("all");
     setDateFrom("");
     setDateTo("");
@@ -239,6 +266,7 @@ function AdminPosOrdersInner() {
     selectedPlatform !== "all" ||
     selectedPayment !== "all" ||
     selectedOrderType !== "all" ||
+    selectedProduct !== "all" ||
     selectedStatus !== "all" ||
     dateFrom ||
     dateTo
@@ -251,6 +279,7 @@ function AdminPosOrdersInner() {
     selectedPlatform !== "all",
     selectedPayment !== "all",
     selectedOrderType !== "all",
+    selectedProduct !== "all",
     selectedStatus !== "all",
     Boolean(dateFrom || dateTo),
   ].filter(Boolean).length;
@@ -293,6 +322,24 @@ function AdminPosOrdersInner() {
       // 5. Order Type filter (takeaway, dine_in, delivery)
       if (selectedOrderType !== "all" && o.orderType !== selectedOrderType) return false;
 
+      // 5.1 Product / Item filter
+      if (selectedProduct !== "all") {
+        const selNorm = selectedProduct.toLowerCase().trim();
+        const hasProd = (o.items || []).some((it) => {
+          const itSku = (it.sku || "").toLowerCase().trim();
+          const ar = safePickItemName(it.name, "ar").toLowerCase().trim();
+          const en = safePickItemName(it.name, "en").toLowerCase().trim();
+          return (
+            itSku === selNorm ||
+            ar === selNorm ||
+            en === selNorm ||
+            ar.includes(selNorm) ||
+            selNorm.includes(ar)
+          );
+        });
+        if (!hasProd) return false;
+      }
+
       // 6. Status filter (completed, paid, parked, cancelled)
       if (selectedStatus !== "all" && o.status !== selectedStatus) return false;
 
@@ -315,6 +362,7 @@ function AdminPosOrdersInner() {
     selectedPlatform,
     selectedPayment,
     selectedOrderType,
+    selectedProduct,
     selectedStatus,
     dateFrom,
     dateTo,
@@ -639,6 +687,23 @@ function AdminPosOrdersInner() {
             <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>
 
+          {/* Product Filter */}
+          <div className="relative">
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+            >
+              <option value="all">🍰 {pick("جميع الأصناف والمنتجات", "All Products / Items")}</option>
+              {productFilterOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {pick(p.nameAr, p.nameEn)} {p.sku ? `(${p.sku})` : ""}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+          </div>
+
           {/* Status Filter */}
           <div className="relative">
             <select
@@ -668,22 +733,11 @@ function AdminPosOrdersInner() {
             <div className="inline-flex items-center bg-muted/60 p-0.5 rounded-xl border border-border/60">
               <button
                 type="button"
-                onClick={() => handleApplyPreset("all")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                  datePreset === "all" && !dateFrom && !dateTo
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {pick("الكل", "All")}
-              </button>
-              <button
-                type="button"
                 onClick={() => handleApplyPreset("today")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
                   datePreset === "today"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {pick("اليوم", "Today")}
@@ -691,10 +745,10 @@ function AdminPosOrdersInner() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("yesterday")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
                   datePreset === "yesterday"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {pick("أمس", "Yesterday")}
@@ -702,10 +756,10 @@ function AdminPosOrdersInner() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("week")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
                   datePreset === "week"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {pick("آخر 7 أيام", "Last 7 Days")}
@@ -713,13 +767,24 @@ function AdminPosOrdersInner() {
               <button
                 type="button"
                 onClick={() => handleApplyPreset("month")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
                   datePreset === "month"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
                 }`}
               >
                 {pick("هذا الشهر", "This Month")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset("all")}
+                className={`px-2.5 py-1 rounded-lg text-[11px] transition-all cursor-pointer ${
+                  datePreset === "all" && !dateFrom && !dateTo
+                    ? "bg-[#0f2744] text-white font-black shadow-xs dark:bg-blue-800 dark:text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80 font-bold"
+                }`}
+              >
+                {pick("كل التواريخ", "All Dates")}
               </button>
             </div>
 

@@ -12,12 +12,16 @@ import {
   Package,
   FileSpreadsheet,
   Upload,
+  Download,
   Link,
   ShieldCheck,
   ShieldAlert,
   Loader2,
   RotateCcw,
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { safeDownloadWorkbook } from "@/lib/excel-utils";
+import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
 import {
@@ -38,7 +42,9 @@ import {
   type ProductTechnicalType,
   calculateBuildableQuantity,
   getCategoryStyle,
+  KNOWN_VIP_CLIENTS,
 } from "@/lib/inventory-store";
+import { usePartnersStore } from "@/lib/partners-store";
 
 interface ProductsTabProps {
   products: InventoryProduct[];
@@ -103,6 +109,39 @@ export function ProductsTab({
   const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "safe" | "danger">("idle");
   const [scanMessage, setScanMessage] = useState("");
   const [skuError, setSkuError] = useState<string | null>(null);
+  const [vipPrice, setVipPrice] = useState<number | undefined>(undefined);
+  const [selectedVipClientIds, setSelectedVipClientIds] = useState<string[]>([]);
+  const [vipValidUntil, setVipValidUntil] = useState<string>("");
+  const [vipClientSearch, setVipClientSearch] = useState<string>("");
+
+  const { partners } = usePartnersStore();
+  const allClientOptions = useMemo(() => {
+    const list = [...KNOWN_VIP_CLIENTS];
+    const existing = new Set(list.map((c) => c.name.toLowerCase()));
+    if (partners && partners.length > 0) {
+      for (const p of partners) {
+        if (p.type === "customer" && !existing.has(p.name.ar.toLowerCase())) {
+          list.push({
+            id: p.id,
+            name: p.name.ar,
+            nameEn: p.name.en,
+            type: "retail" as any,
+            phone: p.phone,
+          });
+          existing.add(p.name.ar.toLowerCase());
+        }
+      }
+    }
+    return list;
+  }, [partners]);
+
+  const filteredClientOptions = useMemo(() => {
+    if (!vipClientSearch.trim()) return allClientOptions;
+    const q = vipClientSearch.trim().toLowerCase();
+    return allClientOptions.filter(
+      (c) => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
+    );
+  }, [allClientOptions, vipClientSearch]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Virus / Safety scan helpers ──────────────────────────────────────
@@ -456,6 +495,111 @@ export function ProductsTab({
     paginatedItems: paginatedProducts,
   } = usePagination(filteredProducts, 30);
 
+  // ── Export to Excel Handler ─────────────────────────────────────────
+  const handleExportExcel = () => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      toast.error(pick("لا توجد أصناف مطابقة للتصدير", "No matching products to export"));
+      return;
+    }
+
+    try {
+      const dataToExport = filteredProducts.map((p) => {
+        const cat = categories.find((c) => c.id === p.categoryId);
+        const wh = warehouses.find((w) => w.id === p.warehouseId);
+        const unit = units.find((u) => u.id === p.unitId);
+
+        const isOnDemand =
+          p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+          (!p.isRawMaterial && p.sku.startsWith("BRN-") && p.technicalType !== "FINISHED");
+        const isSemiFinished =
+          p.technicalType === "SEMI_FINISHED" || (p.productType === "factory" && !p.isRawMaterial);
+        const isRaw = p.technicalType === "RAW_MATERIAL" || p.isRawMaterial;
+
+        let techTypeLabel = pick("منتج تام جاهز مخزن", "Stocked Finished Product");
+        if (isOnDemand) techTypeLabel = pick("تجميع عند الطلب بالفرع", "On-Demand Assembly");
+        else if (isSemiFinished) techTypeLabel = pick("منتج مصنع (نصف مصنع)", "Factory Semi-Finished");
+        else if (isRaw) techTypeLabel = pick("مادة خام أولية", "Raw Material");
+
+        let currentStockVal: number | string = p.qty;
+        let buildableInfo = "-";
+        if (isOnDemand) {
+          const buildable = calculateBuildableQuantity(p, products, boms || []);
+          buildableInfo = String(buildable.maxBuildable);
+        }
+
+        const totalValue = Math.round((p.qty || 0) * (p.costPrice || 0) * 100) / 100;
+        const profitMargin =
+          p.sellingPrice > 0 ? Math.round(((p.sellingPrice - p.costPrice) / p.sellingPrice) * 100) : 0;
+
+        const getVipClientsExportLabel = (clientIds?: string[]) => {
+          if (!clientIds || clientIds.length === 0) return "-";
+          if (clientIds.includes("all")) {
+            return pick("⭐ جميع عملاء VIP المسجلين", "⭐ All VIP Clients");
+          }
+          return clientIds
+            .map((cid) => {
+              const partner = partners.find((p) => p.id === cid);
+              if (partner) return pick(partner.name.ar, partner.name.en);
+              const known = KNOWN_VIP_CLIENTS.find((k) => k.id === cid);
+              if (known) return pick(known.name, known.nameEn);
+              return cid;
+            })
+            .join("، ");
+        };
+
+        return {
+          [pick("كود الصنف (SKU)", "SKU")]: p.sku,
+          [pick("اسم الصنف (بالعربية)", "Product Name (AR)")]: p.name.ar,
+          [pick("اسم الصنف (بالإنجليزية)", "Product Name (EN)")]: p.name.en || "",
+          [pick("طبيعة الصنف / النوع الفني", "Technical Type")]: techTypeLabel,
+          [pick("المجموعة (Group)", "Group")]: p.group || "-",
+          [pick("التصنيف", "Category")]: cat ? pick(cat.name.ar, cat.name.en) : "-",
+          [pick("المخزن / الفرع", "Warehouse / Branch")]: wh ? pick(wh.name.ar, wh.name.en) : "-",
+          [pick("الرصيد الفعلي", "Current Stock")]: currentStockVal,
+          [pick("وحدة القياس", "Unit")]: unit ? pick(unit.name.ar, unit.name.en) : "-",
+          [pick("الكمية القابلة للتجميع بالفرع", "Branch Buildable Qty")]: buildableInfo,
+          [pick("حد الأمان (الحد الأدنى)", "Safety Stock (Min)")]: p.minStock,
+          [pick("حالة المخزون", "Stock Status")]:
+            p.qty <= 0
+              ? pick("نفد الرصيد", "Out of Stock")
+              : p.qty <= p.minStock
+              ? pick("نواقص (أقل من حد الأمان)", "Low Stock")
+              : pick("متوفر بشكل كافي", "In Stock"),
+          [pick("سعر التكلفة (ج.م)", "Cost Price (EGP)")]: p.costPrice || 0,
+          [pick("سعر البيع (ج.م)", "Selling Price (EGP)")]: p.sellingPrice || 0,
+          [pick("سعر العميل المميز (VIP)", "VIP Price (EGP)")]: p.vipPrice ? Number(p.vipPrice) : "-",
+          [pick("العملاء المستحقين لـ VIP", "VIP Eligible Clients")]: getVipClientsExportLabel(p.vipClientIds),
+          [pick("تاريخ سريان سعر VIP", "VIP Valid Until")]: p.vipValidUntil || "-",
+          [pick("هامش الربح (%)", "Margin (%)")]: `${profitMargin}%`,
+          [pick("إجمالي القيمة المخزنية (ج.م)", "Total Value (EGP)")]: totalValue,
+          [pick("عرض في كاشير POS", "Show on POS")]:
+            p.showOnPos !== false ? pick("نعم", "Yes") : pick("لا", "No"),
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+      const colWidths = Object.keys(dataToExport[0] || {}).map((key) => ({
+        wch: Math.max(key.length * 2, 16),
+      }));
+      worksheet["!cols"] = colWidths;
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, pick("أصناف_المخزون", "Inventory_Products"));
+      const dateSuffix = new Date().toISOString().slice(0, 10);
+      safeDownloadWorkbook(workbook, `أصناف_المخزون_${dateSuffix}.xlsx`);
+
+      toast.success(
+        pick(
+          `تم تصدير ${dataToExport.length} صنف إلى ملف Excel بنجاح`,
+          `Successfully exported ${dataToExport.length} products to Excel`
+        )
+      );
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تصدير ملف الإكسيل", "Failed to export Excel file"));
+    }
+  };
+
   const lowStockCount = useMemo(() => products.filter((p) => p.qty < p.minStock).length, [products]);
 
   return (
@@ -572,27 +716,44 @@ export function ProductsTab({
             </span>
           </button>
 
-          {/* Import from Template Button */}
-          {onOpenImport && (
+          {/* Action Buttons Group (Export, Import, Add) */}
+          <div className="flex items-center gap-2 ms-auto flex-wrap">
+            {/* Export to Excel Button */}
             <Btn
-              onClick={onOpenImport}
+              type="button"
+              onClick={handleExportExcel}
               variant="outline"
-              className="ms-auto text-xs gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+              className="text-xs gap-1.5 font-bold border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer"
+              title={pick("تصدير قائمة الأصناف المصفاة إلى ملف Excel", "Export filtered products to Excel")}
             >
-              <FileSpreadsheet className="size-3.5 text-emerald-600" />
-              <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+              <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{pick("تصدير إلى Excel", "Export to Excel")}</span>
             </Btn>
-          )}
 
-          {/* Add Product Button */}
-          <Btn
-            onClick={openAddModal}
-            variant="solid"
-            className={cn("text-xs gap-1.5 shadow-xs", !onOpenImport && "ms-auto")}
-          >
-            <Plus className="size-3.5" />
-            {t("addProduct")}
-          </Btn>
+            {/* Import from Template Button */}
+            {onOpenImport && (
+              <Btn
+                type="button"
+                onClick={onOpenImport}
+                variant="outline"
+                className="text-xs gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
+              >
+                <FileSpreadsheet className="size-3.5 text-primary" />
+                <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
+              </Btn>
+            )}
+
+            {/* Add Product Button */}
+            <Btn
+              type="button"
+              onClick={openAddModal}
+              variant="solid"
+              className="text-xs gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              {t("addProduct")}
+            </Btn>
+          </div>
         </div>
       </div>
 
@@ -799,7 +960,22 @@ export function ProductsTab({
                   <Td className="num text-xs text-muted-foreground">{money(p.costPrice)}</Td>
 
                   {/* Selling Price */}
-                  <Td className="num font-bold text-foreground">{money(p.sellingPrice)}</Td>
+                  <Td className="num font-bold text-foreground">
+                    <div>
+                      <span>{money(p.sellingPrice)}</span>
+                      {p.vipPrice && p.vipPrice > 0 && (
+                        <div
+                          className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-extrabold mt-0.5 whitespace-nowrap cursor-help"
+                          title={pick(
+                            `سعر VIP خاص (${money(p.vipPrice)}) مخصص لـ: ${p.vipClientIds?.includes("ALL_VIP") ? "جميع عملاء VIP" : (p.vipClientIds && p.vipClientIds.length > 0 ? p.vipClientIds.join("، ") : "عملاء محددين")} ${p.vipValidUntil ? `— صالح حتى: ${p.vipValidUntil}` : ""}`,
+                            `VIP Price (${money(p.vipPrice)}) for ${p.vipClientIds?.includes("ALL_VIP") ? "All VIP Clients" : (p.vipClientIds?.join(", ") || "Selected Clients")} ${p.vipValidUntil ? `— Valid until: ${p.vipValidUntil}` : ""}`
+                          )}
+                        >
+                          <span>⭐ VIP: {money(p.vipPrice)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </Td>
 
                   {/* Show on POS on/off Switch */}
                   <Td className="text-center">
@@ -854,7 +1030,7 @@ export function ProductsTab({
 
       {/* ─── Add / Edit Product Modal ─── */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
-        <DialogContent className="border border-border/70 shadow-2xl rounded-2xl sm:max-w-[820px] overflow-hidden p-0 gap-0">
+        <DialogContent className="border border-border/70 shadow-2xl rounded-2xl w-[98vw] max-w-[1360px] sm:max-w-[1360px] lg:max-w-[1400px] overflow-hidden p-0 gap-0">
 
           {/* ── Header ── */}
           <div className={cn(
@@ -897,10 +1073,10 @@ export function ProductsTab({
           </div>
 
           {/* ── Body ── */}
-          <form onSubmit={handleSubmit} className="flex overflow-hidden" style={{ height: "calc(min(90vh, 560px) - 56px)" }}>
+          <form onSubmit={handleSubmit} className="flex overflow-hidden" style={{ height: "calc(min(93vh, 760px) - 56px)" }}>
 
             {/* LEFT: Image + Controls */}
-            <div className="w-48 shrink-0 border-e border-border/60 bg-secondary/30 flex flex-col p-3 gap-2.5 overflow-hidden">
+            <div className="w-72 sm:w-80 shrink-0 border-e border-border/60 bg-secondary/30 flex flex-col p-4 gap-3 overflow-y-auto">
 
               {/* Preview */}
               <div className={cn(
@@ -1088,7 +1264,7 @@ export function ProductsTab({
 
             {/* RIGHT: Form Fields */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3.5">
 
                 {/* Identity section */}
                 <div className="flex items-center gap-2">
@@ -1262,6 +1438,232 @@ export function ProductsTab({
                     <input type="number" required min={0} value={minStock}
                       onChange={(e) => setMinStock(Number(e.target.value))}
                       className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm num font-extrabold hover:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary transition-all" />
+                  </div>
+                </div>
+
+                {/* ── VIP Client Pricing Card ── */}
+                <div className="rounded-xl border border-amber-500/35 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent p-3.5 space-y-3.5 shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/20 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="size-7 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm shadow-xs border border-amber-500/30">
+                        ⭐
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-foreground flex items-center gap-1.5">
+                          <span>{pick("سعر العميل المميز VIP (اختيار متعدد للعملاء)", "VIP Client Pricing (Multi-Client)")}</span>
+                          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 rounded-md">
+                            {pick("تلقائي عند الطلب", "Auto-Applied on Order")}
+                          </span>
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {pick(
+                            "عند اختيار أي من هؤلاء العملاء في فاتورة المبيعات أو شاشة الكاشير، يُطبّق سعر VIP تلقائياً بعد التحقق من تاريخ الصلاحية",
+                            "When any of these clients has an order/invoice, system automatically checks valid date and applies this VIP price"
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top row: VIP Price + Valid Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* VIP Price Input */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">
+                        {pick("سعر VIP للعملاء المحددين (ج.م)", "VIP Price for Selected Clients (EGP)")}
+                      </label>
+                      <div className="flex rounded-lg border border-amber-500/50 overflow-hidden hover:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500 transition-all bg-background shadow-2xs">
+                        <span className="flex items-center px-2.5 bg-amber-500/15 border-e border-amber-500/30 text-[10px] font-black text-amber-700 dark:text-amber-300 shrink-0 select-none">
+                          VIP
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          step="any"
+                          value={vipPrice !== undefined ? vipPrice : ""}
+                          onChange={(e) => setVipPrice(e.target.value ? Number(e.target.value) : undefined)}
+                          placeholder={sellingPrice ? String(Math.round(sellingPrice * 0.85)) : "0"}
+                          className="flex-1 min-w-0 bg-transparent px-2.5 py-1.5 text-sm num font-extrabold focus:outline-none"
+                        />
+                      </div>
+                      {vipPrice !== undefined && sellingPrice > 0 && (
+                        <p className="mt-1 text-[9.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {vipPrice < sellingPrice
+                            ? pick(
+                                `🏷️ خصم ${Math.round(((sellingPrice - vipPrice) / sellingPrice) * 100)}% عن السعر العادي (${sellingPrice - vipPrice} ج.م توفير)`,
+                                `${Math.round(((sellingPrice - vipPrice) / sellingPrice) * 100)}% discount vs standard (${sellingPrice - vipPrice} EGP savings)`
+                              )
+                            : pick("سعر مخصص للعملاء المحددين", "Custom client rate")}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Valid Until Expiry Date */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">
+                        {pick("تاريخ الصلاحية (صالح حتى)", "Price Valid Until")}
+                      </label>
+                      <input
+                        type="date"
+                        value={vipValidUntil}
+                        onChange={(e) => setVipValidUntil(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-mono font-bold hover:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer shadow-2xs"
+                      />
+                      {vipValidUntil ? (
+                        <div className="mt-1 text-[9.5px]">
+                          {new Date().toISOString().slice(0, 10) > vipValidUntil ? (
+                            <span className="text-destructive font-bold">❌ {pick("انتهت صلاحية السعر", "Price expired")}</span>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              ✔ {pick(`سارٍ حتى ${vipValidUntil}`, `Valid until ${vipValidUntil}`)}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-[9px] text-muted-foreground">
+                          {pick("اتركه فارغاً لصلاحية مفتوحة ودائمة", "Leave blank for permanent validity")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Multi-client selection box */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                      <label className="block text-[10px] font-bold uppercase text-muted-foreground">
+                        {pick("العملاء المصرح لهم بسعر VIP (اختيار متعدد)", "Eligible VIP Clients (Multi-Select)")}
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedVipClientIds.includes("ALL_VIP")) {
+                              setSelectedVipClientIds([]);
+                            } else {
+                              setSelectedVipClientIds(["ALL_VIP"]);
+                            }
+                          }}
+                          className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-extrabold transition-colors border cursor-pointer",
+                            selectedVipClientIds.includes("ALL_VIP")
+                              ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                              : "bg-background text-amber-600 border-amber-500/40 hover:bg-amber-500/10"
+                          )}
+                        >
+                          {pick("⭐ كل عملاء VIP (شامل)", "⭐ All VIP Clients")}
+                        </button>
+                        {selectedVipClientIds.length > 0 && !selectedVipClientIds.includes("ALL_VIP") && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedVipClientIds([])}
+                            className="text-muted-foreground hover:text-destructive text-[10px] font-bold underline px-1 cursor-pointer"
+                          >
+                            {pick("إلغاء التحديد", "Clear all")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Chips */}
+                    {selectedVipClientIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1 p-2 rounded-lg bg-amber-500/10 border border-amber-500/25 max-h-24 overflow-y-auto">
+                        {selectedVipClientIds.includes("ALL_VIP") ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-bold shadow-xs">
+                            <span>⭐ {pick("جميع عملاء VIP المسجلين في النظام", "All VIP Clients System-wide")}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedVipClientIds([])}
+                              className="hover:bg-amber-600 rounded p-0.5 cursor-pointer"
+                              title={pick("إلغاء", "Remove")}
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          </span>
+                        ) : (
+                          selectedVipClientIds.map((clientId) => {
+                            const clientObj = allClientOptions.find((c) => c.name === clientId || c.id === clientId);
+                            const displayName = clientObj?.name || clientId;
+                            return (
+                              <span
+                                key={clientId}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-background border border-amber-500/35 text-foreground text-[10px] font-extrabold shadow-2xs"
+                              >
+                                <span>🏢 {displayName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedVipClientIds((prev) => prev.filter((id) => id !== clientId))}
+                                  className="text-muted-foreground hover:text-destructive rounded p-0.5 cursor-pointer"
+                                  title={pick("إزالة", "Remove")}
+                                >
+                                  <X className="size-2.5" />
+                                </button>
+                              </span>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {/* Client List with Search */}
+                    {!selectedVipClientIds.includes("ALL_VIP") && (
+                      <div className="rounded-lg border border-border bg-background p-2 space-y-2">
+                        <div className="relative">
+                          <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder={pick("ابحث عن عميل بالاسم أو الهاتف...", "Search client by name or phone...")}
+                            value={vipClientSearch}
+                            onChange={(e) => setVipClientSearch(e.target.value)}
+                            className="w-full rounded-md border border-border/80 bg-secondary/30 ps-7 pe-2 py-1 text-[11px] font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pe-1">
+                          {filteredClientOptions.map((c) => {
+                            const isSelected = selectedVipClientIds.includes(c.name) || (c.id && selectedVipClientIds.includes(c.id));
+                            return (
+                              <label
+                                key={c.id || c.name}
+                                className={cn(
+                                  "flex items-center gap-2 p-1.5 rounded-md text-xs cursor-pointer transition-colors border select-none",
+                                  isSelected
+                                    ? "bg-amber-500/15 border-amber-500/50 font-bold text-amber-950 dark:text-amber-100 shadow-2xs"
+                                    : "bg-card border-border/50 hover:bg-secondary/70 text-foreground"
+                                )}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    const val = c.name;
+                                    if (e.target.checked) {
+                                      setSelectedVipClientIds((prev) => [...prev.filter((id) => id !== "ALL_VIP"), val]);
+                                    } else {
+                                      setSelectedVipClientIds((prev) => prev.filter((id) => id !== val && id !== c.id));
+                                    }
+                                  }}
+                                  className="rounded border-border text-amber-600 focus:ring-amber-500 size-3.5 cursor-pointer shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="truncate text-[11px] font-bold">🏢 {c.name}</div>
+                                  {c.phone && (
+                                    <div className="text-[9.5px] text-muted-foreground font-mono leading-none">
+                                      {c.phone}
+                                    </div>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[9.5px] text-muted-foreground font-medium">
+                      {pick(
+                        `تم تحديد (${selectedVipClientIds.includes("ALL_VIP") ? pick("كل عملاء VIP", "All VIP Clients") : selectedVipClientIds.length}) عملاء. سيتم تطبيق سعر VIP تلقائياً عند طلب العميل عبر الفواتير أو الكاشير.`,
+                        `(${selectedVipClientIds.includes("ALL_VIP") ? "All VIP" : selectedVipClientIds.length}) clients selected. Price applies automatically on sales invoices & POS.`
+                      )}
+                    </p>
                   </div>
                 </div>
 

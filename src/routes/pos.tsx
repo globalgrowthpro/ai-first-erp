@@ -65,7 +65,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useInventoryStore, calculateBuildableQuantity } from "@/lib/inventory-store";
+import { useInventoryStore, calculateBuildableQuantity, getEffectiveProductPrice, KNOWN_VIP_CLIENTS } from "@/lib/inventory-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
@@ -577,10 +577,20 @@ export function PosPage() {
   const navigate = useNavigate();
   const { addDocument, documents, nextCode } = useSalesStore();
   const { partners } = usePartnersStore();
-  const liveCustomers = useMemo(
-    () => partners.filter((p) => p.type === "customer"),
-    [partners]
-  );
+  const liveCustomers = useMemo(() => {
+    const fromStore = partners.filter((p) => p.type === "customer");
+    const existingNames = new Set(fromStore.map((p) => p.name.ar.toLowerCase()));
+    const fallbackVip = KNOWN_VIP_CLIENTS.filter(
+      (c) => !existingNames.has(c.name.toLowerCase())
+    ).map((c) => ({
+      id: c.id,
+      code: c.id,
+      name: { ar: c.name, en: c.nameEn },
+      type: "customer" as const,
+      phone: c.phone,
+    }));
+    return [...fromStore, ...fallbackVip];
+  }, [partners]);
 
   const hasOnlyPosPermission =
     currentUser?.role === "pos_cashier" ||
@@ -1550,12 +1560,15 @@ export function PosPage() {
       );
     }
 
+    const vipCheck = getEffectiveProductPrice(product, selectedCustomer.name);
+    const finalUnitPrice = vipCheck.isVipApplied ? vipCheck.effectivePrice : product.price;
+
     setCart((prev) => {
       const existing = prev.find((item) => item.product.sku === product.sku);
       if (existing) {
         return prev.map((item) =>
           item.product.sku === product.sku
-            ? { ...item, quantity: item.quantity + customQty }
+            ? { ...item, quantity: item.quantity + customQty, unitPrice: finalUnitPrice }
             : item
         );
       }
@@ -1565,17 +1578,27 @@ export function PosPage() {
           id: `item-${Date.now()}-${Math.random().toString().slice(-4)}`,
           product,
           quantity: customQty,
-          unitPrice: product.price,
+          unitPrice: finalUnitPrice,
           discount: 0,
         },
       ];
     });
-    toast.success(
-      lang === "ar"
-        ? `تمت إضافة ${pick(product.name.ar, product.name.en)} للفاتورة`
-        : `Added ${pick(product.name.ar, product.name.en)} to order`,
-      { duration: 1200 }
-    );
+
+    if (vipCheck.isVipApplied) {
+      toast.success(
+        lang === "ar"
+          ? `⭐ تم تطبيق سعر VIP للعميل (${finalUnitPrice} ج.م) بدلاً من ${vipCheck.standardPrice} ج.م`
+          : `⭐ Applied VIP Price (${finalUnitPrice} EGP) for this client`,
+        { duration: 2500 }
+      );
+    } else {
+      toast.success(
+        lang === "ar"
+          ? `تمت إضافة ${pick(product.name.ar, product.name.en)} للفاتورة`
+          : `Added ${pick(product.name.ar, product.name.en)} to order`,
+        { duration: 1200 }
+      );
+    }
   };
 
   // Update Item Quantity with inventory limit alert
@@ -2469,7 +2492,7 @@ export function PosPage() {
                   onClick={() => setOrderType("takeaway")}
                   className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
                     orderType === "takeaway"
-                      ? "bg-card text-foreground shadow-2xs font-black"
+                      ? "bg-[#0f2744] text-white shadow-xs font-black dark:bg-blue-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   title={lang === "ar" ? "طلب سفري" : "Takeaway"}
@@ -2482,7 +2505,7 @@ export function PosPage() {
                   onClick={() => setOrderType("dine_in")}
                   className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
                     orderType === "dine_in"
-                      ? "bg-card text-foreground shadow-2xs font-black"
+                      ? "bg-[#0f2744] text-white shadow-xs font-black dark:bg-blue-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   title={lang === "ar" ? "طلب صالة" : "Dine-in"}
@@ -2495,7 +2518,7 @@ export function PosPage() {
                   onClick={() => setOrderType("delivery")}
                   className={`px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all ${
                     orderType === "delivery"
-                      ? "bg-card text-foreground shadow-2xs font-black"
+                      ? "bg-[#0f2744] text-white shadow-xs font-black dark:bg-blue-800 dark:text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   title={lang === "ar" ? "طلب توصيل" : "Delivery"}
@@ -4749,9 +4772,30 @@ export function PosPage() {
                     type="button"
                     key={cust.id || cust.code}
                     onClick={() => {
+                      const custName = pick(cust.name.ar, cust.name.en);
                       setSelectedCustomer({
-                        name: pick(cust.name.ar, cust.name.en),
+                        name: custName,
                         phone: cust.phone || "",
+                      });
+                      setCart((prevCart) => {
+                        let vipCount = 0;
+                        const updated = prevCart.map((item) => {
+                          const vipCheck = getEffectiveProductPrice(item.product, custName);
+                          const targetPrice = vipCheck.isVipApplied ? vipCheck.effectivePrice : item.product.price;
+                          if (targetPrice !== item.unitPrice) {
+                            if (vipCheck.isVipApplied) vipCount++;
+                            return { ...item, unitPrice: targetPrice };
+                          }
+                          return item;
+                        });
+                        if (vipCount > 0) {
+                          toast.success(
+                            lang === "ar"
+                              ? `⭐ تم تطبيق أسعار VIP الخاصة بالعميل على ${vipCount} صنف في السلة`
+                              : `⭐ Applied VIP prices to ${vipCount} items for this client`
+                          );
+                        }
+                        return updated;
                       });
                       setShowCustomerModal(false);
                     }}
