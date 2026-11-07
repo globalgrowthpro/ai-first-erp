@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  FACTORY_CATEGORIES,
+  FACTORY_WAREHOUSES,
+  FACTORY_UNITS,
+  FACTORY_PRODUCTS,
+} from "./wazeer-factory-data-2026";
 
 // ==========================================
 // Types & Models
@@ -427,10 +433,10 @@ export function getCategoryStyle(
 // Module-level Live Store (Synced with Database)
 // ==========================================
 
-let dbCategories: InventoryCategory[] = [];
-let dbWarehouses: InventoryWarehouse[] = [];
-let dbUnits: InventoryUnit[] = [];
-let dbProducts: InventoryProduct[] = [];
+let dbCategories: InventoryCategory[] = [...FACTORY_CATEGORIES];
+let dbWarehouses: InventoryWarehouse[] = [...FACTORY_WAREHOUSES];
+let dbUnits: InventoryUnit[] = [...FACTORY_UNITS];
+let dbProducts: InventoryProduct[] = [...FACTORY_PRODUCTS];
 let dbBoms: InventoryBom[] = [];
 let dbBranches: Branch[] = [];
 let dbStockMoves: StockMovementRecord[] = [];
@@ -478,7 +484,7 @@ export async function fetchDatabaseState() {
       }));
     }
 
-    if (catRes.data) {
+    if (catRes.data && catRes.data.length > 0) {
       dbCategories = catRes.data.map((c: any) => ({
         id: c.id,
         code: c.code || "",
@@ -486,9 +492,11 @@ export async function fetchDatabaseState() {
         type: (c.code?.includes("RAW") ? "raw" : c.code?.includes("PKG") ? "packaging" : "finished") as CategoryType,
         description: { ar: c.name_ar || "", en: c.name_en || "" },
       }));
+    } else {
+      dbCategories = [...FACTORY_CATEGORIES];
     }
 
-    if (whRes.data) {
+    if (whRes.data && whRes.data.length > 0) {
       dbWarehouses = whRes.data.map((w: any) => ({
         id: w.id,
         code: w.code || "",
@@ -500,9 +508,11 @@ export async function fetchDatabaseState() {
         capacityPercent: 75,
         status: w.is_active ? "active" : "inactive",
       }));
+    } else {
+      dbWarehouses = [...FACTORY_WAREHOUSES];
     }
 
-    if (unRes.data) {
+    if (unRes.data && unRes.data.length > 0) {
       dbUnits = unRes.data.map((u: any) => ({
         id: u.id,
         code: u.code || "",
@@ -511,6 +521,8 @@ export async function fetchDatabaseState() {
         isBaseUnit: true,
         conversionFactor: 1,
       }));
+    } else {
+      dbUnits = [...FACTORY_UNITS];
     }
 
     // Map Stock levels by product_id
@@ -522,7 +534,7 @@ export async function fetchDatabaseState() {
       }
     }
 
-    if (prodRes.data) {
+    if (prodRes.data && prodRes.data.length > 0) {
       dbProducts = prodRes.data.map((p: any) => {
         const totalStock = stockMap.get(p.id) ?? 0;
         const isRaw = Boolean(p.is_raw_material);
@@ -570,6 +582,8 @@ export async function fetchDatabaseState() {
           vipValidUntil: p.vip_valid_until || readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipValidUntil || undefined,
         };
       });
+    } else {
+      dbProducts = [...FACTORY_PRODUCTS];
     }
 
     if (bomRes.data) {

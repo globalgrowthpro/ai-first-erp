@@ -45,6 +45,163 @@ export const FACTORY_CATEGORIES: InventoryCategory[] = [
     type: "packaging",
     description: { ar: "علب رويال، جارات بلاستيك، أطباق كشري، شنط مطبوعة، وملاعق مغلفة", en: "Branded boxes, plastic jars, bowls, spoons, and takeaway bags" }
   }
+,
+  {
+    "id": "CAT-657",
+    "code": "CAT-657",
+    "name": {
+      "ar": "ارز بلبن وزير الحلو",
+      "en": "Wazeer Rice Pudding"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "أصناف أرز بلبن وزير الحلو بمختلف الأطعمة والإضافات",
+      "en": "Wazeer Rice Pudding with various toppings"
+    }
+  },
+  {
+    "id": "CAT-839",
+    "code": "CAT-839",
+    "name": {
+      "ar": "أختراع وزير",
+      "en": "Wazeer Inventions"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "أصناف الحلويات الخاصة والمبتكرة لوزير الحلو (الحلة، الخضة، الملوخيتو، إلخ)",
+      "en": "Signature specialty inventions by Wazeer El-Helw"
+    }
+  },
+  {
+    "id": "CAT-654",
+    "code": "CAT-654",
+    "name": {
+      "ar": "إضافات",
+      "en": "Add-ons & Extras"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "الإضافات والصوصات الخارجية (فسدق، لوتس، نوتيلا، آيس كريم، بسبوسة)",
+      "en": "Extra toppings, sauces, and scoops"
+    }
+  },
+  {
+    "id": "CAT-984",
+    "code": "CAT-984",
+    "name": {
+      "ar": "آيس كريم",
+      "en": "Ice Cream"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "بولات الآيس كريم والبسكويت",
+      "en": "Ice cream scoops and cones"
+    }
+  },
+  {
+    "id": "CAT-119",
+    "code": "CAT-119",
+    "name": {
+      "ar": "دوناتس",
+      "en": "Donuts"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "دوناتس طازجة بأنواعها وعروض البوكسات",
+      "en": "Fresh donuts and donut boxes"
+    }
+  },
+  {
+    "id": "CAT-219",
+    "code": "CAT-219",
+    "name": {
+      "ar": "رويال",
+      "en": "Royal Desserts"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "جارات رويال الفاخرة، تشيز كيك، براونيز، وقنابل الشوكولاتة",
+      "en": "Royal dessert jars, cheesecakes, and chocolate bowls"
+    }
+  },
+  {
+    "id": "CAT-351",
+    "code": "CAT-351",
+    "name": {
+      "ar": "طواجن",
+      "en": "Tajins & Casseroles"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "طواجن أم علي الساخنة ومخبوزات الطاجن",
+      "en": "Hot Om Ali and dessert casseroles"
+    }
+  },
+  {
+    "id": "CAT-387",
+    "code": "CAT-387",
+    "name": {
+      "ar": "قشطوطة",
+      "en": "Kashtota"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "قشطوطة وزير الحلو الأصلية بصوصات الفسدق واللوتس والمانجو والنوتيلا",
+      "en": "Original Wazeer Kashtota with various toppings"
+    }
+  },
+  {
+    "id": "CAT-624",
+    "code": "CAT-624",
+    "name": {
+      "ar": "قشطوطة أرز بلبن",
+      "en": "Kashtota Rice Pudding"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "مزيج القشطوطة الملكية مع طبقة الأرز باللبن",
+      "en": "Kashtota layered on rice pudding"
+    }
+  },
+  {
+    "id": "CAT-405",
+    "code": "CAT-405",
+    "name": {
+      "ar": "كشرى",
+      "en": "Sweet Koshary"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "أطباق كشري الحلو المبتكر (سلطان، اسكندراني، كيندر، لوتس، نوتيلا)",
+      "en": "Sweet dessert koshary bowls"
+    }
+  },
+  {
+    "id": "CAT-413",
+    "code": "CAT-413",
+    "name": {
+      "ar": "معلبات",
+      "en": "Cakes & Jars"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "كيكات لندن الفاخرة والعلب الجاهزة",
+      "en": "London cakes and packaged desserts"
+    }
+  },
+  {
+    "id": "CAT-440",
+    "code": "CAT-440",
+    "name": {
+      "ar": "عروض وزير",
+      "en": "Wazeer Special Offers"
+    },
+    "type": "finished",
+    "description": {
+      "ar": "عروض الهامور وبوكسات التوفير للعملاء",
+      "en": "Special customer bundles and combo offers"
+    }
+  }
 ];
 
 export const FACTORY_WAREHOUSES: InventoryWarehouse[] = [
@@ -653,10 +810,10 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "id": "prod-10025",
     "sku": "SKU-10025",
     "name": {
-      "ar": "عبوة أرز باللبن",
-      "en": "Rice Pudding Bowl (Plain)"
+      "ar": "أرز بلبن اسكندرانى",
+      "en": "Alexandrian Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -666,16 +823,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10026",
     "sku": "SKU-10026",
     "name": {
-      "ar": "عبوة كشري أرز باللبن",
-      "en": "Sweet Koshary Rice Bowl"
+      "ar": "أرز بلبن ايس كريم",
+      "en": "Rice Pudding with Ice Cream"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -685,16 +846,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10027",
     "sku": "SKU-10027",
     "name": {
-      "ar": "عبوة فتة أرز باللبن",
-      "en": "Sweet Fatta Rice Bowl"
+      "ar": "أرز بلبن بستاشيو",
+      "en": "Pistachio Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -704,16 +869,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10028",
     "sku": "SKU-10028",
     "name": {
-      "ar": "عبوة قنبلة أرز باللبن",
-      "en": "Qonbela Rice Pudding Bowl"
+      "ar": "أرز بلبن خريطة",
+      "en": "Khareeta Rice Pudding (Special Mix)"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -723,16 +892,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10029",
     "sku": "SKU-10029",
     "name": {
-      "ar": "عبوة ديناميت أرز باللبن",
-      "en": "Dynamite Rice Pudding Bowl"
+      "ar": "أرز بلبن ساده",
+      "en": "Plain Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -742,16 +915,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10030",
     "sku": "SKU-10030",
     "name": {
-      "ar": "عبوة قشطوطة أرز باللبن",
-      "en": "Kashtouta Rice Pudding Bowl"
+      "ar": "أرز بلبن سوبر  هيرو",
+      "en": "Super Hero Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-dairy-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -761,7 +938,11 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10031",
@@ -1052,10 +1233,10 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "id": "prod-10046",
     "sku": "SKU-10046",
     "name": {
-      "ar": "رويال دبي",
-      "en": "Royal Dubai Pistachio Cake"
+      "ar": "أرز بلبن سوبر لوكس",
+      "en": "Super Lux Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1065,16 +1246,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10047",
     "sku": "SKU-10047",
     "name": {
-      "ar": "رويال كيت كات",
-      "en": "Royal KitKat Chocolate Cake"
+      "ar": "أرز بلبن صاروخ",
+      "en": "Saroukh (Rocket) Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1084,16 +1269,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10048",
     "sku": "SKU-10048",
     "name": {
-      "ar": "رويال كافيه",
-      "en": "Royal Mocha Coffee Cake"
+      "ar": "أرز بلبن لوتس",
+      "en": "Lotus Biscoff Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1103,16 +1292,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10049",
     "sku": "SKU-10049",
     "name": {
-      "ar": "رويال بندق",
-      "en": "Royal Roasted Hazelnut Cake"
+      "ar": "أرز بلبن مانجواي",
+      "en": "Mangawy (Mango) Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1122,16 +1315,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10050",
     "sku": "SKU-10050",
     "name": {
-      "ar": "رويال ريد فيلفيت",
-      "en": "Royal Red Velvet Cake"
+      "ar": "أرز بلبن مكسرات",
+      "en": "Mixed Nuts Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1141,16 +1338,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10051",
     "sku": "SKU-10051",
     "name": {
-      "ar": "كرانشي لوتس",
-      "en": "Crunchy Lotus Biscuit Bowl"
+      "ar": "أرز بلبن نوتيلا",
+      "en": "Nutella Rice Pudding"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-657",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1160,16 +1361,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "ارز بلبن وزير الحلو",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10052",
     "sku": "SKU-10052",
     "name": {
-      "ar": "كرانشي نوتيلا",
-      "en": "Crunchy Nutella Bowl"
+      "ar": "الحله",
+      "en": "Bowl"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1179,16 +1384,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10053",
     "sku": "SKU-10053",
     "name": {
-      "ar": "كرانشي بستاشيو",
-      "en": "Crunchy Pistachio Bowl"
+      "ar": "الخضة بستاشيو",
+      "en": "Pistachio shock"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1198,16 +1407,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10054",
     "sku": "SKU-10054",
     "name": {
-      "ar": "متسلطنة مانجا مدورة",
-      "en": "Motsaltana Mango Round Bowl"
+      "ar": "الخضة شيكولاتة",
+      "en": "Chocolate Shock"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1217,16 +1430,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10055",
     "sku": "SKU-10055",
     "name": {
-      "ar": "متسلطنة مانجا مستطيلة",
-      "en": "Motsaltana Mango Rectangular"
+      "ar": "الخضة كيندر",
+      "en": "Kinder Shock"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1236,16 +1453,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10056",
     "sku": "SKU-10056",
     "name": {
-      "ar": "جار تشيز",
-      "en": "Cheesecake Jar"
+      "ar": "المحترمة قنبلة",
+      "en": "Polite Bomb"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1255,16 +1476,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10057",
     "sku": "SKU-10057",
     "name": {
-      "ar": "جار شوكلت",
-      "en": "Chocolate Fudge Jar"
+      "ar": "بستك ناو",
+      "en": "Bestek Nao"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1274,16 +1499,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10058",
     "sku": "SKU-10058",
     "name": {
-      "ar": "جار لوتس",
-      "en": "Lotus Biscoff Jar"
+      "ar": "تشيز طاخ بستاشيو",
+      "en": "Cheese Takh Pistachio"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1293,16 +1522,20 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10059",
     "sku": "SKU-10059",
     "name": {
-      "ar": "جار دريم كيك",
-      "en": "Dream Cake Chocolate Jar"
+      "ar": "تشيز طاخ نوتيلا",
+      "en": "Cheese Takh Nutella"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -1312,938 +1545,1138 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "منتجات تامه",
-    "rawType": "منتج تام مصنع"
+    "rawType": "منتج تام مصنع",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10060",
     "sku": "SKU-10060",
     "name": {
-      "ar": "كنافة بستاشيو",
-      "en": "Crispy Pistachio Konafa"
+      "ar": "ديناميت",
+      "en": "Dynamite"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 100,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10061",
     "sku": "SKU-10061",
     "name": {
-      "ar": "كريمة نوتيلا بني",
-      "en": "Nutella Cream Blend"
+      "ar": "سنيكرو",
+      "en": "Snickero"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 120,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10062",
     "sku": "SKU-10062",
     "name": {
-      "ar": "كريمة تشيز كيك",
-      "en": "Cheesecake Mousse Cream"
+      "ar": "قنبلة",
+      "en": "Bomb"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 120,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10063",
     "sku": "SKU-10063",
     "name": {
-      "ar": "بودينج شوكلت",
-      "en": "Rich Chocolate Pudding"
+      "ar": "كيت كاته",
+      "en": "Keet Kata"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 120,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10064",
     "sku": "SKU-10064",
     "name": {
-      "ar": "بودينج أبيض",
-      "en": "Vanilla White Pudding"
+      "ar": "كيك بوم بستاشيو",
+      "en": "Cake Boom Pistachio"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 110,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10065",
     "sku": "SKU-10065",
     "name": {
-      "ar": "أجلاسية شوكلت",
-      "en": "أجلاسية شوكلت"
+      "ar": "كيك بوم كيندر",
+      "en": "Cake Boom Kinder"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 95,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10066",
     "sku": "SKU-10066",
     "name": {
-      "ar": "عصير مانجو بالكريمة",
-      "en": "Mango Puree with Cream"
+      "ar": "كيك بوم لوتس",
+      "en": "Cake Boom Lutos"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 95,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10067",
     "sku": "SKU-10067",
     "name": {
-      "ar": "خلطة راسبيري",
-      "en": "Raspberry Fruit Compote"
+      "ar": "كيك بوم نوتيلا",
+      "en": "Cake Boom Nutella"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 95,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10068",
     "sku": "SKU-10068",
     "name": {
-      "ar": "صوص نوتيلا بني مخفف",
-      "en": "Diluted Nutella Sauce"
+      "ar": "كيندر سينجل",
+      "en": "Single Kinder"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-839",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 105,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "أختراع وزير",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10069",
     "sku": "SKU-10069",
     "name": {
-      "ar": "صوص لوتس مخفف",
-      "en": "Diluted Lotus Spread"
+      "ar": "إضافة  فسدق",
+      "en": "add Pistachio"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 30,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10070",
     "sku": "SKU-10070",
     "name": {
-      "ar": "صوص بستاشيو مخفف",
-      "en": "Diluted Pistachio Sauce"
+      "ar": "إضافة ايس كريم",
+      "en": "Add Ice Cream"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 30,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10071",
     "sku": "SKU-10071",
     "name": {
-      "ar": "كنافة محمره",
-      "en": "كنافة محمره"
+      "ar": "إضافة بسبوسة",
+      "en": "Add Basbosa"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 20,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10072",
     "sku": "SKU-10072",
     "name": {
-      "ar": "صوص نوتيلا بني",
-      "en": "صوص نوتيلا بني"
+      "ar": "إضافة بسكويت أوريو",
+      "en": "Add Oreo"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10073",
     "sku": "SKU-10073",
     "name": {
-      "ar": "صوص لوتس",
-      "en": "Lotus Spread"
+      "ar": "إضافة بسكويت لوتس",
+      "en": "Add Lotus"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10074",
     "sku": "SKU-10074",
     "name": {
-      "ar": "صوص بستاشيو",
-      "en": "صوص بستاشيو"
+      "ar": "إضافة صوص بستاشيو",
+      "en": "Add Pistachio Sauce"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 30,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10075",
     "sku": "SKU-10075",
     "name": {
-      "ar": "مكسرات بندق",
-      "en": "مكسرات بندق"
+      "ar": "إضافة صوص كراميل",
+      "en": "Add Caramel"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 20,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10076",
     "sku": "SKU-10076",
     "name": {
-      "ar": "مكسرات لوز",
-      "en": "مكسرات لوز"
+      "ar": "إضافة صوص كندار",
+      "en": "Add Kinder"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 20,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10077",
     "sku": "SKU-10077",
     "name": {
-      "ar": "فيوتين كريسبي",
-      "en": "فيوتين كريسبي"
+      "ar": "إضافة صوص لوتس بلجيكي",
+      "en": "Add Lotus Sauce"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 30,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10078",
     "sku": "SKU-10078",
     "name": {
-      "ar": "جوز هند",
-      "en": "جوز هند"
+      "ar": "إضافة قشطه",
+      "en": "Add Keshta"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10079",
     "sku": "SKU-10079",
     "name": {
-      "ar": "مربي مشمش",
-      "en": "مربي مشمش"
+      "ar": "إضافة كنافه",
+      "en": "Add Konafa"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 15,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10080",
     "sku": "SKU-10080",
     "name": {
-      "ar": "كريمه كلاسيك",
-      "en": "كريمه كلاسيك"
+      "ar": "إضافة مانجا",
+      "en": "Add Mango"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10081",
     "sku": "SKU-10081",
     "name": {
-      "ar": "مانجو قطع",
-      "en": "مانجو قطع"
+      "ar": "إضافة مكسرات",
+      "en": "Add Nuts"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 35,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10082",
     "sku": "SKU-10082",
     "name": {
-      "ar": "مانجو عصير",
-      "en": "مانجو عصير"
+      "ar": "إضافة موز",
+      "en": "Add Banana"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10083",
     "sku": "SKU-10083",
     "name": {
-      "ar": "جيلي شفاف",
-      "en": "جيلي شفاف"
+      "ar": "إضافة نوتيلا",
+      "en": "Add Nutella"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-654",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 25,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "إضافات",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10084",
     "sku": "SKU-10084",
     "name": {
-      "ar": "شيكولاتة كيت كات",
-      "en": "شيكولاتة كيت كات"
+      "ar": "آيس كريم بولة واحدة",
+      "en": "Ice Cream Bowl"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-984",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 30,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "آيس كريم",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10085",
     "sku": "SKU-10085",
     "name": {
-      "ar": "حشو فراولة",
-      "en": "حشو فراولة"
+      "ar": "آيس كريم ٢ بولة",
+      "en": "Ice Cream @ Bowls"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-984",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 55,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "آيس كريم",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10086",
     "sku": "SKU-10086",
     "name": {
-      "ar": "حشو توت",
-      "en": "حشو توت"
+      "ar": "اضافة بسكويت",
+      "en": "Add Cone"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-984",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 5,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "آيس كريم",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10087",
     "sku": "SKU-10087",
     "name": {
-      "ar": "صوص نوتيلا بيضاء",
-      "en": "صوص نوتيلا بيضاء"
+      "ar": "دوناتس انواع",
+      "en": "Donuts"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-119",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 35,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "دوناتس",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10088",
     "sku": "SKU-10088",
     "name": {
-      "ar": "جبنة بيكر",
-      "en": "جبنة بيكر"
+      "ar": "دوناتس عرض 4 قطع",
+      "en": "Donuts Offer 4 PCS"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-119",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 125,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "دوناتس",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10089",
     "sku": "SKU-10089",
     "name": {
-      "ar": "بلوك شوكلت حليب سما",
-      "en": "بلوك شوكلت حليب سما"
+      "ar": "جار تشيز كيك راسبري",
+      "en": "Cheese Cake Rasberry"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10090",
     "sku": "SKU-10090",
     "name": {
-      "ar": "بلوك شوكلاتة بيضاء",
-      "en": "بلوك شوكلاتة بيضاء"
+      "ar": "جار تشيز كيك لوتس",
+      "en": "Cheese Cake Lotus"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10091",
     "sku": "SKU-10091",
     "name": {
-      "ar": "ملفيه",
-      "en": "ملفيه"
+      "ar": "جار تشيز كيل شوكليت",
+      "en": "Cheese Cake Chockolate"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "معلبات",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10092",
     "sku": "SKU-10092",
     "name": {
-      "ar": "زبيب",
-      "en": "زبيب"
+      "ar": "جار دريم كيك",
+      "en": "Drea Cake"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10093",
     "sku": "SKU-10093",
     "name": {
-      "ar": "كريم شانتيه بودره",
-      "en": "كريم شانتيه بودره"
+      "ar": "رويال بندق",
+      "en": "Royal Hazelnut"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10094",
     "sku": "SKU-10094",
     "name": {
-      "ar": "طاجن فخار",
-      "en": "طاجن فخار"
+      "ar": "رويال دبي",
+      "en": "Royal Dubai"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-pcs",
     "costPrice": 0,
     "sellingPrice": 80,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10095",
     "sku": "SKU-10095",
     "name": {
-      "ar": "علب رويال بلاستيك",
-      "en": "علب رويال بلاستيك"
+      "ar": "رويال ريد فيلفيت",
+      "en": "Royal Red Velvet"
     },
-    "categoryId": "cat-packaging",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-can",
     "costPrice": 0,
     "sellingPrice": 75,
     "qty": 25,
     "minStock": 10,
-    "isRawMaterial": true,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10096",
     "sku": "SKU-10096",
     "name": {
-      "ar": "علب بلاستك مدورة",
-      "en": "علب بلاستك مدورة"
+      "ar": "رويال كافيه",
+      "en": "Royal Coffee"
     },
-    "categoryId": "cat-packaging",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-can",
     "costPrice": 0,
     "sellingPrice": 75,
     "qty": 25,
     "minStock": 10,
-    "isRawMaterial": true,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10097",
     "sku": "SKU-10097",
     "name": {
-      "ar": "صوص كيندر",
-      "en": "صوص كيندر"
+      "ar": "رويال كرانشي بستاشيو",
+      "en": "Royal Crunchy Pistachio"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10098",
     "sku": "SKU-10098",
     "name": {
-      "ar": "بلوك شيكولاتة دارك",
-      "en": "بلوك شيكولاتة دارك"
+      "ar": "رويال كرانشي لوتس",
+      "en": "Royal Crunchy Lotus"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10099",
     "sku": "SKU-10099",
     "name": {
-      "ar": "صوص نوتيلا بيضاء مخفف",
-      "en": "Diluted White Chocolate Sauce"
+      "ar": "رويال كرانشي نوتيلا",
+      "en": "Royal Crunchy Nutella"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10100",
     "sku": "SKU-10100",
     "name": {
-      "ar": "صوص كيندر مخفف",
-      "en": "Diluted Kinder Sauce"
+      "ar": "رويال كيت كات",
+      "en": "Royal Keet Kat"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10101",
     "sku": "SKU-10101",
     "name": {
-      "ar": "كريمه كلاسيك مصنعة",
-      "en": "Classic Confectionery Cream"
+      "ar": "كرانش لوتس",
+      "en": "Crunchy Lotus"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10102",
     "sku": "SKU-10102",
     "name": {
-      "ar": "فيوتين كريسبي لوتس",
-      "en": "Crispy Feuilletine Lotus"
+      "ar": "متسلطنة مانجو متسطيلة",
+      "en": "Mnago Heaven"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-219",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "رويال",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10103",
     "sku": "SKU-10103",
     "name": {
-      "ar": "فيوتين كريسبي نوتيلا بني",
-      "en": "Crispy Feuilletine Nutella"
+      "ar": "طاجن ام على",
+      "en": "Om Ali"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-351",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 60,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "طواجن",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10104",
     "sku": "SKU-10104",
     "name": {
-      "ar": "فيوتين كريسبي بستاشيو",
-      "en": "Crispy Feuilletine Pistachio"
+      "ar": "طاجن ام على قشطة",
+      "en": "Om Ali Keshta"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-351",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 70,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "طواجن",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10105",
     "sku": "SKU-10105",
     "name": {
-      "ar": "فيوتين كريسبي كيندر",
-      "en": "Crispy Feuilletine Kinder"
+      "ar": "طاجن أم على مكسرات",
+      "en": "Om Ali Nuts"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-351",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 75,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "طواجن",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10106",
     "sku": "SKU-10106",
     "name": {
-      "ar": "رول أسبونش أبيض مربي",
-      "en": "Swiss Roll White Sponge & Jam"
+      "ar": "طاجن ام علي قشطة مكسرات",
+      "en": "Om Ali Keshta & Nuts"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-351",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 90,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "طواجن",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10107",
     "sku": "SKU-10107",
     "name": {
-      "ar": "خلطة كافيه",
-      "en": "Mocha Coffee Blend"
+      "ar": "طاجن نوتيلا",
+      "en": "Nutella Tajen"
     },
-    "categoryId": "cat-dairy-sauces",
+    "categoryId": "CAT-351",
     "warehouseId": "wh-raw-store",
     "unitId": "u-kg",
     "costPrice": 0,
     "sellingPrice": 65,
-    "qty": 30,
+    "qty": 25,
     "minStock": 10,
     "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "group": "طواجن",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10108",
     "sku": "SKU-10108",
     "name": {
-      "ar": "نسكافيه كوفي",
-      "en": "نسكافيه كوفي"
+      "ar": "قشطوطة  نوتيلا",
+      "en": "Kashtota Nutella"
     },
-    "categoryId": "cat-raw",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-raw-store",
     "unitId": "u-zarf",
     "costPrice": 0,
     "sellingPrice": 95,
-    "qty": 150,
-    "minStock": 30,
-    "isRawMaterial": true,
+    "qty": 25,
+    "minStock": 10,
+    "isRawMaterial": false,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "group": "قشطوطة",
+    "showOnPos": true,
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10109",
@@ -2252,7 +2685,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أسكندرانى",
       "en": "Kashtota Alexandria"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2264,7 +2697,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10110",
@@ -2273,7 +2708,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة الخريطة",
       "en": "Kashtota Khareta"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2285,7 +2720,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10111",
@@ -2294,7 +2731,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة الوزير",
       "en": "Kashtota Wazeer"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2306,7 +2743,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10112",
@@ -2315,7 +2754,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة بستاشيو",
       "en": "Kashtota Pistachio"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2327,7 +2766,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10113",
@@ -2336,7 +2777,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة ساده",
       "en": "Kashtota Plain"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2348,7 +2789,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10114",
@@ -2357,7 +2800,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة سوبر لوكس",
       "en": "Kashtota Super Lux"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2369,7 +2812,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10115",
@@ -2378,7 +2823,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة سوبر هيرو",
       "en": "Kashtota Super Hero"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2390,7 +2835,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10116",
@@ -2399,7 +2846,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة كراميل",
       "en": "Kashtota Caramel"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2411,7 +2858,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10117",
@@ -2420,7 +2869,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة لوتس",
       "en": "Kashtota Lotus"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2432,7 +2881,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10118",
@@ -2441,7 +2892,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة مانجو",
       "en": "Kashtota Mango"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2453,7 +2904,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10119",
@@ -2462,7 +2915,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة مكس فروت",
       "en": "Kashtota Mix Fruit"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2474,7 +2927,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10120",
@@ -2483,7 +2938,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة مكسرات",
       "en": "Kashtota Nuts"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-387",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2495,7 +2950,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10121",
@@ -2504,7 +2961,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز اسكندرانى",
       "en": "Rice pudding Kashtota Alexandria"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2516,7 +2973,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10122",
@@ -2525,7 +2984,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز الخريطة",
       "en": "Rice pudding Kashtota Khareta"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2537,7 +2996,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10123",
@@ -2546,7 +3007,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بستاشيو",
       "en": "Rice pudding Kashtota Pistachio"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2558,7 +3019,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10124",
@@ -2567,7 +3030,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن",
       "en": "Rice pudding Kashtota Plain"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2579,7 +3042,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10125",
@@ -2588,7 +3053,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن كراميل",
       "en": "Rice pudding Kashtota Caramel"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2600,7 +3065,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10126",
@@ -2609,7 +3076,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن لوتس",
       "en": "Rice pudding Kashtota Lotus"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2621,7 +3088,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10127",
@@ -2630,7 +3099,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن مانجو",
       "en": "Rice pudding Kashtota Mango"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2642,7 +3111,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10128",
@@ -2651,7 +3122,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن مسكرات",
       "en": "Rice pudding Kashtota Nuts"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2663,7 +3134,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10129",
@@ -2672,7 +3145,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز بلبن نوتيلا",
       "en": "Rice pudding Kashtota Nutella"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2684,7 +3157,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10130",
@@ -2693,7 +3168,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "قشطوطة أرز ميكس فروت",
       "en": "Rice pudding Kashtota Mix Fruit"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-624",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2705,7 +3180,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10131",
@@ -2714,7 +3191,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى اسكندرانى",
       "en": "Koshary Alexandria"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2726,7 +3203,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10132",
@@ -2735,7 +3214,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى السلطان",
       "en": "Koshary Sultan"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2747,7 +3226,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10133",
@@ -2756,7 +3237,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى بصل اخضر",
       "en": "Koshary Pistachio"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2768,7 +3249,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10134",
@@ -2777,7 +3260,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى لوتس",
       "en": "Koshary Lotus"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2789,7 +3272,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10135",
@@ -2798,7 +3283,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى مانجا",
       "en": "Koshary Mango"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2810,7 +3295,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10136",
@@ -2819,7 +3306,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى موز كراميل",
       "en": "Koshary Banana Caramel"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2831,7 +3318,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10137",
@@ -2840,7 +3329,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى ميكس الوزير",
       "en": "Koshary Mix Wazeer"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2852,7 +3341,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10138",
@@ -2861,7 +3352,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى ميكس فروت",
       "en": "Koshary Mix Fruit"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2873,7 +3364,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10139",
@@ -2882,7 +3375,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشرى نوتيلا",
       "en": "Koshary Nutella"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2894,7 +3387,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10140",
@@ -2903,7 +3398,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشري سوبر لوكس",
       "en": "Koshary Super Lux"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2915,7 +3410,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10141",
@@ -2924,7 +3421,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشري سوبر هيرو",
       "en": "Koshary Super Hero"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2936,7 +3433,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10142",
@@ -2945,7 +3444,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كشري كيندر",
       "en": "Koshary Kinder"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-405",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2957,7 +3456,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10143",
@@ -2966,7 +3467,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كيكة لندن كيندر",
       "en": "Cake London Kinder"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2978,7 +3479,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10144",
@@ -2987,7 +3490,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كيكة لندن كيندر وسط",
       "en": "Cake London Kinder Medium"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -2999,7 +3502,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10145",
@@ -3008,7 +3513,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كيكة لندن نوتيلا وسط",
       "en": "Cake London Nutella Medium"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3020,7 +3525,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10146",
@@ -3029,7 +3536,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "كيكة لندن نوتيلا",
       "en": "Cake London Nutella"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3041,7 +3548,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10147",
@@ -3050,7 +3559,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "مدلعة كراميل",
       "en": "Medala3a"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3062,7 +3571,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10148",
@@ -3071,7 +3582,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "مدلعة مانجو",
       "en": "Medala3a Mango"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3083,7 +3594,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10149",
@@ -3092,7 +3605,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "مولتن كيك نوتيلا",
       "en": "Molten Cake Nutella"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-413",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3104,7 +3617,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10150",
@@ -3113,7 +3628,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "عرض هامور 1",
       "en": "Hamour !"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-440",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3125,7 +3640,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   },
   {
     "id": "prod-10151",
@@ -3134,7 +3651,7 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
       "ar": "عرض هامور ٢",
       "en": "Hamour 2"
     },
-    "categoryId": "cat-finished",
+    "categoryId": "CAT-440",
     "warehouseId": "wh-assembly-dept",
     "unitId": "u-box",
     "costPrice": 0,
@@ -3146,8 +3663,11 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "showOnPos": true,
     "department": "صالة البيع والحلويات",
     "classification": "حلويات ومعلبات تامة",
-    "rawType": "منتج تام"
+    "rawType": "منتج تام",
+    "productType": "branch",
+    "technicalType": "FINISHED"
   }
+
 ];
 
 export const FACTORY_BOMS: InventoryBom[] = [
