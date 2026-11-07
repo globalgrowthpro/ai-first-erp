@@ -154,17 +154,17 @@ const READY_PRESETS = {
       })),
     },
     {
-      id: "preset-wazeer-finished-20",
+      id: "preset-wazeer",
       title: {
-        ar: "قالب حلويات ومنتجات وزير الحلو التامة للفروع (20 منتج نهائي)",
-        en: "Wazeer El-Helw Finished Retail Products (20 Items)",
+        ar: "قالب حلويات ومنتجات وزير الحلو التامة للفروع (112 صنف)",
+        en: "Wazeer El-Helw Finished Retail Products (112 Items)",
       },
       description: {
-        ar: "علب رويال (دبي، كيت كات، ريد فيلفيت)، كرانشي، متسلطنة مانجو، جارات دريم كيك وشوكلت، وعبوات الأرز باللبن",
-        en: "Royal cakes, crunchy bowls, motsaltana, layered jars & retail bowls",
+        ar: "أرز باللبن، اختراع وزير، إضافات، آيس كريم، دوناتس، رويال، طواجن، قشطوطة، كشري حلو، معلبات، وعروض وزير",
+        en: "Rice pudding, inventions, toppings, ice cream, donuts, royal, casseroles, kashtota, sweet koshary & offers",
       },
       badge: "منتجات تامة 2026",
-      items: FACTORY_PRODUCTS.filter((p) => p.rawType?.includes("منتج تام") || (!p.isRawMaterial && !p.rawType?.includes("مصنعة"))).map((p) => ({
+      items: FACTORY_PRODUCTS.filter((p) => p.sku && p.sku.startsWith("SKU-10") && !p.isRawMaterial).map((p) => ({
         sku: p.sku,
         name: p.name,
         categoryId: p.categoryId,
