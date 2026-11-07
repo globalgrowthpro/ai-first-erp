@@ -31,6 +31,7 @@ export const dict: Dict = {
   nav_hr: { ar: "الموارد البشرية", en: "Human Resources" },
   nav_reports: { ar: "التقارير", en: "Reports" },
   nav_audit: { ar: "سجل التدقيق", en: "Audit Log" },
+  nav_todo: { ar: "المهام والالتزامات", en: "To-Do & Commitments" },
   nav_helpdesk: { ar: "الدعم الفني", en: "Helpdesk" },
   nav_settings: { ar: "الإعدادات والصلاحيات", en: "Settings & Roles" },
   hr_employees: { ar: "الموظفون", en: "Employees" },

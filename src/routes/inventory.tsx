@@ -429,6 +429,8 @@ function InventoryPage() {
             onAddProduct={addProduct}
             onUpdateProduct={updateProduct}
             onDeleteProduct={deleteProduct}
+            onAddBom={addBom}
+            onUpdateBom={updateBom}
             onOpenImport={() => handleOpenImport("products")}
           />
         )}

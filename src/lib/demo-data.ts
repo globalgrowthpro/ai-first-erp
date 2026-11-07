@@ -1527,6 +1527,7 @@ export const systemPages: SystemPage[] = [
   { id: "page-dispatch", path: "/dispatch", name: { ar: "التوزيع وتوجيه الأسطول", en: "Dispatch & Fleet" }, badge: { ar: "أسطول", en: "Fleet" } },
   { id: "page-reports", path: "/reports", name: { ar: "تقارير الأداء والأرباح الذكية", en: "Reports & Profitability" }, badge: { ar: "تحليل", en: "BI" } },
   { id: "page-audit", path: "/audit", name: { ar: "سجل التدقيق والحركات الرقابية", en: "Audit Trail & Compliance" }, badge: { ar: "أمان", en: "Security" } },
+  { id: "page-todo", path: "/todo", name: { ar: "المهام والالتزامات الشهرية", en: "To-Do & Monthly Commitments" }, badge: { ar: "رقابة", en: "Control" } },
   { id: "page-ai", path: "/ai", name: { ar: "غرفة عمليات الذكاء الاصطناعي", en: "AI Operations Center" }, badge: { ar: "ذكاء", en: "AI" } },
   { id: "page-ai-modules", path: "/ai-modules", name: { ar: "وكلاء وموديلات الذكاء", en: "AI Modules & Agents" }, badge: { ar: "إعدادات AI", en: "AI Config" } },
   { id: "page-settings", path: "/settings", name: { ar: "إعدادات الشركة والمستخدمين", en: "Settings & Branding" }, badge: { ar: "إدارة", en: "Admin" } },

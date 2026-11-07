@@ -581,14 +581,20 @@ export async function fetchDatabaseState() {
         outputYield: Number(b.output_quantity || 1),
         outputUnitId: "",
         overheadCost: 0,
-        components: (b.bom_lines || []).map((bl: any) => ({
-          componentProductId: bl.component_id,
-          quantity: Number(bl.quantity || 0),
-          unitId: "",
-          unitCost: 0,
-          totalCost: 0,
-          wastePercent: Number(bl.waste_percent || 0),
-        })),
+        components: (b.bom_lines || []).map((bl: any) => {
+          const compProd = dbProducts.find((p) => p.id === bl.component_id);
+          const compUnitCost = compProd?.costPrice || 0;
+          const qty = Number(bl.quantity || 0);
+          return {
+            componentProductId: bl.component_id,
+            rawMaterialProductId: bl.component_id,
+            quantity: qty,
+            unitId: compProd?.unitId || "",
+            unitCost: compUnitCost,
+            totalCost: qty * compUnitCost,
+            wastePercent: Number(bl.waste_percent || 0),
+          };
+        }),
         status: b.is_active ? "active" : "draft",
       }));
     }
@@ -1059,6 +1065,25 @@ export function useInventoryStore() {
       .single();
 
     if (error) throw error;
+
+    if (bom.components && bom.components.length > 0) {
+      const validLines = bom.components
+        .filter((c) => c.componentProductId || c.rawMaterialProductId)
+        .map((c) => ({
+          bom_id: data.id,
+          component_id: c.componentProductId || c.rawMaterialProductId || "",
+          quantity: c.quantity || 1,
+          waste_percent: c.wastePercent || 0,
+        }));
+      if (validLines.length > 0) {
+        try {
+          await supabase.from("bom_lines").insert(validLines);
+        } catch (blErr) {
+          console.warn("Failed to insert bom_lines:", blErr);
+        }
+      }
+    }
+
     await fetchDatabaseState();
     return { ...bom, id: data.id };
   }, []);
@@ -1072,7 +1097,29 @@ export function useInventoryStore() {
     }
     if (updates.status) dbUpdate.is_active = updates.status === "active";
     if (updates.outputYield) dbUpdate.output_quantity = updates.outputYield;
-    await supabase.from("boms").update(dbUpdate).eq("id", id);
+    if (Object.keys(dbUpdate).length > 0) {
+      await supabase.from("boms").update(dbUpdate).eq("id", id);
+    }
+
+    if (updates.components !== undefined) {
+      try {
+        await supabase.from("bom_lines").delete().eq("bom_id", id);
+        const validLines = updates.components
+          .filter((c) => c.componentProductId || c.rawMaterialProductId)
+          .map((c) => ({
+            bom_id: id,
+            component_id: c.componentProductId || c.rawMaterialProductId || "",
+            quantity: c.quantity || 1,
+            waste_percent: c.wastePercent || 0,
+          }));
+        if (validLines.length > 0) {
+          await supabase.from("bom_lines").insert(validLines);
+        }
+      } catch (blErr) {
+        console.warn("Failed to update bom_lines:", blErr);
+      }
+    }
+
     await fetchDatabaseState();
   }, []);
 

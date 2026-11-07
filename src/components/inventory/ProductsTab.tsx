@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Loader2,
   RotateCcw,
+  ChefHat,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
@@ -40,6 +41,7 @@ import {
   type Branch,
   type InventoryBom,
   type ProductTechnicalType,
+  type BomComponentItem,
   calculateBuildableQuantity,
   getCategoryStyle,
   KNOWN_VIP_CLIENTS,
@@ -53,9 +55,11 @@ interface ProductsTabProps {
   units: InventoryUnit[];
   branches?: Branch[];
   boms?: InventoryBom[];
-  onAddProduct: (prod: Omit<InventoryProduct, "id">) => void;
-  onUpdateProduct: (id: string, updates: Partial<InventoryProduct>) => void;
+  onAddProduct: (prod: Omit<InventoryProduct, "id">) => Promise<any> | void;
+  onUpdateProduct: (id: string, updates: Partial<InventoryProduct>) => Promise<any> | void;
   onDeleteProduct: (id: string) => void;
+  onAddBom?: (bom: Omit<InventoryBom, "id">) => Promise<any> | void;
+  onUpdateBom?: (id: string, updates: Partial<InventoryBom>) => Promise<any> | void;
   onOpenImport?: () => void;
 }
 
@@ -69,6 +73,8 @@ export function ProductsTab({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
+  onAddBom,
+  onUpdateBom,
   onOpenImport,
 }: ProductsTabProps) {
   const { t, pick, money, n, dir } = useI18n();
@@ -109,10 +115,122 @@ export function ProductsTab({
   const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "safe" | "danger">("idle");
   const [scanMessage, setScanMessage] = useState("");
   const [skuError, setSkuError] = useState<string | null>(null);
+  const [formModalTab, setFormModalTab] = useState<"details" | "components">("details");
   const [vipPrice, setVipPrice] = useState<number | undefined>(undefined);
   const [selectedVipClientIds, setSelectedVipClientIds] = useState<string[]>([]);
   const [vipValidUntil, setVipValidUntil] = useState<string>("");
   const [vipClientSearch, setVipClientSearch] = useState<string>("");
+  const [components, setComponents] = useState<BomComponentItem[]>([]);
+
+  const availableRawMaterials = useMemo(() => {
+    return products.filter(
+      (p) =>
+        (p.isRawMaterial ||
+          p.technicalType === "RAW_MATERIAL" ||
+          p.technicalType === "SEMI_FINISHED") &&
+        (!editingProduct || p.id !== editingProduct.id)
+    );
+  }, [products, editingProduct]);
+
+  const availableOtherProducts = useMemo(() => {
+    return products.filter(
+      (p) =>
+        !p.isRawMaterial &&
+        p.technicalType !== "RAW_MATERIAL" &&
+        p.technicalType !== "SEMI_FINISHED" &&
+        (!editingProduct || p.id !== editingProduct.id)
+    );
+  }, [products, editingProduct]);
+
+  const totalComponentsCost = useMemo(() => {
+    return components.reduce((acc, c) => {
+      const selectedProd = products.find(
+        (p) => p.id === (c.componentProductId || c.rawMaterialProductId)
+      );
+      const unitCost =
+        c.unitCost !== undefined ? c.unitCost : selectedProd?.costPrice || 0;
+      const lineCost = (c.quantity || 0) * unitCost;
+      return acc + (isNaN(lineCost) ? 0 : lineCost);
+    }, 0);
+  }, [components, products]);
+
+  const handleAddComponentRow = () => {
+    const rawList = products.filter(
+      (p) =>
+        (p.isRawMaterial || p.technicalType === "RAW_MATERIAL") &&
+        (!editingProduct || p.id !== editingProduct.id)
+    );
+    const fallbackList = products.filter(
+      (p) => !editingProduct || p.id !== editingProduct.id
+    );
+    const item = rawList[0] || fallbackList[0];
+    if (!item) return;
+
+    setComponents((prev) => [
+      ...prev,
+      {
+        componentProductId: item.id,
+        rawMaterialProductId: item.id,
+        quantity: 1,
+        unitId: item.unitId,
+        unitCost: item.costPrice || 0,
+        totalCost: item.costPrice || 0,
+        wastePercent: 0,
+      },
+    ]);
+  };
+
+  const handleUpdateComponent = (
+    index: number,
+    field: keyof BomComponentItem,
+    value: any
+  ) => {
+    setComponents((prev) => {
+      const next = [...prev];
+      const row = { ...next[index]! };
+
+      if (field === "componentProductId") {
+        row.componentProductId = value;
+        row.rawMaterialProductId = value;
+        const selected = products.find((p) => p.id === value);
+        if (selected) {
+          row.unitId = selected.unitId;
+          row.unitCost = selected.costPrice || 0;
+          row.totalCost = (row.quantity || 1) * (selected.costPrice || 0);
+        }
+      } else if (field === "quantity") {
+        const qtyVal = Math.max(0, Number(value) || 0);
+        row.quantity = qtyVal;
+        row.totalCost = qtyVal * (row.unitCost || 0);
+      } else if (field === "unitCost") {
+        const costVal = Math.max(0, Number(value) || 0);
+        row.unitCost = costVal;
+        row.totalCost = (row.quantity || 1) * costVal;
+      } else if (field === "unitId") {
+        row.unitId = value;
+      } else if (field === "wastePercent") {
+        row.wastePercent = Math.max(0, Number(value) || 0);
+      }
+
+      next[index] = row;
+      return next;
+    });
+  };
+
+  const handleRemoveComponent = (index: number) => {
+    setComponents((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const applyComponentsCostToProduct = () => {
+    if (totalComponentsCost > 0) {
+      setCostPrice(Number(totalComponentsCost.toFixed(2)));
+      toast.success(
+        lang === "ar"
+          ? `تم اعتماد تكلفة المكونات (${totalComponentsCost.toFixed(2)} ج.م) كسعر تكلفة للصنف`
+          : `Applied component cost (${totalComponentsCost.toFixed(2)} EGP) as product cost price`
+      );
+    }
+  };
 
   const { partners } = usePartnersStore();
   const allClientOptions = useMemo(() => {
@@ -348,6 +466,8 @@ export function ProductsTab({
     setScanStatus("idle");
     setScanMessage("");
     setSkuError(null);
+    setFormModalTab("details");
+    setComponents([]);
     setIsFormModalOpen(true);
   };
 
@@ -382,10 +502,41 @@ export function ProductsTab({
     setScanStatus(p.image ? "safe" : "idle");
     setScanMessage(p.image ? pick("✅ صورة محفوظة مسبقاً", "✅ Previously saved image") : "");
     setSkuError(null);
+    setFormModalTab("details");
+
+    // Pre-populate components from existing BOM if found
+    const existingBom =
+      boms.find((b) => b.finishedProductId === p.id && b.status === "active") ||
+      boms.find((b) => b.finishedProductId === p.id);
+    if (existingBom && existingBom.components && existingBom.components.length > 0) {
+      setComponents(
+        existingBom.components.map((c) => {
+          const raw = products.find(
+            (prod) => prod.id === (c.componentProductId || c.rawMaterialProductId)
+          );
+          const uCost = c.unitCost || raw?.costPrice || 0;
+          return {
+            ...c,
+            componentProductId: c.componentProductId || c.rawMaterialProductId || "",
+            unitId: c.unitId || raw?.unitId || "",
+            unitCost: uCost,
+            totalCost: (c.quantity || 1) * uCost,
+          };
+        })
+      );
+    } else {
+      setComponents([]);
+    }
+
     setIsFormModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const openEditModalWithComponents = (p: InventoryProduct) => {
+    openEditModal(p);
+    setFormModalTab("components");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sku || !nameAr) return;
 
@@ -408,11 +559,13 @@ export function ProductsTab({
     const isRaw = technicalType === "RAW_MATERIAL";
     const prodType: "factory" | "branch" =
       technicalType === "SEMI_FINISHED" || technicalType === "RAW_MATERIAL" ? "factory" : "branch";
-    const isAssembly = technicalType === "ON_DEMAND_ASSEMBLY";
+    const isAssembly = technicalType === "ON_DEMAND_ASSEMBLY" || components.length > 0;
     const trackInventory = technicalType !== "ON_DEMAND_ASSEMBLY";
 
+    let targetProductId = editingProduct?.id;
+
     if (editingProduct) {
-      onUpdateProduct(editingProduct.id, {
+      await onUpdateProduct(editingProduct.id, {
         sku: skuTrimmed,
         name: { ar: nameAr, en: nameEn || nameAr },
         categoryId,
@@ -430,10 +583,14 @@ export function ProductsTab({
         group: group || undefined,
         branchId: branchId || undefined,
         showOnPos,
+        vipPrice: vipPrice && vipPrice > 0 ? vipPrice : undefined,
+        vipClientIds: selectedVipClientIds,
+        vipValidUntil: vipValidUntil || undefined,
         ...(imageUrl.trim() ? { image: imageUrl.trim() } : {}),
       });
+      targetProductId = editingProduct.id;
     } else {
-      onAddProduct({
+      const created: any = await onAddProduct({
         sku: skuTrimmed,
         name: { ar: nameAr, en: nameEn || nameAr },
         categoryId,
@@ -451,9 +608,48 @@ export function ProductsTab({
         group: group || undefined,
         branchId: branchId || undefined,
         showOnPos,
+        vipPrice: vipPrice && vipPrice > 0 ? vipPrice : undefined,
+        vipClientIds: selectedVipClientIds,
+        vipValidUntil: vipValidUntil || undefined,
         ...(imageUrl.trim() ? { image: imageUrl.trim() } : {}),
       });
+      targetProductId = created?.id;
     }
+
+    // Save Recipe / Components to BOM
+    if (targetProductId) {
+      const existingBom =
+        boms.find((b) => b.finishedProductId === targetProductId && b.status === "active") ||
+        boms.find((b) => b.finishedProductId === targetProductId);
+
+      if (components.length > 0) {
+        if (existingBom) {
+          await onUpdateBom?.(existingBom.id, {
+            name: { ar: `وصفة ${nameAr}`, en: `Recipe ${nameEn || nameAr}` },
+            outputYield: 1,
+            outputUnitId: unitId,
+            components,
+            status: "active",
+          });
+        } else {
+          await onAddBom?.({
+            code: `BOM-${skuTrimmed}`,
+            name: { ar: `وصفة ${nameAr}`, en: `Recipe ${nameEn || nameAr}` },
+            finishedProductId: targetProductId,
+            outputYield: 1,
+            outputUnitId: unitId,
+            overheadCost: 0,
+            components,
+            status: "active",
+          });
+        }
+      } else if (existingBom && components.length === 0) {
+        await onUpdateBom?.(existingBom.id, {
+          components: [],
+        });
+      }
+    }
+
     setIsFormModalOpen(false);
   };
 
@@ -841,6 +1037,45 @@ export function ProductsTab({
                             <span>{pick("منتج تام مخزن", "Stocked Finished")}</span>
                           </span>
                         )}
+
+                        {/* Recipe / Components badge */}
+                        {(() => {
+                          const itemBom =
+                            boms.find((b) => b.finishedProductId === p.id && b.status === "active") ||
+                            boms.find((b) => b.finishedProductId === p.id);
+                          const compCount = itemBom?.components?.length || 0;
+                          if (compCount > 0) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => openEditModalWithComponents(p)}
+                                className="inline-flex items-center gap-1 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 text-[9px] font-black uppercase hover:bg-indigo-500/25 transition-colors cursor-pointer"
+                                title={pick("عرض وتعديل مكونات وخامات الصنف", "View and edit recipe components")}
+                              >
+                                <span>🍳</span>
+                                <span>{pick(`${compCount} مكونات`, `${compCount} components`)}</span>
+                              </button>
+                            );
+                          }
+                          if (
+                            p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+                            p.technicalType === "SEMI_FINISHED" ||
+                            (!p.isRawMaterial && p.sku.startsWith("BRN-"))
+                          ) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => openEditModalWithComponents(p)}
+                                className="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/40 px-1.5 py-0.2 text-[9px] font-bold hover:bg-amber-500/20 transition-colors cursor-pointer"
+                                title={pick("اضغط لإضافة مكونات وخامات الصنف", "Click to add product components")}
+                              >
+                                <Plus className="size-2.5" />
+                                <span>{pick("إضافة مكونات", "Add Components")}</span>
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                   </Td>
@@ -996,6 +1231,19 @@ export function ProductsTab({
                   {/* Actions */}
                   <Td className="text-center">
                     <div className="flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditModalWithComponents(p)}
+                        className={cn(
+                          "rounded-lg border p-1 transition-colors shadow-xs cursor-pointer",
+                          boms.some((b) => b.finishedProductId === p.id && b.components && b.components.length > 0)
+                            ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white"
+                            : "border-border bg-card text-muted-foreground hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 hover:border-indigo-300"
+                        )}
+                        title={pick("إدارة مكونات ومقادير الصنف (Recipe BOM)", "Manage Recipe & Components")}
+                      >
+                        <ChefHat className="size-3.5" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => openEditModal(p)}
@@ -1246,6 +1494,29 @@ export function ProductsTab({
                       );
                     })}
                   </div>
+
+                  {/* Direct Shortcut to Recipe / Components */}
+                  <button
+                    type="button"
+                    onClick={() => setFormModalTab("components")}
+                    className={cn(
+                      "w-full mt-2 py-1.5 px-2.5 rounded-lg border text-xs font-black transition-all flex items-center justify-between cursor-pointer shadow-2xs",
+                      formModalTab === "components"
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                        : "bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20"
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>🍳</span>
+                      <span>{pick("مكونات ومقادير الصنف", "Product Components")}</span>
+                    </span>
+                    <span className={cn(
+                      "px-1.5 py-0.2 rounded-md text-[10px] font-mono font-bold",
+                      formModalTab === "components" ? "bg-white/20 text-white" : "bg-indigo-500/20 text-indigo-700 dark:text-indigo-300"
+                    )}>
+                      {components.length}
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -1264,7 +1535,57 @@ export function ProductsTab({
 
             {/* RIGHT: Form Fields */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3.5">
+              {/* Tab Switcher Header */}
+              <div className="flex items-center justify-between px-6 pt-2.5 pb-0 border-b border-border/70 bg-secondary/30 shrink-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormModalTab("details")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 text-xs font-black border-b-2 transition-all cursor-pointer",
+                      formModalTab === "details"
+                        ? "border-primary text-primary bg-background shadow-xs rounded-t-lg -mb-[1px]"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Boxes className="size-3.5" />
+                    <span>{pick("بيانات الصنف والتسعير", "Product Info & Pricing")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormModalTab("components")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 text-xs font-black border-b-2 transition-all cursor-pointer relative",
+                      formModalTab === "components"
+                        ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-background shadow-xs rounded-t-lg -mb-[1px]"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <ChefHat className="size-3.5 text-indigo-500" />
+                    <span>{pick("مكونات وخامات الصنف (Recipe / BOM)", "Recipe & Components")}</span>
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none",
+                      components.length > 0
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {components.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Materials cost indicator in header */}
+                {components.length > 0 && (
+                  <div className="hidden sm:flex items-center gap-2 text-xs pe-2">
+                    <span className="text-[10px] text-muted-foreground">{pick("تكلفة الخامات:", "Materials Cost:")}</span>
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{Number(totalComponentsCost.toFixed(2))} {pick("ج.م", "EGP")}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* DETAILS TAB CONTENT */}
+              {formModalTab === "details" && (
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3.5">
 
                 {/* Identity section */}
                 <div className="flex items-center gap-2">
@@ -1667,6 +1988,42 @@ export function ProductsTab({
                   </div>
                 </div>
 
+                {/* ── Recipe / Components Shortcut Card ── */}
+                <div className="rounded-xl border border-indigo-500/35 bg-gradient-to-r from-indigo-500/10 via-background to-background p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg shadow-xs border border-indigo-500/30 shrink-0">
+                      🍳
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-foreground flex items-center gap-2">
+                        <span>{pick("مكونات ومقادير الصنف (Recipe / BOM)", "Product Components & Recipe")}</span>
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.2 rounded-full border",
+                          components.length > 0
+                            ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/40 font-extrabold"
+                            : "bg-muted border-border text-muted-foreground"
+                        )}>
+                          {components.length > 0 ? pick(`${components.length} مكونات مضافة`, `${components.length} components`) : pick("اختياري", "Optional")}
+                        </span>
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {components.length > 0
+                          ? pick(`إجمالي تكلفة المكونات: ${totalComponentsCost.toFixed(2)} ج.م — تخصم آلياً من المخزن عند كل بيع بالفرع`, `Materials cost: ${totalComponentsCost.toFixed(2)} EGP — auto deducted upon branch sale`)
+                          : pick("أضف خامات ومستلزمات الصنف لحساب تكلفته وخصم المقادير آلياً من المخزن", "Add ingredients to auto deduct inventory on sale and calculate exact cost")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormModalTab("components")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                  >
+                    <ChefHat className="size-3.5" />
+                    <span>{components.length > 0 ? pick("عرض وتعديل المكونات ➔", "Edit Components ➔") : pick("+ إضافة وتحديد المكونات ➔", "+ Add Components ➔")}</span>
+                  </button>
+                </div>
+
                 {/* Margin bar */}
                 {sellingPrice > 0 && (
                   <div className="rounded-lg bg-secondary/60 border border-border/60 px-3 py-1.5">
@@ -1689,6 +2046,231 @@ export function ProductsTab({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── COMPONENTS TAB CONTENT ── */}
+            {formModalTab === "components" && (
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {/* Product Quick Info Header */}
+                <div className="rounded-xl border border-indigo-500/35 bg-gradient-to-r from-indigo-500/10 via-primary/5 to-transparent p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="size-11 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl shadow-xs border border-indigo-500/30 shrink-0">
+                      🍳
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-black text-foreground">
+                          {nameAr || pick("صنف بدون اسم", "Unnamed Product")}
+                        </h3>
+                        <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-secondary border border-border">
+                          {sku}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {pick("تحديد خامات ومقادير تحضير هذا الصنف لخصمها آلياً من المخزن عند كل عملية بيع وحساب تكلفة الإنتاج", "Define ingredients to auto-deduct from stock upon sale & calculate exact recipe cost")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="text-end px-3 py-1.5 rounded-lg bg-background border border-border">
+                      <div className="text-[10px] text-muted-foreground font-bold">{pick("تكلفة المكونات", "Recipe Cost")}</div>
+                      <div className="text-sm font-black font-mono text-indigo-600 dark:text-indigo-400">{Number(totalComponentsCost.toFixed(2))} {pick("ج.م", "EGP")}</div>
+                    </div>
+                    <div className="text-end px-3 py-1.5 rounded-lg bg-background border border-border">
+                      <div className="text-[10px] text-muted-foreground font-bold">{pick("سعر التكلفة الحالي", "Current Cost")}</div>
+                      <div className="text-sm font-black font-mono text-foreground">{costPrice || 0} {pick("ج.م", "EGP")}</div>
+                    </div>
+                    {totalComponentsCost > 0 && totalComponentsCost !== costPrice && (
+                      <button
+                        type="button"
+                        onClick={applyComponentsCostToProduct}
+                        className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+                      >
+                        <RotateCcw className="size-3.5" />
+                        <span>{pick("اعتماد كتكلفة للصنف", "Apply as Cost Price")}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Components Table & Add Row */}
+                <div className="rounded-xl border border-border/80 bg-background overflow-hidden shadow-xs">
+                  <div className="p-3 bg-muted/40 border-b border-border/60 flex items-center justify-between">
+                    <span className="text-xs font-black flex items-center gap-2">
+                      <span>{pick("قائمة المواد الخام والمستلزمات الداخلة في التكوين", "Ingredients & Raw Materials List")}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[10px] font-mono font-bold">
+                        {components.length} {pick("مكونات", "items")}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddComponentRow}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-extrabold transition-all shadow-xs cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      <span>{pick("+ إضافة مكوّن", "+ Add Component")}</span>
+                    </button>
+                  </div>
+
+                  {components.length === 0 ? (
+                    <div className="text-center py-10 px-4">
+                      <ChefHat className="size-12 text-muted-foreground/30 mx-auto mb-2" />
+                      <h4 className="text-sm font-bold text-foreground">
+                        {pick("لم تقم بإضافة مكونات لهذا الصنف بعد", "No components added for this item yet")}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+                        {pick(
+                          "أضف المواد الخام، الشوكولاتة، الأرز، العلب أو المستلزمات لتتبع رصيدها الفعلي وحساب تكلفة الصنف تلقائياً.",
+                          "Add raw materials, packaging, and ingredients to track live inventory and calculate exact cost."
+                        )}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddComponentRow}
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-black transition-all shadow-sm cursor-pointer"
+                      >
+                        <Plus className="size-4" />
+                        <span>{pick("+ إضافة أول مكوّن الآن", "+ Add First Component Now")}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-start">
+                        <thead className="bg-muted/70 text-[10px] uppercase font-black text-muted-foreground border-b border-border/60">
+                          <tr>
+                            <th className="py-2 px-3 text-start">{pick("المكون / الخامة", "Component / Raw Material")}</th>
+                            <th className="py-2 px-2 text-center w-28">{pick("الكمية المطلوبة", "Quantity")}</th>
+                            <th className="py-2 px-2 text-center w-28">{pick("الوحدة", "Unit")}</th>
+                            <th className="py-2 px-2 text-center w-28">{pick("سعر الوحدة", "Unit Cost")}</th>
+                            <th className="py-2 px-2 text-center w-28">{pick("إجمالي التكلفة", "Total Cost")}</th>
+                            <th className="py-2 px-2 text-center w-12">{pick("حذف", "Delete")}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/40 font-medium">
+                          {components.map((comp, idx) => {
+                            const rawMatId = comp.componentProductId || comp.rawMaterialProductId || "";
+                            const selectedProd = products.find((p) => p.id === rawMatId);
+                            const selectedUnit = units.find((u) => u.id === (comp.unitId || selectedProd?.unitId));
+                            const lineTotal = (comp.quantity || 0) * (comp.unitCost !== undefined ? comp.unitCost : (selectedProd?.costPrice || 0));
+
+                            return (
+                              <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                                {/* Component Select */}
+                                <td className="py-2 px-3">
+                                  <select
+                                    value={rawMatId}
+                                    onChange={(e) => handleUpdateComponent(idx, "componentProductId", e.target.value)}
+                                    className="w-full h-9 px-2 text-xs font-bold rounded-lg border border-border/80 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                                  >
+                                    <option value="">{pick("-- اختر المكون أو الخامة --", "-- Select Component --")}</option>
+                                    <optgroup label={pick("مواد خام ومستلزمات", "Raw Materials & Supplies")}>
+                                      {availableRawMaterials.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                          {p.sku} — {pick(p.name.ar, p.name.en)} ({p.costPrice} {pick("ج.م", "EGP")})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                    {availableOtherProducts.length > 0 && (
+                                      <optgroup label={pick("أصناف ومنتجات أخرى", "Other Products")}>
+                                        {availableOtherProducts.map((p) => (
+                                          <option key={p.id} value={p.id}>
+                                            {p.sku} — {pick(p.name.ar, p.name.en)} ({p.costPrice} {pick("ج.م", "EGP")})
+                                          </option>
+                                        ))}
+                                      </optgroup>
+                                    )}
+                                  </select>
+                                </td>
+
+                                {/* Quantity */}
+                                <td className="py-2 px-2">
+                                  <input
+                                    type="number"
+                                    min={0.001}
+                                    step="any"
+                                    required
+                                    value={comp.quantity || ""}
+                                    onChange={(e) => handleUpdateComponent(idx, "quantity", e.target.value)}
+                                    className="w-full h-9 px-2 text-center text-xs font-mono font-bold rounded-lg border border-border/80 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                                    placeholder="1"
+                                  />
+                                </td>
+
+                                {/* Unit */}
+                                <td className="py-2 px-2 text-center">
+                                  <span className="inline-block px-2 py-1 rounded-md bg-muted/70 text-[11px] font-bold text-muted-foreground border border-border/60 truncate max-w-[100px]" title={selectedUnit ? pick(selectedUnit.name.ar, selectedUnit.name.en) : "-"}>
+                                    {selectedUnit ? pick(selectedUnit.name.ar, selectedUnit.name.en) : "-"}
+                                  </span>
+                                </td>
+
+                                {/* Unit Cost */}
+                                <td className="py-2 px-2 text-center font-mono text-xs font-bold text-muted-foreground">
+                                  <span>{comp.unitCost !== undefined ? comp.unitCost : (selectedProd?.costPrice || 0)}</span>
+                                  <span className="text-[10px] ms-0.5 opacity-70">{pick("ج.م", "EGP")}</span>
+                                </td>
+
+                                {/* Total */}
+                                <td className="py-2 px-2 text-center font-mono text-xs font-black text-foreground">
+                                  <span>{Number(lineTotal.toFixed(2))}</span>
+                                  <span className="text-[10px] ms-0.5 opacity-70">{pick("ج.م", "EGP")}</span>
+                                </td>
+
+                                {/* Remove button */}
+                                <td className="py-2 px-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveComponent(idx)}
+                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                                    title={pick("حذف المكون", "Remove component")}
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Table Footer */}
+                  {components.length > 0 && (
+                    <div className="p-3 bg-muted/30 border-t border-border/60 flex flex-wrap items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={handleAddComponentRow}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-secondary text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        <Plus className="size-3.5" />
+                        <span>{pick("+ إضافة مكوّن آخر", "+ Add Another Component")}</span>
+                      </button>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground font-bold">
+                          {pick("إجمالي تكلفة المكونات والخامات:", "Total Materials Cost:")}
+                        </span>
+                        <span className="font-mono font-black text-base text-indigo-600 dark:text-indigo-400">
+                          {Number(totalComponentsCost.toFixed(2))} {pick("ج.م", "EGP")}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Return to details shortcut */}
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormModalTab("details")}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{pick("⬅ العودة إلى بيانات الصنف والتسعير", "⬅ Return to Product Info & Pricing")}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
               {/* Footer */}
               <div className="shrink-0 bg-background/95 backdrop-blur-sm border-t border-border/70 px-4 py-2.5 flex items-center justify-between gap-3">

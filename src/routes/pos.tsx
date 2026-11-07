@@ -38,6 +38,7 @@ import {
   ChefHat,
   Filter,
   Eye,
+  EyeOff,
   Utensils,
   ShoppingBag,
   Bike,
@@ -908,6 +909,7 @@ export function PosPage() {
   // Cashier Switcher Modal State
   const [showCashierSwitchModal, setShowCashierSwitchModal] = useState(false);
   const [cashierPinInput, setCashierPinInput] = useState("");
+  const [showCashierPin, setShowCashierPin] = useState(false);
   const [showNewCashierForm, setShowNewCashierForm] = useState(false);
   const [newCashierForm, setNewCashierForm] = useState({
     nameAr: "",
@@ -4245,7 +4247,7 @@ export function PosPage() {
               <div className="p-3 rounded-2xl bg-muted/30 border border-border/70 flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
-                  type="password"
+                  type={showCashierPin ? "text" : "password"}
                   maxLength={6}
                   value={cashierPinInput}
                   onChange={(e) => {
@@ -4270,6 +4272,19 @@ export function PosPage() {
                   }
                   className="flex-1 bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs font-mono font-bold focus:border-primary focus:outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowCashierPin((prev) => !prev)}
+                  className="p-1 text-muted-foreground hover:text-foreground focus:outline-none transition-colors rounded-lg hover:bg-muted/60 cursor-pointer"
+                  title={showCashierPin ? (lang === "ar" ? "إخفاء الرمز" : "Hide PIN") : (lang === "ar" ? "إظهار الرمز" : "Show PIN")}
+                  tabIndex={-1}
+                >
+                  {showCashierPin ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
 
               {/* Cashiers List for this Branch */}

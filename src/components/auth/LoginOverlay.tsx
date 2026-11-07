@@ -18,6 +18,8 @@ import {
   Pause,
   Play,
   Store,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useCompanySettings } from "@/lib/settings-store";
@@ -110,6 +112,7 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -361,13 +364,26 @@ export function LoginOverlay({ onLoginSuccess }: LoginOverlayProps) {
                 <div className="relative">
                   <Lock className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-3 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10 transition-all text-foreground placeholder:text-muted-foreground/60"
+                    className="w-full rounded-xl border border-border/80 bg-secondary/40 ps-9 pe-10 py-2 text-xs font-medium outline-none focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10 transition-all text-foreground placeholder:text-muted-foreground/60"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground focus:outline-none transition-colors rounded-lg hover:bg-muted/60 cursor-pointer"
+                    title={showPassword ? pick("إخفاء كلمة المرور", "Hide password") : pick("إظهار كلمة المرور", "Show password")}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
                 </div>
               </div>
 

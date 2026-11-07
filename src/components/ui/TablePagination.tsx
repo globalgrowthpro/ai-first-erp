@@ -4,10 +4,14 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 
 export interface TablePaginationProps {
-  currentPage: number;
-  totalItems: number;
+  currentPage?: number;
+  pageIndex?: number;
+  totalItems?: number;
+  totalCount?: number;
   pageSize?: number;
+  pageCount?: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   className?: string;
   itemLabel?: { ar: string; en: string };
   showSummary?: boolean;
@@ -15,33 +19,66 @@ export interface TablePaginationProps {
 
 /**
  * Reusable hook to handle client-side pagination with default 30 items per page
+ * Supports both `usePagination(items, pageSize)` and `usePagination({ data: items, initialPageSize: 15 })`
  */
-export function usePagination<T>(items: T[], pageSize = 30) {
+export function usePagination<T>(
+  itemsOrConfig: T[] | { data?: T[]; initialPageSize?: number; pageSize?: number } | undefined | null,
+  fallbackPageSize = 30
+) {
+  const rawItems = Array.isArray(itemsOrConfig)
+    ? itemsOrConfig
+    : Array.isArray(itemsOrConfig?.data)
+    ? itemsOrConfig.data
+    : [];
+
+  const defaultSize = Array.isArray(itemsOrConfig)
+    ? fallbackPageSize
+    : itemsOrConfig?.initialPageSize || itemsOrConfig?.pageSize || fallbackPageSize;
+
+  const [pageSize, setPageSize] = useState(defaultSize);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(rawItems.length / pageSize));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
 
   const paginatedItems = useMemo(() => {
     const start = (safePage - 1) * pageSize;
-    return items.slice(start, start + pageSize);
-  }, [items, safePage, pageSize]);
+    return rawItems.slice(start, start + pageSize);
+  }, [rawItems, safePage, pageSize]);
 
   return {
     currentPage: safePage,
     setCurrentPage,
     totalPages,
     pageSize,
-    totalItems: items.length,
+    setPageSize,
+    totalItems: rawItems.length,
     paginatedItems,
+
+    // Aliases for 0-indexed or alt-naming conventions:
+    pageIndex: safePage - 1,
+    setPageIndex: (p: number | ((prev: number) => number)) => {
+      if (typeof p === "function") {
+        setCurrentPage((prev) => p(prev - 1) + 1);
+      } else {
+        setCurrentPage(p + 1);
+      }
+    },
+    pageCount: totalPages,
+    totalCount: rawItems.length,
+    paginatedData: paginatedItems,
   };
 }
 
 export function TablePagination({
-  currentPage,
-  totalItems,
+  currentPage: explicitCurrentPage,
+  pageIndex,
+  totalItems: explicitTotalItems,
+  totalCount,
   pageSize = 30,
+  pageCount,
   onPageChange,
+  onPageSizeChange,
   className,
   itemLabel,
   showSummary = true,
@@ -49,9 +86,16 @@ export function TablePagination({
   const { lang, pick } = useI18n();
   const isRtl = lang === "ar";
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const isZeroIndexed = pageIndex !== undefined && explicitCurrentPage === undefined;
+  const currentPage = explicitCurrentPage ?? (pageIndex !== undefined ? pageIndex + 1 : 1);
+  const totalItems = explicitTotalItems ?? totalCount ?? 0;
+  const totalPages = pageCount ?? Math.max(1, Math.ceil(totalItems / pageSize));
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  const changePage = (page: number) => {
+    onPageChange(isZeroIndexed ? page - 1 : page);
+  };
 
   // Generate visible page numbers
   const pageNumbers = useMemo(() => {
@@ -93,19 +137,19 @@ export function TablePagination({
 
   // Next and Prev handlers taking RTL into account
   const handlePrev = () => {
-    if (currentPage > 1) onPageChange(currentPage - 1);
+    if (currentPage > 1) changePage(currentPage - 1);
   };
 
   const handleNext = () => {
-    if (currentPage < totalPages) onPageChange(currentPage + 1);
+    if (currentPage < totalPages) changePage(currentPage + 1);
   };
 
   const handleFirst = () => {
-    if (currentPage !== 1) onPageChange(1);
+    if (currentPage !== 1) changePage(1);
   };
 
   const handleLast = () => {
-    if (currentPage !== totalPages) onPageChange(totalPages);
+    if (currentPage !== totalPages) changePage(totalPages);
   };
 
   return (
@@ -131,10 +175,7 @@ export function TablePagination({
           )}
           <span className="mx-1 text-muted-foreground/40">•</span>
           <span>
-            {pick(
-              `30 عنصر لكل صفحة`,
-              `30 per page`
-            )}
+            {pageSize} {pick("عنصر لكل صفحة", "per page")}
           </span>
         </div>
       )}
@@ -184,7 +225,7 @@ export function TablePagination({
               <button
                 key={`page-${p}`}
                 type="button"
-                onClick={() => onPageChange(p as number)}
+                onClick={() => changePage(p as number)}
                 className={cn(
                   "min-w-7 h-7 px-2 rounded-md font-bold text-xs transition-all cursor-pointer flex items-center justify-center",
                   isActive

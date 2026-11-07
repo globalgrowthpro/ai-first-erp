@@ -237,6 +237,7 @@ export const DEFAULT_USER: AppUser = {
     "/hr",
     "/reports",
     "/audit",
+    "/todo",
     "/helpdesk",
     "/ai",
     "/ai-modules",

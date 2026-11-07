@@ -37,6 +37,7 @@ import {
   History,
   Building2,
   MapPin,
+  CheckSquare,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -76,6 +77,7 @@ const erpNav = [
 const controlNav = [
   { to: "/reports", key: "nav_reports", icon: BarChart3 },
   { to: "/audit", key: "nav_audit", icon: ScrollText },
+  { to: "/todo", key: "nav_todo", icon: CheckSquare },
   { to: "/helpdesk", key: "nav_helpdesk", icon: LifeBuoy },
   { to: "/ai-modules", key: "nav_ai_modules", icon: Bot },
   { to: "/settings", key: "nav_settings", icon: ShieldCheck },
@@ -145,7 +147,7 @@ function NavList({
 
   const hasWildcard = allowedPages.includes("*") || (isAdmin && allowedPages.length === 0);
   const visibleItems = items.filter(
-    (item) => hasWildcard || allowedPages.includes(item.to)
+    (item) => isAdmin || hasWildcard || allowedPages.includes(item.to)
   );
   if (visibleItems.length === 0) return null;
 

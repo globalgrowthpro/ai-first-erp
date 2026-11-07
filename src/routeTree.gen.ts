@@ -26,6 +26,7 @@ import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SalesRouteImport } from './routes/sales'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TodoRouteImport } from './routes/todo'
 import { Route as HrEmployeeIdRouteImport } from './routes/hr_.$employeeId'
 import { Route as PurchasesOrderIdRouteImport } from './routes/purchases_.$orderId'
 import { Route as SalesInvoiceIdRouteImport } from './routes/sales_.$invoiceId'
@@ -115,6 +116,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TodoRoute = TodoRouteImport.update({
+  id: '/todo',
+  path: '/todo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HrEmployeeIdRoute = HrEmployeeIdRouteImport.update({
   id: '/hr_/$employeeId',
   path: '/hr/$employeeId',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/todo': typeof TodoRoute
   '/hr/$employeeId': typeof HrEmployeeIdRoute
   '/purchases/$orderId': typeof PurchasesOrderIdRoute
   '/sales/$invoiceId': typeof SalesInvoiceIdRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/todo': typeof TodoRoute
   '/hr/$employeeId': typeof HrEmployeeIdRoute
   '/purchases/$orderId': typeof PurchasesOrderIdRoute
   '/sales/$invoiceId': typeof SalesInvoiceIdRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/todo': typeof TodoRoute
   '/hr_/$employeeId': typeof HrEmployeeIdRoute
   '/purchases_/$orderId': typeof PurchasesOrderIdRoute
   '/sales_/$invoiceId': typeof SalesInvoiceIdRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/todo'
     | '/hr/$employeeId'
     | '/purchases/$orderId'
     | '/sales/$invoiceId'
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/todo'
     | '/hr/$employeeId'
     | '/purchases/$orderId'
     | '/sales/$invoiceId'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/todo'
     | '/hr_/$employeeId'
     | '/purchases_/$orderId'
     | '/sales_/$invoiceId'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRoute
+  TodoRoute: typeof TodoRoute
   HrEmployeeIdRoute: typeof HrEmployeeIdRoute
   PurchasesOrderIdRoute: typeof PurchasesOrderIdRoute
   SalesInvoiceIdRoute: typeof SalesInvoiceIdRoute
@@ -411,6 +424,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/todo': {
+      id: '/todo'
+      path: '/todo'
+      fullPath: '/todo'
+      preLoaderRoute: typeof TodoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hr_/$employeeId': {
       id: '/hr_/$employeeId'
       path: '/hr/$employeeId'
@@ -453,6 +473,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRoute,
+  TodoRoute: TodoRoute,
   HrEmployeeIdRoute: HrEmployeeIdRoute,
   PurchasesOrderIdRoute: PurchasesOrderIdRoute,
   SalesInvoiceIdRoute: SalesInvoiceIdRoute,
