@@ -979,7 +979,7 @@ export function ProductsTab({
               </td>
             </tr>
           ) : (
-            paginatedProducts.map((p) => {
+            (paginatedProducts || []).map((p) => {
               const cat = categories.find((c) => c.id === p.categoryId);
               const wh = warehouses.find((w) => w.id === p.warehouseId);
               const unit = units.find((u) => u.id === p.unitId);

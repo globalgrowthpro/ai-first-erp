@@ -22,26 +22,29 @@ export interface TablePaginationProps {
  * Supports both `usePagination(items, pageSize)` and `usePagination({ data: items, initialPageSize: 15 })`
  */
 export function usePagination<T>(
-  itemsOrConfig: T[] | { data?: T[]; initialPageSize?: number; pageSize?: number } | undefined | null,
+  itemsOrConfig: T[] | { data?: T[]; items?: T[]; initialPageSize?: number; pageSize?: number } | undefined | null,
   fallbackPageSize = 30
 ) {
-  const rawItems = Array.isArray(itemsOrConfig)
+  const rawItems: T[] = Array.isArray(itemsOrConfig)
     ? itemsOrConfig
-    : Array.isArray(itemsOrConfig?.data)
-    ? itemsOrConfig.data
+    : Array.isArray((itemsOrConfig as any)?.items)
+    ? (itemsOrConfig as any).items
+    : Array.isArray((itemsOrConfig as any)?.data)
+    ? (itemsOrConfig as any).data
     : [];
 
   const defaultSize = Array.isArray(itemsOrConfig)
     ? fallbackPageSize
-    : itemsOrConfig?.initialPageSize || itemsOrConfig?.pageSize || fallbackPageSize;
+    : (itemsOrConfig as any)?.initialPageSize || (itemsOrConfig as any)?.pageSize || fallbackPageSize;
 
   const [pageSize, setPageSize] = useState(defaultSize);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.max(1, Math.ceil(rawItems.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(rawItems.length / (pageSize || 1)));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
 
   const paginatedItems = useMemo(() => {
+    if (!Array.isArray(rawItems)) return [];
     const start = (safePage - 1) * pageSize;
     return rawItems.slice(start, start + pageSize);
   }, [rawItems, safePage, pageSize]);

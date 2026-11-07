@@ -114,12 +114,13 @@ export function TodoPage() {
     let pendingAmount = 0;
     let issueAmount = 0;
 
-    let totalCount = items.length;
+    const safeItems = Array.isArray(items) ? items : [];
+    let totalCount = safeItems.length;
     let paidCount = 0;
     let pendingCount = 0;
     let issueCount = 0;
 
-    for (const item of items) {
+    for (const item of safeItems) {
       const amt = Number(item.amount) || 0;
       totalAmount += amt;
 
@@ -149,7 +150,8 @@ export function TodoPage() {
 
   // Filtered List
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const safeItems = Array.isArray(items) ? items : [];
+    return safeItems.filter((item) => {
       // Status filter
       if (statusFilter !== "all" && item.status !== statusFilter) return false;
 
@@ -909,16 +911,16 @@ export function TodoPage() {
                 <td colSpan={8} className="py-12 text-center text-muted-foreground">
                   <CheckSquare className="size-8 mx-auto text-muted-foreground/40 mb-2" />
                   <p className="text-sm font-bold text-foreground">
-                    {items.length === 0
+                    {(items?.length || 0) === 0
                       ? pick("لا توجد مهام أو التزامات مسجلة بعد", "No tasks or commitments registered yet")
                       : pick("لا توجد مهام أو التزامات مطابقة للبحث", "No tasks matching current filters")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {items.length === 0
+                    {(items?.length || 0) === 0
                       ? pick("ابدأ بإضافة أول مهمة أو التزام شهري (فواتير، إيجارات، تراخيص...)", "Start by adding your first recurring or one-off task")
                       : pick("يمكنك تعديل الفلاتر أو إعادة ضبط البحث", "Try resetting filters or clear your search")}
                   </p>
-                  {items.length === 0 && (
+                  {(items?.length || 0) === 0 && (
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
