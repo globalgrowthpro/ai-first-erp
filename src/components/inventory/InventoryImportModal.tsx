@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import {
   FileSpreadsheet,
@@ -28,14 +28,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { generateProductsBlankTemplate } from "@/lib/excel-utils";
 import type {
   InventoryProduct,
   InventoryCategory,
   InventoryWarehouse,
   InventoryUnit,
   InventoryBom,
+  Branch,
+  ProductTechnicalType,
 } from "@/lib/inventory-store";
-import { KNOWN_VIP_CLIENTS } from "@/lib/inventory-store";
+import { KNOWN_VIP_CLIENTS, resolveProductImage } from "@/lib/inventory-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import {
   FACTORY_PRODUCTS,
@@ -56,9 +59,11 @@ interface InventoryImportModalProps {
   open: boolean;
   onClose: () => void;
   initialTarget?: InventoryImportTarget;
+  initialMode?: "preset" | "excel";
   categories: InventoryCategory[];
   warehouses: InventoryWarehouse[];
   units: InventoryUnit[];
+  branches?: Branch[];
   products: InventoryProduct[];
   onImportProducts: (items: Omit<InventoryProduct, "id">[]) => void;
   onImportCategories: (items: Omit<InventoryCategory, "id">[]) => void;
@@ -97,6 +102,12 @@ const READY_PRESETS = {
         department: p.department,
         classification: p.classification,
         rawType: p.rawType,
+        group: p.group,
+        showOnPos: p.showOnPos,
+        technicalType: p.technicalType,
+        productType: p.productType,
+        vat: p.vat ?? 14,
+        image: p.image || resolveProductImage(p),
       })),
     },
     {
@@ -121,9 +132,12 @@ const READY_PRESETS = {
         qty: p.qty,
         minStock: p.minStock,
         isRawMaterial: true,
+        showOnPos: false,
         department: p.department,
         classification: p.classification,
         rawType: p.rawType,
+        vat: p.vat ?? 14,
+        image: p.image || resolveProductImage(p),
       })),
     },
     {
@@ -148,9 +162,13 @@ const READY_PRESETS = {
         qty: p.qty,
         minStock: p.minStock,
         isRawMaterial: false,
+        showOnPos: p.showOnPos ?? false,
         department: p.department,
         classification: p.classification,
         rawType: p.rawType,
+        group: p.group,
+        vat: p.vat ?? 14,
+        image: p.image || resolveProductImage(p),
       })),
     },
     {
@@ -164,7 +182,7 @@ const READY_PRESETS = {
         en: "Rice pudding, inventions, toppings, ice cream, donuts, royal, casseroles, kashtota, sweet koshary & offers",
       },
       badge: "منتجات تامة 2026",
-      items: FACTORY_PRODUCTS.filter((p) => p.sku && p.sku.startsWith("SKU-10") && !p.isRawMaterial).map((p) => ({
+      items: FACTORY_PRODUCTS.filter((p) => p.sku && p.sku.startsWith("SKU-10") && !p.isRawMaterial && p.showOnPos !== false).map((p) => ({
         sku: p.sku,
         name: p.name,
         categoryId: p.categoryId,
@@ -175,9 +193,15 @@ const READY_PRESETS = {
         qty: p.qty,
         minStock: p.minStock,
         isRawMaterial: false,
+        showOnPos: true,
         department: p.department,
         classification: p.classification,
         rawType: p.rawType,
+        group: p.group,
+        technicalType: p.technicalType,
+        productType: p.productType,
+        vat: p.vat ?? 14,
+        image: p.image || resolveProductImage(p),
       })),
     },
     {
@@ -819,9 +843,11 @@ export function InventoryImportModal({
   open,
   onClose,
   initialTarget = "products",
+  initialMode = "preset",
   categories,
   warehouses,
   units,
+  branches = [],
   products,
   onImportProducts,
   onImportCategories,
@@ -834,7 +860,7 @@ export function InventoryImportModal({
   const { partners } = usePartnersStore();
 
   const [activeTab, setActiveTab] = useState<InventoryImportTarget>(initialTarget);
-  const [importMode, setImportMode] = useState<"preset" | "excel">("preset");
+  const [importMode, setImportMode] = useState<"preset" | "excel">(initialMode);
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -842,10 +868,16 @@ export function InventoryImportModal({
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync initial target if modal reopens
-  useState(() => {
-    setActiveTab(initialTarget);
-  });
+  // Sync initial target and mode whenever modal opens
+  useEffect(() => {
+    if (open) {
+      if (initialTarget) setActiveTab(initialTarget);
+      if (initialMode) setImportMode(initialMode);
+      setParsedRows([]);
+      setFileError(null);
+      setFileName("");
+    }
+  }, [open, initialTarget, initialMode]);
 
   const targetTabs = [
     { id: "products", label: pick("المنتجات والأصناف", "Products & Stock"), icon: Package },
@@ -1087,50 +1119,18 @@ export function InventoryImportModal({
     let sheetName = "Template_قالب_فارغ";
 
     if (activeTab === "products") {
-      headers = [
-        {
-          "كود الصنف (SKU)": "KSHR-LUX",
-          "اسم الصنف بالعربية": "كشري حلو سوبر لوكس",
-          "اسم الصنف بالإنجليزية": "Sweet Koshary Super Luxe",
-          "كود التصنيف": "CAT-KSHR",
-          "كود المستودع": "WH-KORBA",
-          "كود وحدة القياس": "PORTION",
-          "سعر التكلفة": 45,
-          "سعر البيع": 100,
-          "سعر العميل المميز (VIP)": 85,
-          "العملاء المستحقين لـ VIP": "فندق الماسة, مطاعم وكافيهات سيزار",
-          "تاريخ سريان سعر VIP": "2026-12-31",
-          "الرصيد الافتتاحي": 60,
-          "حد إعادة الطلب": 20,
-          "مادة خام (نعم/لا)": "لا",
-          "المجموعة (Group)": "كشري الحلو",
-          "عرض في POS (نعم/لا)": "نعم",
-          "رابط صورة المنتج (URL)": "https://example.com/koshary.jpg",
-          "القسم": "قسم المعلبات",
-        },
-        {
-          "كود الصنف (SKU)": "RM-PST-GR",
-          "اسم الصنف بالعربية": "فستق حلبي إيراني مجروش",
-          "اسم الصنف بالإنجليزية": "Crushed Iranian Pistachios",
-          "كود التصنيف": "CAT-RAW",
-          "كود المستودع": "WH-COLD",
-          "كود وحدة القياس": "KG",
-          "سعر التكلفة": 650,
-          "سعر البيع": 750,
-          "سعر العميل المميز (VIP)": 700,
-          "العملاء المستحقين لـ VIP": "جميع عملاء VIP",
-          "تاريخ سريان سعر VIP": "2026-12-31",
-          "الرصيد الافتتاحي": 25,
-          "حد إعادة الطلب": 10,
-          "مادة خام (نعم/لا)": "نعم",
-          "المجموعة (Group)": "",
-          "عرض في POS (نعم/لا)": "لا",
-          "رابط صورة المنتج (URL)": "",
-          "القسم": "المخزن الرئيسي",
-        },
-      ];
-      filename = "products_template.xlsx";
-      sheetName = "أصناف_Products";
+      const wb = generateProductsBlankTemplate({ categories, warehouses, units, branches });
+      const success = safeDownloadWorkbook(wb, "نموذج_إضافة_الأصناف_الكامل_Products_Template.xlsx");
+      if (success) {
+        setDownloadNotice(
+          pick(
+            "تم تنزيل نموذج الأصناف الفارغ بنجاح بكافة أعمدة شاشة الإضافة!",
+            "Downloaded full products Excel template matching Add Product form!"
+          )
+        );
+        setTimeout(() => setDownloadNotice(null), 5000);
+      }
+      return;
     } else if (activeTab === "categories") {
       headers = [
         {
@@ -1291,7 +1291,11 @@ export function InventoryImportModal({
   // Apply Curated Preset
   const handleApplyPreset = (preset: (typeof READY_PRESETS.products)[0]) => {
     if (activeTab === "products") {
-      onImportProducts(preset.items as any);
+      const enrichedItems = (preset.items as any[]).map((it) => ({
+        ...it,
+        image: it.image || resolveProductImage(it),
+      }));
+      onImportProducts(enrichedItems as any);
     } else if (activeTab === "categories") {
       onImportCategories(preset.items as any);
     } else if (activeTab === "warehouses") {
@@ -1310,27 +1314,94 @@ export function InventoryImportModal({
 
     if (activeTab === "products") {
       const items: Omit<InventoryProduct, "id">[] = parsedRows.map((r, i) => {
-        const sku = String(r["كود الصنف (SKU)"] || r["SKU"] || r["sku"] || `SKU-${Date.now()}-${i}`).trim();
-        const ar = String(r["اسم الصنف بالعربية"] || r["اسم الصنف"] || r["name_ar"] || sku).trim();
-        const en = String(r["اسم الصنف بالإنجليزية"] || r["Name En"] || r["name_en"] || sku).trim();
-        const catCode = String(r["كود التصنيف"] || r["Category"] || "").trim();
-        const whCode = String(r["كود المستودع"] || r["Warehouse"] || "").trim();
-        const unitCode = String(r["كود وحدة القياس"] || r["Unit"] || "").trim();
+        const sku = String(r["كود الصنف (SKU)"] || r["كود الصنف"] || r["SKU"] || r["sku"] || `SKU-${Date.now()}-${i}`).trim();
+        const ar = String(
+          r["اسم الصنف (عربي)"] ||
+          r["اسم الصنف (بالعربية)"] ||
+          r["اسم الصنف بالعربية"] ||
+          r["اسم الصنف"] ||
+          r["الاسم بالعربية"] ||
+          r["name_ar"] ||
+          sku
+        ).trim();
+        const en = String(
+          r["اسم الصنف (إنجليزي)"] ||
+          r["اسم الصنف (بالإنجليزية)"] ||
+          r["اسم الصنف بالإنجليزية"] ||
+          r["Name En"] ||
+          r["name_en"] ||
+          sku
+        ).trim();
+        const catCode = String(
+          r["التصنيف (Category)"] ||
+          r["التصنيف"] ||
+          r["كود التصنيف"] ||
+          r["Category"] ||
+          ""
+        ).trim();
+        const whCode = String(
+          r["المخزن (Warehouse)"] ||
+          r["المخزن / الفرع"] ||
+          r["المخزن"] ||
+          r["كود المستودع"] ||
+          r["المستودع"] ||
+          r["Warehouse"] ||
+          ""
+        ).trim();
+        const unitCode = String(
+          r["الوحدة (Unit)"] ||
+          r["وحدة القياس"] ||
+          r["الوحدة"] ||
+          r["كود وحدة القياس"] ||
+          r["Unit"] ||
+          ""
+        ).trim();
 
-        const cat = categories.find((c) => c.code === catCode || c.id === catCode) || categories[0];
-        const wh = warehouses.find((w) => w.code === whCode || w.id === whCode) || warehouses[0];
-        const un = units.find((u) => u.code === unitCode || u.id === unitCode) || units[0];
+        const cat = categories.find((c) => c.code === catCode || c.id === catCode || c.name.ar === catCode || c.name.en?.toLowerCase() === catCode.toLowerCase()) || categories[0];
+        const wh = warehouses.find((w) => w.code === whCode || w.id === whCode || w.name.ar === whCode || w.name.en?.toLowerCase() === whCode.toLowerCase()) || warehouses[0];
+        const un = units.find((u) => u.code === unitCode || u.id === unitCode || u.name.ar === unitCode || u.name.en?.toLowerCase() === unitCode.toLowerCase()) || units[0];
 
-        const cost = Number(r["سعر التكلفة"] || r["Cost"] || 0) || 10;
-        const sell = Number(r["سعر البيع"] || r["Price"] || 0) || Math.round(cost * 1.8);
-        const qty = Number(r["الرصيد الافتتاحي"] || r["Qty"] || 0) || 50;
-        const minStock = Number(r["حد إعادة الطلب"] || r["Min"] || 0) || 15;
-        const isRaw = String(r["مادة خام (نعم/لا)"] || r["isRaw"] || "").includes("نعم");
-        const group = String(r["المجموعة (Group)"] || r["Group"] || "").trim() || undefined;
-        const showOnPos = !String(r["عرض في POS (نعم/لا)"] || r["ShowOnPOS"] || "نعم").includes("لا");
-        const image = String(r["رابط صورة المنتج (URL)"] || r["Image"] || "").trim() || undefined;
+        const cost = Number(r["سعر التكلفة (ج.م)"] || r["سعر التكلفة"] || r["Cost"] || 0) || 10;
+        const sell = Number(r["سعر البيع (ج.م)"] || r["سعر البيع"] || r["Price"] || 0) || Math.round(cost * 1.8);
+        const qty = Number(
+          r["الرصيد الافتتاحي (Qty)"] ||
+          r["الرصيد الفعلي"] ||
+          r["الرصيد الافتتاحي"] ||
+          r["الرصيد"] ||
+          r["Qty"] ||
+          0
+        ) || 50;
+        const minStock = Number(
+          r["حد الأمان / الحد الأدنى (Min Stock)"] ||
+          r["حد الأمان (الحد الأدنى)"] ||
+          r["حد الأمان (Min Stock)"] ||
+          r["حد الأمان"] ||
+          r["الحد الأدنى"] ||
+          r["حد إعادة الطلب"] ||
+          r["minStock"] ||
+          r["Min Stock"] ||
+          r["Min"] ||
+          0
+        ) || 15;
+        const isRaw = String(r["مادة خام (نعم/لا)"] || r["مادة خام"] || r["isRaw"] || "").includes("نعم");
+        const group = String(r["المجموعة (Group)"] || r["المجموعة"] || r["Group"] || "").trim() || undefined;
+        const showOnPosRaw = String(
+          r["عرض في كاشير POS (نعم/لا)"] ||
+          r["عرض في كاشير POS"] ||
+          r["عرض في POS (نعم/لا)"] ||
+          r["عرض في POS"] ||
+          r["Show on POS"] ||
+          ""
+        ).trim();
+        const showOnPos = showOnPosRaw
+          ? !showOnPosRaw.includes("لا") &&
+            !showOnPosRaw.toLowerCase().includes("no") &&
+            !showOnPosRaw.toLowerCase().includes("false")
+          : !isRaw;
+        const image = String(r["رابط صورة المنتج (URL)"] || r["صورة المنتج"] || r["Image"] || "").trim() || undefined;
 
         const vipPriceRaw =
+          r["سعر العميل المميز VIP (ج.م)"] ||
           r["سعر العميل المميز (VIP)"] ||
           r["سعر VIP"] ||
           r["سعر العميل المميز"] ||
@@ -1340,6 +1411,17 @@ export function InventoryImportModal({
         const vipPrice = vipPriceRaw
           ? Number(String(vipPriceRaw).replace(/[^\d.-]/g, "")) || undefined
           : undefined;
+
+        const vatRaw =
+          r["ضريبة القيمة المضافة (ج.م)"] ||
+          r["ضريبة القيمة المضافة"] ||
+          r["الضريبة"] ||
+          r["VAT (EGP)"] ||
+          r["VAT"] ||
+          r["vat"];
+        const vat = vatRaw !== undefined && vatRaw !== "" && vatRaw !== null
+          ? Number(String(vatRaw).replace(/[^\d.-]/g, "")) || 14
+          : 14;
 
         const vipClientsRaw = String(
           r["العملاء المستحقين لـ VIP"] ||
@@ -1419,6 +1501,105 @@ export function InventoryImportModal({
         // Skip duplicates already in products list
         if (products.some((p) => p.sku.toUpperCase() === skuNorm)) return null;
 
+        // productType parsing
+        const rawProdType = String(
+          r["جهة الإنتاج / التكويد (مصنع / فرع)"] ||
+          r["جهة الإنتاج"] ||
+          r["productType"] ||
+          ""
+        ).toLowerCase();
+        const productType: "factory" | "branch" =
+          rawProdType.includes("مصنع") || rawProdType.includes("fac") || skuNorm.startsWith("FAC-")
+            ? "factory"
+            : "branch";
+
+        // technicalType parsing
+        const rawTechType = String(
+          r["التصنيف الفني (دليل ERP)"] ||
+          r["التصنيف الفني"] ||
+          r["technicalType"] ||
+          ""
+        );
+        let technicalType: ProductTechnicalType = "FINISHED";
+        if (rawTechType.includes("تجميع") || rawTechType.toUpperCase().includes("ASSEMBLY")) {
+          technicalType = "ON_DEMAND_ASSEMBLY";
+        } else if (rawTechType.includes("نصف") || rawTechType.toUpperCase().includes("SEMI")) {
+          technicalType = "SEMI_FINISHED";
+        } else if (rawTechType.includes("خام") || rawTechType.toUpperCase().includes("RAW")) {
+          technicalType = "RAW_MATERIAL";
+        } else if (rawTechType.includes("تام") || rawTechType.toUpperCase().includes("FINISHED")) {
+          technicalType = "FINISHED";
+        } else if (isRaw || productType === "factory") {
+          technicalType = isRaw ? "RAW_MATERIAL" : "SEMI_FINISHED";
+        } else {
+          technicalType = "ON_DEMAND_ASSEMBLY";
+        }
+
+        // Department
+        const department = String(
+          r["القسم / العنبر (Department)"] ||
+          r["القسم"] ||
+          r["العنبر"] ||
+          r["department"] ||
+          ""
+        ).trim() || undefined;
+
+        // Classification
+        const classification = String(
+          r["التصنيف الداخلي (خام / لف وحزم)"] ||
+          r["التصنيف الداخلي"] ||
+          r["classification"] ||
+          ""
+        ).trim() || undefined;
+
+        // Raw Type
+        const rawType = String(
+          r["طبيعة الخامة (خامات مشتراه / مصنعة)"] ||
+          r["طبيعة الخامة"] ||
+          r["rawType"] ||
+          ""
+        ).trim() || undefined;
+
+        // Track inventory
+        const trackRaw = String(
+          r["تتبع المخزون (نعم/لا)"] ||
+          r["تتبع المخزون"] ||
+          r["trackInventory"] ||
+          ""
+        ).trim();
+        const trackInventory = trackRaw
+          ? !trackRaw.includes("لا") && !trackRaw.toLowerCase().includes("false")
+          : technicalType !== "ON_DEMAND_ASSEMBLY";
+
+        // Branch ID
+        const branchRaw = String(
+          r["الفرع (Branch)"] ||
+          r["الفرع"] ||
+          r["branchId"] ||
+          r["branch"] ||
+          ""
+        ).trim();
+        let branchId: string | undefined = undefined;
+        if (
+          branchRaw &&
+          !branchRaw.includes("جميع") &&
+          !branchRaw.toLowerCase().includes("all") &&
+          branchRaw !== "-"
+        ) {
+          const matchBranch = branches.find(
+            (b) =>
+              b.id === branchRaw ||
+              b.name.ar.toLowerCase() === branchRaw.toLowerCase() ||
+              b.name.en?.toLowerCase() === branchRaw.toLowerCase() ||
+              b.name.ar.includes(branchRaw) ||
+              branchRaw.includes(b.name.ar)
+          );
+          if (matchBranch) branchId = matchBranch.id;
+        }
+
+        // Assembly product flag
+        const isAssemblyProduct = technicalType === "ON_DEMAND_ASSEMBLY";
+
         return {
           sku,
           name: { ar, en },
@@ -1427,12 +1608,21 @@ export function InventoryImportModal({
           unitId: un?.id || "u-1",
           costPrice: cost,
           sellingPrice: sell,
+          vat: vat !== undefined ? vat : 14,
           qty,
           minStock,
           isRawMaterial: isRaw,
+          productType,
+          technicalType,
+          isAssemblyProduct,
+          trackInventory,
+          department,
+          classification,
+          rawType,
           group,
+          branchId,
           showOnPos,
-          image,
+          image: image || resolveProductImage({ sku, name: { ar, en }, department, group }),
           vipPrice: vipPrice && vipPrice > 0 ? vipPrice : undefined,
           vipClientIds: vipClientIds.length > 0 ? vipClientIds : undefined,
           vipValidUntil: vipValidUntil || undefined,
@@ -1440,6 +1630,91 @@ export function InventoryImportModal({
       }).filter(Boolean) as Omit<InventoryProduct, "id">[];
 
       onImportProducts(items);
+
+      // Auto-import recipes / BOM if recipe column is present
+      const bomsToImport: Omit<InventoryBom, "id">[] = [];
+      parsedRows.forEach((r, i) => {
+        const bomRaw = String(
+          r["مكونات وخامات الوصفة (Recipe / BOM)"] ||
+          r["مكونات الصنف"] ||
+          r["Recipe"] ||
+          r["BOM"] ||
+          ""
+        ).trim();
+        if (!bomRaw || bomRaw === "-") return;
+
+        const sku = String(r["كود الصنف (SKU)"] || r["كود الصنف"] || r["SKU"] || r["sku"] || "").trim();
+        if (!sku) return;
+        const ar = String(
+          r["اسم الصنف (عربي)"] ||
+          r["اسم الصنف (بالعربية)"] ||
+          r["اسم الصنف بالعربية"] ||
+          r["اسم الصنف"] ||
+          sku
+        ).trim();
+        const en = String(
+          r["اسم الصنف (إنجليزي)"] ||
+          r["اسم الصنف (بالإنجليزية)"] ||
+          r["اسم الصنف بالإنجليزية"] ||
+          r["Name En"] ||
+          ar
+        ).trim();
+
+        // format: "سكر: 0.1: كجم | لبن بخيره: 0.5: لتر"
+        const segments = bomRaw.split(/[|\n;]+/).map((s) => s.trim()).filter(Boolean);
+        const compList: any[] = [];
+
+        segments.forEach((seg, idx) => {
+          const parts = seg.split(/[:\-–—]+/).map((p) => p.trim());
+          if (parts.length < 2) return;
+          const compName = parts[0];
+          const compQty = parseFloat(parts[1]) || 1;
+          const compUnitStr = parts[2] || "KG";
+
+          // Match raw material from products
+          const matchedProd = products.find(
+            (p) =>
+              p.sku.toUpperCase() === compName.toUpperCase() ||
+              p.name.ar === compName ||
+              p.name.en?.toLowerCase() === compName.toLowerCase() ||
+              p.name.ar.includes(compName)
+          );
+
+          // Match unit
+          const matchedUnit = units.find(
+            (u) =>
+              u.code.toUpperCase() === compUnitStr.toUpperCase() ||
+              u.name.ar === compUnitStr ||
+              u.name.en?.toLowerCase() === compUnitStr.toLowerCase()
+          );
+
+          compList.push({
+            id: `comp-imp-${Date.now()}-${i}-${idx}`,
+            componentProductId: matchedProd?.id || `comp-${Date.now()}-${idx}`,
+            quantity: compQty,
+            unitId: matchedUnit?.id || matchedProd?.unitId || units[0]?.id || "u-1",
+            unitCost: matchedProd?.costPrice || 0,
+            totalCost: (matchedProd?.costPrice || 0) * compQty,
+          });
+        });
+
+        if (compList.length > 0) {
+          bomsToImport.push({
+            code: `BOM-${sku.toUpperCase()}`,
+            name: { ar: `وصفة ${ar}`, en: `Recipe ${en}` },
+            finishedProductId: sku,
+            outputYield: 1,
+            outputUnitId: units[0]?.id || "u-1",
+            overheadCost: 0,
+            components: compList,
+            status: "active",
+          });
+        }
+      });
+
+      if (bomsToImport.length > 0) {
+        onImportBoms(bomsToImport);
+      }
     } else if (activeTab === "categories") {
       const items: Omit<InventoryCategory, "id">[] = parsedRows.map((r, i) => {
         const code = String(r["كود التصنيف"] || r["Code"] || `CAT-${Date.now()}-${i}`).trim();

@@ -121,9 +121,11 @@ function InventoryPage() {
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importTarget, setImportTarget] = useState<InventoryImportTarget>("products");
+  const [importInitialMode, setImportInitialMode] = useState<"preset" | "excel">("preset");
 
-  const handleOpenImport = (target: InventoryImportTarget) => {
+  const handleOpenImport = (target: InventoryImportTarget, mode: "preset" | "excel" = "preset") => {
     setImportTarget(target);
+    setImportInitialMode(mode);
     setIsImportModalOpen(true);
   };
 
@@ -431,7 +433,7 @@ function InventoryPage() {
             onDeleteProduct={deleteProduct}
             onAddBom={addBom}
             onUpdateBom={updateBom}
-            onOpenImport={() => handleOpenImport("products")}
+            onOpenImport={(mode?: "preset" | "excel") => handleOpenImport("products", mode || "preset")}
           />
         )}
 
@@ -504,8 +506,10 @@ function InventoryPage() {
         open={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         initialTarget={importTarget}
+        initialMode={importInitialMode}
         categories={categories}
         warehouses={warehouses}
+        branches={branches}
         units={units}
         products={products}
         onImportProducts={importProducts}

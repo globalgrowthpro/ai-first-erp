@@ -348,7 +348,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10001",
@@ -367,7 +368,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10002",
@@ -386,7 +388,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10003",
@@ -405,7 +408,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10004",
@@ -424,7 +428,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10005",
@@ -443,7 +448,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10006",
@@ -462,7 +468,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/mineral-water.jpg"
   },
   {
     "id": "prod-10007",
@@ -481,7 +488,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10008",
@@ -500,7 +508,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10009",
@@ -519,7 +528,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10010",
@@ -538,7 +548,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10011",
@@ -557,7 +568,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10012",
@@ -576,7 +588,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10013",
@@ -595,7 +608,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10014",
@@ -614,7 +628,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10015",
@@ -633,7 +648,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10016",
@@ -652,7 +668,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10017",
@@ -671,7 +688,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10018",
@@ -690,7 +708,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10019",
@@ -709,7 +728,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10020",
@@ -728,7 +748,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10021",
@@ -747,7 +768,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10022",
@@ -766,7 +788,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10023",
@@ -785,7 +808,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10024",
@@ -804,7 +828,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": true,
     "department": "المخزن",
     "classification": "مواد لف وحزم",
-    "rawType": "خامات مشتراه"
+    "rawType": "خامات مشتراه",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10025",
@@ -827,7 +852,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10026",
@@ -850,7 +876,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/ice-cream.jpg"
   },
   {
     "id": "prod-10027",
@@ -873,7 +900,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10028",
@@ -896,7 +924,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10029",
@@ -919,7 +948,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10030",
@@ -942,7 +972,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10031",
@@ -961,7 +992,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/kashtouta-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10032",
@@ -980,7 +1013,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10033",
@@ -999,7 +1034,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10034",
@@ -1018,7 +1055,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10035",
@@ -1037,7 +1076,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/molten-cake.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10036",
@@ -1056,7 +1097,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/red-velvet.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10037",
@@ -1075,7 +1118,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/red-velvet.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10038",
@@ -1094,7 +1139,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10039",
@@ -1113,7 +1160,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10040",
@@ -1132,7 +1181,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10041",
@@ -1151,7 +1202,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10042",
@@ -1170,7 +1223,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10043",
@@ -1189,7 +1244,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10044",
@@ -1208,7 +1265,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "تحضير الأسبونش",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10045",
@@ -1227,7 +1286,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "isRawMaterial": false,
     "department": "الألبان",
     "classification": "مواد خام تغذية",
-    "rawType": "خامات مصنعة"
+    "rawType": "خامات مصنعة",
+    "image": "/products/rice-pistachio.jpg",
+    "showOnPos": false
   },
   {
     "id": "prod-10046",
@@ -1250,7 +1311,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10047",
@@ -1273,7 +1335,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10048",
@@ -1296,7 +1359,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10049",
@@ -1319,7 +1383,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10050",
@@ -1342,7 +1407,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10051",
@@ -1365,7 +1431,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "ارز بلبن وزير الحلو",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10052",
@@ -1388,7 +1455,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10053",
@@ -1411,7 +1479,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10054",
@@ -1434,7 +1503,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10055",
@@ -1457,7 +1527,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10056",
@@ -1480,7 +1551,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10057",
@@ -1503,7 +1575,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10058",
@@ -1526,7 +1599,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10059",
@@ -1549,7 +1623,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10060",
@@ -1572,7 +1647,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10061",
@@ -1595,7 +1671,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10062",
@@ -1618,7 +1695,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10063",
@@ -1641,7 +1719,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10064",
@@ -1664,7 +1743,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10065",
@@ -1687,7 +1767,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10066",
@@ -1710,7 +1791,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10067",
@@ -1733,7 +1815,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10068",
@@ -1756,7 +1839,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "أختراع وزير",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10069",
@@ -1779,7 +1863,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10070",
@@ -1802,7 +1887,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/ice-cream.jpg"
   },
   {
     "id": "prod-10071",
@@ -1825,7 +1911,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/fatta-wazeer.jpg"
   },
   {
     "id": "prod-10072",
@@ -1848,7 +1935,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10073",
@@ -1871,7 +1959,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10074",
@@ -1894,7 +1983,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10075",
@@ -1917,7 +2007,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/medalaa.jpg"
   },
   {
     "id": "prod-10076",
@@ -1940,7 +2031,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10077",
@@ -1963,7 +2055,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10078",
@@ -1986,7 +2079,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10079",
@@ -2009,7 +2103,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10080",
@@ -2032,7 +2127,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10081",
@@ -2055,7 +2151,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10082",
@@ -2078,7 +2175,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10083",
@@ -2101,7 +2199,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "إضافات",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10084",
@@ -2124,7 +2223,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "آيس كريم",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/ice-cream.jpg"
   },
   {
     "id": "prod-10085",
@@ -2147,7 +2247,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "آيس كريم",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/ice-cream.jpg"
   },
   {
     "id": "prod-10086",
@@ -2170,7 +2271,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "آيس كريم",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10087",
@@ -2193,7 +2295,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "دوناتس",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/donuts.jpg"
   },
   {
     "id": "prod-10088",
@@ -2216,7 +2319,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "دوناتس",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/donuts.jpg"
   },
   {
     "id": "prod-10089",
@@ -2239,7 +2343,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10090",
@@ -2262,7 +2367,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10091",
@@ -2285,7 +2391,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10092",
@@ -2308,7 +2415,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10093",
@@ -2331,7 +2439,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10094",
@@ -2354,7 +2463,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10095",
@@ -2377,7 +2487,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/red-velvet.jpg"
   },
   {
     "id": "prod-10096",
@@ -2400,7 +2511,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/medalaa.jpg"
   },
   {
     "id": "prod-10097",
@@ -2423,7 +2535,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10098",
@@ -2446,7 +2559,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10099",
@@ -2469,7 +2583,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10100",
@@ -2492,7 +2607,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10101",
@@ -2515,7 +2631,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10102",
@@ -2538,7 +2655,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "رويال",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-pistachio.jpg"
   },
   {
     "id": "prod-10103",
@@ -2561,7 +2679,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "طواجن",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/om-ali.jpg"
   },
   {
     "id": "prod-10104",
@@ -2584,7 +2703,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "طواجن",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/om-ali.jpg"
   },
   {
     "id": "prod-10105",
@@ -2607,7 +2727,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "طواجن",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/om-ali.jpg"
   },
   {
     "id": "prod-10106",
@@ -2630,7 +2751,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "طواجن",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/om-ali.jpg"
   },
   {
     "id": "prod-10107",
@@ -2653,7 +2775,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "طواجن",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/om-ali.jpg"
   },
   {
     "id": "prod-10108",
@@ -2676,7 +2799,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "group": "قشطوطة",
     "showOnPos": true,
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10109",
@@ -2699,7 +2823,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10110",
@@ -2722,7 +2847,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10111",
@@ -2745,7 +2871,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10112",
@@ -2768,7 +2895,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10113",
@@ -2791,7 +2919,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10114",
@@ -2814,7 +2943,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10115",
@@ -2837,7 +2967,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10116",
@@ -2860,7 +2991,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/medalaa.jpg"
   },
   {
     "id": "prod-10117",
@@ -2883,7 +3015,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10118",
@@ -2906,7 +3039,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10119",
@@ -2929,7 +3063,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10120",
@@ -2952,7 +3087,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10121",
@@ -2975,7 +3111,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10122",
@@ -2998,7 +3135,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10123",
@@ -3021,7 +3159,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10124",
@@ -3044,7 +3183,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10125",
@@ -3067,7 +3207,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/medalaa.jpg"
   },
   {
     "id": "prod-10126",
@@ -3090,7 +3231,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10127",
@@ -3113,7 +3255,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10128",
@@ -3136,7 +3279,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-pistachio.jpg"
   },
   {
     "id": "prod-10129",
@@ -3159,7 +3303,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10130",
@@ -3182,7 +3327,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10131",
@@ -3205,7 +3351,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10132",
@@ -3228,7 +3375,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10133",
@@ -3251,7 +3399,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10134",
@@ -3274,7 +3423,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10135",
@@ -3297,7 +3447,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10136",
@@ -3320,7 +3471,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10137",
@@ -3343,7 +3495,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10138",
@@ -3366,7 +3519,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10139",
@@ -3389,7 +3543,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10140",
@@ -3412,7 +3567,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10141",
@@ -3435,7 +3591,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10142",
@@ -3458,7 +3615,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/koshary-luxe.jpg"
   },
   {
     "id": "prod-10143",
@@ -3481,7 +3639,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10144",
@@ -3504,7 +3663,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/cheesecake-pistachio.jpg"
   },
   {
     "id": "prod-10145",
@@ -3527,7 +3687,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10146",
@@ -3550,7 +3711,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/rice-nutella.jpg"
   },
   {
     "id": "prod-10147",
@@ -3573,7 +3735,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/medalaa.jpg"
   },
   {
     "id": "prod-10148",
@@ -3596,7 +3759,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/kashtouta-mango.jpg"
   },
   {
     "id": "prod-10149",
@@ -3619,7 +3783,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/molten-cake.jpg"
   },
   {
     "id": "prod-10150",
@@ -3642,7 +3807,8 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/baklava-box.jpg"
   },
   {
     "id": "prod-10151",
@@ -3665,9 +3831,9 @@ export const FACTORY_PRODUCTS: InventoryProduct[] = [
     "classification": "حلويات ومعلبات تامة",
     "rawType": "منتج تام",
     "productType": "branch",
-    "technicalType": "FINISHED"
+    "technicalType": "FINISHED",
+    "image": "/products/baklava-box.jpg"
   }
-
 ];
 
 export const FACTORY_BOMS: InventoryBom[] = [

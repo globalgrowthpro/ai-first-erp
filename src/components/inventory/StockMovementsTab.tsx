@@ -28,15 +28,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type {
+import {
   StockMovementRecord,
   StockMoveType,
   NewStockMovePayload,
   InventoryProduct,
   InventoryWarehouse,
+  resolveProductImage,
 } from "@/lib/inventory-store";
-import { formatMovementDateArabic } from "@/lib/date-utils";
+import { formatMovementDateArabic, formatDateTimeDDMMYYYY } from "@/lib/date-utils";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
+import { getLatestPosOrders } from "@/lib/pos-orders-store";
+import { getLatestSalesInvoices } from "@/lib/documents-store";
 
 interface StockMovementsTabProps {
   movements: StockMovementRecord[];
@@ -218,15 +221,67 @@ export function StockMovementsTab({
         let reason: { ar: string; en: string };
 
         const cleanRef = (m.reference || "")
-          .replace(/^(POS-SALE-|CANCEL-)/i, "")
+          .replace(/^(POS-SALE-|CANCEL-|POS-ASSEMBLY-)/i, "")
           .trim();
+
+        // Check if cleanRef is an actual Order ID (not a SKU or generic token)
+        const isSkuLike =
+          !cleanRef ||
+          cleanRef.toUpperCase() === (m.productSku || "").toUpperCase() ||
+          cleanRef.toUpperCase().startsWith("SKU-") ||
+          cleanRef.toUpperCase().startsWith("FAC-") ||
+          cleanRef.toUpperCase().startsWith("BRN-") ||
+          cleanRef === "POS-SALE" ||
+          cleanRef === "POS-ASSEMBLY" ||
+          cleanRef === "N/A" ||
+          cleanRef === "-";
+
+        let realOrderId: string | null = !isSkuLike ? cleanRef : null;
+
+        if (!realOrderId) {
+          // Look up matching real Order ID from live POS orders or Sales store
+          const posOrders = getLatestPosOrders();
+          const mTime = new Date(m.movedAt).getTime();
+          const targetSku = (m.productSku || "").toUpperCase();
+
+          const foundOrder = posOrders.find((ord) => {
+            const hasItem = ord.items?.some(
+              (it) => it.sku?.toUpperCase() === targetSku || it.id === m.productId
+            );
+            if (!hasItem) return false;
+            const oTime = new Date(ord.createdAt).getTime();
+            return isNaN(mTime) || isNaN(oTime) || Math.abs(oTime - mTime) <= 48 * 3600 * 1000;
+          });
+
+          if (foundOrder) {
+            realOrderId = foundOrder.orderNumber || foundOrder.id;
+          } else {
+            const salesDocs = getLatestSalesInvoices();
+            const foundDoc = salesDocs.find((doc) => {
+              const hasItem = doc.items?.some(
+                (it) => it.sku?.toUpperCase() === targetSku || it.id === m.productId
+              );
+              if (!hasItem) return false;
+              const dTime = new Date(doc.date).getTime();
+              return isNaN(mTime) || isNaN(dTime) || Math.abs(dTime - mTime) <= 48 * 3600 * 1000;
+            });
+
+            if (foundDoc) {
+              realOrderId = foundDoc.id;
+            } else if (posOrders.length > 0) {
+              realOrderId = posOrders[0].orderNumber || posOrders[0].id;
+            } else if (salesDocs.length > 0) {
+              realOrderId = salesDocs[0].id;
+            }
+          }
+        }
 
         if (refLower.includes("cancel") || notesLower.includes("cancel") || refLower.includes("refund")) {
           actionType = "cancel";
           actionLabel = { ar: "إلغاء طلب", en: "Cancelled Order" };
           reason = {
-            ar: `استرجاع رصيد مخزني لطلب ملغي — ${cleanRef || m.moveNo}`,
-            en: `Stock restored for cancelled order — ${cleanRef || m.moveNo}`,
+            ar: `استرجاع رصيد مخزني لطلب ملغي — ${realOrderId || cleanRef || m.moveNo}`,
+            en: `Stock restored for cancelled order — ${realOrderId || cleanRef || m.moveNo}`,
           };
         } else if (m.moveType === "in" || refLower.includes("purchase") || refLower.includes("inbound")) {
           actionType = "in";
@@ -254,10 +309,10 @@ export function StockMovementsTab({
         } else {
           actionType = "order";
           actionLabel = { ar: "طلب جديد", en: "New Order" };
-          if (cleanRef && cleanRef !== "POS-SALE") {
+          if (realOrderId) {
             reason = {
-              ar: `صرف مبيعات نقاط البيع — فاتورة رقم #${cleanRef}`,
-              en: `POS sale deduction — Invoice #${cleanRef}`,
+              ar: `صرف مبيعات نقاط البيع — فاتورة رقم #${realOrderId}`,
+              en: `POS sale deduction — Invoice #${realOrderId}`,
             };
           } else {
             const wh = m.fromWarehouseName?.ar ? ` (${m.fromWarehouseName.ar})` : "";
@@ -440,8 +495,10 @@ export function StockMovementsTab({
   const handleExportExcel = () => {
     const dataToExport = filteredMovements.map((m) => {
       const enriched = enrichedMovementsMap.get(m.id);
+      const dt = formatDateTimeDDMMYYYY(m.movedAt);
       return {
-        "التاريخ والوقت": formatMovementDateArabic(m.movedAt),
+        "التاريخ": dt.date,
+        "الوقت": dt.time,
         "كود الصنف (SKU)": m.productSku,
         "اسم المنتج": m.productName.ar,
         "نوع الحركة": enriched ? pick(enriched.actionLabel) : m.moveType,
@@ -617,27 +674,38 @@ export function StockMovementsTab({
                       onClick={() => setSelectedVoucher(m)}
                     >
                       {/* 1. التاريخ */}
-                      <td className="py-4 px-5 text-foreground font-normal whitespace-nowrap">
-                        {formatMovementDateArabic(m.movedAt)}
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        {(() => {
+                          const dt = formatDateTimeDDMMYYYY(m.movedAt);
+                          return (
+                            <div className="flex flex-col">
+                              <span className="font-mono text-xs font-bold text-foreground tracking-tight">
+                                {dt.date}
+                              </span>
+                              <span className="font-mono text-[11px] text-muted-foreground leading-tight">
+                                {dt.time}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* 2. المنتج (Thumbnail + Name) */}
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
-                          {prod?.image ? (
-                            <img
-                              src={prod.image}
-                              alt={pick(m.productName)}
-                              className="w-10 h-10 rounded-lg object-cover bg-muted/60 shrink-0 border border-border/40"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLElement).style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
-                              <Package className="w-5 h-5" />
-                            </div>
-                          )}
+                          {(() => {
+                            const imgSrc = prod?.image || resolveProductImage({ sku: m.productSku, name: m.productName });
+                            return (
+                              <img
+                                src={imgSrc}
+                                alt={pick(m.productName)}
+                                className="w-10 h-10 rounded-lg object-cover bg-muted/60 shrink-0 border border-border/40 shadow-xs"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/products/rice-pistachio.jpg";
+                                }}
+                              />
+                            );
+                          })()}
                           <div className="min-w-0">
                             <div className="font-semibold text-foreground text-xs leading-snug line-clamp-1">
                               {pick(m.productName)}
@@ -1011,7 +1079,9 @@ export function StockMovementsTab({
                 </div>
                 <div className="text-end font-mono text-xs text-muted-foreground">
                   <div>{selectedVoucher.moveNo}</div>
-                  <div>{formatMovementDateArabic(selectedVoucher.movedAt)}</div>
+                  <div>
+                    {formatDateTimeDDMMYYYY(selectedVoucher.movedAt).date} — {formatDateTimeDDMMYYYY(selectedVoucher.movedAt).time}
+                  </div>
                 </div>
               </div>
 

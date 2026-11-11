@@ -70,6 +70,32 @@ const AR_MONTHS = [
   "ديسمبر",
 ];
 
+export function formatDateTimeDDMMYYYY(raw: string | Date | null | undefined): {
+  date: string;
+  time: string;
+} {
+  if (!raw) return { date: "-", time: "-" };
+  try {
+    const d = typeof raw === "string" ? new Date(raw) : raw;
+    if (isNaN(d.getTime())) {
+      const s = String(raw);
+      return { date: s.slice(0, 10), time: s.slice(11, 16) || "" };
+    }
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${day}/${month}/${year}`,
+      time: `${hours}:${minutes}`,
+    };
+  } catch {
+    return { date: String(raw), time: "" };
+  }
+}
+
 export function formatMovementDateArabic(raw: string | Date | null | undefined): string {
   if (!raw) return "-";
   try {

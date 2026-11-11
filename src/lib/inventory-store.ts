@@ -125,6 +125,40 @@ export interface InventoryProduct {
   vipPrice?: number | undefined;
   vipClientIds?: string[] | undefined;
   vipValidUntil?: string | undefined;
+  vat?: number | undefined;
+}
+
+// ==========================================
+// VAT Rules Cache & Utilities
+// ==========================================
+
+const VAT_STORAGE_KEY = "wazeer_erp_product_vat_rules_v1";
+
+export function readCachedVatRules(): Map<string, number> {
+  const map = new Map<string, number>();
+  if (typeof window === "undefined") return map;
+  try {
+    const raw = localStorage.getItem(VAT_STORAGE_KEY);
+    if (raw) {
+      const obj = JSON.parse(raw);
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === "number" || (typeof v === "string" && !isNaN(Number(v)))) {
+          map.set(k.toUpperCase(), Number(v));
+        }
+      }
+    }
+  } catch {}
+  return map;
+}
+
+export function saveVatRule(skuOrId: string, vat: number) {
+  if (typeof window === "undefined" || !skuOrId) return;
+  try {
+    const map = readCachedVatRules();
+    map.set(skuOrId.toUpperCase(), vat);
+    const obj = Object.fromEntries(map.entries());
+    localStorage.setItem(VAT_STORAGE_KEY, JSON.stringify(obj));
+  } catch {}
 }
 
 // ==========================================
@@ -172,6 +206,339 @@ export function saveVipRule(skuOrId: string, rule: VipPriceRule) {
     const obj = Object.fromEntries(map.entries());
     localStorage.setItem(VIP_STORAGE_KEY, JSON.stringify(obj));
   } catch {}
+}
+
+// ==========================================
+// POS Product Image Mapping & Resolver
+// ==========================================
+
+export interface ProductImageLookupTarget {
+  id?: string;
+  sku?: string;
+  name?: { ar?: string; en?: string } | string;
+  image?: string;
+  department?: string;
+  group?: string;
+  categoryId?: string;
+}
+
+export const PRODUCT_IMAGE_MAP: Record<string, string> = {
+  // Existing POS items
+  "RICE-NUT": "/products/rice-nutella.jpg",
+  "RICE-NUTS": "/products/rice-pistachio.jpg",
+  "RICE-LOT": "/products/rice-pistachio.jpg",
+  "RICE-PST": "/products/rice-pistachio.jpg",
+  "RICE-WZR": "/products/rice-pistachio.jpg",
+  "RICE-PLN": "/products/rice-pistachio.jpg",
+  "FAT-WZR": "/products/fatta-wazeer.jpg",
+  "FAT-NUT": "/products/fatta-wazeer.jpg",
+  "FAT-MNG": "/products/kashtouta-mango.jpg",
+  "FAT-PST": "/products/fatta-wazeer.jpg",
+  "MDL-MNG": "/products/kashtouta-mango.jpg",
+  "MDL-CRM": "/products/medalaa.jpg",
+  "MLK-WZR": "/products/molokhito.jpg",
+  "MLK-NUT": "/products/molokhito.jpg",
+  "TJ-ALI": "/products/om-ali.jpg",
+  "TJ-NUT": "/products/om-ali.jpg",
+  "SHW-NUT": "/products/shawarma-crepe.jpg",
+  "SHW-MIX": "/products/shawarma-crepe.jpg",
+  "SHW-PST": "/products/shawarma-crepe.jpg",
+  "CK-LND-KND": "/products/cheesecake-pistachio.jpg",
+  "CK-LND-NUT": "/products/rice-nutella.jpg",
+  "CHZ-PST": "/products/cheesecake-pistachio.jpg",
+  "TRT-LOT-FAM": "/products/cheesecake-pistachio.jpg",
+  "KSHR-LUX": "/products/koshary-luxe.jpg",
+  "KSHR-KND": "/products/koshary-luxe.jpg",
+  "KSHR-PST": "/products/koshary-luxe.jpg",
+  "KSHR-NUT": "/products/koshary-luxe.jpg",
+  "KSHR-WZR": "/products/koshary-luxe.jpg",
+  "KSH-PST": "/products/kashtouta-pistachio.jpg",
+  "KSH-MSR": "/products/kashtouta-pistachio.jpg",
+  "KSH-NUT": "/products/kashtouta-pistachio.jpg",
+  "KSH-MNG": "/products/kashtouta-mango.jpg",
+  "KSH-RIC-NUT": "/products/rice-nutella.jpg",
+  "KSH-RIC-PST": "/products/kashtouta-pistachio.jpg",
+  "BOX-ROYAL-1KG": "/products/baklava-box.jpg",
+  "BOX-ROYAL-2KG": "/products/baklava-box.jpg",
+  "BKL-PIST-VIP": "/products/baklava-box.jpg",
+  "ICE-SCOOP": "/products/ice-cream.jpg",
+  "EX-PIST-SAUCE": "/products/cheesecake-pistachio.jpg",
+  "EX-NUT-SAUCE": "/products/rice-nutella.jpg",
+  "WATER-MINERAL": "/products/mineral-water.jpg",
+
+  // Presets
+  "SAN-LOTUS": "/products/cheesecake-pistachio.jpg",
+  "CK-KND": "/products/rice-nutella.jpg",
+  "TRT-FRT": "/products/kashtouta-mango.jpg",
+  "BSB-PST": "/products/fatta-wazeer.jpg",
+  "KNF-NBL": "/products/fatta-wazeer.jpg",
+  "CHS-MNG": "/products/kashtouta-mango.jpg",
+  "BRW-WLT": "/products/molten-cake.jpg",
+  "BRW-BEL": "/products/molten-cake.jpg",
+  "CIN-CAR": "/products/medalaa.jpg",
+  "CIN-PCN": "/products/medalaa.jpg",
+
+  // Wazeer Retail POS Items
+  "SKU-10025": "/products/rice-pistachio.jpg",
+  "SKU-10026": "/products/ice-cream.jpg",
+  "SKU-10027": "/products/rice-pistachio.jpg",
+  "SKU-10028": "/products/rice-pistachio.jpg",
+  "SKU-10029": "/products/rice-pistachio.jpg",
+  "SKU-10030": "/products/rice-pistachio.jpg",
+  "SKU-10046": "/products/rice-pistachio.jpg",
+  "SKU-10047": "/products/rice-pistachio.jpg",
+  "SKU-10048": "/products/rice-pistachio.jpg",
+  "SKU-10049": "/products/kashtouta-mango.jpg",
+  "SKU-10050": "/products/rice-pistachio.jpg",
+  "SKU-10051": "/products/rice-nutella.jpg",
+  "SKU-10052": "/products/fatta-wazeer.jpg",
+  "SKU-10053": "/products/kashtouta-pistachio.jpg",
+  "SKU-10054": "/products/rice-nutella.jpg",
+  "SKU-10055": "/products/rice-nutella.jpg",
+  "SKU-10056": "/products/fatta-wazeer.jpg",
+  "SKU-10057": "/products/kashtouta-pistachio.jpg",
+  "SKU-10058": "/products/cheesecake-pistachio.jpg",
+  "SKU-10059": "/products/rice-nutella.jpg",
+  "SKU-10060": "/products/fatta-wazeer.jpg",
+  "SKU-10061": "/products/rice-nutella.jpg",
+  "SKU-10062": "/products/fatta-wazeer.jpg",
+  "SKU-10063": "/products/rice-nutella.jpg",
+  "SKU-10064": "/products/kashtouta-pistachio.jpg",
+  "SKU-10065": "/products/rice-nutella.jpg",
+  "SKU-10066": "/products/kashtouta-pistachio.jpg",
+  "SKU-10067": "/products/rice-nutella.jpg",
+  "SKU-10068": "/products/rice-nutella.jpg",
+  "SKU-10069": "/products/cheesecake-pistachio.jpg",
+  "SKU-10070": "/products/ice-cream.jpg",
+  "SKU-10071": "/products/fatta-wazeer.jpg",
+  "SKU-10072": "/products/rice-nutella.jpg",
+  "SKU-10073": "/products/kashtouta-pistachio.jpg",
+  "SKU-10074": "/products/cheesecake-pistachio.jpg",
+  "SKU-10075": "/products/medalaa.jpg",
+  "SKU-10076": "/products/rice-nutella.jpg",
+  "SKU-10077": "/products/kashtouta-pistachio.jpg",
+  "SKU-10078": "/products/rice-pistachio.jpg",
+  "SKU-10079": "/products/fatta-wazeer.jpg",
+  "SKU-10080": "/products/kashtouta-mango.jpg",
+  "SKU-10081": "/products/rice-pistachio.jpg",
+  "SKU-10082": "/products/ice-cream.jpg",
+  "SKU-10083": "/products/ice-cream.jpg",
+  "SKU-10084": "/products/ice-cream.jpg",
+  "SKU-10085": "/products/ice-cream.jpg",
+  "SKU-10086": "/products/donuts.jpg",
+  "SKU-10087": "/products/donuts.jpg",
+  "SKU-10088": "/products/cheesecake-pistachio.jpg",
+  "SKU-10089": "/products/kashtouta-mango.jpg",
+  "SKU-10090": "/products/kashtouta-pistachio.jpg",
+  "SKU-10091": "/products/rice-nutella.jpg",
+  "SKU-10092": "/products/rice-nutella.jpg",
+  "SKU-10093": "/products/rice-nutella.jpg",
+  "SKU-10094": "/products/cheesecake-pistachio.jpg",
+  "SKU-10095": "/products/red-velvet.jpg",
+  "SKU-10096": "/products/medalaa.jpg",
+  "SKU-10097": "/products/cheesecake-pistachio.jpg",
+  "SKU-10098": "/products/kashtouta-pistachio.jpg",
+  "SKU-10099": "/products/rice-nutella.jpg",
+  "SKU-10100": "/products/rice-nutella.jpg",
+  "SKU-10101": "/products/kashtouta-pistachio.jpg",
+  "SKU-10102": "/products/kashtouta-mango.jpg",
+  "SKU-10103": "/products/om-ali.jpg",
+  "SKU-10104": "/products/om-ali.jpg",
+  "SKU-10105": "/products/om-ali.jpg",
+  "SKU-10106": "/products/om-ali.jpg",
+  "SKU-10107": "/products/om-ali.jpg",
+  "SKU-10108": "/products/rice-nutella.jpg",
+  "SKU-10109": "/products/kashtouta-pistachio.jpg",
+  "SKU-10110": "/products/kashtouta-pistachio.jpg",
+  "SKU-10111": "/products/kashtouta-pistachio.jpg",
+  "SKU-10112": "/products/kashtouta-pistachio.jpg",
+  "SKU-10113": "/products/kashtouta-pistachio.jpg",
+  "SKU-10114": "/products/kashtouta-pistachio.jpg",
+  "SKU-10115": "/products/kashtouta-pistachio.jpg",
+  "SKU-10116": "/products/medalaa.jpg",
+  "SKU-10117": "/products/kashtouta-pistachio.jpg",
+  "SKU-10118": "/products/kashtouta-mango.jpg",
+  "SKU-10119": "/products/kashtouta-mango.jpg",
+  "SKU-10120": "/products/kashtouta-pistachio.jpg",
+  "SKU-10121": "/products/kashtouta-pistachio.jpg",
+  "SKU-10122": "/products/kashtouta-pistachio.jpg",
+  "SKU-10123": "/products/kashtouta-pistachio.jpg",
+  "SKU-10124": "/products/kashtouta-pistachio.jpg",
+  "SKU-10125": "/products/medalaa.jpg",
+  "SKU-10126": "/products/kashtouta-pistachio.jpg",
+  "SKU-10127": "/products/kashtouta-mango.jpg",
+  "SKU-10128": "/products/kashtouta-pistachio.jpg",
+  "SKU-10129": "/products/rice-nutella.jpg",
+  "SKU-10130": "/products/kashtouta-mango.jpg",
+  "SKU-10131": "/products/koshary-luxe.jpg",
+  "SKU-10132": "/products/koshary-luxe.jpg",
+  "SKU-10133": "/products/koshary-luxe.jpg",
+  "SKU-10134": "/products/koshary-luxe.jpg",
+  "SKU-10135": "/products/koshary-luxe.jpg",
+  "SKU-10136": "/products/koshary-luxe.jpg",
+  "SKU-10137": "/products/koshary-luxe.jpg",
+  "SKU-10138": "/products/koshary-luxe.jpg",
+  "SKU-10139": "/products/koshary-luxe.jpg",
+  "SKU-10140": "/products/koshary-luxe.jpg",
+  "SKU-10141": "/products/koshary-luxe.jpg",
+  "SKU-10142": "/products/koshary-luxe.jpg",
+  "SKU-10143": "/products/cheesecake-pistachio.jpg",
+  "SKU-10144": "/products/cheesecake-pistachio.jpg",
+  "SKU-10145": "/products/rice-nutella.jpg",
+  "SKU-10146": "/products/rice-nutella.jpg",
+  "SKU-10147": "/products/medalaa.jpg",
+  "SKU-10148": "/products/kashtouta-mango.jpg",
+  "SKU-10149": "/products/molten-cake.jpg",
+  "SKU-10150": "/products/baklava-box.jpg",
+  "SKU-10151": "/products/baklava-box.jpg",
+};
+
+export function resolveProductImage(prod?: ProductImageLookupTarget | null): string {
+  if (!prod) return "/products/rice-pistachio.jpg";
+  const rawImg = prod.image ? prod.image.trim() : "";
+  if (rawImg.length > 0 && !rawImg.includes("images.unsplash.com")) {
+    return rawImg;
+  }
+
+  const sku = (prod.sku || prod.id || "").trim().toUpperCase();
+  if (sku && PRODUCT_IMAGE_MAP[sku]) {
+    return PRODUCT_IMAGE_MAP[sku];
+  }
+
+  const nameAr = typeof prod.name === "object" ? prod.name?.ar || "" : typeof prod.name === "string" ? prod.name : "";
+  const nameEn = typeof prod.name === "object" ? prod.name?.en || "" : "";
+  const dept = (prod.department || "").toLowerCase();
+  const grp = (prod.group || "").toLowerCase();
+  const combined = `${nameAr} ${nameEn} ${dept} ${grp}`.toLowerCase();
+
+  // Water & Drinks
+  if (combined.includes("مياه") || combined.includes("ماء") || combined.includes("water")) {
+    return "/products/mineral-water.jpg";
+  }
+
+  // Ice Cream
+  if (combined.includes("ايس كريم") || combined.includes("آيس كريم") || combined.includes("ice cream") || combined.includes("بولة")) {
+    return "/products/ice-cream.jpg";
+  }
+
+  // Donuts
+  if (combined.includes("دونات") || combined.includes("donut")) {
+    return "/products/donuts.jpg";
+  }
+
+  // Molten Cake
+  if (combined.includes("مولتن") || combined.includes("molten")) {
+    return "/products/molten-cake.jpg";
+  }
+
+  // Red Velvet
+  if (combined.includes("ريد فيلفيت") || combined.includes("red velvet")) {
+    return "/products/red-velvet.jpg";
+  }
+
+  // Sweet Koshary
+  if (grp.includes("كشرى") || combined.includes("كشرى") || combined.includes("كشري") || combined.includes("koshary")) {
+    return "/products/koshary-luxe.jpg";
+  }
+
+  // Sweet Fatta & Giant Bowls (الحله، القنبلة، الديناميت)
+  if (combined.includes("فتة") || combined.includes("فته") || combined.includes("fatta") || combined.includes("الحله") || combined.includes("قنبلة") || combined.includes("ديناميت")) {
+    return "/products/fatta-wazeer.jpg";
+  }
+
+  // Baked Hot Tajins
+  if (grp.includes("طواجن") || combined.includes("ام على") || combined.includes("ام علي") || combined.includes("طاجن") || combined.includes("om ali")) {
+    return "/products/om-ali.jpg";
+  }
+
+  // Medalaa & Caramel
+  if (combined.includes("مدلعة") || combined.includes("مدلعه") || combined.includes("medala")) {
+    if (combined.includes("مانجو") || combined.includes("مانجا")) return "/products/kashtouta-mango.jpg";
+    return "/products/medalaa.jpg";
+  }
+
+  // Molokhito
+  if (combined.includes("ملوخيتو") || combined.includes("molokhito")) {
+    return "/products/molokhito.jpg";
+  }
+
+  // Shawarma / Crepe
+  if (combined.includes("شاورما") || combined.includes("shawarma") || combined.includes("كريب")) {
+    return "/products/shawarma-crepe.jpg";
+  }
+
+  // Kashtouta Rice Pudding Bowls (قشطوطة أرز بلبن)
+  if (grp.includes("قشطوطة أرز") || (combined.includes("قشطوطة") && combined.includes("أرز"))) {
+    if (combined.includes("مانجو") || combined.includes("مانجا") || combined.includes("فروت")) return "/products/kashtouta-mango.jpg";
+    if (combined.includes("نوتيلا")) return "/products/rice-nutella.jpg";
+    if (combined.includes("كراميل")) return "/products/medalaa.jpg";
+    return "/products/kashtouta-pistachio.jpg";
+  }
+
+  // Kashtouta (Tres Leches Cake)
+  if (grp.includes("قشطوطة") || combined.includes("قشطوطة") || combined.includes("قشطوطه") || combined.includes("kashtota")) {
+    if (combined.includes("مانجو") || combined.includes("مانجا") || combined.includes("فروت")) return "/products/kashtouta-mango.jpg";
+    if (combined.includes("نوتيلا")) return "/products/rice-nutella.jpg";
+    if (combined.includes("كراميل")) return "/products/medalaa.jpg";
+    return "/products/kashtouta-pistachio.jpg";
+  }
+
+  // Rice Pudding (أرز باللبن)
+  if (grp.includes("ارز بلبن") || combined.includes("أرز") || combined.includes("ارز") || combined.includes("rice")) {
+    if (combined.includes("نوتيلا") || combined.includes("شيكولاتة") || combined.includes("شوكولاتة")) return "/products/rice-nutella.jpg";
+    if (combined.includes("مانجو") || combined.includes("مانجا") || combined.includes("مانجواي")) return "/products/kashtouta-mango.jpg";
+    return "/products/rice-pistachio.jpg";
+  }
+
+  // London Cake & Jars
+  if (combined.includes("كيكة لندن") || combined.includes("لندن") || combined.includes("رويال") || combined.includes("جار")) {
+    if (combined.includes("نوتيلا") || combined.includes("شوك") || combined.includes("دريم") || combined.includes("بندق") || combined.includes("كيت كات")) {
+      return "/products/rice-nutella.jpg";
+    }
+    if (combined.includes("مانجو") || combined.includes("مانجا") || combined.includes("راسبري")) {
+      return "/products/kashtouta-mango.jpg";
+    }
+    if (combined.includes("كافيه")) {
+      return "/products/medalaa.jpg";
+    }
+    return "/products/cheesecake-pistachio.jpg";
+  }
+
+  // Cheesecake
+  if (combined.includes("تشيز") || combined.includes("cheesecake")) {
+    return "/products/cheesecake-pistachio.jpg";
+  }
+
+  // Wazeer Inventions: Cake Bomb / Chocolate / Pistachio treats
+  if (grp.includes("أختراع") || grp.includes("اختراع")) {
+    if (combined.includes("نوتيلا") || combined.includes("شوكولاتة") || combined.includes("شيكولاتة") || combined.includes("كيندر") || combined.includes("سنيكرو") || combined.includes("كيت كاته")) {
+      return "/products/rice-nutella.jpg";
+    }
+    if (combined.includes("بستاشيو") || combined.includes("تشيز طاخ") || combined.includes("بستك")) {
+      return "/products/kashtouta-pistachio.jpg";
+    }
+    return "/products/fatta-wazeer.jpg";
+  }
+
+  // Additions & Toppings
+  if (grp.includes("إضافات") || grp.includes("اضافات") || combined.includes("إضافة") || combined.includes("اضافة")) {
+    if (combined.includes("ايس كريم")) return "/products/ice-cream.jpg";
+    if (combined.includes("مانجا") || combined.includes("مانجو")) return "/products/kashtouta-mango.jpg";
+    if (combined.includes("نوتيلا") || combined.includes("أوريو") || combined.includes("شوك")) return "/products/rice-nutella.jpg";
+    if (combined.includes("فسدق") || combined.includes("بستاشيو")) return "/products/cheesecake-pistachio.jpg";
+    if (combined.includes("بسبوسة") || combined.includes("كنافة")) return "/products/fatta-wazeer.jpg";
+    if (combined.includes("كراميل")) return "/products/medalaa.jpg";
+    if (combined.includes("لوتس")) return "/products/kashtouta-pistachio.jpg";
+    return "/products/rice-pistachio.jpg";
+  }
+
+  // Offers & Gift boxes
+  if (combined.includes("عرض") || combined.includes("هامور") || combined.includes("علبة") || combined.includes("بوكس") || combined.includes("هدية") || combined.includes("box")) {
+    return "/products/baklava-box.jpg";
+  }
+
+  // Default fallback
+  return "/products/rice-pistachio.jpg";
 }
 
 /**
@@ -567,7 +934,7 @@ export async function fetchDatabaseState() {
           sellingPrice: Number(p.sale_price || 0),
           qty: Math.max(0, totalStock),
           minStock: Number(p.reorder_level || 10),
-          image: p.image_url || undefined,
+          image: resolveProductImage({ sku: p.sku, name: { ar: p.name_ar, en: p.name_en }, group: p.product_group, image: p.image_url }),
           isRawMaterial: isRaw,
           productType,
           technicalType,
@@ -580,10 +947,14 @@ export async function fetchDatabaseState() {
           vipPrice: p.vip_price !== undefined && p.vip_price !== null ? Number(p.vip_price) : readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipPrice,
           vipClientIds: p.vip_client_ids || readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipClientIds || [],
           vipValidUntil: p.vip_valid_until || readCachedVipRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase())?.vipValidUntil || undefined,
+          vat: p.vat !== undefined && p.vat !== null ? Number(p.vat) : (readCachedVatRules().get(p.sku?.toUpperCase() || p.id?.toUpperCase()) ?? 14),
         };
       });
     } else {
-      dbProducts = [...FACTORY_PRODUCTS];
+      dbProducts = FACTORY_PRODUCTS.map((p) => ({
+        ...p,
+        image: p.image || resolveProductImage(p),
+      }));
     }
 
     if (bomRes.data) {
@@ -828,42 +1199,129 @@ export function useInventoryStore() {
     await fetchDatabaseState();
   }, []);
 
-  const addProduct = useCallback(async (prod: Omit<InventoryProduct, "id">) => {
-    const { data, error } = await supabase
-      .from("products")
-      .insert({
-        sku: prod.sku,
-        name_ar: prod.name.ar,
-        name_en: prod.name.en,
-        category_id: prod.categoryId || null,
-        unit_id: prod.unitId || null,
-        cost_price: prod.costPrice || 0,
-        sale_price: prod.sellingPrice || 0,
-        reorder_level: prod.minStock || 10,
-        is_raw_material: Boolean(prod.isRawMaterial),
-        is_active: true,
-        image_url: prod.image || null,
-        product_group: prod.group || null,
-        branch_id: prod.branchId || null,
-        show_on_pos: prod.showOnPos !== undefined ? prod.showOnPos : true,
-        vip_price: prod.vipPrice && prod.vipPrice > 0 ? prod.vipPrice : null,
-        vip_client_ids: prod.vipClientIds || [],
-        vip_valid_until: prod.vipValidUntil || null,
-      })
-      .select()
-      .single();
+  const isValidUuid = (val?: string | null): boolean =>
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim()));
 
-    if (error) throw error;
-
-    // Insert stock level if initial qty is set
-    const whId = prod.warehouseId || dbWarehouses[0]?.id;
-    if (whId) {
-      await supabase.from("stock_levels").insert({
-        product_id: data.id,
-        warehouse_id: whId,
-        quantity: prod.qty || 0,
-      });
+  const resolveValidCategoryId = (rawId?: string): string | null => {
+    if (isValidUuid(rawId)) return rawId!;
+    if (rawId) {
+      const low = rawId.toLowerCase();
+      const match = dbCategories.find(
+        (c) =>
+          isValidUuid(c.id) &&
+          (c.code?.toLowerCase() === low || c.name.ar.toLowerCase() === low || c.name.en?.toLowerCase() === low)
+      );
+      if (match) return match.id;
     }
+    return dbCategories.find((c) => isValidUuid(c.id))?.id || null;
+  };
+
+  const resolveValidUnitId = (rawId?: string): string | null => {
+    if (isValidUuid(rawId)) return rawId!;
+    if (rawId) {
+      const low = rawId.toLowerCase();
+      const match = dbUnits.find(
+        (u) =>
+          isValidUuid(u.id) &&
+          (u.code?.toLowerCase() === low ||
+            (low.includes("kg") && u.code?.toLowerCase() === "kg") ||
+            u.name.ar.toLowerCase() === low ||
+            u.name.en?.toLowerCase() === low)
+      );
+      if (match) return match.id;
+    }
+    return dbUnits.find((u) => isValidUuid(u.id))?.id || null;
+  };
+
+  const resolveValidWarehouseId = (rawId?: string): string | null => {
+    if (isValidUuid(rawId)) return rawId!;
+    if (rawId) {
+      const low = rawId.toLowerCase();
+      const match = dbWarehouses.find(
+        (w) => isValidUuid(w.id) && (w.code?.toLowerCase() === low || w.name.ar.toLowerCase() === low)
+      );
+      if (match) return match.id;
+    }
+    return dbWarehouses.find((w) => isValidUuid(w.id))?.id || null;
+  };
+
+  const upsertProductInternal = useCallback(async (prod: Omit<InventoryProduct, "id">, skipRefresh = false) => {
+    const resolvedCategoryId = resolveValidCategoryId(prod.categoryId);
+    const resolvedUnitId = resolveValidUnitId(prod.unitId);
+    const resolvedBranchId = isValidUuid(prod.branchId) ? prod.branchId! : null;
+    const resolvedImage =
+      prod.image && !prod.image.includes("images.unsplash.com") ? prod.image : resolveProductImage(prod);
+    const resolvedShowOnPos =
+      prod.showOnPos !== undefined ? Boolean(prod.showOnPos) : !Boolean(prod.isRawMaterial);
+    const finalVat = prod.vat !== undefined ? prod.vat : 14;
+
+    const existing = dbProducts.find(
+      (p) => p.sku && prod.sku && p.sku.trim().toUpperCase() === prod.sku.trim().toUpperCase()
+    );
+
+    const payloadWithVat: any = {
+      sku: prod.sku,
+      name_ar: prod.name.ar,
+      name_en: prod.name.en,
+      category_id: resolvedCategoryId,
+      unit_id: resolvedUnitId,
+      cost_price: prod.costPrice || 0,
+      sale_price: prod.sellingPrice || 0,
+      reorder_level: prod.minStock || 10,
+      is_raw_material: Boolean(prod.isRawMaterial),
+      is_active: true,
+      image_url: resolvedImage || null,
+      product_group: prod.group || null,
+      branch_id: resolvedBranchId,
+      show_on_pos: resolvedShowOnPos,
+      vip_price: prod.vipPrice && prod.vipPrice > 0 ? prod.vipPrice : null,
+      vip_client_ids: prod.vipClientIds || [],
+      vip_valid_until: prod.vipValidUntil || null,
+      vat: finalVat,
+    };
+
+    let savedRow: any = null;
+
+    if (existing && isValidUuid(existing.id)) {
+      const { error: updErr, data: updData } = await supabase
+        .from("products")
+        .update(payloadWithVat)
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (updErr) {
+        const { vat: _v, ...fallbackUpd } = payloadWithVat;
+        const retryUpd = await supabase.from("products").update(fallbackUpd).eq("id", existing.id).select().single();
+        if (retryUpd.error) throw retryUpd.error;
+        savedRow = retryUpd.data;
+      } else {
+        savedRow = updData;
+      }
+    } else {
+      const { data, error } = await supabase.from("products").insert(payloadWithVat).select().single();
+      if (error) {
+        const { vat: _v, ...fallbackInsert } = payloadWithVat;
+        const retryRes = await supabase.from("products").insert(fallbackInsert).select().single();
+        if (retryRes.error) throw retryRes.error;
+        savedRow = retryRes.data;
+      } else {
+        savedRow = data;
+      }
+
+      // Insert initial stock level for new products
+      const whId = resolveValidWarehouseId(prod.warehouseId);
+      if (whId && savedRow?.id) {
+        await supabase.from("stock_levels").insert({
+          product_id: savedRow.id,
+          warehouse_id: whId,
+          quantity: prod.qty || 0,
+        });
+      }
+    }
+
+    // Always cache VAT and VIP rules locally
+    saveVatRule(prod.sku, finalVat);
+    if (savedRow?.id) saveVatRule(savedRow.id, finalVat);
 
     if (prod.vipPrice && prod.vipPrice > 0) {
       const rule: VipPriceRule = {
@@ -872,12 +1330,21 @@ export function useInventoryStore() {
         vipValidUntil: prod.vipValidUntil,
       };
       saveVipRule(prod.sku, rule);
-      if (data?.id) saveVipRule(data.id, rule);
+      if (savedRow?.id) saveVipRule(savedRow.id, rule);
     }
 
-    await fetchDatabaseState();
-    return { ...prod, id: data.id };
+    if (!skipRefresh) {
+      await fetchDatabaseState();
+    }
+    return { ...prod, image: resolvedImage, id: savedRow?.id || existing?.id };
   }, []);
+
+  const addProduct = useCallback(
+    async (prod: Omit<InventoryProduct, "id">) => {
+      return upsertProductInternal(prod, false);
+    },
+    [upsertProductInternal]
+  );
 
   const updateProduct = useCallback(async (id: string, updates: Partial<InventoryProduct>) => {
     const dbUpdate: any = {};
@@ -899,13 +1366,23 @@ export function useInventoryStore() {
     if (updates.vipPrice !== undefined) dbUpdate.vip_price = updates.vipPrice && updates.vipPrice > 0 ? updates.vipPrice : null;
     if (updates.vipClientIds !== undefined) dbUpdate.vip_client_ids = updates.vipClientIds || [];
     if (updates.vipValidUntil !== undefined) dbUpdate.vip_valid_until = updates.vipValidUntil || null;
+    if (updates.vat !== undefined) dbUpdate.vat = updates.vat;
 
     if (Object.keys(dbUpdate).length > 0) {
       try {
-        await supabase.from("products").update(dbUpdate).eq("id", id);
+        const { error: updErr } = await supabase.from("products").update(dbUpdate).eq("id", id);
+        if (updErr && dbUpdate.vat !== undefined) {
+          const { vat: _v, ...restDb } = dbUpdate;
+          await supabase.from("products").update(restDb).eq("id", id);
+        }
       } catch (err) {
         console.warn("Supabase update product warning:", err);
       }
+    }
+
+    if (updates.vat !== undefined) {
+      saveVatRule(id, updates.vat);
+      if (updates.sku) saveVatRule(updates.sku, updates.vat);
     }
 
     if (updates.vipPrice !== undefined || updates.vipClientIds !== undefined || updates.vipValidUntil !== undefined) {
@@ -940,55 +1417,65 @@ export function useInventoryStore() {
   }, []);
 
   // Real-time Database Stock Adjustment
-  const adjustStock = useCallback(async (productIdOrSku: string, deltaQty: number) => {
-    const prod = dbProducts.find((p) => p.id === productIdOrSku || p.sku === productIdOrSku);
-    if (!prod) return;
+  const adjustStock = useCallback(
+    async (productIdOrSku: string, deltaQty: number, orderReference?: string) => {
+      const prod = dbProducts.find((p) => p.id === productIdOrSku || p.sku === productIdOrSku);
+      if (!prod) return;
 
-    // Optimistic UI update
-    dbProducts = dbProducts.map((p) =>
-      p.id === prod.id ? { ...p, qty: Math.max(0, p.qty + deltaQty) } : p
-    );
-    notify();
+      // Optimistic UI update
+      dbProducts = dbProducts.map((p) =>
+        p.id === prod.id ? { ...p, qty: Math.max(0, p.qty + deltaQty) } : p
+      );
+      notify();
 
-    // Persist to database
-    try {
-      const whId = dbWarehouses[0]?.id;
-      if (!whId) return;
+      // Persist to database
+      try {
+        const whId = dbWarehouses[0]?.id;
+        if (!whId) return;
 
-      const { data: currentStock } = await supabase
-        .from("stock_levels")
-        .select("quantity")
-        .eq("product_id", prod.id)
-        .eq("warehouse_id", whId)
-        .maybeSingle();
+        const { data: currentStock } = await supabase
+          .from("stock_levels")
+          .select("quantity")
+          .eq("product_id", prod.id)
+          .eq("warehouse_id", whId)
+          .maybeSingle();
 
-      const existingQty = currentStock ? Number(currentStock.quantity) : prod.qty;
-      const nextQty = Math.max(0, existingQty + deltaQty);
+        const existingQty = currentStock ? Number(currentStock.quantity) : prod.qty;
+        const nextQty = Math.max(0, existingQty + deltaQty);
 
-      await supabase.from("stock_levels").upsert({
-        product_id: prod.id,
-        warehouse_id: whId,
-        quantity: nextQty,
-      });
+        await supabase.from("stock_levels").upsert({
+          product_id: prod.id,
+          warehouse_id: whId,
+          quantity: nextQty,
+        });
 
-      // Record move
-      await supabase.from("stock_moves").insert({
-        move_type: deltaQty < 0 ? "out" : "in",
-        product_id: prod.id,
-        from_warehouse_id: deltaQty < 0 ? whId : null,
-        to_warehouse_id: deltaQty > 0 ? whId : null,
-        quantity: Math.abs(deltaQty),
-        unit_cost: prod.costPrice,
-        reference: deltaQty < 0 ? "POS-SALE" : "ADJUSTMENT",
-      });
-    } catch (e) {
-      console.error("Failed to adjust stock in database:", e);
-    }
-  }, []);
+        const finalRef = orderReference || (deltaQty < 0 ? "POS-SALE" : "ADJUSTMENT");
+
+        // Record move
+        await supabase.from("stock_moves").insert({
+          move_type: deltaQty < 0 ? "out" : "in",
+          product_id: prod.id,
+          from_warehouse_id: deltaQty < 0 ? whId : null,
+          to_warehouse_id: deltaQty > 0 ? whId : null,
+          quantity: Math.abs(deltaQty),
+          unit_cost: prod.costPrice,
+          reference: finalRef,
+        });
+      } catch (e) {
+        console.error("Failed to adjust stock in database:", e);
+      }
+    },
+    []
+  );
 
   // On-Demand Assembly Stock Consumption (per Technical Guide Section 21 & Section 41)
   const consumeAssemblyStock = useCallback(
-    async (productIdOrSku: string, saleQty: number, targetWarehouseId?: string) => {
+    async (
+      productIdOrSku: string,
+      saleQty: number,
+      targetWarehouseId?: string,
+      orderReference?: string
+    ) => {
       const prod = dbProducts.find((p) => p.id === productIdOrSku || p.sku === productIdOrSku);
       if (!prod) return;
 
@@ -1001,7 +1488,7 @@ export function useInventoryStore() {
 
       // If no active recipe or components, adjust standard finished product stock
       if (!activeBom || !activeBom.components || activeBom.components.length === 0) {
-        await adjustStock(prod.id, -saleQty);
+        await adjustStock(prod.id, -saleQty, orderReference);
         return;
       }
 
@@ -1030,6 +1517,7 @@ export function useInventoryStore() {
 
       // Persist component deductions to Supabase
       try {
+        const finalRef = orderReference ? `POS-SALE-${orderReference}` : `POS-ASSEMBLY-${prod.sku}`;
         for (const item of componentDeductions) {
           const { data: currentStock } = await supabase
             .from("stock_levels")
@@ -1054,7 +1542,7 @@ export function useInventoryStore() {
             to_warehouse_id: null,
             quantity: item.consumedQty,
             unit_cost: item.componentProduct.costPrice,
-            reference: `POS-ASSEMBLY-${prod.sku}`,
+            reference: finalRef,
           });
         }
       } catch (err) {
@@ -1152,7 +1640,7 @@ export function useInventoryStore() {
       let count = 0;
       for (const prod of items) {
         try {
-          await addProduct(prod);
+          await upsertProductInternal(prod, true);
           count++;
         } catch (err) {
           console.error("Failed to import product:", prod.sku, err);
@@ -1161,7 +1649,7 @@ export function useInventoryStore() {
       await fetchDatabaseState();
       return count;
     },
-    [addProduct]
+    [upsertProductInternal]
   );
   const importCategories = useCallback(
     async (items: Omit<InventoryCategory, "id">[]) => {

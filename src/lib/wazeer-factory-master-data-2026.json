@@ -25,7 +25,8 @@
       "sellingPrice": 23.5,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10001",
@@ -45,7 +46,8 @@
       "sellingPrice": 33.8,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10002",
@@ -65,7 +67,8 @@
       "sellingPrice": 35.5,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10003",
@@ -85,7 +88,8 @@
       "sellingPrice": 21,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10004",
@@ -105,7 +109,8 @@
       "sellingPrice": 19.7,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10005",
@@ -125,7 +130,8 @@
       "sellingPrice": 2.92,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10006",
@@ -145,7 +151,8 @@
       "sellingPrice": 0,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/mineral-water.jpg"
     },
     {
       "id": "prod-10007",
@@ -165,7 +172,8 @@
       "sellingPrice": 81.25,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10008",
@@ -185,7 +193,8 @@
       "sellingPrice": 355,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10009",
@@ -205,7 +214,8 @@
       "sellingPrice": 375,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10010",
@@ -225,7 +235,8 @@
       "sellingPrice": 3.33,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10011",
@@ -245,7 +256,8 @@
       "sellingPrice": 145,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10012",
@@ -265,7 +277,8 @@
       "sellingPrice": 23.5,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10013",
@@ -285,7 +298,8 @@
       "sellingPrice": 115,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10014",
@@ -305,7 +319,8 @@
       "sellingPrice": 135,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10015",
@@ -325,7 +340,8 @@
       "sellingPrice": 29,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10016",
@@ -345,7 +361,8 @@
       "sellingPrice": 39.17,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10017",
@@ -365,7 +382,8 @@
       "sellingPrice": 590,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10018",
@@ -385,7 +403,8 @@
       "sellingPrice": 0,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10019",
@@ -405,7 +424,8 @@
       "sellingPrice": 40,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10020",
@@ -425,7 +445,8 @@
       "sellingPrice": 33,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10021",
@@ -445,7 +466,8 @@
       "sellingPrice": 3,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10022",
@@ -465,7 +487,8 @@
       "sellingPrice": 1.1,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/koshary-luxe.jpg"
     },
     {
       "id": "prod-10023",
@@ -485,7 +508,8 @@
       "sellingPrice": 1.1,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/fatta-wazeer.jpg"
     },
     {
       "id": "prod-10024",
@@ -505,7 +529,8 @@
       "sellingPrice": 3.14,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/kashtouta-pistachio.jpg"
     },
     {
       "id": "prod-10025",
@@ -525,7 +550,8 @@
       "sellingPrice": 22,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10026",
@@ -545,7 +571,8 @@
       "sellingPrice": 17,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/koshary-luxe.jpg"
     },
     {
       "id": "prod-10027",
@@ -565,7 +592,8 @@
       "sellingPrice": 17,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/fatta-wazeer.jpg"
     },
     {
       "id": "prod-10028",
@@ -585,7 +613,8 @@
       "sellingPrice": 17,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/fatta-wazeer.jpg"
     },
     {
       "id": "prod-10029",
@@ -605,7 +634,8 @@
       "sellingPrice": 20,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/fatta-wazeer.jpg"
     },
     {
       "id": "prod-10030",
@@ -625,7 +655,8 @@
       "sellingPrice": 21,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/kashtouta-pistachio.jpg"
     },
     {
       "id": "prod-10031",
@@ -645,7 +676,9 @@
       "sellingPrice": 95.03,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/kashtouta-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10032",
@@ -665,7 +698,9 @@
       "sellingPrice": 91.99,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10033",
@@ -685,7 +720,9 @@
       "sellingPrice": 117.75,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10034",
@@ -705,7 +742,9 @@
       "sellingPrice": 56.61,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10035",
@@ -725,7 +764,9 @@
       "sellingPrice": 12.32,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/molten-cake.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10036",
@@ -745,7 +786,9 @@
       "sellingPrice": 74.63,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/red-velvet.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10037",
@@ -765,7 +808,9 @@
       "sellingPrice": 47.36,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/red-velvet.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10038",
@@ -785,7 +830,9 @@
       "sellingPrice": 56.12,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10039",
@@ -805,7 +852,9 @@
       "sellingPrice": 71.87,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10040",
@@ -825,7 +874,9 @@
       "sellingPrice": 10.86,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10041",
@@ -845,7 +896,9 @@
       "sellingPrice": 193.07,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10042",
@@ -865,7 +918,9 @@
       "sellingPrice": 59.05,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10043",
@@ -885,7 +940,9 @@
       "sellingPrice": 77.94,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10044",
@@ -905,7 +962,9 @@
       "sellingPrice": 67.63,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10045",
@@ -925,7 +984,9 @@
       "sellingPrice": 32.73,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10046",
@@ -945,7 +1006,8 @@
       "sellingPrice": 113,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/cheesecake-pistachio.jpg"
     },
     {
       "id": "prod-10047",
@@ -965,7 +1027,8 @@
       "sellingPrice": 53,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-nutella.jpg"
     },
     {
       "id": "prod-10048",
@@ -985,7 +1048,8 @@
       "sellingPrice": 43,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/medalaa.jpg"
     },
     {
       "id": "prod-10049",
@@ -1005,7 +1069,8 @@
       "sellingPrice": 60,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-nutella.jpg"
     },
     {
       "id": "prod-10050",
@@ -1025,7 +1090,8 @@
       "sellingPrice": 62,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/red-velvet.jpg"
     },
     {
       "id": "prod-10051",
@@ -1045,7 +1111,8 @@
       "sellingPrice": 57,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10052",
@@ -1065,7 +1132,8 @@
       "sellingPrice": 57,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10053",
@@ -1085,7 +1153,8 @@
       "sellingPrice": 73,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10054",
@@ -1105,7 +1174,8 @@
       "sellingPrice": 62,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10055",
@@ -1125,7 +1195,8 @@
       "sellingPrice": 57,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10056",
@@ -1145,7 +1216,8 @@
       "sellingPrice": 94,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/cheesecake-pistachio.jpg"
     },
     {
       "id": "prod-10057",
@@ -1165,7 +1237,8 @@
       "sellingPrice": 89,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-nutella.jpg"
     },
     {
       "id": "prod-10058",
@@ -1185,7 +1258,8 @@
       "sellingPrice": 81,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/cheesecake-pistachio.jpg"
     },
     {
       "id": "prod-10059",
@@ -1205,7 +1279,8 @@
       "sellingPrice": 66,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-nutella.jpg"
     },
     {
       "id": "prod-10060",
@@ -1225,7 +1300,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10061",
@@ -1245,7 +1321,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10062",
@@ -1265,7 +1342,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/cheesecake-pistachio.jpg"
     },
     {
       "id": "prod-10063",
@@ -1285,7 +1363,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10064",
@@ -1305,7 +1384,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10065",
@@ -1325,7 +1405,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10066",
@@ -1345,7 +1426,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10067",
@@ -1365,7 +1447,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10068",
@@ -1385,7 +1468,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10069",
@@ -1405,7 +1489,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10070",
@@ -1425,7 +1510,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10071",
@@ -1445,7 +1531,8 @@
       "sellingPrice": 70,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10072",
@@ -1465,7 +1552,8 @@
       "sellingPrice": 111,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10073",
@@ -1485,7 +1573,8 @@
       "sellingPrice": 110,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10074",
@@ -1505,7 +1594,8 @@
       "sellingPrice": 430,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10075",
@@ -1525,7 +1615,8 @@
       "sellingPrice": 725,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10076",
@@ -1545,7 +1636,8 @@
       "sellingPrice": 495,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10077",
@@ -1565,7 +1657,8 @@
       "sellingPrice": 174.2,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10078",
@@ -1585,7 +1678,8 @@
       "sellingPrice": 257.14,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10079",
@@ -1605,7 +1699,8 @@
       "sellingPrice": 51.04,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10080",
@@ -1625,7 +1720,8 @@
       "sellingPrice": 104,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10081",
@@ -1645,7 +1741,8 @@
       "sellingPrice": 48,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10082",
@@ -1665,7 +1762,8 @@
       "sellingPrice": 150,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10083",
@@ -1685,7 +1783,8 @@
       "sellingPrice": 80,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10084",
@@ -1705,7 +1804,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10085",
@@ -1725,7 +1825,8 @@
       "sellingPrice": 127.41,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10086",
@@ -1745,7 +1846,8 @@
       "sellingPrice": 250,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10087",
@@ -1765,7 +1867,8 @@
       "sellingPrice": 144,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10088",
@@ -1785,7 +1888,8 @@
       "sellingPrice": 200,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10089",
@@ -1805,7 +1909,8 @@
       "sellingPrice": 136.66,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10090",
@@ -1825,7 +1930,8 @@
       "sellingPrice": 109.17,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10091",
@@ -1845,7 +1951,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10092",
@@ -1865,7 +1972,8 @@
       "sellingPrice": 175,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10093",
@@ -1885,7 +1993,8 @@
       "sellingPrice": 400,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10094",
@@ -1905,7 +2014,8 @@
       "sellingPrice": 3.2,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/om-ali.jpg"
     },
     {
       "id": "prod-10095",
@@ -1925,7 +2035,8 @@
       "sellingPrice": 9,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/cheesecake-pistachio.jpg"
     },
     {
       "id": "prod-10096",
@@ -1945,7 +2056,8 @@
       "sellingPrice": 0,
       "qty": 25,
       "minStock": 10,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10097",
@@ -1965,7 +2077,8 @@
       "sellingPrice": 205,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10098",
@@ -1985,7 +2098,8 @@
       "sellingPrice": 153.33,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10099",
@@ -2005,7 +2119,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10100",
@@ -2025,7 +2140,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10101",
@@ -2045,7 +2161,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10102",
@@ -2065,7 +2182,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10103",
@@ -2085,7 +2203,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10104",
@@ -2105,7 +2224,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10105",
@@ -2125,7 +2245,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10106",
@@ -2145,7 +2266,9 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg",
+      "showOnPos": false
     },
     {
       "id": "prod-10107",
@@ -2165,7 +2288,8 @@
       "sellingPrice": 0,
       "qty": 30,
       "minStock": 10,
-      "isRawMaterial": false
+      "isRawMaterial": false,
+      "image": "/products/rice-pistachio.jpg"
     },
     {
       "id": "prod-10108",
@@ -2185,7 +2309,8 @@
       "sellingPrice": 5,
       "qty": 150,
       "minStock": 30,
-      "isRawMaterial": true
+      "isRawMaterial": true,
+      "image": "/products/rice-pistachio.jpg"
     }
   ],
   "recipes": [

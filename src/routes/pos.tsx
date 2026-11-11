@@ -66,7 +66,14 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useInventoryStore, calculateBuildableQuantity, getEffectiveProductPrice, KNOWN_VIP_CLIENTS } from "@/lib/inventory-store";
+import {
+  useInventoryStore,
+  calculateBuildableQuantity,
+  getEffectiveProductPrice,
+  KNOWN_VIP_CLIENTS,
+  PRODUCT_IMAGE_MAP,
+  resolveProductImage,
+} from "@/lib/inventory-store";
 import { usePartnersStore } from "@/lib/partners-store";
 import { useSalesStore, type BizDocument, type InvoiceItem } from "@/lib/documents-store";
 import { useCompanySettings } from "@/lib/settings-store";
@@ -396,69 +403,8 @@ const POS_CATEGORIES = [
   { id: "مشروبات وإضافات", ar: "مشروبات وإضافات", en: "Drinks & Extras", icon: "🥤" },
 ];
 
-// Comprehensive POS Product Image Mapping
-export const PRODUCT_IMAGE_MAP: Record<string, string> = {
-  // عشاق الرز (Rice Pudding)
-  "RICE-NUT": "/products/rice-nutella.jpg",
-  "RICE-NUTS": "/products/rice-pistachio.jpg",
-  "RICE-LOT": "/products/fatta-wazeer.jpg",
-  "RICE-PST": "/products/rice-pistachio.jpg",
-  "RICE-WZR": "/products/rice-pistachio.jpg",
-  "RICE-PLN": "/products/rice-pistachio.jpg",
-
-  // الفتة (Royal Fatta)
-  "FAT-WZR": "/products/fatta-wazeer.jpg",
-  "FAT-NUT": "/products/rice-nutella.jpg",
-  "FAT-MNG": "/products/kashtouta-mango.jpg",
-  "FAT-PST": "/products/fatta-wazeer.jpg",
-
-  // دنيا الدلع والملوخيتو (Specialties)
-  "MDL-MNG": "/products/kashtouta-mango.jpg",
-  "MDL-CRM": "/products/medalaa.jpg",
-  "MLK-WZR": "/products/molokhito.jpg",
-  "MLK-NUT": "/products/molokhito.jpg",
-
-  // الطواجن الساخنة (Hot Tajins)
-  "TJ-ALI": "/products/om-ali.jpg",
-  "TJ-NUT": "/products/rice-nutella.jpg",
-
-  // شاورما الحلو (Sweet Shawarma)
-  "SHW-NUT": "/products/shawarma-crepe.jpg",
-  "SHW-MIX": "/products/shawarma-crepe.jpg",
-  "SHW-PST": "/products/shawarma-crepe.jpg",
-
-  // كيك وتشييز (Cakes & Cheesecake)
-  "CK-LND-KND": "/products/cheesecake-pistachio.jpg",
-  "CK-LND-NUT": "/products/rice-nutella.jpg",
-  "CHZ-PST": "/products/cheesecake-pistachio.jpg",
-  "TRT-LOT-FAM": "/products/cheesecake-pistachio.jpg",
-
-  // كشري الحلو (Sweet Koshary)
-  "KSHR-LUX": "/products/koshary-luxe.jpg",
-  "KSHR-KND": "/products/koshary-luxe.jpg",
-  "KSHR-PST": "/products/koshary-luxe.jpg",
-  "KSHR-NUT": "/products/koshary-luxe.jpg",
-  "KSHR-WZR": "/products/koshary-luxe.jpg",
-
-  // القشطوطة الأصلية (Kashtouta Tres Leches)
-  "KSH-PST": "/products/kashtouta-pistachio.jpg",
-  "KSH-MSR": "/products/kashtouta-pistachio.jpg",
-  "KSH-NUT": "/products/rice-nutella.jpg",
-  "KSH-MNG": "/products/kashtouta-mango.jpg",
-  "KSH-RIC-NUT": "/products/rice-nutella.jpg",
-  "KSH-RIC-PST": "/products/kashtouta-pistachio.jpg",
-
-  // علب الهدايا وبوكسات الضيافة (Gift Boxes)
-  "BOX-ROYAL-1KG": "/products/baklava-box.jpg",
-  "BOX-ROYAL-2KG": "/products/baklava-box.jpg",
-  "BKL-PIST-VIP": "/products/baklava-box.jpg",
-
-  // مشروبات وإضافات (Drinks & Extras)
-  "ICE-SCOOP": "/products/kashtouta-pistachio.jpg",
-  "EX-PIST-SAUCE": "/products/cheesecake-pistachio.jpg",
-  "EX-NUT-SAUCE": "/products/rice-nutella.jpg",
-  "WATER-MINERAL": "/products/mineral-water.jpg",
-};
+// Comprehensive POS Product Image Mapping (Re-exported from centralized inventory store)
+export { PRODUCT_IMAGE_MAP, resolveProductImage };
 
 // POS Payment Method Definition
 export interface PosPaymentMethodConfig {
@@ -824,7 +770,7 @@ export function PosPage() {
               price: Number(it.unit_price),
               stock: 0,
               unit: { ar: "علبة", en: "box" },
-              image: PRODUCT_IMAGE_MAP[it.sku] || "/products/rice-pistachio.jpg",
+              image: resolveProductImage({ sku: it.sku, name: { ar: it.name_ar, en: it.name_en } }),
             },
             quantity: Number(it.quantity),
             unitPrice: Number(it.unit_price),
@@ -1297,7 +1243,7 @@ export function PosPage() {
         stock: effectiveStock,
         unit: { ar: "علبة", en: "box" },
         badge,
-        image: p.image || PRODUCT_IMAGE_MAP[p.sku] || "/products/rice-pistachio.jpg",
+        image: resolveProductImage(p),
         colorTheme: getCategoryColorTheme(catName),
       };
     });
@@ -1783,7 +1729,7 @@ export function PosPage() {
 
     // Deduct sold items from live inventory store (supports on-demand assembly component deduction)
     for (const ci of cart) {
-      await consumeAssemblyStock(ci.product.sku, ci.quantity, activeBranch?.id);
+      await consumeAssemblyStock(ci.product.sku, ci.quantity, activeBranch?.id, orderId);
     }
 
     // Update Shift sales according to payment settlement

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Search,
   X,
@@ -19,9 +19,11 @@ import {
   Loader2,
   RotateCcw,
   ChefHat,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { safeDownloadWorkbook } from "@/lib/excel-utils";
+import { safeDownloadWorkbook, generateProductsBlankTemplate } from "@/lib/excel-utils";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { DataTable, Td, Btn, TablePagination, usePagination } from "@/components/kit";
@@ -60,7 +62,7 @@ interface ProductsTabProps {
   onDeleteProduct: (id: string) => void;
   onAddBom?: (bom: Omit<InventoryBom, "id">) => Promise<any> | void;
   onUpdateBom?: (id: string, updates: Partial<InventoryBom>) => Promise<any> | void;
-  onOpenImport?: () => void;
+  onOpenImport?: (mode?: "preset" | "excel") => void;
 }
 
 export function ProductsTab({
@@ -93,6 +95,18 @@ export function ProductsTab({
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<InventoryProduct | null>(null);
+  const [isImportDropdownOpen, setIsImportDropdownOpen] = useState(false);
+  const importDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (importDropdownRef.current && !importDropdownRef.current.contains(e.target as Node)) {
+        setIsImportDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   // Form states
   const [sku, setSku] = useState("");
@@ -116,6 +130,7 @@ export function ProductsTab({
   const [scanMessage, setScanMessage] = useState("");
   const [skuError, setSkuError] = useState<string | null>(null);
   const [formModalTab, setFormModalTab] = useState<"details" | "components">("details");
+  const [vat, setVat] = useState<number>(14);
   const [vipPrice, setVipPrice] = useState<number | undefined>(undefined);
   const [selectedVipClientIds, setSelectedVipClientIds] = useState<string[]>([]);
   const [vipValidUntil, setVipValidUntil] = useState<string>("");
@@ -456,8 +471,12 @@ export function ProductsTab({
     setUnitId(units[0]?.id || "");
     setCostPrice(30);
     setSellingPrice(60);
+    setVat(14);
     setQty(50);
     setMinStock(15);
+    setVipPrice(undefined);
+    setSelectedVipClientIds([]);
+    setVipValidUntil("");
     setGroup("");
     setBranchId("");
     setShowOnPos(true);
@@ -481,6 +500,10 @@ export function ProductsTab({
     setUnitId(p.unitId);
     setCostPrice(p.costPrice);
     setSellingPrice(p.sellingPrice);
+    setVat(p.vat !== undefined ? Number(p.vat) : 14);
+    setVipPrice(p.vipPrice && p.vipPrice > 0 ? Number(p.vipPrice) : undefined);
+    setSelectedVipClientIds(p.vipClientIds || []);
+    setVipValidUntil(p.vipValidUntil || "");
     setQty(p.qty);
     const isFactory = p.productType === "factory" || Boolean(p.isRawMaterial);
     setIsRawMaterial(isFactory);
@@ -573,6 +596,7 @@ export function ProductsTab({
         unitId,
         costPrice: Number(costPrice),
         sellingPrice: Number(sellingPrice),
+        vat: vat !== undefined && !isNaN(Number(vat)) ? Number(vat) : 14,
         qty: Number(qty),
         minStock: Number(minStock),
         isRawMaterial: isRaw,
@@ -598,6 +622,7 @@ export function ProductsTab({
         unitId,
         costPrice: Number(costPrice),
         sellingPrice: Number(sellingPrice),
+        vat: vat !== undefined && !isNaN(Number(vat)) ? Number(vat) : 14,
         qty: Number(qty),
         minStock: Number(minStock),
         isRawMaterial: isRaw,
@@ -763,6 +788,8 @@ export function ProductsTab({
               : pick("متوفر بشكل كافي", "In Stock"),
           [pick("سعر التكلفة (ج.م)", "Cost Price (EGP)")]: p.costPrice || 0,
           [pick("سعر البيع (ج.م)", "Selling Price (EGP)")]: p.sellingPrice || 0,
+          [pick("ضريبة القيمة المضافة (ج.م)", "VAT (EGP)")]: p.vat !== undefined ? Number(p.vat) : 14,
+          [pick("السعر شامل الضريبة (ج.م)", "Price Incl. VAT (EGP)")]: (p.sellingPrice || 0) + (p.vat !== undefined ? Number(p.vat) : 14),
           [pick("سعر العميل المميز (VIP)", "VIP Price (EGP)")]: p.vipPrice ? Number(p.vipPrice) : "-",
           [pick("العملاء المستحقين لـ VIP", "VIP Eligible Clients")]: getVipClientsExportLabel(p.vipClientIds),
           [pick("تاريخ سريان سعر VIP", "VIP Valid Until")]: p.vipValidUntil || "-",
@@ -793,6 +820,25 @@ export function ProductsTab({
       );
     } catch (err: any) {
       toast.error(err.message || pick("فشل تصدير ملف الإكسيل", "Failed to export Excel file"));
+    }
+  };
+
+  const handleDownloadProductsTemplate = () => {
+    setIsImportDropdownOpen(false);
+    try {
+      const wb = generateProductsBlankTemplate({ categories, warehouses, units, branches });
+      const filename = "نموذج_إضافة_الأصناف_الكامل_Products_Template.xlsx";
+      const ok = safeDownloadWorkbook(wb, filename);
+      if (ok) {
+        toast.success(
+          pick(
+            "تم تنزيل نموذج Excel بنجاح بكافة أعمدة ومواصفات شاشة إضافة الصنف!",
+            "Excel template with all Add Product columns downloaded successfully!"
+          )
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تنزيل نموذج Excel", "Failed to download Excel template"));
     }
   };
 
@@ -923,20 +969,113 @@ export function ProductsTab({
               title={pick("تصدير قائمة الأصناف المصفاة إلى ملف Excel", "Export filtered products to Excel")}
             >
               <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{pick("تصدير إلى Excel", "Export to Excel")}</span>
+              <span>{pick("تصدير إلى EXCEL", "Export to EXCEL")}</span>
             </Btn>
 
-            {/* Import from Template Button */}
+            {/* Import Dropdown Button (Template or Import) */}
             {onOpenImport && (
-              <Btn
-                type="button"
-                onClick={onOpenImport}
-                variant="outline"
-                className="text-xs gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10 shadow-xs cursor-pointer"
-              >
-                <FileSpreadsheet className="size-3.5 text-primary" />
-                <span>{pick("استيراد من قالب جاهز", "Import from Template")}</span>
-              </Btn>
+              <div className="relative" ref={importDropdownRef}>
+                <Btn
+                  type="button"
+                  onClick={() => setIsImportDropdownOpen((prev) => !prev)}
+                  variant="outline"
+                  className={cn(
+                    "text-xs gap-1.5 font-bold border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer",
+                    isImportDropdownOpen && "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500"
+                  )}
+                  title={pick("خيارات استيراد الأصناف: تحميل النموذج أو استيراد ملف Excel", "Import options: Download template or import Excel")}
+                >
+                  <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{pick("استيراد من EXCEL", "Import from EXCEL")}</span>
+                  <ChevronDown className={cn("size-3 transition-transform text-emerald-600 dark:text-emerald-400", isImportDropdownOpen && "rotate-180")} />
+                </Btn>
+
+                {isImportDropdownOpen && (
+                  <div className="absolute end-0 top-full mt-1.5 w-72 rounded-xl border border-border bg-popover/95 backdrop-blur-md shadow-xl p-1.5 z-50 text-start animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-2.5 py-1 mb-1 border-b border-border/50">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                        {pick("خيارات الاستيراد من الإكسيل", "Excel Import Options")}
+                      </p>
+                    </div>
+
+                    {/* Option 1: Template */}
+                    <button
+                      type="button"
+                      onClick={handleDownloadProductsTemplate}
+                      className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <Download className="size-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <span>{pick("تحميل النموذج الفارغ (Template)", "Download Template (.xlsx)")}</span>
+                          <span className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                            XLSX
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          {pick(
+                            "ملف Excel فارغ يشتمل على كافة خانات شاشة إضافة الصنف (الأسعار، الضريبة، SKU، وغيرها)",
+                            "Blank Excel file with all columns matching Add Product form"
+                          )}
+                        </p>
+                      </div>
+                    </button>
+
+                    <div className="h-px bg-border/50 my-1" />
+
+                    {/* Option 2: Import File */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsImportDropdownOpen(false);
+                        onOpenImport("excel");
+                      }}
+                      className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-primary/10 transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="size-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                        <Upload className="size-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-foreground">
+                          {pick("استيراد ملف Excel (Import)", "Import Excel File")}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          {pick(
+                            "رفع ملفك المكتمل واستيراد الأصناف مع التحقق والمعاينة قبل الحفظ",
+                            "Upload your filled Excel file with validation & preview"
+                          )}
+                        </p>
+                      </div>
+                    </button>
+
+                    <div className="h-px bg-border/50 my-1" />
+
+                    {/* Option 3: Ready Presets (Convenient shortcut) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsImportDropdownOpen(false);
+                        onOpenImport("preset");
+                      }}
+                      className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-secondary transition-colors text-start cursor-pointer group"
+                    >
+                      <div className="size-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles className="size-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold text-foreground">
+                          {pick("قوالب المصنع الجاهزة (109 صنف)", "Factory Master Presets (109 Items)")}
+                        </div>
+                        <p className="text-[9.5px] text-muted-foreground leading-tight">
+                          {pick("كتالوج مصنع وزير الحلو الكامل 2026", "Wazeer El-Helw 2026 Master Catalog")}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Add Product Button */}
@@ -1198,6 +1337,14 @@ export function ProductsTab({
                   <Td className="num font-bold text-foreground">
                     <div>
                       <span>{money(p.sellingPrice)}</span>
+                      {p.vat !== undefined && p.vat > 0 && (
+                        <div
+                          className="text-[9.5px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap cursor-help"
+                          title={pick(`السعر شامل ضريبة القيمة المضافة: ${money(p.sellingPrice + p.vat)}`, `Price with VAT: ${money(p.sellingPrice + p.vat)}`)}
+                        >
+                          +{money(p.vat)} {pick("ضريبة", "VAT")}
+                        </div>
+                      )}
                       {p.vipPrice && p.vipPrice > 0 && (
                         <div
                           className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-extrabold mt-0.5 whitespace-nowrap cursor-help"
@@ -1705,7 +1852,7 @@ export function ProductsTab({
                   <div className="h-px flex-1 bg-border/50" />
                 </div>
 
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {/* Cost Price — EGP badge addon */}
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-1">
@@ -1734,6 +1881,34 @@ export function ProductsTab({
                         onChange={(e) => setSellingPrice(Number(e.target.value))}
                         className="flex-1 min-w-0 bg-transparent px-2 py-1.5 text-sm num font-extrabold focus:outline-none" />
                     </div>
+                  </div>
+
+                  {/* VAT — EGP badge addon (Default 14 EGP) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-muted-foreground truncate">
+                        {pick("ضريبة VAT","VAT")}
+                      </label>
+                      {sellingPrice > 0 && vat > 0 && (
+                        <span className="text-[9px] font-bold text-primary/80">
+                          {((vat / sellingPrice) * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex rounded-lg border border-border overflow-hidden hover:border-primary/40 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all bg-background">
+                      <span className="flex items-center px-2 bg-muted border-e border-border text-[10px] font-black text-muted-foreground shrink-0 select-none whitespace-nowrap">
+                        {pick("ج.م","EGP")}
+                      </span>
+                      <input type="number" min={0} step="any" value={vat}
+                        onChange={(e) => setVat(e.target.value === "" ? 0 : Number(e.target.value))}
+                        placeholder="14"
+                        className="flex-1 min-w-0 bg-transparent px-2 py-1.5 text-sm num font-extrabold focus:outline-none" />
+                    </div>
+                    {sellingPrice > 0 && (
+                      <p className="mt-0.5 text-[8.5px] text-muted-foreground truncate" title={pick(`شامل الضريبة: ${(sellingPrice + (Number(vat) || 0)).toFixed(2)} ج.م`, `Total with VAT: ${(sellingPrice + (Number(vat) || 0)).toFixed(2)} EGP`)}>
+                        {pick(`شامل: ${(sellingPrice + (Number(vat) || 0)).toFixed(1)} ج.م`, `Total: ${(sellingPrice + (Number(vat) || 0)).toFixed(1)}`)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Qty */}
