@@ -1013,3 +1013,329 @@ export function exportAccountsToExcel(
     return false;
   }
 }
+
+/**
+ * Generate a blank Excel template (.xlsx) for Manufacturing Work Orders
+ */
+export function generateManufacturingBlankTemplate(options?: {
+  boms?: { id: string; code: string; name: { ar: string; en: string }; finishedProductId: string }[];
+  products?: { id: string; sku: string; name: { ar: string; en: string } }[];
+  warehouses?: { id: string; name: { ar: string; en: string } }[];
+}): XLSX.WorkBook {
+  const wb = XLSX.utils.book_new();
+
+  const sampleRows = [
+    {
+      "كود أمر التشغيل (Order Code)": "WO-2026-101",
+      "كود الصنف التام (Product SKU)": options?.products?.[0]?.sku || "SKU-10084",
+      "اسم الصنف التام (عربي)": options?.products?.[0]?.name.ar || "قشطوطة لوتس ومكسرات",
+      "اسم الصنف التام (إنجليزي)": options?.products?.[0]?.name.en || "Kashtouta Lotus & Nuts",
+      "الكمية المستهدفة (Target Qty)": 50,
+      "الكمية المنتجة (Produced Qty)": 0,
+      "الوحدة (Unit)": "صاج / علبة",
+      "كود الوصفة / قائمة المواد (BOM Code)": options?.boms?.[0]?.code || "BOM-KASH-01",
+      "مستودع الخامات (Source Warehouse)": options?.warehouses?.[0]?.name.ar || "مستودع الخامات المركزي",
+      "مستودع الاستلام (Dest Warehouse)": options?.warehouses?.[1]?.name.ar || "مستودع الإنتاج التام",
+      "الشيف / المشرف المسؤول (Supervisor)": "الشيف أحمد جلال",
+      "تاريخ البدء (Start Date)": new Date().toISOString().slice(0, 10),
+      "تاريخ الاستحقاق (Due Date)": new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+      "مرحلة التشغيل (Stage/Status)": "draft",
+      "الأولوية (Priority)": "high",
+      "الملاحظات (Notes)": "دفعة إنتاج صباحية لفرع الكوربة والمعادي",
+    },
+    {
+      "كود أمر التشغيل (Order Code)": "WO-2026-102",
+      "كود الصنف التام (Product SKU)": options?.products?.[1]?.sku || "SKU-10085",
+      "اسم الصنف التام (عربي)": options?.products?.[1]?.name.ar || "أرز بلبن بستاشيو فاخر",
+      "اسم الصنف التام (إنجليزي)": options?.products?.[1]?.name.en || "Rice Pudding Pistachio",
+      "الكمية المستهدفة (Target Qty)": 100,
+      "الكمية المنتجة (Produced Qty)": 0,
+      "الوحدة (Unit)": "كاسة / علبة",
+      "كود الوصفة / قائمة المواد (BOM Code)": options?.boms?.[1]?.code || "BOM-RICE-02",
+      "مستودع الخامات (Source Warehouse)": options?.warehouses?.[0]?.name.ar || "مستودع الخامات المركزي",
+      "مستودع الاستلام (Dest Warehouse)": options?.warehouses?.[1]?.name.ar || "مستودع الإنتاج التام",
+      "الشيف / المشرف المسؤول (Supervisor)": "الشيف محمود شريف",
+      "تاريخ البدء (Start Date)": new Date().toISOString().slice(0, 10),
+      "تاريخ الاستحقاق (Due Date)": new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
+      "مرحلة التشغيل (Stage/Status)": "confirmed",
+      "الأولوية (Priority)": "medium",
+      "الملاحظات (Notes)": "تجهيز صواني وكاسات عرض رمضان",
+    },
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(sampleRows);
+  ws["!cols"] = [
+    { wch: 26 }, // كود أمر التشغيل
+    { wch: 24 }, // كود الصنف
+    { wch: 30 }, // اسم عربي
+    { wch: 30 }, // اسم إنجليزي
+    { wch: 22 }, // مستهدفة
+    { wch: 22 }, // منجزة
+    { wch: 16 }, // الوحدة
+    { wch: 26 }, // BOM
+    { wch: 28 }, // مستودع خامات
+    { wch: 28 }, // مستودع استلام
+    { wch: 26 }, // المشرف
+    { wch: 18 }, // تاريخ بدء
+    { wch: 18 }, // تاريخ استحقاق
+    { wch: 22 }, // مرحلة
+    { wch: 18 }, // أولوية
+    { wch: 38 }, // ملاحظات
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "أوامر_التشغيل_Template");
+
+  // Instructions sheet
+  const instructions = [
+    {
+      "الحقل في النموذج": "كود أمر التشغيل (Order Code)",
+      "إلزامي؟": "نعم (فريد)",
+      "القيم المقبولة": "مثل WO-2026-001 أو WO-KORBA-01",
+      "التوجيه والإرشاد": "المعرف الفريد لأمر التشغيل بالمعمل",
+    },
+    {
+      "الحقل في النموذج": "كود الصنف التام (Product SKU)",
+      "إلزامي؟": "نعم",
+      "القيم المقبولة": "كود صنف مسجل في المخزون (مثل SKU-10084 أو كود الصنف)",
+      "التوجيه والإرشاد": "الصنف النهائي المراد تصنيعه وإنتاجه",
+    },
+    {
+      "الحقل في النموذج": "الكمية المستهدفة (Target Qty)",
+      "إلزامي؟": "نعم",
+      "القيم المقبولة": "رقم موجب أكبر من صفر",
+      "التوجيه والإرشاد": "عدد الوحدات أو الصاجات المطلوب إنتاجها بالدفعة",
+    },
+    {
+      "الحقل في النموذج": "مرحلة التشغيل (Stage/Status)",
+      "إلزامي؟": "اختياري",
+      "القيم المقبولة": "draft (مسودة)، confirmed (مؤكد)، in_progress (قيد الطهي)، qc_check (فحص جودة)، completed (مكتمل)",
+      "التوجيه والإرشاد": "المرحلة الحالية في خط الإنتاج",
+    },
+    {
+      "الحقل في النموذج": "الأولوية (Priority)",
+      "إلزامي؟": "اختياري",
+      "القيم المقبولة": "low (منخفض)، medium (متوسط)، high (عاجل)، urgent (قصوى)",
+      "التوجيه والإرشاد": "أولوية التشغيل في المطبخ والمعمل",
+    },
+  ];
+
+  const guideWs = XLSX.utils.json_to_sheet(instructions);
+  guideWs["!cols"] = [{ wch: 32 }, { wch: 16 }, { wch: 45 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, guideWs, "تعليمات_الاستيراد_Instructions");
+
+  return wb;
+}
+
+/**
+ * Export Manufacturing Work Orders to Excel
+ */
+export function exportManufacturingToExcel(orders: any[], filename?: string): boolean {
+  try {
+    const wb = XLSX.utils.book_new();
+
+    const stageMap: Record<string, string> = {
+      draft: "مسودة (Draft)",
+      confirmed: "مؤكد (Confirmed)",
+      in_progress: "قيد التشغيل (In Progress)",
+      qc_check: "فحص الجودة (QC Check)",
+      completed: "مكتمل (Completed)",
+    };
+
+    const priorityMap: Record<string, string> = {
+      low: "عادي (Low)",
+      medium: "متوسط (Medium)",
+      high: "عاجل (High)",
+      urgent: "قصوى (Urgent)",
+    };
+
+    const dataToExport = orders.map((o, idx) => ({
+      "م": idx + 1,
+      "كود أمر التشغيل": o.code || o.id,
+      "الصنف التام (عربي)": o.finishedProductName?.ar || o.finishedProductName || "—",
+      "الصنف التام (إنجليزي)": o.finishedProductName?.en || "",
+      "الكمية المستهدفة": Number(o.targetQty || 0),
+      "الكمية المنتجة": Number(o.producedQty || 0),
+      "الوحدة": o.unitName?.ar || o.unitName || "قطعة",
+      "المشرف المسؤول": o.supervisor || "الشيف المسؤول",
+      "مرحلة التشغيل": stageMap[o.status] || o.status,
+      "الأولوية": priorityMap[o.priority] || o.priority,
+      "تاريخ البدء": o.startDate ? String(o.startDate).slice(0, 10) : "—",
+      "تاريخ الاستحقاق": o.dueDate ? String(o.dueDate).slice(0, 10) : "—",
+      "تكلفة الخامات التقديرية": Number(o.estimatedMaterialCost || 0),
+      "التكاليف غير المباشرة": Number(o.overheadCost || 0),
+      "إجمالي التكلفة": Number(o.totalCost || 0),
+      "فحص الجودة": o.qcPassed ? "مجاز مطابق للمعايير ✓" : "قيد الفحص",
+      "الملاحظات": o.notes || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    ws["!cols"] = [
+      { wch: 6 },  // م
+      { wch: 20 }, // كود
+      { wch: 30 }, // اسم عربي
+      { wch: 30 }, // اسم إنجليزي
+      { wch: 18 }, // مستهدف
+      { wch: 18 }, // منجز
+      { wch: 14 }, // وحدة
+      { wch: 24 }, // مشرف
+      { wch: 22 }, // مرحلة
+      { wch: 16 }, // أولوية
+      { wch: 16 }, // بدء
+      { wch: 16 }, // استحقاق
+      { wch: 22 }, // تكلفة خامات
+      { wch: 20 }, // غير مباشرة
+      { wch: 18 }, // إجمالي
+      { wch: 22 }, // جودة
+      { wch: 35 }, // ملاحظات
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "أوامر_التشغيل");
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    const fname = filename || `أوامر_التشغيل_والإنتاج_Manufacturing_${dateSuffix}.xlsx`;
+    return safeDownloadWorkbook(wb, fname);
+  } catch (e) {
+    console.error("Failed to export manufacturing orders:", e);
+    return false;
+  }
+}
+
+/**
+ * Generate a blank Excel template (.xlsx) for Dispatch Orders
+ */
+export function generateDispatchBlankTemplate(options?: {
+  branches?: { id: string; name: { ar: string; en: string } }[];
+}): XLSX.WorkBook {
+  const wb = XLSX.utils.book_new();
+
+  const sampleRows = [
+    {
+      "رقم أمر التحميل (Dispatch #)": "DO-1051",
+      "التاريخ (Date)": new Date().toISOString().slice(0, 10),
+      "الفرع / الوجهة (Destination Branch)": options?.branches?.[0]?.name.ar || "فرع الكوربة — مصر الجديدة",
+      "الفرع بالإنجليزية (Branch EN)": options?.branches?.[0]?.name.en || "Korba — Heliopolis",
+      "مستند الربط (Linked Doc Type)": "sales",
+      "رقم مستند الربط (Linked Doc ID)": "INV-2026-089",
+      "إجمالي العناصر المحملة (Total Items)": 65,
+      "اسم السائق (Driver)": "كابتن تامر حسني",
+      "رقم / بيانات المركبة (Vehicle)": "سيارة تبريد أيسو - ر ق ط 4589",
+      "الحالة (Status)": "shipped",
+      "تفاصيل الشحنة والأصناف (Items Summary)": "20 صاج قشطوطة + 30 كاسة أرز بلبن + 15 علبة فادج كيك",
+    },
+    {
+      "رقم أمر التحميل (Dispatch #)": "DO-1052",
+      "التاريخ (Date)": new Date().toISOString().slice(0, 10),
+      "الفرع / الوجهة (Destination Branch)": options?.branches?.[1]?.name.ar || "فرع المعادي — شارع النصر",
+      "الفرع بالإنجليزية (Branch EN)": options?.branches?.[1]?.name.en || "Maadi — Al-Nasr St.",
+      "مستند الربط (Linked Doc Type)": "purchase",
+      "رقم مستند الربط (Linked Doc ID)": "PO-2026-042",
+      "إجمالي العناصر المحملة (Total Items)": 120,
+      "اسم السائق (Driver)": "كابتن شريف عثمان",
+      "رقم / بيانات المركبة (Vehicle)": "فان توزيع مبرد - ب ن د 1290",
+      "الحالة (Status)": "draft",
+      "تفاصيل الشحنة والأصناف (Items Summary)": "توريد خامات ألبان وشوكولاتة نوتيلا",
+    },
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(sampleRows);
+  ws["!cols"] = [
+    { wch: 26 }, // رقم أمر التحميل
+    { wch: 16 }, // التاريخ
+    { wch: 32 }, // الفرع عربي
+    { wch: 30 }, // الفرع إنجليزي
+    { wch: 24 }, // مستند الربط
+    { wch: 26 }, // رقم المستند
+    { wch: 26 }, // إجمالي العناصر
+    { wch: 24 }, // السائق
+    { wch: 30 }, // المركبة
+    { wch: 18 }, // الحالة
+    { wch: 45 }, // تفاصيل الشحنة
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, "أوامر_التحميل_Template");
+
+  // Instructions
+  const instructions = [
+    {
+      "الحقل في النموذج": "رقم أمر التحميل (Dispatch #)",
+      "إلزامي؟": "نعم (فريد)",
+      "القيم المقبولة": "مثل DO-1001 أو DO-1055",
+      "التوجيه والإرشاد": "رقم التتبع المعتمد لأمر الشحن والتحميل",
+    },
+    {
+      "الحقل في النموذج": "الفرع / الوجهة (Destination Branch)",
+      "إلزامي؟": "نعم",
+      "القيم المقبولة": "اسم الفرع أو المستودع المستلم",
+      "التوجيه والإرشاد": "الفرع أو المنشأة التي ستتلقى البضاعة",
+    },
+    {
+      "الحقل في النموذج": "مستند الربط (Linked Doc Type)",
+      "إلزامي؟": "اختياري",
+      "القيم المقبولة": "sales (مبيعات)، purchase (مشتريات)، none (بدون)",
+      "التوجيه والإرشاد": "لربط الشحنة بفاتورة بيع أو أمر شراء",
+    },
+    {
+      "الحقل في النموذج": "الحالة (Status)",
+      "إلزامي؟": "اختياري",
+      "القيم المقبولة": "draft (مسودة)، shipped (تم الشحن)، delivered (تم التوصيل)، partial (جزئي)، cancelled (ملغي)",
+      "التوجيه والإرشاد": "حالة إرسال وتوصيل الشحنة",
+    },
+  ];
+
+  const guideWs = XLSX.utils.json_to_sheet(instructions);
+  guideWs["!cols"] = [{ wch: 32 }, { wch: 16 }, { wch: 45 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, guideWs, "تعليمات_الاستيراد_Instructions");
+
+  return wb;
+}
+
+/**
+ * Export Dispatch Orders to Excel
+ */
+export function exportDispatchToExcel(orders: any[], filename?: string): boolean {
+  try {
+    const wb = XLSX.utils.book_new();
+
+    const statusMap: Record<string, string> = {
+      draft: "مسودة (Draft)",
+      shipped: "تم الشحن (Shipped)",
+      delivered: "تم التوصيل (Delivered)",
+      partial: "تسليم جزئي (Partial)",
+      cancelled: "ملغي (Cancelled)",
+    };
+
+    const dataToExport = orders.map((o, idx) => ({
+      "م": idx + 1,
+      "رقم أمر التحميل": o.id,
+      "التاريخ": o.date ? String(o.date).slice(0, 10) : "—",
+      "الفرع / الوجهة": o.branch?.ar || o.branch?.en || "فرع عام",
+      "نوع مستند الربط": o.linkedDoc?.type === "sales" ? "فاتورة مبيعات" : o.linkedDoc?.type === "purchase" ? "أمر شراء" : "شحنة عامة",
+      "رقم مستند الربط": o.linkedDoc?.id || "—",
+      "إجمالي العناصر": Number(o.totalItems || 0),
+      "اسم السائق": o.driver || "—",
+      "بيانات المركبة": o.vehicle || "—",
+      "حالة الشحنة": statusMap[o.status] || o.status,
+      "تفاصيل الأصناف": (o.items || []).map((it: any) => `${it.name?.ar || it.sku} (${it.qty})`).join("، ") || "—",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    ws["!cols"] = [
+      { wch: 6 },  // م
+      { wch: 18 }, // رقم الأمر
+      { wch: 16 }, // التاريخ
+      { wch: 28 }, // الفرع
+      { wch: 20 }, // نوع الربط
+      { wch: 20 }, // رقم الربط
+      { wch: 16 }, // إجمالي
+      { wch: 22 }, // السائق
+      { wch: 24 }, // المركبة
+      { wch: 20 }, // الحالة
+      { wch: 45 }, // تفاصيل
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "أوامر_التحميل");
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    const fname = filename || `أوامر_التحميل_والنقل_Dispatch_${dateSuffix}.xlsx`;
+    return safeDownloadWorkbook(wb, fname);
+  } catch (e) {
+    console.error("Failed to export dispatch orders:", e);
+    return false;
+  }
+}

@@ -1,10 +1,31 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Truck, Plus, Eye, Edit2, Trash2, ReceiptText, ShoppingCart } from "lucide-react";
+import {
+  Truck,
+  Plus,
+  Eye,
+  Edit2,
+  Trash2,
+  ReceiptText,
+  ShoppingCart,
+  Download,
+  Upload,
+  FileSpreadsheet,
+  ChevronDown,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader, Panel, DataTable, Td, StatusPill, Btn, TablePagination, usePagination } from "@/components/kit";
 import { useDispatchStore, type DispatchOrder } from "@/lib/dispatch-store";
+import { useInventoryStore } from "@/lib/inventory-store";
+import { DispatchImportModal } from "@/components/dispatch/DispatchImportModal";
+import {
+  exportDispatchToExcel,
+  generateDispatchBlankTemplate,
+  safeDownloadWorkbook,
+} from "@/lib/excel-utils";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dispatch")({
   head: () => ({
@@ -18,11 +39,70 @@ export const Route = createFileRoute("/dispatch")({
 
 function DispatchPage() {
   const { t, pick, money } = useI18n();
-  const { orders, addOrder, updateOrder, deleteOrder, nextId, markStatus } = useDispatchStore();
+  const { orders, addOrder, updateOrder, deleteOrder, nextId, markStatus, importOrders } = useDispatchStore();
+  const { branches } = useInventoryStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DispatchOrder | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  // Import / Export state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImportDropdownOpen, setIsImportDropdownOpen] = useState(false);
+  const importDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        importDropdownRef.current &&
+        !importDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsImportDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Export handler
+  const handleExportExcel = () => {
+    try {
+      const ok = exportDispatchToExcel(orders);
+      if (ok) {
+        toast.success(
+          pick(
+            `تم تصدير ${orders.length} أمر تحميل إلى Excel بنجاح`,
+            `Successfully exported ${orders.length} dispatch orders to Excel`
+          )
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تصدير أوامر التحميل", "Failed to export dispatch orders"));
+    }
+  };
+
+  // Download template handler
+  const handleDownloadTemplate = () => {
+    setIsImportDropdownOpen(false);
+    try {
+      const wb = generateDispatchBlankTemplate({ branches });
+      safeDownloadWorkbook(wb, "نموذج_استيراد_أوامر_التحميل_Dispatch_Orders_Template.xlsx");
+      toast.success(
+        pick(
+          "تم تنزيل نموذج استيراد أوامر التحميل بنجاح!",
+          "Dispatch orders Excel template downloaded successfully!"
+        )
+      );
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تنزيل النموذج", "Failed to download template"));
+    }
+  };
+
+  // Open import modal
+  const handleOpenImportModal = () => {
+    setIsImportDropdownOpen(false);
+    setIsImportModalOpen(true);
+  };
 
   const activeOrder = editing ? orders.find(o => o.id === editing.id) || editing : null;
 
@@ -32,18 +112,105 @@ function DispatchPage() {
     paginatedItems: paginatedDispatchOrders,
   } = usePagination(orders, 30);
 
-
-
   return (
     <div className="space-y-6">
       <PageHeader
         title={pick("أوامر التحميل", "Dispatch Orders")}
         subtitle={pick("إدارة تحميل البضائع والشحنات", "Manage cargo loading and shipments")}
         actions={
-          <Btn onClick={() => { setEditing(null); setFormOpen(true); }}>
-            <Plus className="size-4" />
-            {pick("أمر تحميل جديد", "New Dispatch Order")}
-          </Btn>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Export to Excel */}
+            <Btn
+              type="button"
+              variant="outline"
+              className="text-xs font-bold gap-1.5 border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer"
+              onClick={handleExportExcel}
+              title={pick("تصدير أوامر التحميل إلى ملف Excel", "Export Dispatch Orders to Excel")}
+            >
+              <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{pick("تصدير إلى EXCEL", "Export to EXCEL")}</span>
+            </Btn>
+
+            {/* Import Dropdown */}
+            <div className="relative" ref={importDropdownRef}>
+              <Btn
+                type="button"
+                variant="outline"
+                className={cn(
+                  "text-xs font-bold gap-1.5 border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer",
+                  isImportDropdownOpen && "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500"
+                )}
+                onClick={() => setIsImportDropdownOpen((prev) => !prev)}
+                title={pick("خيارات استيراد أوامر التحميل: تحميل النموذج أو استيراد ملف Excel", "Import options: Download template or import Excel")}
+              >
+                <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{pick("استيراد من EXCEL", "Import from EXCEL")}</span>
+                <ChevronDown className={cn("size-3 transition-transform text-emerald-600 dark:text-emerald-400", isImportDropdownOpen && "rotate-180")} />
+              </Btn>
+
+              {isImportDropdownOpen && (
+                <div className="absolute end-0 top-full mt-1.5 w-72 rounded-xl border border-border bg-popover/95 backdrop-blur-md shadow-xl p-1.5 z-50 text-start animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2.5 py-1 mb-1 border-b border-border/50">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                      {pick("خيارات الاستيراد من الإكسيل", "Excel Import Options")}
+                    </p>
+                  </div>
+
+                  {/* Option 1: Template */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-start cursor-pointer group"
+                  >
+                    <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <Download className="size-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <span>{pick("تحميل النموذج الفارغ (Template)", "Download Template (.xlsx)")}</span>
+                        <span className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                          XLSX
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        {pick(
+                          "نموذج Excel جاهز بكافة أعمدة الشحنات والفروع وأرقام التتبع",
+                          "Blank template with all shipment columns, branches, and tracking IDs"
+                        )}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 2: Upload Excel File */}
+                  <button
+                    type="button"
+                    onClick={handleOpenImportModal}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-start cursor-pointer group mt-0.5"
+                  >
+                    <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <Upload className="size-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-foreground">
+                        {pick("استيراد وجدولة الشحنات من ملف", "Import Shipments from File")}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        {pick(
+                          "رفع ملف Excel لإضافة وجدولة شحنات النقل للفروع مباشرة",
+                          "Upload Excel file to add & schedule dispatch cargo shipments"
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <Btn onClick={() => { setEditing(null); setFormOpen(true); }}>
+              <Plus className="size-4" />
+              {pick("أمر تحميل جديد", "New Dispatch Order")}
+            </Btn>
+          </div>
         }
       />
 
@@ -259,6 +426,17 @@ function DispatchPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Excel Import Modal */}
+      <DispatchImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        existingOrders={orders}
+        branches={branches}
+        onImportSuccess={async (imported, mode) => {
+          await importOrders(imported, mode);
+        }}
+      />
     </div>
   );
 }

@@ -198,11 +198,48 @@ export function useManufacturingStore() {
     [fetchOrders]
   );
 
+  const importOrders = useCallback(
+    async (newOrders: ManufacturingOrder[], mode: "upsert" | "skip" = "upsert") => {
+      setOrders((prev) => {
+        const map = new Map<string, ManufacturingOrder>();
+        for (const o of prev) map.set(o.code, o);
+        for (const o of newOrders) {
+          if (mode === "skip" && map.has(o.code)) continue;
+          map.set(o.code, o);
+        }
+        return Array.from(map.values());
+      });
+
+      try {
+        for (const o of newOrders) {
+          const payload: any = {
+            order_no: o.code,
+            product_id: o.finishedProductId || null,
+            quantity: o.targetQty,
+            status: o.status === "completed" ? "completed" : o.status === "in_progress" ? "in_progress" : "planned",
+            notes: o.notes ?? null,
+            warehouse_id: o.destWarehouseId || null,
+            bom_id: o.bomId || null,
+            planned_date: o.startDate || new Date().toISOString().slice(0, 10),
+          };
+
+          await supabase.from("work_orders").upsert(payload, { onConflict: "order_no" });
+        }
+        await fetchOrders();
+      } catch (e) {
+        console.error("Failed to batch import work orders:", e);
+      }
+    },
+    [fetchOrders]
+  );
+
   return {
     orders,
     addOrder,
     updateOrder,
     deleteOrder,
     transitionStage,
+    importOrders,
+    refreshOrders: fetchOrders,
   };
 }

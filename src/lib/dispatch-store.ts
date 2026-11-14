@@ -109,6 +109,39 @@ export function useDispatchStore() {
     await (supabase as any).from('dispatch_shipments').update({ status: dbStatus as any }).eq('tracking_number', id);
   }, []);
 
+  const importOrders = useCallback(async (newOrders: DispatchOrder[], mode: "upsert" | "skip" = "upsert") => {
+    setOrders((prev) => {
+      const map = new Map<string, DispatchOrder>();
+      for (const o of prev) map.set(o.id, o);
+      for (const o of newOrders) {
+        if (mode === "skip" && map.has(o.id)) continue;
+        map.set(o.id, o);
+      }
+      return Array.from(map.values());
+    });
+
+    try {
+      for (const o of newOrders) {
+        const dbStatus = o.status === 'draft' ? 'pending' : (o.status === 'partial' ? 'processing' : o.status);
+        await (supabase as any).from('dispatch_shipments').upsert({
+          tracking_number: o.id,
+          origin_address: 'Main Warehouse',
+          destination_address: o.branch?.en || o.branch?.ar || 'Unknown Branch',
+          status: dbStatus,
+          branch: o.branch as any,
+          linked_doc: o.linkedDoc as any,
+          total_items: o.totalItems || 0,
+          items: o.items as any,
+          assigned_driver: o.driver || null,
+          assigned_vehicle: o.vehicle || null,
+        }, { onConflict: 'tracking_number' });
+      }
+      await fetchOrders();
+    } catch (e) {
+      console.error("Failed to batch import dispatch orders:", e);
+    }
+  }, [fetchOrders]);
+
   return {
     orders,
     loading,
@@ -116,6 +149,7 @@ export function useDispatchStore() {
     updateOrder,
     deleteOrder,
     markStatus,
+    importOrders,
     nextId,
   };
 }
