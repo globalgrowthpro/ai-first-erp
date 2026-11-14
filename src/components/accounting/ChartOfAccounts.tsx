@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -12,6 +12,9 @@ import {
   Edit2,
   Trash2,
   AlertTriangle,
+  Download,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, KpiCard, Panel } from "@/components/kit";
@@ -21,6 +24,13 @@ import {
   type NormalBalance,
 } from "@/lib/demo-data";
 import { useAccountsStore, useJournalStore } from "@/lib/accounting-store";
+import {
+  exportAccountsToExcel,
+  generateAccountsBlankTemplate,
+  safeDownloadWorkbook,
+} from "@/lib/excel-utils";
+import { AccountsImportModal } from "@/components/accounting/AccountsImportModal";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -31,7 +41,7 @@ import {
 
 export function ChartOfAccounts() {
   const { t, pick, money, dir } = useI18n();
-  const { accounts, addAccount, updateAccount, deleteAccount } = useAccountsStore();
+  const { accounts, addAccount, updateAccount, deleteAccount, importAccounts } = useAccountsStore();
   const { entries: journalEntries } = useJournalStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<"all" | AccountType>("all");
@@ -40,6 +50,25 @@ export function ChartOfAccounts() {
   const [parentForNewAccount, setParentForNewAccount] = useState<string>("");
   const [editingAccount, setEditingAccount] = useState<AccountItem | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<AccountItem | null>(null);
+
+  // Excel Import / Export state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImportDropdownOpen, setIsImportDropdownOpen] = useState(false);
+  const importDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close import dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        importDropdownRef.current &&
+        !importDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsImportDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // New account form state
   const [newCode, setNewCode] = useState("");
@@ -287,6 +316,52 @@ export function ChartOfAccounts() {
     setEditingAccount(null);
   };
 
+  // Handle Export to Excel
+  const handleExportExcel = () => {
+    try {
+      const ok = exportAccountsToExcel(visibleAccounts, {
+        balances: accountBalances,
+        activityMap: journalActivityMap,
+      });
+      if (ok) {
+        toast.success(
+          pick(
+            `تم تصدير ${visibleAccounts.length} حساب إلى ملف Excel بنجاح`,
+            `Successfully exported ${visibleAccounts.length} accounts to Excel`
+          )
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تصدير دليل الحسابات", "Failed to export accounts"));
+    }
+  };
+
+  // Handle Download Blank Excel Template
+  const handleDownloadTemplate = () => {
+    setIsImportDropdownOpen(false);
+    try {
+      const wb = generateAccountsBlankTemplate();
+      const fname = "نموذج_استيراد_دليل_الحسابات_Chart_of_Accounts_Template.xlsx";
+      const ok = safeDownloadWorkbook(wb, fname);
+      if (ok) {
+        toast.success(
+          pick(
+            "تم تنزيل نموذج استيراد دليل الحسابات بنجاح!",
+            "Chart of Accounts Excel template downloaded successfully!"
+          )
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || pick("فشل تنزيل النموذج", "Failed to download template"));
+    }
+  };
+
+  // Open Import Modal
+  const handleOpenImportModal = () => {
+    setIsImportDropdownOpen(false);
+    setIsImportModalOpen(true);
+  };
+
   const getTypeBadge = (type: AccountType) => {
     switch (type) {
       case "asset":
@@ -332,7 +407,7 @@ export function ChartOfAccounts() {
       <Panel
         title={t("chartOfAccounts")}
         aside={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Btn
               variant="outline"
               className="h-8 px-2.5 text-xs"
@@ -351,6 +426,94 @@ export function ChartOfAccounts() {
               <ChevronsDownUp className="size-3.5" />
               <span className="hidden sm:inline">{t("collapseAll")}</span>
             </Btn>
+
+            {/* Export to Excel */}
+            <Btn
+              type="button"
+              variant="outline"
+              className="h-8 px-2.5 text-xs font-bold gap-1.5 border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer"
+              onClick={handleExportExcel}
+              title={pick("تصدير دليل الحسابات إلى ملف Excel", "Export Chart of Accounts to Excel")}
+            >
+              <Download className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{pick("تصدير إلى EXCEL", "Export to EXCEL")}</span>
+            </Btn>
+
+            {/* Import Dropdown Button (Template or Import) */}
+            <div className="relative" ref={importDropdownRef}>
+              <Btn
+                type="button"
+                variant="outline"
+                className={cn(
+                  "h-8 px-2.5 text-xs font-bold gap-1.5 border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 shadow-xs cursor-pointer",
+                  isImportDropdownOpen && "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-emerald-500"
+                )}
+                onClick={() => setIsImportDropdownOpen((prev) => !prev)}
+                title={pick("خيارات استيراد الحسابات: تحميل النموذج أو استيراد ملف Excel", "Import options: Download template or import Excel")}
+              >
+                <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{pick("استيراد من EXCEL", "Import from EXCEL")}</span>
+                <ChevronDown className={cn("size-3 transition-transform text-emerald-600 dark:text-emerald-400", isImportDropdownOpen && "rotate-180")} />
+              </Btn>
+
+              {isImportDropdownOpen && (
+                <div className="absolute end-0 top-full mt-1.5 w-72 rounded-xl border border-border bg-popover/95 backdrop-blur-md shadow-xl p-1.5 z-50 text-start animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2.5 py-1 mb-1 border-b border-border/50">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                      {pick("خيارات الاستيراد من الإكسيل", "Excel Import Options")}
+                    </p>
+                  </div>
+
+                  {/* Option 1: Template */}
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-start cursor-pointer group"
+                  >
+                    <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <Download className="size-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <span>{pick("تحميل النموذج الفارغ (Template)", "Download Template (.xlsx)")}</span>
+                        <span className="text-[8.5px] font-bold px-1 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                          XLSX
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        {pick(
+                          "ملف Excel جاهز بكافة أعمدة دليل الحسابات وأمثلة على المستويات المحاسبية",
+                          "Blank template with all account columns and hierarchical sample rows"
+                        )}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Option 2: Upload Excel File */}
+                  <button
+                    type="button"
+                    onClick={handleOpenImportModal}
+                    className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-emerald-500/10 transition-colors text-start cursor-pointer group mt-0.5"
+                  >
+                    <div className="size-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                      <Upload className="size-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-foreground">
+                        {pick("استيراد وتحديث الحسابات من ملف", "Import Accounts from File")}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        {pick(
+                          "رفع ملف Excel وإضافته مباشرة إلى دليل الحسابات وقاعدة البيانات",
+                          "Upload Excel file to merge accounts directly into the database"
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
             <Btn
               variant="solid"
               className="h-8 px-3 text-xs"
@@ -806,6 +969,16 @@ export function ChartOfAccounts() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Excel Import Accounts Modal */}
+      <AccountsImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        existingAccounts={accounts}
+        onImportSuccess={async (imported, mode) => {
+          await importAccounts(imported, mode);
+        }}
+      />
     </div>
   );
 }

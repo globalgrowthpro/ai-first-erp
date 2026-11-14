@@ -1430,3 +1430,4 @@ export function AmericanJournalView({ onBackToCatalog }: AmericanJournalViewProp
     </div>
   );
 }
+

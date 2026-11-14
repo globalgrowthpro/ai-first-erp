@@ -146,12 +146,89 @@ export function useAccountsStore() {
     } catch {}
   }, []);
 
+  const importAccounts = useCallback(async (newAccounts: AccountItem[], mode: "upsert" | "skip" = "upsert") => {
+    setAccounts((prev) => {
+      const map = new Map<string, AccountItem>();
+      for (const a of prev) {
+        map.set(a.code, a);
+      }
+      for (const a of newAccounts) {
+        if (mode === "skip" && map.has(a.code)) {
+          continue;
+        }
+        map.set(a.code, a);
+      }
+      const all = Array.from(map.values());
+      const parentCodes = new Set(all.map((a) => a.parentId).filter(Boolean));
+      const withParents = all.map((a) => ({
+        ...a,
+        isParent: a.isParent || parentCodes.has(a.code),
+      }));
+      return withParents.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    });
+
+    try {
+      const { data: existingDbAccounts } = await supabase.from("accounts").select("id, code");
+      const codeToUuid = new Map<string, string>();
+      if (existingDbAccounts) {
+        for (const row of existingDbAccounts) {
+          codeToUuid.set(row.code, row.id);
+        }
+      }
+
+      for (const acc of newAccounts) {
+        const payload: any = {
+          code: acc.code,
+          name_ar: acc.name.ar || acc.name.en || acc.code,
+          name_en: acc.name.en || acc.name.ar || acc.code,
+          type: acc.type || "asset",
+          is_parent: acc.isParent || false,
+          is_active: acc.status === "active",
+          opening_balance: Number(acc.balance) || 0,
+        };
+
+        if (acc.parentId && codeToUuid.has(acc.parentId)) {
+          payload.parent_id = codeToUuid.get(acc.parentId);
+        }
+
+        const { data: upserted } = await supabase
+          .from("accounts")
+          .upsert(payload, { onConflict: "code" })
+          .select("id, code")
+          .single();
+
+        if (upserted) {
+          codeToUuid.set(upserted.code, upserted.id);
+        }
+      }
+
+      for (const acc of newAccounts) {
+        if (acc.parentId && codeToUuid.has(acc.parentId)) {
+          const pUuid = codeToUuid.get(acc.parentId);
+          await supabase.from("accounts").update({ parent_id: pUuid }).eq("code", acc.code);
+        }
+      }
+
+      const parentCodes = Array.from(new Set(newAccounts.map((a) => a.parentId).filter(Boolean)));
+      for (const pCode of parentCodes) {
+        if (pCode) {
+          await supabase.from("accounts").update({ is_parent: true }).eq("code", pCode);
+        }
+      }
+
+      await fetchAccounts();
+    } catch (e) {
+      console.error("Failed to batch import accounts:", e);
+    }
+  }, [fetchAccounts]);
+
   return {
     accounts,
     loading,
     addAccount,
     updateAccount,
     deleteAccount,
+    importAccounts,
     fetchAccounts,
   };
 }
