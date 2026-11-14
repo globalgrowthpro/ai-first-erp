@@ -30,6 +30,8 @@ import {
   Share2,
   DollarSign,
   BarChart3,
+  BookCheck,
+  Scale,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Btn, PageHeader, Panel } from "@/components/kit";
@@ -53,6 +55,7 @@ import {
   type LiveDataSourceCollections,
 } from "@/lib/reports-store";
 import { ReportTableView } from "@/components/reports/ReportTableView";
+import { AmericanJournalView } from "@/components/reports/AmericanJournalView";
 import { CustomReportBuilderModal } from "@/components/reports/CustomReportBuilderModal";
 import { toast } from "sonner";
 
@@ -84,6 +87,8 @@ function getReportIcon(iconName: string) {
       return <Boxes className="size-5" />;
     case "BookOpen":
       return <BookOpen className="size-5" />;
+    case "BookCheck":
+      return <BookCheck className="size-5" />;
     case "Users":
       return <Users className="size-5" />;
     case "Briefcase":
@@ -601,14 +606,29 @@ function ReportsHubPage() {
             {filteredStandardReports.map((report) => (
               <div
                 key={report.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all hover:border-primary/50 hover:shadow-md"
+                className={cn(
+                  "group relative flex flex-col justify-between rounded-2xl border p-5 shadow-xs transition-all hover:shadow-md",
+                  report.id === "american_journal"
+                    ? "border-emerald-500/50 bg-gradient-to-b from-card via-card to-emerald-500/5 hover:border-emerald-500 shadow-emerald-500/5"
+                    : "border-border/80 bg-card hover:border-primary/50"
+                )}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase text-muted-foreground">
+                    <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-bold uppercase text-muted-foreground flex items-center gap-1.5">
+                      {report.id === "american_journal" && (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      )}
                       {getCategoryName(report.category, lang as "ar" | "en")}
                     </span>
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                    <div
+                      className={cn(
+                        "flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+                        report.id === "american_journal"
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "bg-primary/10 text-primary"
+                      )}
+                    >
                       {getReportIcon(report.icon)}
                     </div>
                   </div>
@@ -616,6 +636,13 @@ function ReportsHubPage() {
                   <h3 className="mt-3 text-sm font-black text-foreground group-hover:text-primary transition-colors">
                     {lang === "ar" ? report.name.ar : report.name.en}
                   </h3>
+
+                  {report.id === "american_journal" && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                      <Scale className="size-3" />
+                      <span>{lang === "ar" ? "دفتر محاسبي قانوني معتمد" : "Statutory Journal Matrix"}</span>
+                    </div>
+                  )}
 
                   <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">
                     {lang === "ar" ? report.description.ar : report.description.en}
@@ -627,10 +654,15 @@ function ReportsHubPage() {
                     variant="solid"
                     size="sm"
                     onClick={() => handleOpenStandardReport(report)}
-                    className="flex-1 text-xs font-bold justify-center"
+                    className={cn(
+                      "flex-1 text-xs font-bold justify-center",
+                      report.id === "american_journal" && "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    )}
                   >
                     <Eye className="size-3.5" />
-                    {lang === "ar" ? "عرض بالجدول" : "View Table"}
+                    {report.id === "american_journal"
+                      ? (lang === "ar" ? "فتح اليومية الأمريكية" : "Open Matrix")
+                      : (lang === "ar" ? "عرض بالجدول" : "View Table")}
                   </Btn>
 
                   <Btn
@@ -776,18 +808,22 @@ function ReportsHubPage() {
             </div>
           </div>
 
-          {/* Full Table View Component */}
-          <ReportTableView
-            reportTitle={activeReportExecution.title}
-            reportDescription={activeReportExecution.description}
-            categoryLabel={activeReportExecution.categoryLabel}
-            columns={activeReportExecution.columns}
-            rows={activeReportExecution.rows}
-            summaryCards={activeReportExecution.summaryCards}
-            chartType={activeReportExecution.chartType}
-            tags={activeReportExecution.tags}
-            groupBy={activeReportExecution.groupBy}
-          />
+          {/* Specialized American Journal Matrix View vs Standard Flat Table View */}
+          {selectedStandardReport?.id === "american_journal" ? (
+            <AmericanJournalView onBackToCatalog={() => setActiveTab("catalog")} />
+          ) : (
+            <ReportTableView
+              reportTitle={activeReportExecution.title}
+              reportDescription={activeReportExecution.description}
+              categoryLabel={activeReportExecution.categoryLabel}
+              columns={activeReportExecution.columns}
+              rows={activeReportExecution.rows}
+              summaryCards={activeReportExecution.summaryCards}
+              chartType={activeReportExecution.chartType}
+              tags={activeReportExecution.tags}
+              groupBy={activeReportExecution.groupBy}
+            />
+          )}
         </div>
       )}
 

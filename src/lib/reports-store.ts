@@ -61,7 +61,8 @@ export type DataSourceKey =
   | "sales_consumption"
   | "sales_payment_methods"
   | "sales_channels"
-  | "sales_cogs";
+  | "sales_cogs"
+  | "american_journal";
 
 export type FilterOperator =
   | "equals"
@@ -1060,6 +1061,36 @@ export const STANDARD_REPORTS: StandardReportDefinition[] = [
     defaultSort: { key: "totalValuation", direction: "desc" },
   },
   {
+    id: "american_journal",
+    name: { ar: "دفتر اليومية الأمريكية المجمع", en: "American Journal Ledger & Multi-Column Matrix" },
+    description: {
+      ar: "سجل اليومية الأمريكية القانوني المعتمد متعدد الأعمدة، يجمع قيود العمليات اليومية ومجاميع الحسابات (خزينة، بنوك، عملاء، موردين، مبيعات، مصروفات، ضرائب) مع تدقيق التوازن الفوري",
+      en: "Official multi-column American Journal matrix with dual debit/credit account spreads, real-time balanced verification, and voucher audit",
+    },
+    category: "financial",
+    dataSource: "american_journal",
+    icon: "BookCheck",
+    columns: [
+      { key: "id", label: { ar: "رقم القيد", en: "JV #" }, type: "text" },
+      { key: "date", label: { ar: "التاريخ", en: "Date" }, type: "date" },
+      { key: "reference", label: { ar: "السند المرجعي", en: "Ref" }, type: "text" },
+      { key: "branch", label: { ar: "الفرع / مركز التكلفة", en: "Cost Center" }, type: "text" },
+      { key: "memo", label: { ar: "البيان والوصف", en: "Description" }, type: "text" },
+      { key: "debit", label: { ar: "إجمالي المدين", en: "Total Debit" }, type: "currency" },
+      { key: "credit", label: { ar: "إجمالي الدائن", en: "Total Credit" }, type: "currency" },
+      {
+        key: "status",
+        label: { ar: "حالة القيد", en: "Status" },
+        type: "badge",
+        badgeMap: {
+          posted: { label: { ar: "معتمد ومرحل", en: "Posted" }, color: "success" },
+          draft: { label: { ar: "مسودة", en: "Draft" }, color: "ink" },
+        },
+      },
+    ],
+    defaultSort: { key: "date", direction: "desc" },
+  },
+  {
     id: "financial_ledger",
     name: { ar: "تقرير دفتر اليومية العامة وحركات القيود", en: "General Journal Audit & Ledger" },
     description: {
@@ -1547,6 +1578,27 @@ export function getDataSourceRawData(
         memo: pick(j.memo || { ar: "قيد محاسبي معتمد", en: "Journal entry" }),
         status: j.status || "posted",
       }));
+    }
+
+    case "american_journal": {
+      const voucherMap = new Map<string, any>();
+      for (const j of liveJournals) {
+        const vId = j.id || "JV-UNKNOWN";
+        const cur = voucherMap.get(vId) || {
+          id: vId,
+          date: String(j.date || "").slice(0, 10),
+          reference: j.reference || "—",
+          branch: pick(j.branchName || j.branch || { ar: "فرع الكوربة", en: "Korba" }),
+          memo: pick(j.memo || { ar: "قيد محاسبي معتمد", en: "Journal Voucher" }),
+          debit: 0,
+          credit: 0,
+          status: j.status || "posted",
+        };
+        cur.debit += Number(j.debit) || 0;
+        cur.credit += Number(j.credit) || 0;
+        voucherMap.set(vId, cur);
+      }
+      return Array.from(voucherMap.values());
     }
 
     case "partners": {
