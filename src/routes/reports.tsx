@@ -58,6 +58,7 @@ import { ReportTableView } from "@/components/reports/ReportTableView";
 import { AmericanJournalView } from "@/components/reports/AmericanJournalView";
 import { CustomReportBuilderModal } from "@/components/reports/CustomReportBuilderModal";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
