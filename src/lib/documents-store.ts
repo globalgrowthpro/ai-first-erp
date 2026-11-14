@@ -60,8 +60,195 @@ export function getDocumentItems(docId: string, amount: number, kind: "sales" | 
   ];
 }
 
-export let cachedLatestSalesInvoices: BizDocument[] = [];
-export let cachedLatestPurchases: BizDocument[] = [];
+export function getRelativeDateStr(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().slice(0, 10);
+}
+
+export function generateDefaultSalesDocs(): BizDocument[] {
+  return [
+    {
+      id: "INV-10452",
+      partnerId: "p-1",
+      party: { ar: "فندق الماسة — توريد حلويات حفلات ومؤتمرات", en: "Al-Masa Hotel — Catering & Conferences" },
+      date: getRelativeDateStr(0),
+      dueDate: getRelativeDateStr(-14),
+      amount: 36000,
+      balance: 0,
+      status: "paid",
+      subtotal: 31579,
+      taxAmount: 4421,
+      items: [
+        { id: "itm-1", sku: "SKU-CAT-01", name: { ar: "صواني بسبوسة فاخرة بالمكسرات (حجم ملكي)", en: "Royal Nut Basbousa Trays" }, quantity: 40, unit: { ar: "صينية", en: "tray" }, unitPrice: 450, total: 18000 },
+        { id: "itm-2", sku: "SKU-CAT-02", name: { ar: "أطباق شرقي مشكل سوبر ديلوكس", en: "Super Deluxe Mixed Oriental Platter" }, quantity: 30, unit: { ar: "طبق", en: "plate" }, unitPrice: 600, total: 18000 }
+      ]
+    },
+    {
+      id: "INV-10451",
+      partnerId: "p-2",
+      party: { ar: "سلسلة مطاعم وكافيهات سيزار", en: "Cesar Restaurant & Cafe Chain" },
+      date: getRelativeDateStr(0),
+      dueDate: getRelativeDateStr(-7),
+      amount: 84500,
+      balance: 24500,
+      status: "partial",
+      subtotal: 74123,
+      taxAmount: 10377,
+      items: [
+        { id: "itm-3", sku: "SKU-CAT-03", name: { ar: "طواجن أم علي بالمكسرات وقشطة بلدي", en: "Claypot Om Ali with Fresh Clotted Cream" }, quantity: 350, unit: { ar: "طاجن", en: "bowl" }, unitPrice: 110, total: 38500 },
+        { id: "itm-4", sku: "SKU-CAT-04", name: { ar: "قشطوطة مانجو ولوتس كافيهات", en: "Qashtouta Mango & Lotus (Cafe Packs)" }, quantity: 460, unit: { ar: "علبة", en: "box" }, unitPrice: 100, total: 46000 }
+      ]
+    },
+    {
+      id: "INV-10450",
+      partnerId: "p-4",
+      party: { ar: "مؤسسة لوسيل لتنظيم المناسبات", en: "Lusail Events & Catering" },
+      date: getRelativeDateStr(1),
+      dueDate: getRelativeDateStr(-5),
+      amount: 19750,
+      balance: 19750,
+      status: "overdue",
+      subtotal: 17325,
+      taxAmount: 2425,
+      items: [
+        { id: "itm-5", sku: "SKU-CAT-05", name: { ar: "كاسات فتة كندر ونوتيلا للحفلات", en: "Party Cups Kinder & Nutella Fatta" }, quantity: 250, unit: { ar: "كاس", en: "cup" }, unitPrice: 79, total: 19750 }
+      ]
+    },
+    {
+      id: "INV-10449",
+      partnerId: "p-9",
+      party: { ar: "شركة الشرق للمؤتمرات والمعارض", en: "Sharq Conferences & Exhibitions" },
+      date: getRelativeDateStr(2),
+      dueDate: getRelativeDateStr(-10),
+      amount: 12400,
+      balance: 0,
+      status: "paid",
+      subtotal: 10877,
+      taxAmount: 1523,
+      items: [
+        { id: "itm-6", sku: "SKU-CAT-06", name: { ar: "علب ضيافة ميني شرقي مشكل VIP", en: "Mini Oriental Hospitality Boxes VIP" }, quantity: 80, unit: { ar: "علبة", en: "box" }, unitPrice: 155, total: 12400 }
+      ]
+    },
+    {
+      id: "INV-10448",
+      partnerId: "p-10",
+      party: { ar: "المهندس محمود عبد الله — حفل خاص", en: "Mahmoud Abdullah — Private Event" },
+      date: getRelativeDateStr(3),
+      dueDate: getRelativeDateStr(3),
+      amount: 5600,
+      balance: 5600,
+      status: "draft",
+      subtotal: 4912,
+      taxAmount: 688,
+      items: [
+        { id: "itm-7", sku: "SKU-CAT-07", name: { ar: "تورتة لوتس وكريمة بلدي حجم خاص", en: "Custom Special Lotus Cream Cake" }, quantity: 4, unit: { ar: "تورتة", en: "cake" }, unitPrice: 1400, total: 5600 }
+      ]
+    },
+    {
+      id: "INV-10447",
+      partnerId: "p-3",
+      party: { ar: "نادي الجزيرة الرياضي — بوفيه حلويات عائلي", en: "Gezira Sporting Club — Desserts Buffet" },
+      date: getRelativeDateStr(4),
+      dueDate: getRelativeDateStr(-2),
+      amount: 141000,
+      balance: 61000,
+      status: "partial",
+      subtotal: 123684,
+      taxAmount: 17316,
+      items: [
+        { id: "itm-8", sku: "SKU-CAT-08", name: { ar: "بوفيه حلويات كامل مفتوح (كنافة، بسبوسة، قشطوطة)", en: "Full Dessert Buffet Open Station" }, quantity: 1, unit: { ar: "خدمة كاملة", en: "service" }, unitPrice: 141000, total: 141000 }
+      ]
+    }
+  ];
+}
+
+export function generateDefaultPurchaseDocs(): BizDocument[] {
+  return [
+    {
+      id: "PO-2292",
+      partnerId: "p-6",
+      party: { ar: "مزارع دينا — توريد حليب طازج وقشطة بلدي صباحية", en: "Dina Farms — Morning Fresh Milk & Clotted Cream" },
+      date: getRelativeDateStr(0),
+      dueDate: getRelativeDateStr(-7),
+      amount: 28400,
+      balance: 28400,
+      status: "partial",
+      subtotal: 24912,
+      taxAmount: 3488,
+      items: [
+        { id: "po-1", sku: "MAT-MILK", name: { ar: "حليب طازج طبيعي 100% (أبقار)", en: "100% Natural Fresh Cow Milk" }, quantity: 800, unit: { ar: "لتر", en: "L" }, unitPrice: 24, total: 19200 },
+        { id: "po-2", sku: "MAT-CREAM", name: { ar: "قشطة بلدي جاموسي طازجة", en: "Fresh Clotted Cream" }, quantity: 40, unit: { ar: "كجم", en: "kg" }, unitPrice: 230, total: 9200 }
+      ]
+    },
+    {
+      id: "PO-2291",
+      partnerId: "p-5",
+      party: { ar: "شركة فيريرو مصر — توريد نوتيلا 15 كجم وشوكولاتة", en: "Ferrero Egypt — Nutella Tubs 15kg & Chocolate" },
+      date: getRelativeDateStr(1),
+      dueDate: getRelativeDateStr(-10),
+      amount: 45500,
+      balance: 45500,
+      status: "partial",
+      subtotal: 39912,
+      taxAmount: 5588,
+      items: [
+        { id: "po-3", sku: "MAT-NUT", name: { ar: "عبوات شوكولاتة نوتيلا فاخرة (15 كجم)", en: "Nutella Tubs (15kg)" }, quantity: 10, unit: { ar: "عبوة", en: "tub" }, unitPrice: 4550, total: 45500 }
+      ]
+    },
+    {
+      id: "PO-2290",
+      partnerId: "p-7",
+      party: { ar: "مطاحن ومضارب الدلتا — أرز وسكر نقي ناعم وخشن", en: "Delta Mills — Premium Rice & Sugar" },
+      date: getRelativeDateStr(2),
+      dueDate: getRelativeDateStr(-15),
+      amount: 25500,
+      balance: 0,
+      status: "paid",
+      subtotal: 22368,
+      taxAmount: 3132,
+      items: [
+        { id: "po-4", sku: "MAT-SUGAR", name: { ar: "سكر مكرر فاخر شيكارة (50 كجم)", en: "Refined Sugar Bags (50kg)" }, quantity: 20, unit: { ar: "شيكارة", en: "bag" }, unitPrice: 850, total: 17000 },
+        { id: "po-5", sku: "MAT-RICE", name: { ar: "أرز مصري حبة رفيعة لعمل أرز باللبن", en: "Egyptian Rice for Rice Pudding" }, quantity: 15, unit: { ar: "شيكارة", en: "bag" }, unitPrice: 566.67, total: 8500 }
+      ]
+    },
+    {
+      id: "PO-2289",
+      partnerId: "p-8",
+      party: { ar: "شركة الأهرام للكرتون — عبوات وعلب وتغليف الفروع", en: "Al-Ahram Packaging & Paper Boxes" },
+      date: getRelativeDateStr(3),
+      dueDate: getRelativeDateStr(-5),
+      amount: 14800,
+      balance: 14800,
+      status: "overdue",
+      subtotal: 12982,
+      taxAmount: 1818,
+      items: [
+        { id: "po-6", sku: "MAT-BOX", name: { ar: "علب حلويات كرتون مقوى مطبوعة هافيز", en: "Printed Pastry Boxes (Hafez Branding)" }, quantity: 3000, unit: { ar: "علبة", en: "box" }, unitPrice: 3.5, total: 10500 },
+        { id: "po-7", sku: "MAT-BAG", name: { ar: "أكياس كرافت صديقة للبيئة", en: "Kraft Paper Bags" }, quantity: 2000, unit: { ar: "كيس", en: "bag" }, unitPrice: 2.15, total: 4300 }
+      ]
+    },
+    {
+      id: "PO-2288",
+      partnerId: "p-11",
+      party: { ar: "شركة بركة الشرق — فستق وبندق ولوز حلبي محمص", en: "Baraka Nuts — Roasted Pistachio & Hazelnuts" },
+      date: getRelativeDateStr(4),
+      dueDate: getRelativeDateStr(-20),
+      amount: 32400,
+      balance: 0,
+      status: "paid",
+      subtotal: 28421,
+      taxAmount: 3979,
+      items: [
+        { id: "po-8", sku: "MAT-PIST", name: { ar: "فستق حلبي درجة أولى مقشر ومجروش", en: "Crushed Aleppo Pistachio Grade A" }, quantity: 30, unit: { ar: "كجم", en: "kg" }, unitPrice: 720, total: 21600 },
+        { id: "po-9", sku: "MAT-HAZEL", name: { ar: "بندق تركي مقشر ومحمص", en: "Roasted Turkish Hazelnuts" }, quantity: 20, unit: { ar: "كجم", en: "kg" }, unitPrice: 540, total: 10800 }
+      ]
+    }
+  ];
+}
+
+export let cachedLatestSalesInvoices: BizDocument[] = generateDefaultSalesDocs();
+export let cachedLatestPurchases: BizDocument[] = generateDefaultPurchaseDocs();
 
 export function getLatestSalesInvoices(): BizDocument[] {
   return cachedLatestSalesInvoices;
@@ -226,9 +413,10 @@ function useDocumentsStore(type: 'invoice' | 'purchase', prefix: string) {
         else cachedLatestPurchases = mapped;
         setDocuments(mapped);
       } else {
-        if (type === 'invoice') cachedLatestSalesInvoices = [];
-        else cachedLatestPurchases = [];
-        setDocuments([]);
+        const fallback = type === 'invoice' ? generateDefaultSalesDocs() : generateDefaultPurchaseDocs();
+        if (type === 'invoice') cachedLatestSalesInvoices = fallback;
+        else cachedLatestPurchases = fallback;
+        setDocuments(fallback);
       }
     } catch (err) {
       console.error("[Documents Store] Error fetching live documents:", err);
