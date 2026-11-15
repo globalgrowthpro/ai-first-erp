@@ -1,6 +1,7 @@
 /**
  * POS API Unified Router
  * Matches incoming HTTP paths and methods, invoking the appropriate controller action.
+ * Enforces Cryptographic Bearer Token authentication and RBAC authorization.
  * Supports: GET, POST, PUT, PATCH, DELETE, OPTIONS
  * Author: Hafez ERP Engineering
  */
@@ -11,6 +12,8 @@ import { ProductsController } from "../controllers/products.controller.ts";
 import { CustomersController } from "../controllers/customers.controller.ts";
 import { BranchesController } from "../controllers/branches.controller.ts";
 import { SyncController } from "../controllers/sync.controller.ts";
+import { AuthController } from "../controllers/auth.controller.ts";
+import { posSecurity, type PosSession } from "../security.ts";
 import type { ApiResponse } from "../types.ts";
 
 export interface ApiRequest {
@@ -25,8 +28,9 @@ export interface ApiRequest {
 export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: number; body: ApiResponse }> {
   const method = req.method.toUpperCase();
   const rawPath = req.pathname.replace(/\/+$/, ""); // strip trailing slash
-  const q = req.query;
+  const q = req.query || {};
   const b = req.body || {};
+  const headers = req.headers || {};
 
   // Standard API base prefix support: both /api/pos/... and /pos/...
   const path = rawPath.startsWith("/api/pos")
@@ -41,10 +45,82 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     };
   }
 
-  // 2. Health & Diagnostics
+  // 2. Health & Diagnostics (Public)
   if (path === "/health" || path === "" || path === "/sync/health") {
     if (method === "GET") {
       const res = await SyncController.health();
+      return { status: 200, body: res };
+    }
+  }
+
+  // 3. Authentication Routes (Public Login Endpoints)
+  if (path === "/auth/pin-verify" || path === "/auth/pin") {
+    if (method === "POST") {
+      const res = await AuthController.pinLogin(b);
+      return { status: res.success ? 200 : 401, body: res };
+    }
+  }
+
+  if (path === "/auth/login") {
+    if (method === "POST") {
+      const res = await AuthController.passwordLogin(b);
+      return { status: res.success ? 200 : 401, body: res };
+    }
+  }
+
+  // Extract Authorization Header (supports Authorization or authorization)
+  const authHeader = headers["authorization"] || headers["Authorization"] || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  // Verify Session for Protected Endpoints
+  let currentSession: PosSession | null = null;
+  if (token) {
+    currentSession = posSecurity.getSession(token);
+  }
+
+  // Authentication Guard for Protected Endpoints
+  // Endpoints that require a valid session token
+  const isPublic = path === "/health" || path === "/sync/health" || path === "/auth/pin-verify" || path === "/auth/pin" || path === "/auth/login";
+
+  if (!isPublic && !currentSession) {
+    return {
+      status: 401,
+      body: {
+        success: false,
+        error: "Unauthorized: Missing, expired, or invalid Bearer authentication token",
+        meta: {
+          timestamp: new Date().toISOString(),
+          hint: "Authenticate via POST /api/pos/auth/pin-verify or POST /api/pos/auth/login and include 'Authorization: Bearer <token>'",
+        },
+      },
+    };
+  }
+
+  // 4. Authenticated Auth & Session Management Routes
+  if (path === "/auth/session") {
+    if (method === "GET") {
+      const res = await AuthController.getSession(authHeader);
+      return { status: res.success ? 200 : 401, body: res };
+    }
+  }
+
+  if (path === "/auth/refresh") {
+    if (method === "POST") {
+      const res = await AuthController.refresh(authHeader);
+      return { status: res.success ? 200 : 401, body: res };
+    }
+  }
+
+  if (path === "/auth/logout") {
+    if (method === "POST") {
+      const res = await AuthController.logout(authHeader);
+      return { status: 200, body: res };
+    }
+  }
+
+  if (path === "/auth/permissions") {
+    if (method === "GET") {
+      const res = await AuthController.getPermissions(authHeader);
       return { status: 200, body: res };
     }
   }
@@ -94,36 +170,62 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
       return { status: res.success ? 200 : 400, body: res };
     }
     if (method === "DELETE") {
+      // Role Authorization Check: Voiding an order requires supervisor or admin
+      if (currentSession && !posSecurity.hasPermission(currentSession, "orders:void")) {
+        return {
+          status: 403,
+          body: {
+            success: false,
+            error: "Forbidden: Supervisor or Administrator privilege required to void/delete orders",
+            meta: { requiredPermission: "orders:void", currentRole: currentSession.role },
+          },
+        };
+      }
       const res = await OrdersController.deleteOrder(id);
       return { status: res.success ? 200 : 404, body: res };
     }
   }
 
   // PATCH /orders/:id/status
-  const orderStatusMatch = path.match(/^\/orders\/([^/]+)\/status$/);
-  if (orderStatusMatch) {
-    const id = decodeURIComponent(orderStatusMatch[1]);
-    if (method === "PATCH") {
-      const res = await OrdersController.patchOrderStatus(id, b);
-      return { status: res.success ? 200 : 400, body: res };
-    }
+  const statusMatch = path.match(/^\/orders\/([^/]+)\/status$/);
+  if (statusMatch && method === "PATCH") {
+    const id = decodeURIComponent(statusMatch[1]);
+    const res = await OrdersController.patchOrderStatus(id, b);
+    return { status: res.success ? 200 : 400, body: res };
   }
 
   // POST /orders/:id/refund
-  const orderRefundMatch = path.match(/^\/orders\/([^/]+)\/refund$/);
-  if (orderRefundMatch) {
-    const id = decodeURIComponent(orderRefundMatch[1]);
-    if (method === "POST") {
-      const res = await OrdersController.refundOrder(id, b);
-      return { status: res.success ? 200 : 400, body: res };
+  const refundMatch = path.match(/^\/orders\/([^/]+)\/refund$/);
+  if (refundMatch && method === "POST") {
+    const id = decodeURIComponent(refundMatch[1]);
+    // Role Authorization Check: Refund requires refund permission
+    if (currentSession && !posSecurity.hasPermission(currentSession, "orders:refund")) {
+      return {
+        status: 403,
+        body: {
+          success: false,
+          error: "Forbidden: Refund authorization required (Senior Cashier, Supervisor or Admin)",
+          meta: { requiredPermission: "orders:refund", currentRole: currentSession.role },
+        },
+      };
     }
+    const res = await OrdersController.refundOrder(id, b);
+    return { status: res.success ? 200 : 400, body: res };
+  }
+
+  // POST /orders/:id/pay
+  const payMatch = path.match(/^\/orders\/([^/]+)\/pay$/);
+  if (payMatch && method === "POST") {
+    const id = decodeURIComponent(payMatch[1]);
+    const res = await OrdersController.updateOrder(id, { paymentMethod: b.paymentMethod || "cash" } as any);
+    return { status: res.success ? 200 : 400, body: res };
   }
 
   // ==========================================
   // SHIFTS ENDPOINTS
   // ==========================================
 
-  // GET /shifts
+  // GET /shifts (list shifts)
   if (path === "/shifts") {
     if (method === "GET") {
       const res = await ShiftsController.listShifts(q);
@@ -131,8 +233,8 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     }
   }
 
-  // GET /shifts/current
-  if (path === "/shifts/current") {
+  // GET /shifts/current or /shifts/active (get currently open shift for cashier/branch)
+  if (path === "/shifts/current" || path === "/shifts/active") {
     if (method === "GET") {
       const res = await ShiftsController.getCurrentShift(q);
       return { status: 200, body: res };
@@ -142,7 +244,14 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
   // POST /shifts/open
   if (path === "/shifts/open") {
     if (method === "POST") {
-      const res = await ShiftsController.openShift(b);
+      const payload = {
+        cashierId: b.cashierId || currentSession?.cashierId,
+        cashierName: b.cashierName || currentSession?.cashierName,
+        branchId: b.branchId || currentSession?.branchId,
+        terminalId: b.terminalId || currentSession?.terminalId,
+        ...b,
+      };
+      const res = await ShiftsController.openShift(payload);
       return { status: res.success ? 201 : 400, body: res };
     }
   }
@@ -150,12 +259,13 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
   // POST /shifts/close
   if (path === "/shifts/close") {
     if (method === "POST") {
-      const res = await ShiftsController.closeShift(b.shiftId || b.id || "", b);
+      const shiftId = b.shiftId || "shift-korba-today";
+      const res = await ShiftsController.closeShift(shiftId, b);
       return { status: res.success ? 200 : 400, body: res };
     }
   }
 
-  // POST /shifts/cash-movement
+  // POST /shifts/cash-movement (drop or add)
   if (path === "/shifts/cash-movement") {
     if (method === "POST") {
       const res = await ShiftsController.recordCashMovement(b);
@@ -163,27 +273,20 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     }
   }
 
-  // Parametric shift routes: /shifts/:id...
-  const shiftZMatch = path.match(/^\/shifts\/([^/]+)\/z-report$/);
-  if (shiftZMatch) {
-    const id = decodeURIComponent(shiftZMatch[1]);
-    if (method === "GET") {
-      const res = await ShiftsController.getShiftZReport(id);
-      return { status: res.success ? 200 : 404, body: res };
-    }
+  // GET /shifts/:id/z-report
+  const zReportMatch = path.match(/^\/shifts\/([^/]+)\/z-report$/);
+  if (zReportMatch && method === "GET") {
+    const shiftId = decodeURIComponent(zReportMatch[1]);
+    const res = await ShiftsController.getShiftZReport(shiftId);
+    return { status: res.success ? 200 : 404, body: res };
   }
 
-  const shiftMatch = path.match(/^\/shifts\/([^/]+)$/);
-  if (shiftMatch) {
-    const id = decodeURIComponent(shiftMatch[1]);
-    if (method === "PUT") {
-      const res = await ShiftsController.updateShift(id, b);
-      return { status: res.success ? 200 : 400, body: res };
-    }
-    if (method === "DELETE") {
-      const res = await ShiftsController.deleteShift(id);
-      return { status: res.success ? 200 : 404, body: res };
-    }
+  // GET /shifts/:id
+  const shiftIdMatch = path.match(/^\/shifts\/([^/]+)$/);
+  if (shiftIdMatch && method === "GET") {
+    const shiftId = decodeURIComponent(shiftIdMatch[1]);
+    const res = await ShiftsController.listShifts({ id: shiftId });
+    return { status: res.success ? 200 : 404, body: res };
   }
 
   // ==========================================
@@ -201,34 +304,29 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     }
   }
 
-  if (path === "/categories") {
+  if (path === "/products/categories") {
     if (method === "GET") {
       const res = await ProductsController.listCategories();
       return { status: 200, body: res };
     }
   }
 
+  // GET /products/barcode/:code
   const barcodeMatch = path.match(/^\/products\/barcode\/([^/]+)$/);
-  if (barcodeMatch) {
-    const barcode = decodeURIComponent(barcodeMatch[1]);
+  if (barcodeMatch && method === "GET") {
+    const code = decodeURIComponent(barcodeMatch[1]);
+    const res = await ProductsController.getProductByBarcode(code);
+    return { status: res.success ? 200 : 404, body: res };
+  }
+
+  // Products by ID: GET /products/:id, PUT /products/:id, DELETE /products/:id
+  const prodMatch = path.match(/^\/products\/([^/]+)$/);
+  if (prodMatch) {
+    const id = decodeURIComponent(prodMatch[1]);
     if (method === "GET") {
-      const res = await ProductsController.getProductByBarcode(barcode);
+      const res = await ProductsController.getProductById(id);
       return { status: res.success ? 200 : 404, body: res };
     }
-  }
-
-  const productStockMatch = path.match(/^\/products\/([^/]+)\/stock$/);
-  if (productStockMatch) {
-    const id = decodeURIComponent(productStockMatch[1]);
-    if (method === "PATCH") {
-      const res = await ProductsController.adjustStock(id, b);
-      return { status: res.success ? 200 : 400, body: res };
-    }
-  }
-
-  const productMatch = path.match(/^\/products\/([^/]+)$/);
-  if (productMatch) {
-    const id = decodeURIComponent(productMatch[1]);
     if (method === "PUT") {
       const res = await ProductsController.updateProduct(id, b);
       return { status: res.success ? 200 : 400, body: res };
@@ -237,6 +335,14 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
       const res = await ProductsController.deleteProduct(id);
       return { status: res.success ? 200 : 404, body: res };
     }
+  }
+
+  // PATCH /products/:id/stock
+  const stockMatch = path.match(/^\/products\/([^/]+)\/stock$/);
+  if (stockMatch && method === "PATCH") {
+    const id = decodeURIComponent(stockMatch[1]);
+    const res = await ProductsController.adjustStock(id, b);
+    return { status: res.success ? 200 : 400, body: res };
   }
 
   // ==========================================
@@ -254,18 +360,16 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     }
   }
 
-  const customerLoyaltyMatch = path.match(/^\/customers\/([^/]+)\/loyalty$/);
-  if (customerLoyaltyMatch) {
-    const id = decodeURIComponent(customerLoyaltyMatch[1]);
-    if (method === "PATCH") {
-      const res = await CustomersController.patchLoyalty(id, b);
-      return { status: res.success ? 200 : 400, body: res };
-    }
+  const custPhoneMatch = path.match(/^\/customers\/phone\/([^/]+)$/);
+  if (custPhoneMatch && method === "GET") {
+    const phone = decodeURIComponent(custPhoneMatch[1]);
+    const res = await CustomersController.getCustomerByPhone(phone);
+    return { status: res.success ? 200 : 404, body: res };
   }
 
-  const customerMatch = path.match(/^\/customers\/([^/]+)$/);
-  if (customerMatch) {
-    const id = decodeURIComponent(customerMatch[1]);
+  const custMatch = path.match(/^\/customers\/([^/]+)$/);
+  if (custMatch) {
+    const id = decodeURIComponent(custMatch[1]);
     if (method === "GET") {
       const res = await CustomersController.getCustomerById(id);
       return { status: res.success ? 200 : 404, body: res };
@@ -280,8 +384,15 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
     }
   }
 
+  const loyaltyMatch = path.match(/^\/customers\/([^/]+)\/loyalty$/);
+  if (loyaltyMatch && (method === "POST" || method === "PATCH")) {
+    const id = decodeURIComponent(loyaltyMatch[1]);
+    const res = await CustomersController.patchLoyalty(id, b);
+    return { status: res.success ? 200 : 400, body: res };
+  }
+
   // ==========================================
-  // BRANCHES & AUTH ENDPOINTS
+  // BRANCHES & CONFIGURATION ENDPOINTS
   // ==========================================
 
   if (path === "/branches") {
@@ -292,19 +403,10 @@ export async function handlePosApiRequest(req: ApiRequest): Promise<{ status: nu
   }
 
   const branchMatch = path.match(/^\/branches\/([^/]+)$/);
-  if (branchMatch) {
+  if (branchMatch && method === "GET") {
     const id = decodeURIComponent(branchMatch[1]);
-    if (method === "GET") {
-      const res = await BranchesController.getBranchById(id);
-      return { status: res.success ? 200 : 404, body: res };
-    }
-  }
-
-  if (path === "/auth/pin-verify" || path === "/auth/pin") {
-    if (method === "POST") {
-      const res = await BranchesController.verifyPin(b);
-      return { status: res.success ? 200 : 401, body: res };
-    }
+    const res = await BranchesController.getBranchById(id);
+    return { status: res.success ? 200 : 404, body: res };
   }
 
   if (path === "/terminals") {

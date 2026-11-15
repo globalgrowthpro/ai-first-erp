@@ -6,7 +6,14 @@
     "version": "1.0.0",
     "author": "Mr. Hafez Rahim - Hafez ERP Engineering",
     "baseUrl": "http://localhost:3001/api/pos",
-    "supportedMethods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    "supportedMethods": [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS"
+    ]
   },
   "endpoints": [
     {
@@ -57,6 +64,149 @@
       }
     },
     {
+      "id": "auth-pin-verify",
+      "category": "Authentication & Security",
+      "method": "POST",
+      "path": "/api/pos/auth/pin-verify",
+      "summary": "تسجيل دخول الكاشير برمز PIN وإصدار توكن الجلسة المشفر (Cashier PIN Login)",
+      "description": "Authenticates touchscreen cashier by 4-digit PIN, starts a secured 12h session, and returns cryptographic Bearer Token.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {},
+      "requestBody": {
+        "pin": "1234",
+        "branchId": "korba",
+        "terminalId": "term-01"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Authentication successful. Welcome أحمد فريد!",
+          "data": {
+            "sessionId": "sess-2026-abc123",
+            "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3Ita29yYmEiLCJyb2xlIjoiY2FzaGllciJ9.signature...",
+            "cashierId": "usr-korba",
+            "cashierName": "أحمد فريد",
+            "branchId": "korba",
+            "role": "cashier",
+            "expiresAt": "2026-11-16T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "auth-login",
+      "category": "Authentication & Security",
+      "method": "POST",
+      "path": "/api/pos/auth/login",
+      "summary": "تسجيل دخول المشرف / المدير العام (Supervisor/Manager Login)",
+      "description": "Authenticates supervisors or administrators for managerial overrides, voids, and administrative operations.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {},
+      "requestBody": {
+        "username": "supervisor",
+        "password": "Password123!",
+        "branchId": "korba"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Manager login successful. Role: supervisor",
+          "data": {
+            "sessionId": "sess-2026-sup456",
+            "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3Itc3VwZXJ2aXNvciIsInJvbGUiOiJzdXBlcnZpc29yIn0...",
+            "cashierId": "usr-supervisor",
+            "cashierName": "مشرف الوردية العام",
+            "role": "supervisor",
+            "expiresAt": "2026-11-16T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "auth-session",
+      "category": "Authentication & Security",
+      "method": "GET",
+      "path": "/api/pos/auth/session",
+      "summary": "التحقق من جلسة التوكن الحالية والصلاحيات (Verify Active Session)",
+      "description": "Inspects caller Bearer token, verifying authenticity, non-revocation, expiration, and assigned RBAC permissions.",
+      "headers": {
+        "Authorization": "Bearer {{authToken}}"
+      },
+      "queryParams": {},
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "sessionId": "sess-2026-abc123",
+            "cashierId": "usr-korba",
+            "cashierName": "أحمد فريد",
+            "role": "cashier",
+            "permissions": [
+              "orders:read",
+              "orders:create",
+              "shifts:open",
+              "shifts:close"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "auth-refresh",
+      "category": "Authentication & Security",
+      "method": "POST",
+      "path": "/api/pos/auth/refresh",
+      "summary": "تجديد توكن الجلسة (Refresh Session Token)",
+      "description": "Issues a newly minted cryptographic token extending session TTL by 12 hours while revoking the former token.",
+      "headers": {
+        "Authorization": "Bearer {{authToken}}"
+      },
+      "queryParams": {},
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Session token refreshed successfully",
+          "data": {
+            "token": "eyJhbGciOiJIUzI1NiJ9.refreshed_signature...",
+            "expiresAt": "2026-11-16T16:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "auth-logout",
+      "category": "Authentication & Security",
+      "method": "POST",
+      "path": "/api/pos/auth/logout",
+      "summary": "تسجيل الخروج وإلغاء صلاحية التوكن فورياً (Revoke Token & Logout)",
+      "description": "Adds the session token to the cryptographic blacklist/revocation registry, immediately rendering all future requests 401 Unauthorized.",
+      "headers": {
+        "Authorization": "Bearer {{authToken}}"
+      },
+      "queryParams": {},
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Logged out successfully. Token revoked.",
+          "data": {
+            "revoked": true
+          }
+        }
+      }
+    },
+    {
       "id": "list-orders",
       "category": "Orders & Checkout",
       "method": "GET",
@@ -67,13 +217,41 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "branchId": { "type": "string", "example": "korba", "description": "Branch identifier" },
-        "status": { "type": "string", "example": "completed", "description": "completed | paid | parked | cancelled | refunded" },
-        "platform": { "type": "string", "example": "direct", "description": "direct | talabat | elmenus | hungerstation | jahez | noon" },
-        "cashierId": { "type": "string", "example": "usr-korba", "description": "Filter by cashier" },
-        "search": { "type": "string", "example": "0100455", "description": "Search by order number or customer phone/name" },
-        "limit": { "type": "number", "default": 50, "description": "Max records to return" },
-        "offset": { "type": "number", "default": 0, "description": "Pagination offset" }
+        "branchId": {
+          "type": "string",
+          "example": "korba",
+          "description": "Branch identifier"
+        },
+        "status": {
+          "type": "string",
+          "example": "completed",
+          "description": "completed | paid | parked | cancelled | refunded"
+        },
+        "platform": {
+          "type": "string",
+          "example": "direct",
+          "description": "direct | talabat | elmenus | hungerstation | jahez | noon"
+        },
+        "cashierId": {
+          "type": "string",
+          "example": "usr-korba",
+          "description": "Filter by cashier"
+        },
+        "search": {
+          "type": "string",
+          "example": "0100455",
+          "description": "Search by order number or customer phone/name"
+        },
+        "limit": {
+          "type": "number",
+          "default": 50,
+          "description": "Max records to return"
+        },
+        "offset": {
+          "type": "number",
+          "default": 0,
+          "description": "Pagination offset"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -129,7 +307,11 @@
               ]
             }
           ],
-          "meta": { "total": 1, "limit": 50, "offset": 0 }
+          "meta": {
+            "total": 1,
+            "limit": 50,
+            "offset": 0
+          }
         }
       }
     },
@@ -144,7 +326,11 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "ORD-20261116-101", "description": "Order UUID or order number" }
+        "id": {
+          "type": "string",
+          "example": "ORD-20261116-101",
+          "description": "Order UUID or order number"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -242,7 +428,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "ord-1001" }
+        "id": {
+          "type": "string",
+          "example": "ord-1001"
+        }
       },
       "requestBody": {
         "customerName": "الأستاذ محمود إبراهيم",
@@ -275,7 +464,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "ord-1001" }
+        "id": {
+          "type": "string",
+          "example": "ord-1001"
+        }
       },
       "requestBody": {
         "status": "paid",
@@ -304,7 +496,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "ord-1001" }
+        "id": {
+          "type": "string",
+          "example": "ord-1001"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -336,7 +531,13 @@
         "paymentMethod": "cash",
         "customerName": "عميل معلق 1",
         "items": [
-          { "sku": "SKU-KON-NAB", "nameAr": "كنافة نابلسية", "nameEn": "Konafa", "quantity": 1, "unitPrice": 310 }
+          {
+            "sku": "SKU-KON-NAB",
+            "nameAr": "كنافة نابلسية",
+            "nameEn": "Konafa",
+            "quantity": 1,
+            "unitPrice": 310
+          }
         ]
       },
       "responseExample": {
@@ -364,7 +565,10 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "branchId": { "type": "string", "example": "korba" }
+        "branchId": {
+          "type": "string",
+          "example": "korba"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -393,7 +597,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "ord-1002" }
+        "id": {
+          "type": "string",
+          "example": "ord-1002"
+        }
       },
       "requestBody": {
         "refundAmount": 595,
@@ -425,8 +632,14 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "branchId": { "type": "string", "example": "korba" },
-        "status": { "type": "string", "example": "open" }
+        "branchId": {
+          "type": "string",
+          "example": "korba"
+        },
+        "status": {
+          "type": "string",
+          "example": "open"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -463,8 +676,14 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "branchId": { "type": "string", "example": "korba" },
-        "cashierId": { "type": "string", "example": "usr-korba" }
+        "branchId": {
+          "type": "string",
+          "example": "korba"
+        },
+        "cashierId": {
+          "type": "string",
+          "example": "usr-korba"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -588,7 +807,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "shift-korba-today" }
+        "id": {
+          "type": "string",
+          "example": "shift-korba-today"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -596,7 +818,10 @@
         "body": {
           "success": true,
           "data": {
-            "shift": { "id": "shift-korba-today", "shiftNumber": "SH-KORBA-089" },
+            "shift": {
+              "id": "shift-korba-today",
+              "shiftNumber": "SH-KORBA-089"
+            },
             "financials": {
               "grossSales": 8940,
               "discounts": 0,
@@ -607,12 +832,26 @@
               "variance": 0
             },
             "breakdownByPayment": {
-              "cash": { "count": 14, "total": 4320 },
-              "card": { "count": 7, "total": 3120 },
-              "wallet": { "count": 3, "total": 1500 }
+              "cash": {
+                "count": 14,
+                "total": 4320
+              },
+              "card": {
+                "count": 7,
+                "total": 3120
+              },
+              "wallet": {
+                "count": 3,
+                "total": 1500
+              }
             },
             "topSellingItems": [
-              { "sku": "SKU-OM-ALI", "name": "طاجن أم علي بالمكسرات", "qty": 28, "revenue": 3080 }
+              {
+                "sku": "SKU-OM-ALI",
+                "name": "طاجن أم علي بالمكسرات",
+                "qty": 28,
+                "revenue": 3080
+              }
             ]
           }
         }
@@ -629,9 +868,18 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "categoryId": { "type": "string", "example": "cat-1" },
-        "search": { "type": "string", "example": "أم علي" },
-        "barcode": { "type": "string", "example": "622100101" }
+        "categoryId": {
+          "type": "string",
+          "example": "cat-1"
+        },
+        "search": {
+          "type": "string",
+          "example": "أم علي"
+        },
+        "barcode": {
+          "type": "string",
+          "example": "622100101"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -669,7 +917,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "barcode": { "type": "string", "example": "622100101" }
+        "barcode": {
+          "type": "string",
+          "example": "622100101"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -702,8 +953,16 @@
         "body": {
           "success": true,
           "data": [
-            { "id": "cat-1", "nameAr": "طواجن وحلويات شرقية", "itemsCount": 4 },
-            { "id": "cat-2", "nameAr": "قشطوطة ودلع", "itemsCount": 1 }
+            {
+              "id": "cat-1",
+              "nameAr": "طواجن وحلويات شرقية",
+              "itemsCount": 4
+            },
+            {
+              "id": "cat-2",
+              "nameAr": "قشطوطة ودلع",
+              "itemsCount": 1
+            }
           ]
         }
       }
@@ -719,7 +978,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "p-101" }
+        "id": {
+          "type": "string",
+          "example": "p-101"
+        }
       },
       "requestBody": {
         "deltaQty": -2,
@@ -730,7 +992,10 @@
         "body": {
           "success": true,
           "message": "Stock updated for 'طاجن أم علي بالمكسرات والقشطة'. New balance: 83",
-          "data": { "id": "p-101", "stockQty": 83 }
+          "data": {
+            "id": "p-101",
+            "stockQty": 83
+          }
         }
       }
     },
@@ -745,7 +1010,10 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "phone": { "type": "string", "example": "01004552211" }
+        "phone": {
+          "type": "string",
+          "example": "01004552211"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -805,7 +1073,10 @@
         "Content-Type": "application/json"
       },
       "urlParams": {
-        "id": { "type": "string", "example": "c-1" }
+        "id": {
+          "type": "string",
+          "example": "c-1"
+        }
       },
       "requestBody": {
         "pointsDelta": 35,
@@ -839,9 +1110,27 @@
         "body": {
           "success": true,
           "data": [
-            { "id": "korba", "code": "BR-01", "nameAr": "فرع الكوربة — مصر الجديدة", "phone": "+20 100 455 2211", "terminalsCount": 3 },
-            { "id": "maadi", "code": "BR-02", "nameAr": "فرع المعادي — شارع النصر", "phone": "+20 100 882 3344", "terminalsCount": 2 },
-            { "id": "tagamoa", "code": "BR-03", "nameAr": "فرع التجمع الخامس — التسعين", "phone": "+20 100 994 5566", "terminalsCount": 3 }
+            {
+              "id": "korba",
+              "code": "BR-01",
+              "nameAr": "فرع الكوربة — مصر الجديدة",
+              "phone": "+20 100 455 2211",
+              "terminalsCount": 3
+            },
+            {
+              "id": "maadi",
+              "code": "BR-02",
+              "nameAr": "فرع المعادي — شارع النصر",
+              "phone": "+20 100 882 3344",
+              "terminalsCount": 2
+            },
+            {
+              "id": "tagamoa",
+              "code": "BR-03",
+              "nameAr": "فرع التجمع الخامس — التسعين",
+              "phone": "+20 100 994 5566",
+              "terminalsCount": 3
+            }
           ]
         }
       }
@@ -887,7 +1176,10 @@
         "Content-Type": "application/json"
       },
       "queryParams": {
-        "branchId": { "type": "string", "example": "korba" }
+        "branchId": {
+          "type": "string",
+          "example": "korba"
+        }
       },
       "requestBody": null,
       "responseExample": {
@@ -895,7 +1187,12 @@
         "body": {
           "success": true,
           "data": [
-            { "id": "term-korba-01", "name": "كاشير 1 — صالة الكوربة", "deviceModel": "Sunmi T2 Touchscreen", "status": "online" }
+            {
+              "id": "term-korba-01",
+              "name": "كاشير 1 — صالة الكوربة",
+              "deviceModel": "Sunmi T2 Touchscreen",
+              "status": "online"
+            }
           ]
         }
       }
@@ -922,7 +1219,12 @@
             "orderType": "takeaway",
             "paymentMethod": "cash",
             "items": [
-              { "sku": "SKU-OM-ALI", "nameAr": "طاجن أم علي", "quantity": 1, "unitPrice": 110 }
+              {
+                "sku": "SKU-OM-ALI",
+                "nameAr": "طاجن أم علي",
+                "quantity": 1,
+                "unitPrice": 110
+              }
             ]
           }
         ]
@@ -936,11 +1238,82 @@
             "syncedCount": 1,
             "failedCount": 0,
             "syncedOrders": [
-              { "orderNumber": "OFFLINE-001", "id": "ord-sync-101", "status": "synced" }
+              {
+                "orderNumber": "OFFLINE-001",
+                "id": "ord-sync-101",
+                "status": "synced"
+              }
             ]
           }
         }
       }
     }
-  ]
+  ],
+  "security": {
+    "type": "http",
+    "scheme": "bearer",
+    "bearerFormat": "JWT (HMAC-SHA256 Signed Session Token)",
+    "description": "Cryptographic HMAC SHA-256 session token issued upon PIN verify or manager login. Valid for 12 hours with revocation registry support.",
+    "roles": {
+      "cashier": [
+        "orders:read",
+        "orders:create",
+        "orders:update",
+        "orders:status",
+        "orders:park",
+        "shifts:read",
+        "shifts:open",
+        "shifts:close",
+        "products:read",
+        "customers:read",
+        "customers:write",
+        "branches:read",
+        "sync:batch"
+      ],
+      "senior_cashier": [
+        "orders:read",
+        "orders:create",
+        "orders:update",
+        "orders:status",
+        "orders:park",
+        "orders:refund",
+        "shifts:read",
+        "shifts:open",
+        "shifts:close",
+        "shifts:cash_movement",
+        "shifts:z_report",
+        "products:read",
+        "products:stock",
+        "customers:read",
+        "customers:write",
+        "branches:read",
+        "sync:batch"
+      ],
+      "supervisor": [
+        "orders:read",
+        "orders:create",
+        "orders:update",
+        "orders:status",
+        "orders:park",
+        "orders:void",
+        "orders:refund",
+        "shifts:read",
+        "shifts:open",
+        "shifts:close",
+        "shifts:cash_movement",
+        "shifts:z_report",
+        "shifts:override",
+        "products:read",
+        "products:write",
+        "products:stock",
+        "customers:read",
+        "customers:write",
+        "branches:read",
+        "sync:batch"
+      ],
+      "admin": [
+        "*"
+      ]
+    }
+  }
 }
