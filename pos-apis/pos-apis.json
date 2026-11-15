@@ -1,0 +1,946 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "Hafez ERP — Complete POS REST APIs Specification",
+    "description": "Comprehensive specification for all Point of Sale (POS) APIs including Orders, Shifts, Cash Movements, Z-Reports, Products, Barcodes, Customers, Loyalty, Branches, Cashier PIN Authentication, and Offline Batch Sync.",
+    "version": "1.0.0",
+    "author": "Mr. Hafez Rahim - Hafez ERP Engineering",
+    "baseUrl": "http://localhost:3001/api/pos",
+    "supportedMethods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+  },
+  "endpoints": [
+    {
+      "id": "health-check",
+      "category": "System & Health",
+      "method": "GET",
+      "path": "/api/pos/health",
+      "summary": "فحص جاهزية الخادم وحالة الاتصال السحابي (Health Check)",
+      "description": "Returns POS server operational status, uptime, and cloud connectivity telemetry.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {},
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "status": "healthy",
+            "uptime": 3600.45,
+            "timestamp": "2026-11-16T00:00:00.000Z",
+            "cloudSyncEnabled": true
+          }
+        }
+      }
+    },
+    {
+      "id": "cors-preflight",
+      "category": "System & Health",
+      "method": "OPTIONS",
+      "path": "/api/pos/orders",
+      "summary": "التحقق المسبق من تصاريح المتصفح (CORS Preflight)",
+      "description": "Universal CORS preflight handler responding with allowed headers and methods.",
+      "headers": {
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type, X-Terminal-Id"
+      },
+      "queryParams": {},
+      "requestBody": null,
+      "responseExample": {
+        "status": 204,
+        "headers": {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, X-Terminal-Id, X-Branch-Id"
+        }
+      }
+    },
+    {
+      "id": "list-orders",
+      "category": "Orders & Checkout",
+      "method": "GET",
+      "path": "/api/pos/orders",
+      "summary": "استعراض طلبات وفواتير الكاشير (List POS Orders)",
+      "description": "Fetch orders with optional filtering by branch, status, cashier, platform, date, and pagination.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "branchId": { "type": "string", "example": "korba", "description": "Branch identifier" },
+        "status": { "type": "string", "example": "completed", "description": "completed | paid | parked | cancelled | refunded" },
+        "platform": { "type": "string", "example": "direct", "description": "direct | talabat | elmenus | hungerstation | jahez | noon" },
+        "cashierId": { "type": "string", "example": "usr-korba", "description": "Filter by cashier" },
+        "search": { "type": "string", "example": "0100455", "description": "Search by order number or customer phone/name" },
+        "limit": { "type": "number", "default": 50, "description": "Max records to return" },
+        "offset": { "type": "number", "default": 0, "description": "Pagination offset" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "ord-1001",
+              "orderNumber": "ORD-20261116-101",
+              "cashierId": "usr-korba",
+              "cashierName": "أحمد فريد",
+              "branchId": "korba",
+              "orderType": "takeaway",
+              "orderPlatform": "direct",
+              "orderRefNumber": "",
+              "customerName": "عميل نقدي / صالة",
+              "customerPhone": "01004552211",
+              "tableNumber": "T-04",
+              "deliveryNotes": "",
+              "paymentMethod": "cash",
+              "subtotal": 302.63,
+              "taxAmount": 42.37,
+              "discountAmount": 0,
+              "deliveryFee": 0,
+              "total": 345,
+              "tenderAmount": 400,
+              "changeAmount": 55,
+              "status": "completed",
+              "createdAt": "2026-11-16T12:30:00.000Z",
+              "updatedAt": "2026-11-16T12:30:00.000Z",
+              "items": [
+                {
+                  "id": "itm-1",
+                  "orderId": "ord-1001",
+                  "sku": "SKU-OM-ALI",
+                  "nameAr": "طاجن أم علي بالمكسرات والقشطة",
+                  "nameEn": "Claypot Om Ali Nuts & Cream",
+                  "quantity": 2,
+                  "unitPrice": 110,
+                  "totalPrice": 220
+                },
+                {
+                  "id": "itm-2",
+                  "orderId": "ord-1001",
+                  "sku": "SKU-QASH",
+                  "nameAr": "قشطوطة مانجو ولوتس ممتازة",
+                  "nameEn": "Qashtouta Mango & Lotus",
+                  "quantity": 1,
+                  "unitPrice": 125,
+                  "totalPrice": 125
+                }
+              ]
+            }
+          ],
+          "meta": { "total": 1, "limit": 50, "offset": 0 }
+        }
+      }
+    },
+    {
+      "id": "get-order-by-id",
+      "category": "Orders & Checkout",
+      "method": "GET",
+      "path": "/api/pos/orders/:id",
+      "summary": "تفاصيل فاتورة محددة (Get Order Details)",
+      "description": "Retrieve complete order breakdown, line items, VAT, and customer details by order UUID or order number.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "ORD-20261116-101", "description": "Order UUID or order number" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "ord-1001",
+            "orderNumber": "ORD-20261116-101",
+            "cashierId": "usr-korba",
+            "cashierName": "أحمد فريد",
+            "branchId": "korba",
+            "orderType": "takeaway",
+            "orderPlatform": "direct",
+            "total": 345,
+            "status": "completed",
+            "items": []
+          }
+        }
+      }
+    },
+    {
+      "id": "create-order",
+      "category": "Orders & Checkout",
+      "method": "POST",
+      "path": "/api/pos/orders",
+      "summary": "إنشاء فاتورة بيع جديدة وحفظ الطلب (Create POS Order / Checkout)",
+      "description": "Calculates subtotal, 14% VAT, discounts, creates items, saves to DB, and increments active shift sales.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "orderNumber": "ORD-20261116-9042",
+        "cashierId": "usr-korba",
+        "cashierName": "أحمد فريد",
+        "branchId": "korba",
+        "orderType": "takeaway",
+        "orderPlatform": "direct",
+        "orderRefNumber": "",
+        "customerName": "كريم عبد العزيز",
+        "customerPhone": "01004552211",
+        "tableNumber": "T-02",
+        "deliveryNotes": "",
+        "paymentMethod": "cash",
+        "discountAmount": 0,
+        "deliveryFee": 0,
+        "tenderAmount": 500,
+        "items": [
+          {
+            "sku": "SKU-OM-ALI",
+            "nameAr": "طاجن أم علي بالمكسرات والقشطة",
+            "nameEn": "Claypot Om Ali Nuts & Cream",
+            "quantity": 2,
+            "unitPrice": 110,
+            "totalPrice": 220
+          },
+          {
+            "sku": "SKU-QASH",
+            "nameAr": "قشطوطة مانجو ولوتس ممتازة",
+            "nameEn": "Qashtouta Mango & Lotus",
+            "quantity": 1,
+            "unitPrice": 125,
+            "totalPrice": 125
+          }
+        ]
+      },
+      "responseExample": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Order placed successfully",
+          "data": {
+            "id": "ord-m3v82x-9a1b",
+            "orderNumber": "ORD-20261116-9042",
+            "subtotal": 345,
+            "taxAmount": 48.3,
+            "discountAmount": 0,
+            "deliveryFee": 0,
+            "total": 393.3,
+            "tenderAmount": 500,
+            "changeAmount": 106.7,
+            "status": "completed"
+          }
+        }
+      }
+    },
+    {
+      "id": "update-order",
+      "category": "Orders & Checkout",
+      "method": "PUT",
+      "path": "/api/pos/orders/:id",
+      "summary": "تعديل واستبدال كامل لبيانات الفاتورة (Full Update Order)",
+      "description": "Updates customer, table, delivery notes, or line items with complete recalculation.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "ord-1001" }
+      },
+      "requestBody": {
+        "customerName": "الأستاذ محمود إبراهيم",
+        "customerPhone": "01223344556",
+        "tableNumber": "T-VIP-08",
+        "deliveryNotes": "تسليم سريع للصالة",
+        "paymentMethod": "card"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Order updated successfully",
+          "data": {
+            "id": "ord-1001",
+            "customerName": "الأستاذ محمود إبراهيم",
+            "tableNumber": "T-VIP-08"
+          }
+        }
+      }
+    },
+    {
+      "id": "patch-order-status",
+      "category": "Orders & Checkout",
+      "method": "PATCH",
+      "path": "/api/pos/orders/:id/status",
+      "summary": "تحديث سريع لحالة الفاتورة (Patch Order Status)",
+      "description": "Fast status transitions: completed, paid, parked, cancelled, refunded.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "ord-1001" }
+      },
+      "requestBody": {
+        "status": "paid",
+        "reason": "Payment confirmed via card terminal"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Order status changed to 'paid'",
+          "data": {
+            "id": "ord-1001",
+            "status": "paid"
+          }
+        }
+      }
+    },
+    {
+      "id": "delete-order",
+      "category": "Orders & Checkout",
+      "method": "DELETE",
+      "path": "/api/pos/orders/:id",
+      "summary": "إلغاء وحذف الفاتورة نهائياً (Void / Delete Order)",
+      "description": "Permanently deletes an order and removes associated line items from the database.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "ord-1001" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Order 'ORD-20261116-101' voided and deleted successfully",
+          "data": {
+            "deletedId": "ord-1001"
+          }
+        }
+      }
+    },
+    {
+      "id": "park-order",
+      "category": "Orders & Checkout",
+      "method": "POST",
+      "path": "/api/pos/orders/park",
+      "summary": "تعليق وحفظ طلب العميل مؤقتاً (Park / Hold Order)",
+      "description": "Holds the current cart with status 'parked' so the cashier can serve the next customer.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "cashierId": "usr-korba",
+        "cashierName": "أحمد فريد",
+        "branchId": "korba",
+        "orderType": "takeaway",
+        "paymentMethod": "cash",
+        "customerName": "عميل معلق 1",
+        "items": [
+          { "sku": "SKU-KON-NAB", "nameAr": "كنافة نابلسية", "nameEn": "Konafa", "quantity": 1, "unitPrice": 310 }
+        ]
+      },
+      "responseExample": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Order placed successfully",
+          "data": {
+            "id": "ord-park-01",
+            "orderNumber": "PARK-992144",
+            "status": "parked",
+            "total": 353.4
+          }
+        }
+      }
+    },
+    {
+      "id": "get-parked-orders",
+      "category": "Orders & Checkout",
+      "method": "GET",
+      "path": "/api/pos/orders/parked",
+      "summary": "استرجاع قائمة الفواتير المعلقة (List Parked Orders)",
+      "description": "Returns all currently parked orders waiting to be resumed on the POS terminal.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "branchId": { "type": "string", "example": "korba" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "ord-park-01",
+              "orderNumber": "PARK-992144",
+              "status": "parked",
+              "total": 353.4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "refund-order",
+      "category": "Orders & Checkout",
+      "method": "POST",
+      "path": "/api/pos/orders/:id/refund",
+      "summary": "استرجاع كلي أو جزئي لطلب (Process Order Refund / Storno)",
+      "description": "Refunds a transaction with return reason and logs cashier supervisor approval.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "ord-1002" }
+      },
+      "requestBody": {
+        "refundAmount": 595,
+        "reason": "رغبة العميل في استبدال الصنف بصينية أخرى",
+        "cashierId": "usr-korba",
+        "cashierName": "أحمد فريد"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Order 'ORD-KORBA-1002' refunded (595 EGP) successfully",
+          "data": {
+            "id": "ord-1002",
+            "status": "refunded",
+            "deliveryNotes": "[REFUND] Storno of 595 EGP by أحمد فريد: رغبة العميل في استبدال الصنف بصينية أخرى"
+          }
+        }
+      }
+    },
+    {
+      "id": "list-shifts",
+      "category": "Shifts & Cash Management",
+      "method": "GET",
+      "path": "/api/pos/shifts",
+      "summary": "سجل الورديات والكاشير (List Cashier Shifts)",
+      "description": "List shifts filtered by branch, cashier, and status (open/closed).",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "branchId": { "type": "string", "example": "korba" },
+        "status": { "type": "string", "example": "open" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "shift-korba-today",
+              "shiftNumber": "SH-KORBA-089",
+              "cashierId": "usr-korba",
+              "cashierName": "أحمد فريد",
+              "branchId": "korba",
+              "openingCash": 1500,
+              "totalSales": 8940,
+              "cashSales": 4320,
+              "cardSales": 3120,
+              "walletSales": 1500,
+              "ordersCount": 24,
+              "status": "open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-current-shift",
+      "category": "Shifts & Cash Management",
+      "method": "GET",
+      "path": "/api/pos/shifts/current",
+      "summary": "جلب الوردية النشطة حالياً (Get Active Shift)",
+      "description": "Returns currently open shift for the selected branch and cashier.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "branchId": { "type": "string", "example": "korba" },
+        "cashierId": { "type": "string", "example": "usr-korba" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "shift-korba-today",
+            "shiftNumber": "SH-KORBA-089",
+            "status": "open",
+            "openingCash": 1500,
+            "totalSales": 8940
+          }
+        }
+      }
+    },
+    {
+      "id": "open-shift",
+      "category": "Shifts & Cash Management",
+      "method": "POST",
+      "path": "/api/pos/shifts/open",
+      "summary": "فتح وردية جديدة وتسجيل عهدة البداية (Open Shift)",
+      "description": "Opens a new cashier shift with an opening cash float.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "branchId": "maadi",
+        "cashierId": "usr-maadi",
+        "cashierName": "سارة محمود",
+        "openingCash": 1200,
+        "notes": "استلام عهدة الصباح مطابقة"
+      },
+      "responseExample": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Shift #SH-MAADI-482 opened successfully with float 1200 EGP",
+          "data": {
+            "id": "shift-maadi-new",
+            "shiftNumber": "SH-MAADI-482",
+            "openingCash": 1200,
+            "status": "open"
+          }
+        }
+      }
+    },
+    {
+      "id": "close-shift",
+      "category": "Shifts & Cash Management",
+      "method": "POST",
+      "path": "/api/pos/shifts/close",
+      "summary": "إغلاق الوردية ومطابقة النقدية (Close & Reconcile Shift)",
+      "description": "Closes shift, compares counted cash vs expected sales, and computes variance.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "shiftId": "shift-korba-today",
+        "actualCash": 5820,
+        "actualCard": 3120,
+        "actualWallet": 1500,
+        "closingNotes": "جرد سليم ومطابق لخزينة الصالة",
+        "closedBy": "أحمد فريد"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Shift #SH-KORBA-089 closed successfully. Variance: 0 EGP",
+          "data": {
+            "id": "shift-korba-today",
+            "status": "closed",
+            "closingDetails": {
+              "actualCash": 5820,
+              "cashVariance": 0,
+              "closingNotes": "جرد سليم ومطابق لخزينة الصالة"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cash-movement",
+      "category": "Shifts & Cash Management",
+      "method": "POST",
+      "path": "/api/pos/shifts/cash-movement",
+      "summary": "تسجيل توريد نقدية أو مصروف من الدرج (Cash Drop / In / Out)",
+      "description": "Records intermediate cash transfer to main safe (Safe Drop) or petty cash expense payout.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "shiftId": "shift-korba-today",
+        "type": "safe_drop",
+        "amount": 2500,
+        "reason": "توريد دفعة نقدية لخزينة الفرع الرئيسية لتخفيف الدرج",
+        "authorizedBy": "مدير الفرع"
+      },
+      "responseExample": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Cash movement of 2500 EGP recorded successfully",
+          "data": {
+            "id": "csh-m3v82x",
+            "type": "safe_drop",
+            "amount": 2500
+          }
+        }
+      }
+    },
+    {
+      "id": "shift-z-report",
+      "category": "Shifts & Cash Management",
+      "method": "GET",
+      "path": "/api/pos/shifts/:id/z-report",
+      "summary": "تقرير Z المالي لختام الوردية (Shift Z-Report / X-Report)",
+      "description": "Comprehensive financial summary breakdown: gross sales, discounts, VAT, payment methods, platforms, and top-selling items.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "shift-korba-today" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "shift": { "id": "shift-korba-today", "shiftNumber": "SH-KORBA-089" },
+            "financials": {
+              "grossSales": 8940,
+              "discounts": 0,
+              "netSales": 8940,
+              "vatTotal": 1098.24,
+              "cashInDrawerExpected": 5820,
+              "cashInDrawerActual": 5820,
+              "variance": 0
+            },
+            "breakdownByPayment": {
+              "cash": { "count": 14, "total": 4320 },
+              "card": { "count": 7, "total": 3120 },
+              "wallet": { "count": 3, "total": 1500 }
+            },
+            "topSellingItems": [
+              { "sku": "SKU-OM-ALI", "name": "طاجن أم علي بالمكسرات", "qty": 28, "revenue": 3080 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "list-products",
+      "category": "Products & Catalog",
+      "method": "GET",
+      "path": "/api/pos/products",
+      "summary": "قائمة منتجات نقاط البيع (List POS Products)",
+      "description": "Fetch active POS menu items with selling prices, tax rates, SKU, and warehouse availability.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "categoryId": { "type": "string", "example": "cat-1" },
+        "search": { "type": "string", "example": "أم علي" },
+        "barcode": { "type": "string", "example": "622100101" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "p-101",
+              "sku": "SKU-OM-ALI",
+              "barcode": "622100101",
+              "nameAr": "طاجن أم علي بالمكسرات والقشطة",
+              "nameEn": "Claypot Om Ali Nuts & Cream",
+              "categoryId": "cat-1",
+              "categoryName": "طواجن وحلويات شرقية",
+              "price": 110,
+              "costPrice": 42,
+              "taxRate": 0.14,
+              "stockQty": 85,
+              "unit": "طاجن",
+              "isActive": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "product-by-barcode",
+      "category": "Products & Catalog",
+      "method": "GET",
+      "path": "/api/pos/products/barcode/:barcode",
+      "summary": "فحص الصنف بجهاز قارئ الباركود (Quick Barcode Scanner Lookup)",
+      "description": "Instant item lookup by barcode or SKU for hardware laser scanner integrations.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "barcode": { "type": "string", "example": "622100101" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "p-101",
+            "sku": "SKU-OM-ALI",
+            "barcode": "622100101",
+            "nameAr": "طاجن أم علي بالمكسرات والقشطة",
+            "price": 110
+          }
+        }
+      }
+    },
+    {
+      "id": "list-categories",
+      "category": "Products & Catalog",
+      "method": "GET",
+      "path": "/api/pos/categories",
+      "summary": "مجموعات وتصنيفات المنيو (List Menu Categories)",
+      "description": "Returns distinct POS categories (Oriental, Fatta, Qashtouta, Cakes, Rice Pudding).",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            { "id": "cat-1", "nameAr": "طواجن وحلويات شرقية", "itemsCount": 4 },
+            { "id": "cat-2", "nameAr": "قشطوطة ودلع", "itemsCount": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "patch-product-stock",
+      "category": "Products & Catalog",
+      "method": "PATCH",
+      "path": "/api/pos/products/:id/stock",
+      "summary": "خصم / تعديل فوري لمخزون الصنف (Adjust Product Stock)",
+      "description": "Adjusts stock on hand for a product at checkout or waste entry.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "p-101" }
+      },
+      "requestBody": {
+        "deltaQty": -2,
+        "reason": "Sale from POS order"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Stock updated for 'طاجن أم علي بالمكسرات والقشطة'. New balance: 83",
+          "data": { "id": "p-101", "stockQty": 83 }
+        }
+      }
+    },
+    {
+      "id": "list-customers",
+      "category": "Customers & Loyalty",
+      "method": "GET",
+      "path": "/api/pos/customers",
+      "summary": "بحث عن بيانات العميل (Search POS Customers)",
+      "description": "Search customer directory by mobile number or name.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "phone": { "type": "string", "example": "01004552211" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "c-1",
+              "name": "محمود عبد الله",
+              "phone": "01004552211",
+              "loyaltyPoints": 340,
+              "totalOrders": 14,
+              "totalSpent": 4250
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "create-customer",
+      "category": "Customers & Loyalty",
+      "method": "POST",
+      "path": "/api/pos/customers",
+      "summary": "تسجيل عميل جديد أثناء الشراء (Quick Customer Registration)",
+      "description": "Registers a new customer directly on POS screen with starter loyalty points.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "name": "إبراهيم حسن",
+        "phone": "01019988776",
+        "loyaltyPoints": 50
+      },
+      "responseExample": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "message": "Customer registered successfully",
+          "data": {
+            "id": "c-m3v82x",
+            "name": "إبراهيم حسن",
+            "phone": "01019988776",
+            "loyaltyPoints": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "patch-loyalty-points",
+      "category": "Customers & Loyalty",
+      "method": "PATCH",
+      "path": "/api/pos/customers/:id/loyalty",
+      "summary": "إضافة أو استبدال نقاط الولاء (Add / Redeem Loyalty Points)",
+      "description": "Increments or redeems loyalty points on customer account balance.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "urlParams": {
+        "id": { "type": "string", "example": "c-1" }
+      },
+      "requestBody": {
+        "pointsDelta": 35,
+        "reason": "Reward for order #ORD-20261116-101"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Loyalty points adjusted (+35). New balance: 375",
+          "data": {
+            "id": "c-1",
+            "loyaltyPoints": 375
+          }
+        }
+      }
+    },
+    {
+      "id": "list-branches",
+      "category": "Branches & Terminals",
+      "method": "GET",
+      "path": "/api/pos/branches",
+      "summary": "قائمة الفروع الـ 18 والمطابخ (List POS Branches)",
+      "description": "Returns all 18 retail branches, factory, and central kitchen hubs.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            { "id": "korba", "code": "BR-01", "nameAr": "فرع الكوربة — مصر الجديدة", "phone": "+20 100 455 2211", "terminalsCount": 3 },
+            { "id": "maadi", "code": "BR-02", "nameAr": "فرع المعادي — شارع النصر", "phone": "+20 100 882 3344", "terminalsCount": 2 },
+            { "id": "tagamoa", "code": "BR-03", "nameAr": "فرع التجمع الخامس — التسعين", "phone": "+20 100 994 5566", "terminalsCount": 3 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cashier-pin-verify",
+      "category": "Branches & Terminals",
+      "method": "POST",
+      "path": "/api/pos/auth/pin-verify",
+      "summary": "تسجيل دخول سريع برمز PIN للكاشير (Cashier PIN Verification)",
+      "description": "Authenticates a cashier via 4-digit numeric PIN for instant touchscreen unlock.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "pin": "1234",
+        "branchId": "korba"
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "PIN authentication successful",
+          "data": {
+            "authenticated": true,
+            "cashierId": "usr-korba",
+            "cashierName": "أحمد فريد",
+            "branchId": "korba",
+            "role": "senior_cashier",
+            "token": "pos_token_1789000_a8bc"
+          }
+        }
+      }
+    },
+    {
+      "id": "list-terminals",
+      "category": "Branches & Terminals",
+      "method": "GET",
+      "path": "/api/pos/terminals",
+      "summary": "أجهزة ونقاط البيع في الفرع (List POS Hardware Terminals)",
+      "description": "Returns hardware terminal devices (Sunmi, Pax, PC) associated with a branch.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "queryParams": {
+        "branchId": { "type": "string", "example": "korba" }
+      },
+      "requestBody": null,
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            { "id": "term-korba-01", "name": "كاشير 1 — صالة الكوربة", "deviceModel": "Sunmi T2 Touchscreen", "status": "online" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "batch-sync-offline",
+      "category": "Offline Sync",
+      "method": "POST",
+      "path": "/api/pos/sync/batch",
+      "summary": "مزامنة دفعات الطلبات غير المتصلة (Batch Sync Offline Orders)",
+      "description": "Synchronizes an array of orders queued locally during network outages with server.",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "requestBody": {
+        "branchId": "korba",
+        "terminalId": "term-korba-01",
+        "orders": [
+          {
+            "orderNumber": "OFFLINE-001",
+            "cashierId": "usr-korba",
+            "cashierName": "أحمد فريد",
+            "branchId": "korba",
+            "orderType": "takeaway",
+            "paymentMethod": "cash",
+            "items": [
+              { "sku": "SKU-OM-ALI", "nameAr": "طاجن أم علي", "quantity": 1, "unitPrice": 110 }
+            ]
+          }
+        ]
+      },
+      "responseExample": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Batch sync complete: 1 synced, 0 failed",
+          "data": {
+            "syncedCount": 1,
+            "failedCount": 0,
+            "syncedOrders": [
+              { "orderNumber": "OFFLINE-001", "id": "ord-sync-101", "status": "synced" }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

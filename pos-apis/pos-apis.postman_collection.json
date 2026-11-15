@@ -1,0 +1,431 @@
+{
+  "info": {
+    "_postman_id": "hafez-erp-pos-apis-collection",
+    "name": "Hafez ERP — POS REST APIs",
+    "description": "Complete collection of all Point of Sale APIs for Hafez ERP.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api/pos",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Orders & Checkout",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?branchId=korba&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "branchId", "value": "korba" },
+                { "key": "limit", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/ord-1001",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "ord-1001"]
+            }
+          }
+        },
+        {
+          "name": "Create Order (Checkout)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cashierId\": \"usr-korba\",\n  \"cashierName\": \"أحمد فريد\",\n  \"branchId\": \"korba\",\n  \"orderType\": \"takeaway\",\n  \"paymentMethod\": \"cash\",\n  \"items\": [\n    {\n      \"sku\": \"SKU-OM-ALI\",\n      \"nameAr\": \"طاجن أم علي بالمكسرات\",\n      \"nameEn\": \"Om Ali\",\n      \"quantity\": 2,\n      \"unitPrice\": 110\n    }\n  ],\n  \"tenderAmount\": 300\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"محمود عبد الله\",\n  \"tableNumber\": \"T-VIP-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/ord-1001",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "ord-1001"]
+            }
+          }
+        },
+        {
+          "name": "Patch Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"paid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/ord-1001/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "ord-1001", "status"]
+            }
+          }
+        },
+        {
+          "name": "Delete Order (Void)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/ord-1001",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "ord-1001"]
+            }
+          }
+        },
+        {
+          "name": "Park Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cashierId\": \"usr-korba\",\n  \"branchId\": \"korba\",\n  \"items\": [\n    { \"sku\": \"SKU-KON-NAB\", \"nameAr\": \"كنافة نابلسية\", \"quantity\": 1, \"unitPrice\": 310 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/park",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "park"]
+            }
+          }
+        },
+        {
+          "name": "Get Parked Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/parked",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "parked"]
+            }
+          }
+        },
+        {
+          "name": "Refund Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refundAmount\": 345,\n  \"reason\": \"رغبة العميل في استبدال الصنف\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/ord-1001/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "ord-1001", "refund"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Shifts & Cash Management",
+      "item": [
+        {
+          "name": "List Shifts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts?branchId=korba",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts"],
+              "query": [{ "key": "branchId", "value": "korba" }]
+            }
+          }
+        },
+        {
+          "name": "Get Current Active Shift",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts/current?branchId=korba",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "current"],
+              "query": [{ "key": "branchId", "value": "korba" }]
+            }
+          }
+        },
+        {
+          "name": "Open Shift",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"korba\",\n  \"cashierId\": \"usr-korba\",\n  \"cashierName\": \"أحمد فريد\",\n  \"openingCash\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shifts/open",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "open"]
+            }
+          }
+        },
+        {
+          "name": "Close Shift (Reconcile)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftId\": \"shift-korba-today\",\n  \"actualCash\": 5820,\n  \"closingNotes\": \"جرد مطابق\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shifts/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "close"]
+            }
+          }
+        },
+        {
+          "name": "Cash Movement (Drop / In / Out)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shiftId\": \"shift-korba-today\",\n  \"type\": \"safe_drop\",\n  \"amount\": 2000,\n  \"reason\": \"توريد نقدية لخزينة الفرع\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shifts/cash-movement",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "cash-movement"]
+            }
+          }
+        },
+        {
+          "name": "Get Shift Z-Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shifts/shift-korba-today/z-report",
+              "host": ["{{baseUrl}}"],
+              "path": ["shifts", "shift-korba-today", "z-report"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Products & Catalog",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "Barcode Scanner Lookup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/barcode/622100101",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "barcode", "622100101"]
+            }
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            }
+          }
+        },
+        {
+          "name": "Adjust Product Stock",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deltaQty\": -1,\n  \"reason\": \"POS Sale\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/p-101/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "p-101", "stock"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Customers & Loyalty",
+      "item": [
+        {
+          "name": "Search Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?phone=01004552211",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [{ "key": "phone", "value": "01004552211" }]
+            }
+          }
+        },
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"محمود عبد الله\",\n  \"phone\": \"01004552211\",\n  \"loyaltyPoints\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "Patch Loyalty Points",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pointsDelta\": 25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/c-1/loyalty",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "c-1", "loyalty"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Branches & Auth",
+      "item": [
+        {
+          "name": "List Branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/branches",
+              "host": ["{{baseUrl}}"],
+              "path": ["branches"]
+            }
+          }
+        },
+        {
+          "name": "Cashier PIN Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\",\n  \"branchId\": \"korba\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/pin-verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "pin-verify"]
+            }
+          }
+        },
+        {
+          "name": "List Terminals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/terminals?branchId=korba",
+              "host": ["{{baseUrl}}"],
+              "path": ["terminals"],
+              "query": [{ "key": "branchId", "value": "korba" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Offline Batch Sync",
+      "item": [
+        {
+          "name": "Batch Sync Offline Orders",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branchId\": \"korba\",\n  \"terminalId\": \"term-01\",\n  \"orders\": [\n    {\n      \"orderNumber\": \"OFFLINE-001\",\n      \"cashierId\": \"usr-korba\",\n      \"cashierName\": \"أحمد فريد\",\n      \"branchId\": \"korba\",\n      \"orderType\": \"takeaway\",\n      \"paymentMethod\": \"cash\",\n      \"items\": [\n        { \"sku\": \"SKU-OM-ALI\", \"nameAr\": \"طاجن أم علي\", \"quantity\": 1, \"unitPrice\": 110 }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sync/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["sync", "batch"]
+            }
+          }
+        },
+        {
+          "name": "Sync Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sync/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["sync", "health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
