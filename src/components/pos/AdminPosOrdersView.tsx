@@ -27,6 +27,8 @@ import {
   PLATFORM_NAMES_MAP,
   PAYMENT_METHOD_NAMES_MAP,
 } from "@/lib/pos-orders-store";
+import { useInventoryStore } from "@/lib/inventory-store";
+import { documentMatchesCategory, getMergedSalesCategories } from "@/lib/sales-categories";
 import { useCompanySettings } from "@/lib/settings-store";
 import { RealQrCode } from "@/components/ui/qr-code";
 
@@ -165,6 +167,7 @@ function AdminPosOrdersInner() {
   const { pick, money, lang } = useI18n();
   const { settings } = useCompanySettings();
   const { orders = [], loading, metrics, refresh } = usePosOrdersStore();
+  const { categories: inventoryCategories, products: inventoryProducts } = useInventoryStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("all");
@@ -172,6 +175,7 @@ function AdminPosOrdersInner() {
   const [selectedPlatform, setSelectedPlatform] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState("all");
   const [selectedOrderType, setSelectedOrderType] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -210,6 +214,11 @@ function AdminPosOrdersInner() {
     });
     return Array.from(map.values()).sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar"));
   }, [orders]);
+
+  // Dynamic & Standard categories options
+  const categoryFilterOptions = useMemo(() => {
+    return getMergedSalesCategories(inventoryCategories);
+  }, [inventoryCategories]);
 
   // Selected order for thermal receipt preview modal
   const [activeReceiptOrder, setActiveReceiptOrder] = useState<AdminPosOrder | null>(null);
@@ -252,6 +261,7 @@ function AdminPosOrdersInner() {
     setSelectedPlatform("all");
     setSelectedPayment("all");
     setSelectedOrderType("all");
+    setSelectedCategory("all");
     setSelectedProduct("all");
     setSelectedStatus("all");
     setDateFrom("");
@@ -266,6 +276,7 @@ function AdminPosOrdersInner() {
     selectedPlatform !== "all" ||
     selectedPayment !== "all" ||
     selectedOrderType !== "all" ||
+    selectedCategory !== "all" ||
     selectedProduct !== "all" ||
     selectedStatus !== "all" ||
     dateFrom ||
@@ -279,6 +290,7 @@ function AdminPosOrdersInner() {
     selectedPlatform !== "all",
     selectedPayment !== "all",
     selectedOrderType !== "all",
+    selectedCategory !== "all",
     selectedProduct !== "all",
     selectedStatus !== "all",
     Boolean(dateFrom || dateTo),
@@ -322,6 +334,12 @@ function AdminPosOrdersInner() {
       // 5. Order Type filter (takeaway, dine_in, delivery)
       if (selectedOrderType !== "all" && o.orderType !== selectedOrderType) return false;
 
+      // 5.0 Category filter
+      if (selectedCategory !== "all") {
+        const matchesCategory = documentMatchesCategory(o, selectedCategory, inventoryProducts, inventoryCategories);
+        if (!matchesCategory) return false;
+      }
+
       // 5.1 Product / Item filter
       if (selectedProduct !== "all") {
         const selNorm = selectedProduct.toLowerCase().trim();
@@ -362,10 +380,13 @@ function AdminPosOrdersInner() {
     selectedPlatform,
     selectedPayment,
     selectedOrderType,
+    selectedCategory,
     selectedProduct,
     selectedStatus,
     dateFrom,
     dateTo,
+    inventoryProducts,
+    inventoryCategories,
   ]);
 
   const {
@@ -683,6 +704,23 @@ function AdminPosOrdersInner() {
               <option value="takeaway">🛍️ {pick("سفري وتيك أواي", "Takeaway")}</option>
               <option value="dine_in">🍽️ {pick("صالة ومحلي", "Dine-in")}</option>
               <option value="delivery">🛵 {pick("توصيل منزلي", "Delivery")}</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+          </div>
+
+          {/* Category Filter */}
+          <div className="relative">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+            >
+              <option value="all">📂 {pick("جميع الفئات والأقسام", "All Categories")}</option>
+              {categoryFilterOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.icon} {pick(c.nameAr, c.nameEn)}
+                </option>
+              ))}
             </select>
             <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
           </div>

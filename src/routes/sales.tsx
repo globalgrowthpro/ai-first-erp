@@ -1,12 +1,14 @@
 import { useState, useRef, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search, ChevronDown, BadgePercent } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search, ChevronDown, BadgePercent, Layers, Tag } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
 import { Btn, DataTable, KpiCard, PageHeader, Panel, StatusPill, Td, TablePagination, usePagination } from "@/components/kit";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { useDispatchStore } from "@/lib/dispatch-store";
+import { useInventoryStore } from "@/lib/inventory-store";
+import { documentMatchesCategory, getMergedSalesCategories } from "@/lib/sales-categories";
 import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/DocumentFormModal";
 import { AdminPosOrdersView } from "@/components/pos/AdminPosOrdersView";
 import { AdminPosShiftsView } from "@/components/pos/AdminPosShiftsView";
@@ -42,6 +44,7 @@ function Sales() {
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "all_invoices" | "commercial" | "sales_reports">("pos_orders");
   const { metrics: posMetrics } = usePosOrdersStore();
+  const { categories: inventoryCategories, products: inventoryProducts } = useInventoryStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filters for Standard & Commercial Invoices
@@ -50,6 +53,7 @@ function Sales() {
   const [invDateTo, setInvDateTo] = useState("");
   const [invDatePreset, setInvDatePreset] = useState<"all" | "today" | "yesterday" | "week" | "month" | "custom">("all");
   const [invStatus, setInvStatus] = useState("all");
+  const [invCategoryFilter, setInvCategoryFilter] = useState("all");
   const [invProductFilter, setInvProductFilter] = useState("all");
 
   const handleApplyInvPreset = (preset: "all" | "today" | "yesterday" | "week" | "month") => {
@@ -87,6 +91,10 @@ function Sales() {
     }
   };
 
+  const salesCategoryOptions = useMemo(() => {
+    return getMergedSalesCategories(inventoryCategories);
+  }, [inventoryCategories]);
+
   const salesProductOptions = useMemo(() => {
     const map = new Map<string, { id: string; nameAr: string; nameEn: string; sku: string }>();
     for (const doc of documents) {
@@ -111,6 +119,11 @@ function Sales() {
     return documents.filter((inv) => {
       if (salesTab === "commercial" && !(inv.balance > 0 || inv.status !== "paid")) return false;
       if (invStatus !== "all" && inv.status !== invStatus) return false;
+      if (invCategoryFilter !== "all") {
+        if (!documentMatchesCategory(inv, invCategoryFilter, inventoryProducts, inventoryCategories)) {
+          return false;
+        }
+      }
       if (invProductFilter !== "all") {
         const selNorm = invProductFilter.toLowerCase().trim();
         const hasItem = (inv.items || []).some((it) => {
@@ -151,7 +164,7 @@ function Sales() {
 
       return true;
     });
-  }, [documents, salesTab, invStatus, invProductFilter, invSearch, invDateFrom, invDateTo]);
+  }, [documents, salesTab, invStatus, invCategoryFilter, invProductFilter, invSearch, invDateFrom, invDateTo, inventoryProducts, inventoryCategories]);
 
   const {
     currentPage: invPage,
@@ -593,6 +606,23 @@ function Sales() {
                 <option value="draft">{pick("مسودة", "Draft")}</option>
               </select>
 
+              {/* Category Filter */}
+              <div className="relative">
+                <select
+                  value={invCategoryFilter}
+                  onChange={(e) => setInvCategoryFilter(e.target.value)}
+                  className="text-xs font-bold py-2 px-3 pe-7 rounded-xl border border-border/70 bg-background text-foreground focus:outline-none cursor-pointer appearance-none shadow-xs"
+                >
+                  <option value="all">📂 {pick("جميع الفئات والأقسام", "All Categories")}</option>
+                  {salesCategoryOptions.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {pick(cat.nameAr, cat.nameEn)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 absolute end-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+              </div>
+
               {/* Product / Item Filter */}
               <div className="relative">
                 <select
@@ -703,7 +733,7 @@ function Sales() {
               </div>
 
               {/* Reset */}
-              {(invSearch || invStatus !== "all" || invProductFilter !== "all" || invDateFrom || invDateTo) && (
+              {(invSearch || invStatus !== "all" || invCategoryFilter !== "all" || invProductFilter !== "all" || invDateFrom || invDateTo) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -712,6 +742,7 @@ function Sales() {
                     setInvDatePreset("all");
                     setInvDateFrom("");
                     setInvDateTo("");
+                    setInvCategoryFilter("all");
                     setInvProductFilter("all");
                   }}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold transition-colors cursor-pointer"
