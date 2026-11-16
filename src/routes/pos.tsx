@@ -518,6 +518,95 @@ export interface PosCompletedOrder {
 
 export const INITIAL_ORDERS_HISTORY: PosCompletedOrder[] = [];
 
+// Direct Quantity Editor Component for POS Cart Items
+interface CartItemQtyControlProps {
+  itemId: string;
+  quantity: number;
+  maxStock: number;
+  onUpdateQty: (delta: number) => void;
+  onSetQty: (newQty: number) => void;
+  lang: string;
+}
+
+function CartItemQtyControl({
+  quantity,
+  maxStock,
+  onUpdateQty,
+  onSetQty,
+  lang,
+}: CartItemQtyControlProps) {
+  const [val, setVal] = useState<string>(String(quantity));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setVal(String(quantity));
+  }, [quantity]);
+
+  const commitValue = (inputStr: string) => {
+    const parsed = parseInt(inputStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      onSetQty(parsed);
+      setVal(String(parsed));
+    } else {
+      setVal(String(quantity));
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-xl border border-border/60 shadow-2xs">
+      <button
+        type="button"
+        onClick={() => onUpdateQty(-1)}
+        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs shrink-0 select-none"
+        title={lang === "ar" ? "تقليل الكمية" : "Decrease quantity"}
+      >
+        <Minus className="w-2.5 h-2.5" />
+      </button>
+
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={val}
+        onChange={(e) => {
+          const cleaned = e.target.value.replace(/[^0-9]/g, "");
+          setVal(cleaned);
+          const parsed = parseInt(cleaned, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            onSetQty(parsed);
+          }
+        }}
+        onBlur={() => commitValue(val)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            inputRef.current?.blur();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            onUpdateQty(1);
+          } else if (e.key === "ArrowDown") {
+            e.preventDefault();
+            onUpdateQty(-1);
+          }
+        }}
+        onFocus={(e) => e.target.select()}
+        className="w-8 sm:w-10 text-center text-xs font-mono font-black text-foreground bg-transparent hover:bg-background/80 focus:bg-background focus:ring-1.5 focus:ring-primary focus:outline-none rounded-md py-0.5 transition-all cursor-text selection:bg-primary/25"
+        title={lang === "ar" ? "اضغط لكتابة الكمية مباشرة باللوحة" : "Click to type quantity directly"}
+        aria-label={lang === "ar" ? "الكمية" : "Quantity"}
+      />
+
+      <button
+        type="button"
+        onClick={() => onUpdateQty(1)}
+        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs shrink-0 select-none"
+        title={lang === "ar" ? "زيادة الكمية" : "Increase quantity"}
+      >
+        <Plus className="w-2.5 h-2.5" />
+      </button>
+    </div>
+  );
+}
+
 export function PosPage() {
   const { t, pick, money, lang, dir, toggle } = useI18n();
   const { calculateProductDiscount } = useDiscountsStore();
@@ -1638,6 +1727,26 @@ export function PosPage() {
           return item;
         })
         .filter(Boolean) as CartItem[]
+    );
+  };
+
+  // Direct manual set quantity (typing directly in the quantity input)
+  const handleSetDirectQty = (itemId: string, newQty: number) => {
+    if (isNaN(newQty) || newQty <= 0) return;
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id === itemId) {
+          if (newQty > item.product.stock) {
+            toast.warning(
+              lang === "ar"
+                ? `تنبيه: الكمية (${newQty}) تتجاوز رصيد المخزن المتاح (${item.product.stock})`
+                : `Warning: Quantity (${newQty}) exceeds available inventory stock (${item.product.stock})`
+            );
+          }
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      })
     );
   };
 
@@ -2847,27 +2956,14 @@ export function PosPage() {
 
                   {/* Quantity Stepper & Price & Delete */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-xl border border-border/60">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateQty(item.id, -1)}
-                        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs"
-                        title={lang === "ar" ? "تقليل" : "Decrease"}
-                      >
-                        <Minus className="w-2.5 h-2.5" />
-                      </button>
-                      <span className="w-7 text-center text-xs font-mono font-black text-foreground">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateQty(item.id, 1)}
-                        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs"
-                        title={lang === "ar" ? "زيادة" : "Increase"}
-                      >
-                        <Plus className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
+                    <CartItemQtyControl
+                      itemId={item.id}
+                      quantity={item.quantity}
+                      maxStock={item.product.stock}
+                      onUpdateQty={(delta) => handleUpdateQty(item.id, delta)}
+                      onSetQty={(newQty) => handleSetDirectQty(item.id, newQty)}
+                      lang={lang}
+                    />
 
                     <div className="w-16 text-end">
                       <span className="text-xs font-black text-[#16A34A] dark:text-emerald-400 block font-mono">
