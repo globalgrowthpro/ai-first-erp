@@ -1313,6 +1313,48 @@ export function PosPage() {
   const [applyVat, setApplyVat] = useState<boolean>(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
+  // Auto-Clear Inactivity Cart Configuration (Default 60 seconds when no actions are performed)
+  const [autoClearSeconds, setAutoClearSeconds] = useState<number>(() => {
+    if (typeof window === "undefined") return 60;
+    try {
+      const stored = localStorage.getItem("wazeer_pos_auto_clear_idle");
+      return stored !== null ? parseInt(stored, 10) : 60;
+    } catch {
+      return 60;
+    }
+  });
+
+  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState<number>(autoClearSeconds);
+  const lastActionTimeRef = useRef<number>(Date.now());
+
+  const registerUserActivity = useCallback(() => {
+    lastActionTimeRef.current = Date.now();
+    setIdleSecondsRemaining(autoClearSeconds);
+  }, [autoClearSeconds]);
+
+  const handleSetAutoClearSeconds = useCallback(
+    (sec: number) => {
+      setAutoClearSeconds(sec);
+      setIdleSecondsRemaining(sec);
+      lastActionTimeRef.current = Date.now();
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("wazeer_pos_auto_clear_idle", String(sec));
+        } catch {}
+      }
+      toast.success(
+        lang === "ar"
+          ? sec === 0
+            ? "تم إيقاف ميزة التفريغ التلقائي للسلة"
+            : `تم تفعيل التفريغ التلقائي للسلة عند عدم النشاط بعد ${sec} ثانية`
+          : sec === 0
+          ? "Cart auto-clear on idle disabled"
+          : `Cart auto-clear on idle set to ${sec}s`
+      );
+    },
+    [lang]
+  );
+
   // Parked / Held Tickets
   const [heldOrders, setHeldOrders] = useState<HeldOrder[]>([]);
   const [showHeldModal, setShowHeldModal] = useState(false);
@@ -1637,18 +1679,77 @@ export function PosPage() {
     }
   };
 
-  // Clear Cart
-  const handleClearCart = () => {
-    if (cart.length === 0) return;
-    setCart([]);
-    setDiscountPercent(0);
-    setDeliveryFee(0);
-    setOrderPlatform("direct");
-    setOrderRefNumber("");
-    setTableNumber("");
-    setDeliveryNotes("");
-    toast.info(lang === "ar" ? "تم تفريغ الفاتورة الحالية" : "Current ticket cleared");
-  };
+  // Clear Cart (Manual or Auto-clear on inactivity)
+  const handleClearCart = useCallback(
+    (isAutoTimeout = false) => {
+      if (cart.length === 0) return;
+      setCart([]);
+      setDiscountPercent(0);
+      setDeliveryFee(0);
+      setOrderPlatform("direct");
+      setOrderRefNumber("");
+      setTableNumber("");
+      setDeliveryNotes("");
+      lastActionTimeRef.current = Date.now();
+      setIdleSecondsRemaining(autoClearSeconds);
+      if (isAutoTimeout) {
+        toast.info(
+          lang === "ar"
+            ? "⏰ تم تفريغ السلة تلقائياً لعدم وجود أي نشاط أو إجراءات"
+            : "⏰ Cart auto-cleared due to inactivity",
+          { duration: 4000 }
+        );
+      } else {
+        toast.info(lang === "ar" ? "تم مسح كافة الأصناف من السلة" : "Cart items cleared");
+      }
+    },
+    [cart.length, autoClearSeconds, lang]
+  );
+
+  // Auto-clear cart when no actions are performed within timeout
+  useEffect(() => {
+    if (autoClearSeconds <= 0 || cart.length === 0) {
+      setIdleSecondsRemaining(autoClearSeconds);
+      return;
+    }
+
+    lastActionTimeRef.current = Date.now();
+    setIdleSecondsRemaining(autoClearSeconds);
+
+    const onUserInteraction = () => {
+      lastActionTimeRef.current = Date.now();
+    };
+
+    const events = ["mousedown", "mousemove", "keydown", "touchstart", "pointerdown", "scroll"];
+    let throttleTimeout: any = null;
+    const throttledHandler = () => {
+      if (!throttleTimeout) {
+        onUserInteraction();
+        throttleTimeout = setTimeout(() => {
+          throttleTimeout = null;
+        }, 800);
+      }
+    };
+
+    events.forEach((evt) => window.addEventListener(evt, throttledHandler, { passive: true }));
+
+    const timer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - lastActionTimeRef.current) / 1000);
+      const remaining = Math.max(0, autoClearSeconds - elapsed);
+      setIdleSecondsRemaining(remaining);
+
+      if (remaining <= 0) {
+        handleClearCart(true);
+        lastActionTimeRef.current = Date.now();
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+      events.forEach((evt) => window.removeEventListener(evt, throttledHandler));
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
+  }, [cart.length, autoClearSeconds, handleClearCart]);
 
   // Hold / Park Ticket
   const handleHoldTicket = () => {
@@ -2638,6 +2739,78 @@ export function PosPage() {
             )}
           </div>
 
+          {/* Cart Actions Sub-Header: Item Summary, Manual Clear All & Auto-Clear Idle Option */}
+          {cart.length > 0 && (
+            <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-2 shrink-0 text-xs">
+              {/* Left: Items counter & manual clear button */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-foreground">
+                  {cart.length} {lang === "ar" ? "أصناف" : "items"}
+                  <span className="text-[10px] text-muted-foreground ms-1">
+                    ({cart.reduce((sum, item) => sum + item.quantity, 0)} {lang === "ar" ? "قطعة" : "pcs"})
+                  </span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => handleClearCart(false)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all border border-rose-500/30 cursor-pointer shadow-2xs"
+                  title={lang === "ar" ? "مسح كافة الأصناف من السلة (F9)" : "Clear all items from cart (F9)"}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>{lang === "ar" ? "مسح السلة" : "Clear All"}</span>
+                </button>
+              </div>
+
+              {/* Right: Inactivity Auto-Clear Selector & Timer */}
+              <div className="flex items-center gap-1.5 text-[10px]">
+                <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground hidden sm:inline">
+                  {lang === "ar" ? "تفريغ عند الخمول:" : "Auto-clear:"}
+                </span>
+                <select
+                  value={autoClearSeconds}
+                  onChange={(e) => handleSetAutoClearSeconds(Number(e.target.value))}
+                  aria-label={lang === "ar" ? "مدة تفريغ السلة التلقائي عند الخمول" : "Auto-clear idle cart timeout"}
+                  className="bg-card border border-border/70 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-foreground focus:outline-none cursor-pointer"
+                  title={
+                    lang === "ar"
+                      ? "تفريغ محتويات السلة تلقائياً عند عدم إجراء أي نشاط أو حركات"
+                      : "Auto-clear cart items when no actions are performed"
+                  }
+                >
+                  <option value={30}>30 ثانية</option>
+                  <option value={60}>60 ثانية (1 د)</option>
+                  <option value={90}>90 ثانية</option>
+                  <option value={120}>دقيقتين (120 ث)</option>
+                  <option value={300}>5 دقائق</option>
+                  <option value={0}>{lang === "ar" ? "معطّل" : "Disabled"}</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Idle Timeout Countdown Warning (Visible when remaining time <= 15s) */}
+          {cart.length > 0 && autoClearSeconds > 0 && idleSecondsRemaining <= 15 && idleSecondsRemaining > 0 && (
+            <div className="mx-2 mt-1.5 p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-between gap-2 text-xs text-amber-900 dark:text-amber-200 animate-pulse shrink-0">
+              <div className="flex items-center gap-1.5 font-bold text-[11px] min-w-0">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="truncate">
+                  {lang === "ar"
+                    ? `تنبيه: سيتم مسح السلة خلال ${idleSecondsRemaining} ثانية لعدم وجود إجراءات!`
+                    : `Cart will clear in ${idleSecondsRemaining}s due to inactivity!`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={registerUserActivity}
+                className="px-2 py-0.5 rounded-md bg-amber-600 text-white font-bold text-[10px] hover:bg-amber-700 transition-colors shrink-0 shadow-2xs cursor-pointer"
+              >
+                {lang === "ar" ? "إبقاء السلة" : "Keep Cart"}
+              </button>
+            </div>
+          )}
+
           {/* 2. Ticket Items Area - Primary Scrollable View (ALWAYS VISIBLE & PROMINENT) */}
           <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-2.5 space-y-1.5">
             {cart.map((item) => {
@@ -2801,7 +2974,7 @@ export function PosPage() {
                 {cart.length > 0 && (
                   <button
                     type="button"
-                    onClick={handleClearCart}
+                    onClick={() => handleClearCart(false)}
                     className="p-1 text-muted-foreground hover:text-destructive text-[10px] font-bold transition-colors cursor-pointer"
                     title={lang === "ar" ? "مسح السلة (F9)" : "Clear (F9)"}
                   >
