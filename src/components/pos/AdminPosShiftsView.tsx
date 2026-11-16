@@ -1859,7 +1859,164 @@ export function AdminPosShiftsView() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Shift Cards View (visible on mobile < md) */}
+          <div className="md:hidden space-y-3 p-3">
+            {filteredShifts.length === 0 ? (
+              <div className="py-10 text-center text-muted-foreground space-y-2">
+                <History className="w-8 h-8 opacity-30 mx-auto" />
+                <p className="font-bold text-xs">{lang === "ar" ? "لا توجد ورديات مطابقة للتصفية" : "No matching shifts found"}</p>
+                <p className="text-[11px] opacity-70">
+                  {lang === "ar" ? "يمكنك فتح وردية جديدة أو تغيير نطاق البحث والتاريخ" : "Open a new shift or adjust date filters"}
+                </p>
+              </div>
+            ) : (
+              filteredShifts.map((shift) => {
+                const isClosed = shift.status === "closed";
+
+                return (
+                  <div
+                    key={shift.id}
+                    className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-3"
+                  >
+                    {/* Header: Shift Number, Branch & Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-black text-xs text-foreground" title={shift.shiftNumber}>
+                            #{formatShortShiftId(shift.shiftNumber)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded-md border border-border/40">
+                            📅 {formatShiftDate(shift.openedAt || shift.dateStr, lang)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1 text-xs font-bold text-foreground">
+                          <span className="text-xs">📍</span>
+                          <span className="truncate">{pick(shift.branchName.ar, shift.branchName.en)}</span>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="shrink-0">
+                        {isClosed ? (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[10px] font-black border border-blue-500/30 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>{lang === "ar" ? "مغلقة" : "Closed"}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-black border border-emerald-500/30 inline-flex items-center gap-1.5">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            <span>{lang === "ar" ? "نشطة" : "Active"}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cashier & Timing */}
+                    <div className="flex items-center justify-between text-xs bg-muted/30 rounded-lg p-2 border border-border/50">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span>👨‍🍳</span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-foreground truncate block">{shift.cashierName}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">كود: {shift.cashierCode}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-muted-foreground font-mono text-end shrink-0">
+                        <div className="flex items-center gap-1 justify-end font-medium">
+                          <Clock className="w-2.5 h-2.5 text-primary/70" />
+                          <span>{formatShiftTime(shift.openedAt, lang)}</span>
+                        </div>
+                        <div>
+                          {shift.closedAt ? (
+                            <span>➔ {formatShiftTime(shift.closedAt, lang)}</span>
+                          ) : (
+                            <span className="text-emerald-600 font-bold">{lang === "ar" ? "مستمرة" : "Active"}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financial Figures Grid */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="bg-card rounded-lg p-1.5 border border-border/60">
+                        <span className="text-[10px] text-muted-foreground block">{lang === "ar" ? "الافتتاحي" : "Starting"}</span>
+                        <span className="font-mono font-bold text-foreground text-xs">{money(shift.startingAmount)}</span>
+                      </div>
+                      <div className="bg-blue-500/5 rounded-lg p-1.5 border border-blue-500/20">
+                        <span className="text-[10px] text-blue-700 dark:text-blue-300 block">{lang === "ar" ? "المحسوب" : "Expected"}</span>
+                        <span className="font-mono font-black text-blue-700 dark:text-blue-300 text-xs">{money(shift.closingActualAmount)}</span>
+                      </div>
+                      <div className="bg-purple-500/5 rounded-lg p-1.5 border border-purple-500/20">
+                        <span className="text-[10px] text-purple-700 dark:text-purple-300 block">{lang === "ar" ? "المعدود" : "Counted"}</span>
+                        <span className="font-mono font-black text-purple-700 dark:text-purple-300 text-xs">
+                          {shift.closingCashierAddAmount !== null ? money(shift.closingCashierAddAmount) : "--"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Variance & Actions */}
+                    <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                      <div>
+                        {shift.variance !== null ? (
+                          shift.variance === 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-black border border-emerald-500/30">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>0.00 {lang === "ar" ? "مطابق" : "Balanced"}</span>
+                            </span>
+                          ) : shift.variance > 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-mono text-[10px] font-black border border-amber-500/40">
+                              <ArrowUpRight className="w-2.5 h-2.5 text-amber-600" />
+                              <span>+{money(shift.variance)} {lang === "ar" ? "زيادة" : "Surplus"}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 font-mono text-[10px] font-black border border-rose-500/40">
+                              <ArrowDownRight className="w-2.5 h-2.5 text-rose-600" />
+                              <span>{money(shift.variance)} {lang === "ar" ? "عجز" : "Shortage"}</span>
+                            </span>
+                          )
+                        ) : (
+                          <span className="font-mono text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                            {shift.totalEntries} {lang === "ar" ? "طلب" : "orders"} ({money(shift.totalSales)})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        {!isClosed ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenCloseModal(shift)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>{lang === "ar" ? "إغلاق الوردية" : "Close"}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedShiftForDetails(shift);
+                              setShowDetailsModal(true);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>{lang === "ar" ? "معاينة Z-Report" : "Z-Report"}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (visible on md+) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs text-start border-collapse">
               <thead>
                 <tr className="border-b border-border/80 bg-muted/40 text-muted-foreground font-bold">

@@ -83,13 +83,13 @@ export function CompanyBrandingSettings() {
       <div className="grid gap-6 lg:grid-cols-12 items-start">
         {/* Left Column: Settings Configuration Editor (7 cols) */}
         <div className="space-y-6 lg:col-span-7">
-          {/* Sub-Navigation Pills for Settings */}
-          <div className="flex flex-wrap gap-2 border-b border-border/70 pb-3 text-xs font-bold">
+          {/* Sub-Navigation Pills for Settings - Responsive Horizontal Scroll on Mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2.5 border-b border-border/70 no-scrollbar text-xs font-bold">
             <button
               type="button"
               onClick={() => setActiveSection("company")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer",
                 activeSection === "company"
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border bg-card text-foreground hover:bg-secondary",
@@ -102,7 +102,7 @@ export function CompanyBrandingSettings() {
               type="button"
               onClick={() => setActiveSection("colors")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer",
                 activeSection === "colors"
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border bg-card text-foreground hover:bg-secondary",
@@ -115,7 +115,7 @@ export function CompanyBrandingSettings() {
               type="button"
               onClick={() => setActiveSection("document")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer",
                 activeSection === "document"
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border bg-card text-foreground hover:bg-secondary",
@@ -128,7 +128,7 @@ export function CompanyBrandingSettings() {
               type="button"
               onClick={() => setActiveSection("footer")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 uppercase transition-all whitespace-nowrap shrink-0 cursor-pointer",
                 activeSection === "footer"
                   ? "border-primary bg-primary text-primary-foreground shadow-sm"
                   : "border-border bg-card text-foreground hover:bg-secondary",

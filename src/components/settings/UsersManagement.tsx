@@ -578,68 +578,68 @@ export function UsersManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Top Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="surface-panel rounded-xl p-4.5">
+      {/* Top Stat Cards - Compact & Responsive on Mobile */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="surface-panel rounded-xl p-3.5 sm:p-4.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-muted-foreground">
+            <span className="text-[11px] sm:text-xs uppercase font-bold text-muted-foreground truncate">
               {lang === "ar" ? "إجمالي المستخدمين" : "Total Users"}
             </span>
-            <Users className="w-5 h-5 text-primary" />
+            <Users className="size-4 sm:size-5 text-primary shrink-0" />
           </div>
-          <p className="text-2xl font-black mt-2">{usersList.length}</p>
-          <span className="text-xs text-emerald-600 font-bold">
+          <p className="text-xl sm:text-2xl font-black mt-1 sm:mt-2">{usersList.length}</p>
+          <span className="text-[10px] sm:text-xs text-emerald-600 font-bold">
             {usersList.filter((u) => u.status === "active").length} {lang === "ar" ? "نشط" : "Active"}
           </span>
         </div>
 
-        <div className="surface-panel rounded-xl p-4.5">
+        <div className="surface-panel rounded-xl p-3.5 sm:p-4.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-muted-foreground">
+            <span className="text-[11px] sm:text-xs uppercase font-bold text-muted-foreground truncate">
               {t("departments")}
             </span>
-            <Building2 className="w-5 h-5 text-accent" />
+            <Building2 className="size-4 sm:size-5 text-accent shrink-0" />
           </div>
-          <p className="text-2xl font-black mt-2">{deptList.length}</p>
-          <span className="text-xs text-muted-foreground font-semibold">
+          <p className="text-xl sm:text-2xl font-black mt-1 sm:mt-2">{deptList.length}</p>
+          <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">
             {lang === "ar" ? "إدارات وهيكل تنظيمي" : "Operational Units"}
           </span>
         </div>
 
-        <div className="surface-panel rounded-xl p-4.5">
+        <div className="surface-panel rounded-xl p-3.5 sm:p-4.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-muted-foreground">
+            <span className="text-[11px] sm:text-xs uppercase font-bold text-muted-foreground truncate">
               {t("positions")}
             </span>
-            <Briefcase className="w-5 h-5 text-amber-500" />
+            <Briefcase className="size-4 sm:size-5 text-amber-500 shrink-0" />
           </div>
-          <p className="text-2xl font-black mt-2">{posList.length}</p>
-          <span className="text-xs text-muted-foreground font-semibold">
+          <p className="text-xl sm:text-2xl font-black mt-1 sm:mt-2">{posList.length}</p>
+          <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">
             {lang === "ar" ? "مسميات ودرجات وظيفية" : "Job Titles & Levels"}
           </span>
         </div>
 
-        <div className="surface-panel rounded-xl p-4.5">
+        <div className="surface-panel rounded-xl p-3.5 sm:p-4.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-muted-foreground">
+            <span className="text-[11px] sm:text-xs uppercase font-bold text-muted-foreground truncate">
               {t("roles")}
             </span>
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <ShieldCheck className="size-4 sm:size-5 text-emerald-600 shrink-0" />
           </div>
-          <p className="text-2xl font-black mt-2">{rolesList.length}</p>
-          <span className="text-xs text-muted-foreground font-semibold">
+          <p className="text-xl sm:text-2xl font-black mt-1 sm:mt-2">{rolesList.length}</p>
+          <span className="text-[10px] sm:text-xs text-muted-foreground font-semibold">
             {systemActions.length} {t("allowedActions")}
           </span>
         </div>
       </div>
 
-      {/* Sub navigation bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-        <div className="flex items-center gap-2">
+      {/* Sub navigation bar - Responsive Horizontal Scroll on Mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-border/60 pb-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "users"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-card border border-border/70 text-foreground hover:bg-muted"
@@ -652,7 +652,7 @@ export function UsersManagement() {
           <button
             type="button"
             onClick={() => setActiveTab("departments")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "departments"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-card border border-border/70 text-foreground hover:bg-muted"
@@ -665,7 +665,7 @@ export function UsersManagement() {
           <button
             type="button"
             onClick={() => setActiveTab("positions")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "positions"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-card border border-border/70 text-foreground hover:bg-muted"
@@ -678,7 +678,7 @@ export function UsersManagement() {
           <button
             type="button"
             onClick={() => setActiveTab("roles")}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === "roles"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-card border border-border/70 text-foreground hover:bg-muted"
@@ -690,7 +690,7 @@ export function UsersManagement() {
         </div>
 
         {/* Action Buttons depending on tab */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -698,7 +698,7 @@ export function UsersManagement() {
               toast.success(lang === "ar" ? "تم تحديث البيانات من قاعدة البيانات" : "Refreshed data from database");
             }}
             title={lang === "ar" ? "تحديث البيانات" : "Refresh data"}
-            className="p-2 bg-card border border-border/70 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+            className="p-2 bg-card border border-border/70 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -707,7 +707,7 @@ export function UsersManagement() {
             <button
               type="button"
               onClick={() => setShowAddUserModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               {t("addUser")}
@@ -717,7 +717,7 @@ export function UsersManagement() {
             <button
               type="button"
               onClick={() => setShowAddDeptModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               {t("addDepartment")}
@@ -727,7 +727,7 @@ export function UsersManagement() {
             <button
               type="button"
               onClick={() => setShowAddPosModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               {t("addPosition")}
@@ -737,7 +737,7 @@ export function UsersManagement() {
             <button
               type="button"
               onClick={() => setShowAddRoleModal(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 py-1.5 sm:py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               {t("addRole")}
@@ -781,8 +781,146 @@ export function UsersManagement() {
             </div>
           </div>
 
-          {/* Users Table */}
-          <div className="surface-panel rounded-xl overflow-x-auto">
+          {/* Mobile User Cards View (Small & Medium Screens) */}
+          <div className="md:hidden space-y-3">
+            {filteredUsers.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-xs bg-card rounded-xl border border-border/60">
+                {lang === "ar" ? "لا توجد نتائج تطابق بحثك" : "No users match your criteria"}
+              </div>
+            ) : (
+              filteredUsers.map((user) => {
+                const dept = deptList.find((d) => d.id === user.departmentId);
+                const pos = posList.find((p) => p.id === user.positionId);
+                const matchedEmp = employees.find(
+                  (e) => (user.employeeId && e.id === user.employeeId) || e.userId === user.id || (e.email && e.email.toLowerCase() === user.email.toLowerCase())
+                );
+
+                return (
+                  <div
+                    key={user.id}
+                    className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-sm shrink-0">
+                          {user.name.ar.charAt(0) || user.name.en.charAt(0) || "U"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-sm text-foreground truncate">
+                              {pick(user.name.ar, user.name.en)}
+                            </p>
+                            <span
+                              className={`inline-block px-1.5 py-0.2 rounded-md text-[10px] font-bold border ${getRoleBadgeClass(
+                                user.role
+                              )}`}
+                            >
+                              {user.role}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground font-mono truncate">{user.email}</p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                          user.status === "active"
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                            : "bg-destructive/15 text-destructive"
+                        }`}
+                      >
+                        <span className={`size-1.5 rounded-full ${user.status === "active" ? "bg-emerald-500 animate-pulse" : "bg-destructive"}`} />
+                        {user.status === "active" ? (lang === "ar" ? "نشط" : "Active") : (lang === "ar" ? "معطل" : "Inactive")}
+                      </span>
+                    </div>
+
+                    {/* Department, Position, Allowed Pages */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-secondary/50 rounded-lg p-2.5 border border-border/50">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{t("departments")}:</span>
+                        <span className="font-semibold text-foreground truncate block">
+                          {dept ? pick(dept.name.ar, dept.name.en) : "—"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{t("positions")}:</span>
+                        <span className="font-semibold text-foreground truncate block">
+                          {pos ? pick(pos.title.ar, pos.title.en) : "—"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{t("allowedPages")}:</span>
+                        <span className="font-semibold text-foreground truncate block">
+                          {user.allowedPages.includes("*") ? (lang === "ar" ? "كافة الصفحات (*)" : "All (*)") : `${user.allowedPages.length} ${pick("صفحات", "pages")}`}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{lang === "ar" ? "الملف الوظيفي" : "HR Dossier"}:</span>
+                        {matchedEmp ? (
+                          <Link
+                            to="/hr/$employeeId"
+                            params={{ employeeId: matchedEmp.id }}
+                            className="font-mono text-purple-600 dark:text-purple-400 font-bold hover:underline"
+                          >
+                            {matchedEmp.code}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions row */}
+                    <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUserForDetail(user)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary hover:bg-secondary/80 text-foreground flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Eye className="size-3 text-muted-foreground" />
+                        <span>{lang === "ar" ? "الصلاحيات" : "Perms"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingUser(user)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Edit2 className="size-3" />
+                        <span>{t("edit")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newStatus = user.status === "active" ? "inactive" : "active";
+                          updateUser(user.id, { status: newStatus });
+                          toast.info(
+                            lang === "ar"
+                              ? `تم ${newStatus === "active" ? "تفعيل" : "تعطيل"} حساب المستخدم`
+                              : `User account ${newStatus}`
+                          );
+                        }}
+                        className="p-1.5 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground cursor-pointer"
+                        title={lang === "ar" ? "تغيير الحالة" : "Toggle status"}
+                      >
+                        <Power className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget({ kind: "user", id: user.id, label: pick(user.name.ar, user.name.en) })}
+                        className="p-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive cursor-pointer"
+                        title={t("delete")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block surface-panel rounded-xl overflow-x-auto">
             <table className="w-full text-start text-xs border-collapse">
               <thead>
                 <tr className="bg-muted/40 border-b border-border/70 text-muted-foreground uppercase font-bold text-start">
@@ -1131,37 +1269,34 @@ export function UsersManagement() {
 
       {/* VIEW 3: POSITIONS */}
       {activeTab === "positions" && (
-        <div className="surface-panel rounded-xl overflow-x-auto">
-          <table className="w-full text-start text-xs border-collapse">
-            <thead>
-              <tr className="bg-muted/40 border-b border-border/70 text-muted-foreground uppercase font-bold">
-                <th className="p-3 text-start">{lang === "ar" ? "الكود" : "Code"}</th>
-                <th className="p-3 text-start">{t("positions")}</th>
-                <th className="p-3 text-start">{t("departments")}</th>
-                <th className="p-3 text-start">{t("level")}</th>
-                <th className="p-3 text-start">{lang === "ar" ? "الموظفون المعينون" : "Assigned Staff"}</th>
-                <th className="p-3 text-center">{lang === "ar" ? "الإجراءات" : "Actions"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {posList.map((pos) => {
+        <div className="space-y-3">
+          {/* Mobile Position Cards View */}
+          <div className="md:hidden space-y-3">
+            {posList.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-xs bg-card rounded-xl border border-border/60">
+                {lang === "ar" ? "لا توجد مسميات وظيفية" : "No positions found"}
+              </div>
+            ) : (
+              posList.map((pos) => {
                 const dept = deptList.find((d) => d.id === pos.departmentId);
                 const assignedUsers = usersList.filter((u) => u.positionId === pos.id);
 
                 return (
-                  <tr key={pos.id} className="hover:bg-muted/30">
-                    <td className="p-3 font-mono font-bold text-primary">
-                      {pos.code || pos.id.slice(0, 10) + "…"}
-                    </td>
-                    <td className="p-3 font-bold text-foreground text-sm">
-                      {pick(pos.title.ar, pos.title.en)}
-                    </td>
-                    <td className="p-3 font-bold">
-                      {dept ? pick(dept.name.ar, dept.name.en) : pos.departmentId || "—"}
-                    </td>
-                    <td className="p-3">
+                  <div
+                    key={pos.id}
+                    className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="font-mono text-[10px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/10">
+                          {pos.code || pos.id.slice(0, 8)}
+                        </span>
+                        <h4 className="font-bold text-sm text-foreground mt-1">
+                          {pick(pos.title.ar, pos.title.en)}
+                        </h4>
+                      </div>
                       <span
-                        className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                           pos.level === "c-level"
                             ? "bg-primary text-primary-foreground"
                             : pos.level === "manager"
@@ -1171,43 +1306,132 @@ export function UsersManagement() {
                       >
                         {pos.level}
                       </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="font-mono font-bold">
-                        {assignedUsers.length} {lang === "ar" ? "موظف" : "employees"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setEditingPos(pos)}
-                          title={lang === "ar" ? "تعديل" : "Edit"}
-                          className="p-1.5 rounded-md border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDeleteTarget({
-                              kind: "pos",
-                              id: pos.id,
-                              label: pick(pos.title.ar, pos.title.en),
-                            })
-                          }
-                          title={lang === "ar" ? "حذف" : "Delete"}
-                          className="p-1.5 rounded-md border border-border bg-card text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-secondary/50 rounded-lg p-2.5 border border-border/50">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{t("departments")}:</span>
+                        <span className="font-semibold text-foreground truncate block">
+                          {dept ? pick(dept.name.ar, dept.name.en) : "—"}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">{lang === "ar" ? "الموظفون" : "Staff"}:</span>
+                        <span className="font-bold font-mono text-foreground">
+                          {assignedUsers.length} {lang === "ar" ? "موظف" : "employees"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => setEditingPos(pos)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary/10 text-primary flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="size-3" />
+                        <span>{t("edit")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "pos",
+                            id: pos.id,
+                            label: pick(pos.title.ar, pos.title.en),
+                          })
+                        }
+                        className="p-1.5 rounded-lg bg-destructive/10 text-destructive cursor-pointer"
+                        title={t("delete")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block surface-panel rounded-xl overflow-x-auto">
+            <table className="w-full text-start text-xs border-collapse">
+              <thead>
+                <tr className="bg-muted/40 border-b border-border/70 text-muted-foreground uppercase font-bold">
+                  <th className="p-3 text-start">{lang === "ar" ? "الكود" : "Code"}</th>
+                  <th className="p-3 text-start">{t("positions")}</th>
+                  <th className="p-3 text-start">{t("departments")}</th>
+                  <th className="p-3 text-start">{t("level")}</th>
+                  <th className="p-3 text-start">{lang === "ar" ? "الموظفون المعينون" : "Assigned Staff"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "الإجراءات" : "Actions"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {posList.map((pos) => {
+                  const dept = deptList.find((d) => d.id === pos.departmentId);
+                  const assignedUsers = usersList.filter((u) => u.positionId === pos.id);
+
+                  return (
+                    <tr key={pos.id} className="hover:bg-muted/30">
+                      <td className="p-3 font-mono font-bold text-primary">
+                        {pos.code || pos.id.slice(0, 10) + "…"}
+                      </td>
+                      <td className="p-3 font-bold text-foreground text-sm">
+                        {pick(pos.title.ar, pos.title.en)}
+                      </td>
+                      <td className="p-3 font-bold">
+                        {dept ? pick(dept.name.ar, dept.name.en) : pos.departmentId || "—"}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            pos.level === "c-level"
+                              ? "bg-primary text-primary-foreground"
+                              : pos.level === "manager"
+                              ? "bg-accent/20 text-accent-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {pos.level}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className="font-mono font-bold">
+                          {assignedUsers.length} {lang === "ar" ? "موظف" : "employees"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingPos(pos)}
+                            title={lang === "ar" ? "تعديل" : "Edit"}
+                            className="p-1.5 rounded-md border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeleteTarget({
+                                kind: "pos",
+                                id: pos.id,
+                                label: pick(pos.title.ar, pos.title.en),
+                              })
+                            }
+                            title={lang === "ar" ? "حذف" : "Delete"}
+                            className="p-1.5 rounded-md border border-border bg-card text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1264,8 +1488,103 @@ export function UsersManagement() {
             </div>
           </div>
 
-          {/* Roles Table */}
-          <div className="surface-panel rounded-xl overflow-x-auto">
+          {/* Mobile Role Cards View */}
+          <div className="md:hidden space-y-3">
+            {filteredRoles.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-xs bg-card rounded-xl border border-border/60">
+                {lang === "ar" ? "لا توجد أدوار تطابق بحثك" : "No roles match your criteria"}
+              </div>
+            ) : (
+              filteredRoles.map((role) => {
+                const assignedUsers = usersList.filter((u) => u.role === role.key);
+
+                return (
+                  <div
+                    key={role.id}
+                    className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-extrabold uppercase border ${getRoleBadgeClass(
+                              role.key
+                            )}`}
+                          >
+                            {pick(role.name.ar, role.name.en)}
+                          </span>
+                          {role.isSystem ? (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border/60">
+                              {lang === "ar" ? "نظامي" : "System"}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20 font-bold">
+                              {lang === "ar" ? "مخصص" : "Custom"}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground block mt-1">
+                          key: <strong className="text-foreground">{role.key}</strong>
+                        </span>
+                      </div>
+
+                      <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-muted/80 border border-border/60 shrink-0">
+                        {assignedUsers.length} {lang === "ar" ? "مستخدم" : "users"}
+                      </span>
+                    </div>
+
+                    {role.description && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {pick(role.description.ar, role.description.en)}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 flex-wrap text-[11px] bg-secondary/50 rounded-lg p-2 border border-border/50">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] border border-emerald-500/25">
+                        {role.allowedPages.length} {lang === "ar" ? "صفحات مصرح بها" : "pages"}
+                      </span>
+                      <span className="font-bold text-accent-foreground bg-accent/15 px-2 py-0.5 rounded text-[10px] border border-accent/30">
+                        {role.allowedActions.length} {lang === "ar" ? "إجراءات مصرح بها" : "actions"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => setEditingRole(role)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary/10 text-primary flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="size-3" />
+                        <span>{t("edit")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={role.key === "admin"}
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "role",
+                            id: role.id,
+                            label: pick(role.name.ar, role.name.en),
+                          })
+                        }
+                        className={`p-1.5 rounded-lg text-destructive ${
+                          role.key === "admin"
+                            ? "opacity-30 cursor-not-allowed"
+                            : "bg-destructive/10 hover:bg-destructive/20 cursor-pointer"
+                        }`}
+                        title={t("delete")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block surface-panel rounded-xl overflow-x-auto">
             <table className="w-full text-start text-xs border-collapse">
               <thead>
                 <tr className="bg-muted/40 border-b border-border/70 text-muted-foreground uppercase font-bold">

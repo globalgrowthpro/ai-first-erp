@@ -98,26 +98,26 @@ export function SecurityCenter() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner: Health Score & Quick Actions */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/90 to-primary/5 p-6 shadow-sm">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative flex size-20 shrink-0 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
-              <ShieldCheck className="size-10 text-primary" />
-              <div className="absolute -bottom-1 -right-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-black text-white">
+      {/* Top Banner: Health Score & Quick Actions - Responsive Mobile Layout */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-r from-card via-card/90 to-primary/5 p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative flex size-14 sm:size-20 shrink-0 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+              <ShieldCheck className="size-7 sm:size-10 text-primary" />
+              <div className="absolute -bottom-1 -right-1 rounded-full bg-success px-1.5 py-0.2 text-[9px] font-black text-white">
                 TLS 1.3
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold tracking-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-base sm:text-xl font-bold tracking-tight text-foreground truncate">
                   {pick("مركز الأمان والحماية المتقدمة", "Enterprise Security & Protection Center")}
                 </h2>
-                <span className="rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-bold text-success">
+                <span className="rounded-full bg-success/15 px-2 py-0.2 text-[10px] sm:text-xs font-bold text-success">
                   {pick("محمي ونشط", "Active & Hardened")}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground max-w-xl">
+              <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground line-clamp-2 max-w-xl">
                 {pick(
                   "تأمين شامل ضد ثغرات OWASP Top 10، حماية الجلسات، التحقق من مدخلات الـ API عبر Zod، إدارة مفاتيح التكامل وجدار الحماية السحابي (WAF).",
                   "Comprehensive defense against OWASP Top 10 vulnerabilities, session hijacking guards, Zod API schema validation, and WAF rate limits."
@@ -126,18 +126,18 @@ export function SecurityCenter() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
             {/* Score Pill */}
-            <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/80 px-4 py-2.5 shadow-sm">
+            <div className="flex items-center gap-2.5 sm:gap-3 rounded-xl border border-border/70 bg-card/80 px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm">
               <div className="text-right">
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="block text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {pick("درجة الأمان العامة", "Security Score")}
                 </span>
-                <span className="text-2xl font-black text-success">
+                <span className="text-xl sm:text-2xl font-black text-success">
                   {n(healthScore)}%
                 </span>
               </div>
-              <div className="size-10 rounded-full border-4 border-success/30 border-t-success flex items-center justify-center font-bold text-xs">
+              <div className="size-8 sm:size-10 rounded-full border-4 border-success/30 border-t-success flex items-center justify-center font-bold text-xs">
                 A+
               </div>
             </div>
@@ -147,7 +147,7 @@ export function SecurityCenter() {
               variant="solid"
               onClick={runLiveAudit}
               disabled={isScanning}
-              className="gap-2 text-xs font-bold shadow-md"
+              className="flex-1 sm:flex-initial justify-center gap-2 text-xs font-bold shadow-md h-10"
             >
               <RefreshCw className={`size-4 ${isScanning ? "animate-spin" : ""}`} />
               {isScanning
@@ -158,12 +158,12 @@ export function SecurityCenter() {
         </div>
       </div>
 
-      {/* Sub Tabs Navigation */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
+      {/* Sub Tabs Navigation - Scrollable on Mobile */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 border-b border-border/70 no-scrollbar text-xs">
         <Btn
           variant={subTab === "owasp" ? "solid" : "outline"}
           onClick={() => setSubTab("owasp")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <FileCheck2 className="size-4" />
           {pick("تدقيق معايير OWASP العشرة", "OWASP Top 10 Audit")}
@@ -171,7 +171,7 @@ export function SecurityCenter() {
         <Btn
           variant={subTab === "sessions" ? "solid" : "outline"}
           onClick={() => setSubTab("sessions")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Laptop className="size-4" />
           {pick("إدارة الجلسات والأجهزة", "Session & Device Manager")}
@@ -182,7 +182,7 @@ export function SecurityCenter() {
         <Btn
           variant={subTab === "apikeys" ? "solid" : "outline"}
           onClick={() => setSubTab("apikeys")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Key className="size-4" />
           {pick("مفاتيح الـ APIs والتكاملات", "API Keys & Integrations")}
@@ -193,7 +193,7 @@ export function SecurityCenter() {
         <Btn
           variant={subTab === "waf" ? "solid" : "outline"}
           onClick={() => setSubTab("waf")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Globe className="size-4" />
           {pick("جدار الحماية ومحدد الطلبات (WAF / CSP)", "WAF, CSP & Rate Limiting")}
@@ -201,7 +201,7 @@ export function SecurityCenter() {
         <Btn
           variant={subTab === "logs" ? "solid" : "outline"}
           onClick={() => setSubTab("logs")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Activity className="size-4" />
           {pick("سجل التهديدات والأحداث الحية", "Threat Feed & Audit Logs")}

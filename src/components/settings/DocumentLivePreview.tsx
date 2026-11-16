@@ -77,7 +77,7 @@ export function DocumentLivePreview({ settings }: Props) {
 
       {/* Simulated Document Paper */}
       <div
-        className="rounded-2xl border border-border/80 bg-card p-6 sm:p-8 text-foreground shadow-lg transition-all"
+        className="rounded-2xl border border-border/80 bg-card p-3.5 sm:p-8 text-foreground shadow-lg transition-all overflow-x-auto"
         style={{
           fontFamily: dir === "rtl" ? "'Cairo', sans-serif" : "'Space Grotesk', sans-serif",
         }}
