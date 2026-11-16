@@ -376,7 +376,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isNotifOpen, isUserMenuOpen, isSearchOpen]);
 
   return (
-    <div className="flex min-h-screen bg-secondary">
+    <div className={cn("flex min-h-screen", isPosPage ? "bg-background overflow-hidden h-screen" : "bg-secondary")}>
       {/* Sidebar - Compact Width (Hidden on POS Terminal and for POS-only cashiers to maximize terminal workspace) */}
       {!hasOnlyPosPermission && !isPosPage && (
         <aside
@@ -828,7 +828,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
 
         {/* Page Main Content with Safe Bottom Spacing for Mobile Bottom Nav */}
-        <main key={lang} className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
+        <main key={lang} className={cn("flex-1", !isPosPage && "space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 pb-20 lg:pb-6")}>
           {isPageAllowed ? (
             children
           ) : (
@@ -841,13 +841,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </main>
 
-        {/* Footer: Current Online Users & Developer Info */}
-        <footer
-          className={cn(
-            "border-t border-border/80 bg-card/60 backdrop-blur-md px-4 sm:px-6 py-2.5 text-xs text-muted-foreground flex flex-col items-center justify-between gap-3",
-            dir === "rtl" ? "sm:flex-row" : "sm:flex-row-reverse"
-          )}
-        >
+        {/* Footer: Current Online Users & Developer Info (Hidden on POS page) */}
+        {!isPosPage && (
+          <footer
+            className={cn(
+              "border-t border-border/80 bg-card/60 backdrop-blur-md px-4 sm:px-6 py-2.5 text-xs text-muted-foreground flex flex-col items-center justify-between gap-3",
+              dir === "rtl" ? "sm:flex-row" : "sm:flex-row-reverse"
+            )}
+          >
           {/* Online Users as Avatars (Renders on the Right side) — Admin Only */}
           {isAdmin ? (
             <div
@@ -911,6 +912,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </a>
           </div>
         </footer>
+        )}
       </div>
 
       {/* Modern Mobile Bottom Navigation Bar (Hidden on POS page to maximize terminal) */}

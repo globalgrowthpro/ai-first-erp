@@ -64,6 +64,7 @@ import {
   LogOut,
   Languages,
   LayoutDashboard,
+  BadgePercent,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -2150,6 +2151,18 @@ export function PosPage() {
             {isKioskMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
 
+          {/* Promotions & Discounts Hub (Managers / Cashiers) */}
+          {!hasOnlyPosPermission && (
+            <Link
+              to="/discounts"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 text-pink-700 dark:text-pink-300 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer"
+              title={lang === "ar" ? "العروض والخصومات الترويجية" : "Promotions & Discounts"}
+            >
+              <BadgePercent className="w-4 h-4 text-pink-600 dark:text-pink-400 shrink-0" />
+              <span className="hidden xl:inline text-xs">{lang === "ar" ? "العروض" : "Offers"}</span>
+            </Link>
+          )}
+
           {/* Exit to ERP Dashboard (Managers / Admins only) */}
           {!hasOnlyPosPermission && (
             <Link
@@ -2158,11 +2171,11 @@ export function PosPage() {
                 e.preventDefault();
                 navigate({ to: "/" });
               }}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-all shadow-2xs h-10 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-all shadow-2xs h-10 cursor-pointer"
               title={lang === "ar" ? "العودة للوحة تحكم النظام" : "Exit to ERP Dashboard"}
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs">{lang === "ar" ? "لوحة التحكم" : "ERP"}</span>
+              <LayoutDashboard className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="hidden sm:inline text-xs">{lang === "ar" ? "لوحة التحكم" : "ERP"}</span>
             </Link>
           )}
 
