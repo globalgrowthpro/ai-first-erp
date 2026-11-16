@@ -535,22 +535,29 @@ function CartItemQtyControl({
   onSetQty,
   lang,
 }: CartItemQtyControlProps) {
-  const [val, setVal] = useState<string>(String(quantity));
+  // Guarantee max stock is at least 1 for items in cart
+  const safeMax = Math.max(1, maxStock);
+  const [val, setVal] = useState<string>(String(Math.min(quantity, safeMax)));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setVal(String(quantity));
-  }, [quantity]);
+    setVal(String(Math.min(quantity, safeMax)));
+  }, [quantity, safeMax]);
 
   const commitValue = (inputStr: string) => {
-    const parsed = parseInt(inputStr, 10);
-    if (!isNaN(parsed) && parsed > 0) {
+    let parsed = parseInt(inputStr, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setVal(String(quantity));
+    } else if (parsed > safeMax) {
+      onSetQty(safeMax);
+      setVal(String(safeMax));
+    } else {
       onSetQty(parsed);
       setVal(String(parsed));
-    } else {
-      setVal(String(quantity));
     }
   };
+
+  const isAtMax = quantity >= safeMax;
 
   return (
     <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-xl border border-border/60 shadow-2xs">
@@ -571,9 +578,20 @@ function CartItemQtyControl({
         value={val}
         onChange={(e) => {
           const cleaned = e.target.value.replace(/[^0-9]/g, "");
-          setVal(cleaned);
-          const parsed = parseInt(cleaned, 10);
-          if (!isNaN(parsed) && parsed > 0) {
+          if (cleaned === "") {
+            setVal("");
+            return;
+          }
+          let parsed = parseInt(cleaned, 10);
+          if (isNaN(parsed) || parsed < 1) parsed = 1;
+
+          // Strictly enforce: never exceed max stock
+          if (parsed > safeMax) {
+            parsed = safeMax;
+            setVal(String(safeMax));
+            onSetQty(safeMax);
+          } else {
+            setVal(cleaned);
             onSetQty(parsed);
           }
         }}
@@ -583,23 +601,42 @@ function CartItemQtyControl({
             inputRef.current?.blur();
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            onUpdateQty(1);
+            if (!isAtMax) onUpdateQty(1);
           } else if (e.key === "ArrowDown") {
             e.preventDefault();
             onUpdateQty(-1);
           }
         }}
         onFocus={(e) => e.target.select()}
-        className="w-8 sm:w-10 text-center text-xs font-mono font-black text-foreground bg-transparent hover:bg-background/80 focus:bg-background focus:ring-1.5 focus:ring-primary focus:outline-none rounded-md py-0.5 transition-all cursor-text selection:bg-primary/25"
-        title={lang === "ar" ? "اضغط لكتابة الكمية مباشرة باللوحة" : "Click to type quantity directly"}
+        className={`w-8 sm:w-10 text-center text-xs font-mono font-black rounded-md py-0.5 transition-all cursor-text selection:bg-primary/25 ${
+          isAtMax
+            ? "text-amber-700 dark:text-amber-300 bg-amber-500/15 font-black border border-amber-500/30"
+            : "text-foreground bg-transparent hover:bg-background/80 focus:bg-background focus:ring-1.5 focus:ring-primary focus:outline-none"
+        }`}
+        title={
+          lang === "ar"
+            ? `الكمية (الرصيد المتاح: ${safeMax})`
+            : `Quantity (Available stock: ${safeMax})`
+        }
         aria-label={lang === "ar" ? "الكمية" : "Quantity"}
       />
 
       <button
         type="button"
-        onClick={() => onUpdateQty(1)}
-        className="w-5 h-5 rounded-lg bg-card text-foreground hover:bg-muted flex items-center justify-center font-black transition-colors cursor-pointer shadow-2xs shrink-0 select-none"
-        title={lang === "ar" ? "زيادة الكمية" : "Increase quantity"}
+        disabled={isAtMax}
+        onClick={() => {
+          if (!isAtMax) onUpdateQty(1);
+        }}
+        className={`w-5 h-5 rounded-lg flex items-center justify-center font-black transition-colors shadow-2xs shrink-0 select-none ${
+          isAtMax
+            ? "bg-muted text-muted-foreground/30 cursor-not-allowed opacity-40"
+            : "bg-card text-foreground hover:bg-muted cursor-pointer"
+        }`}
+        title={
+          isAtMax
+            ? (lang === "ar" ? `تم الوصول للحد الأقصى المتاح بالمخزن (${safeMax})` : `Max stock reached (${safeMax})`)
+            : (lang === "ar" ? "زيادة الكمية" : "Increase quantity")
+        }
       >
         <Plus className="w-2.5 h-2.5" />
       </button>
@@ -1634,11 +1671,24 @@ export function PosPage() {
     }
 
     const currentInCart = cart.find((item) => item.product.sku === product.sku)?.quantity || 0;
-    if (currentInCart + customQty > product.stock) {
+    if (currentInCart >= product.stock) {
+      toast.error(
+        lang === "ar"
+          ? `عفواً، لا يمكن إضافة المزيد! تم الوصول للحد الأقصى المتاح بالمخزن (${product.stock} قطعة)`
+          : `Cannot add more! Reached maximum available inventory stock (${product.stock} pcs)`
+      );
+      return;
+    }
+
+    const maxCanAdd = Math.max(0, product.stock - currentInCart);
+    const actualAdd = Math.min(customQty, maxCanAdd);
+    if (actualAdd <= 0) return;
+
+    if (actualAdd < customQty) {
       toast.warning(
         lang === "ar"
-          ? `تنبيه: الكمية المطلوبة تتجاوز الرصيد المتاح بالمخزن (${product.stock})`
-          : `Warning: Requested quantity exceeds available inventory stock (${product.stock})`
+          ? `تمت إضافة (${actualAdd}) فقط لمطابقة أقصى رصيد متاح في المخزن (${product.stock} قطعة)`
+          : `Added (${actualAdd}) only to match available inventory stock (${product.stock} pcs)`
       );
     }
 
@@ -1668,7 +1718,7 @@ export function PosPage() {
       if (existing) {
         return prev.map((item) =>
           item.product.sku === product.sku
-            ? { ...item, quantity: item.quantity + customQty, unitPrice: finalUnitPrice }
+            ? { ...item, quantity: Math.min(product.stock, item.quantity + actualAdd), unitPrice: finalUnitPrice }
             : item
         );
       }
@@ -1677,7 +1727,7 @@ export function PosPage() {
         {
           id: `item-${Date.now()}-${Math.random().toString().slice(-4)}`,
           product,
-          quantity: customQty,
+          quantity: actualAdd,
           unitPrice: finalUnitPrice,
           discount: promoDiscountAmount,
         },
@@ -1708,20 +1758,23 @@ export function PosPage() {
     }
   };
 
-  // Update Item Quantity with inventory limit alert
+  // Update Item Quantity with strict inventory stock ceiling
   const handleUpdateQty = (itemId: string, delta: number) => {
+    registerUserActivity();
     setCart((prev) =>
       prev
         .map((item) => {
           if (item.id === itemId) {
-            const nextQty = item.quantity + delta;
-            if (nextQty > item.product.stock && delta > 0) {
-              toast.warning(
+            const maxAllowed = Math.max(1, item.product.stock);
+            if (delta > 0 && item.quantity >= maxAllowed) {
+              toast.error(
                 lang === "ar"
-                  ? `تنبيه: الكمية (${nextQty}) تتجاوز رصيد المخزن المتاح (${item.product.stock})`
-                  : `Warning: Quantity (${nextQty}) exceeds available inventory stock (${item.product.stock})`
+                  ? `عفواً، لا يمكن زيادة الكمية عن رصيد المخزن المتاح (${maxAllowed} قطعة)`
+                  : `Cannot exceed available inventory stock (${maxAllowed} pcs)`
               );
+              return item;
             }
+            const nextQty = Math.min(maxAllowed, item.quantity + delta);
             return nextQty > 0 ? { ...item, quantity: nextQty } : null;
           }
           return item;
@@ -1730,20 +1783,23 @@ export function PosPage() {
     );
   };
 
-  // Direct manual set quantity (typing directly in the quantity input)
+  // Direct manual set quantity (typing directly in the quantity input, strictly capped to stock)
   const handleSetDirectQty = (itemId: string, newQty: number) => {
+    registerUserActivity();
     if (isNaN(newQty) || newQty <= 0) return;
     setCart((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
-          if (newQty > item.product.stock) {
-            toast.warning(
+          const maxAllowed = Math.max(1, item.product.stock);
+          if (newQty > maxAllowed) {
+            toast.error(
               lang === "ar"
-                ? `تنبيه: الكمية (${newQty}) تتجاوز رصيد المخزن المتاح (${item.product.stock})`
-                : `Warning: Quantity (${newQty}) exceeds available inventory stock (${item.product.stock})`
+                ? `عفواً، الكمية المطلوبة (${newQty}) تتجاوز رصيد المخزن! تم ضبطها على أقصى رصيد متاح (${maxAllowed} قطعة)`
+                : `Requested quantity (${newQty}) exceeds stock! Capped to maximum available (${maxAllowed} pcs)`
             );
           }
-          return { ...item, quantity: newQty };
+          const finalQty = Math.min(maxAllowed, Math.max(1, newQty));
+          return { ...item, quantity: finalQty };
         }
         return item;
       })
@@ -1910,6 +1966,18 @@ export function PosPage() {
   // Complete Payment & Generate Invoice
   const handleCompletePayment = async () => {
     if (cart.length === 0) return;
+
+    // Safety check: ensure no item quantity exceeds available stock
+    for (const item of cart) {
+      if (item.quantity > item.product.stock) {
+        toast.error(
+          lang === "ar"
+            ? `عفواً، كمية الصنف "${pick(item.product.name.ar, item.product.name.en)}" (${item.quantity}) تتجاوز رصيد المخزن المتاح (${item.product.stock})!`
+            : `Quantity for "${pick(item.product.name.ar, item.product.name.en)}" (${item.quantity}) exceeds stock (${item.product.stock})!`
+        );
+        return;
+      }
+    }
 
     const orderId = `INV-POS-${Date.now().toString().slice(-6)}`;
     const changeAmount = Math.max(0, tenderAmount - finalTotal);
@@ -2948,9 +3016,13 @@ export function PosPage() {
                       <span className="text-xs font-black text-foreground block leading-tight truncate">
                         {pick(item.product.name.ar, item.product.name.en)}
                       </span>
-                      <span className="text-[10px] text-muted-foreground block truncate font-mono">
-                        {money(item.unitPrice)} / {pick(item.product.unit.ar, item.product.unit.en)}
-                      </span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground truncate font-mono">
+                        <span>{money(item.unitPrice)} / {pick(item.product.unit.ar, item.product.unit.en)}</span>
+                        <span>•</span>
+                        <span className={`font-semibold ${item.quantity >= item.product.stock ? "text-amber-600 dark:text-amber-400 font-black" : "text-muted-foreground"}`}>
+                          {lang === "ar" ? `المتاح: ${item.product.stock}` : `Stock: ${item.product.stock}`}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
