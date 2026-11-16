@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search, ChevronDown } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Building2, ExternalLink, Eye, Upload, Download, AlertTriangle, Store, FileSpreadsheet, Calendar, RotateCcw, Search, ChevronDown, BadgePercent } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
@@ -403,6 +403,16 @@ function Sales() {
               <FileSpreadsheet className="size-4" />
               <span className="hidden sm:inline">{pick("تصدير Excel", "Export Excel")}</span>
             </Btn>
+            <Link to="/discounts">
+              <Btn
+                variant="outline"
+                className="text-pink-600 dark:text-pink-400 border-pink-500/30 hover:bg-pink-500/10 gap-1.5"
+                title={pick("الخصومات والعروض الترويجية", "Discounts & Promotional Offers")}
+              >
+                <BadgePercent className="size-4" />
+                <span className="hidden sm:inline">{pick("العروض والخصومات", "Discounts")}</span>
+              </Btn>
+            </Link>
             <Link to="/pos">
               <Btn className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold border-none shadow-sm shadow-amber-500/25">
                 <Store className="size-4" />

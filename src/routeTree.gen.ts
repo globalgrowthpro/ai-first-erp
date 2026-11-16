@@ -14,6 +14,7 @@ import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AiModulesRouteImport } from './routes/ai-modules'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as DispatchRouteImport } from './routes/dispatch'
 import { Route as HelpdeskRouteImport } from './routes/helpdesk'
 import { Route as HrRouteImport } from './routes/hr'
@@ -54,6 +55,11 @@ const AiModulesRoute = AiModulesRouteImport.update({
 const AuditRoute = AuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscountsRoute = DiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DispatchRoute = DispatchRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
   '/hr': typeof HrRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
   '/hr': typeof HrRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
   '/hr': typeof HrRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/discounts'
     | '/dispatch'
     | '/helpdesk'
     | '/hr'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/discounts'
     | '/dispatch'
     | '/helpdesk'
     | '/hr'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/discounts'
     | '/dispatch'
     | '/helpdesk'
     | '/hr'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   AiRoute: typeof AiRoute
   AiModulesRoute: typeof AiModulesRoute
   AuditRoute: typeof AuditRoute
+  DiscountsRoute: typeof DiscountsRoute
   DispatchRoute: typeof DispatchRoute
   HelpdeskRoute: typeof HelpdeskRoute
   HrRoute: typeof HrRoute
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discounts': {
+      id: '/discounts'
+      path: '/discounts'
+      fullPath: '/discounts'
+      preLoaderRoute: typeof DiscountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dispatch': {
@@ -461,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiRoute: AiRoute,
   AiModulesRoute: AiModulesRoute,
   AuditRoute: AuditRoute,
+  DiscountsRoute: DiscountsRoute,
   DispatchRoute: DispatchRoute,
   HelpdeskRoute: HelpdeskRoute,
   HrRoute: HrRoute,

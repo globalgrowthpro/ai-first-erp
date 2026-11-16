@@ -39,6 +39,7 @@ import {
   MapPin,
   CheckSquare,
   Menu,
+  BadgePercent,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -65,6 +66,7 @@ const erpNav = [
   { to: "/pos", key: "nav_pos", icon: Store },
   { to: "/pos-shifts", key: "nav_pos_shifts", icon: History },
   { to: "/sales", key: "nav_sales", icon: ReceiptText },
+  { to: "/discounts", key: "nav_discounts", icon: BadgePercent },
   { to: "/purchases", key: "nav_purchases", icon: ShoppingCart },
   { to: "/accounting", key: "nav_accounting", icon: Calculator },
   { to: "/inventory", key: "nav_inventory", icon: Boxes },

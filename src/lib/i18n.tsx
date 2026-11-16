@@ -21,6 +21,7 @@ export const dict: Dict = {
   nav_pos: { ar: "شاشة الكاشير (POS)", en: "Point of Sale (POS)" },
   nav_pos_shifts: { ar: "ورديات الكاشير والصندوق", en: "Cashier Shifts & Drawer" },
   nav_sales: { ar: "المبيعات", en: "Sales" },
+  nav_discounts: { ar: "الخصومات والعروض", en: "Discounts & Offers" },
   nav_purchases: { ar: "المشتريات", en: "Purchases" },
   nav_accounting: { ar: "الحسابات", en: "Accounting" },
   nav_inventory: { ar: "المخزون", en: "Inventory" },
@@ -31,7 +32,7 @@ export const dict: Dict = {
   nav_hr: { ar: "الموارد البشرية", en: "Human Resources" },
   nav_reports: { ar: "التقارير", en: "Reports" },
   nav_audit: { ar: "سجل التدقيق", en: "Audit Log" },
-  nav_todo: { ar: "المهام والالتزامات", en: "To-Do & Commitments" },
+  nav_todo: { ar: "المهام والالتزامات", en: "Tasks" },
   nav_helpdesk: { ar: "الدعم الفني", en: "Helpdesk" },
   nav_settings: { ar: "الإعدادات والصلاحيات", en: "Settings & Roles" },
   hr_employees: { ar: "الموظفون", en: "Employees" },
@@ -362,8 +363,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       n: (v, opts) =>
         new Intl.NumberFormat(locale, { maximumFractionDigits: 0, ...opts }).format(v),
       money: (v) =>
-        `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(v)} ${
-          lang === "ar" ? "ج.م" : "EGP"
+        `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(v)} ${lang === "ar" ? "ج.م" : "EGP"
         }`,
       toggle,
     };

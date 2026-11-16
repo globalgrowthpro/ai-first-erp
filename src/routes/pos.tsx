@@ -82,6 +82,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealQrCode } from "@/components/ui/qr-code";
 import { formatOrderDateTimeEnglish } from "@/lib/pos-orders-store";
+import { useDiscountsStore } from "@/lib/discounts-store";
 
 export const Route = createFileRoute("/pos")({
   head: () => ({
@@ -518,6 +519,7 @@ export const INITIAL_ORDERS_HISTORY: PosCompletedOrder[] = [];
 
 export function PosPage() {
   const { t, pick, money, lang, dir, toggle } = useI18n();
+  const { calculateProductDiscount } = useDiscountsStore();
   const { settings } = useCompanySettings();
   const currencySymbol = lang === "ar" ? "ج.م" : "EGP";
   const { currentUser, logout } = useAuthStore();
@@ -1509,7 +1511,25 @@ export function PosPage() {
     }
 
     const vipCheck = getEffectiveProductPrice(product, selectedCustomer.name);
-    const finalUnitPrice = vipCheck.isVipApplied ? vipCheck.effectivePrice : product.price;
+    let finalUnitPrice = vipCheck.isVipApplied ? vipCheck.effectivePrice : product.price;
+    let promoDiscountAmount = 0;
+    let appliedPromoRule: any = null;
+
+    if (!vipCheck.isVipApplied) {
+      const promoCalc = calculateProductDiscount({
+        productId: product.id || product.sku,
+        productSku: product.sku,
+        categoryId: product.category,
+        categoryCode: product.category,
+        unitPrice: product.price,
+        branchId: selectedBranch.id,
+      });
+      if (promoCalc.discountAmount > 0) {
+        finalUnitPrice = promoCalc.discountedPrice;
+        promoDiscountAmount = promoCalc.discountAmount;
+        appliedPromoRule = promoCalc.appliedRule;
+      }
+    }
 
     setCart((prev) => {
       const existing = prev.find((item) => item.product.sku === product.sku);
@@ -1527,7 +1547,7 @@ export function PosPage() {
           product,
           quantity: customQty,
           unitPrice: finalUnitPrice,
-          discount: 0,
+          discount: promoDiscountAmount,
         },
       ];
     });
@@ -1537,6 +1557,13 @@ export function PosPage() {
         lang === "ar"
           ? `⭐ تم تطبيق سعر VIP للعميل (${finalUnitPrice} ج.م) بدلاً من ${vipCheck.standardPrice} ج.م`
           : `⭐ Applied VIP Price (${finalUnitPrice} EGP) for this client`,
+        { duration: 2500 }
+      );
+    } else if (appliedPromoRule) {
+      toast.success(
+        lang === "ar"
+          ? `🏷️ عرض ترويجي: "${appliedPromoRule.name.ar}" (خصم ${promoDiscountAmount} ج.م)`
+          : `🏷️ Promo: "${appliedPromoRule.name.en}" (${promoDiscountAmount} EGP off)`,
         { duration: 2500 }
       );
     } else {
@@ -2293,6 +2320,15 @@ export function PosPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
               {filteredProducts.map((prod) => {
                 const cartQty = cart.find((c) => c.product.sku === prod.sku)?.quantity || 0;
+                const promoInfo = calculateProductDiscount({
+                  productId: prod.id || prod.sku,
+                  productSku: prod.sku,
+                  categoryId: prod.category,
+                  categoryCode: prod.category,
+                  unitPrice: prod.price,
+                  branchId: selectedBranch.id,
+                });
+
                 return (
                   <div
                     key={prod.sku}
@@ -2325,7 +2361,11 @@ export function PosPage() {
                         <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white/90 truncate shadow-xs">
                           {prod.sku}
                         </span>
-                        {prod.badge && (
+                        {promoInfo.discountAmount > 0 ? (
+                          <span className="text-[9px] font-mono font-black px-1.5 py-0.5 rounded-md shadow-xs text-white bg-pink-600 animate-pulse">
+                            {promoInfo.appliedRule?.type === "percentage" ? `-%${promoInfo.appliedRule.value}` : `-${promoInfo.appliedRule?.value}ج`}
+                          </span>
+                        ) : prod.badge ? (
                           <span
                             className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs text-white ${
                               prod.stock <= 0 ? "bg-rose-600" : "bg-amber-500"
@@ -2333,7 +2373,7 @@ export function PosPage() {
                           >
                             {prod.badge}
                           </span>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Bottom Overlay: Stock Count & Cart Quantity */}
@@ -2373,9 +2413,20 @@ export function PosPage() {
                     {/* Bottom Price & Add Action */}
                     <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
                       <div>
-                        <span className="text-sm sm:text-base font-black text-foreground font-mono">
-                          {money(prod.price)}
-                        </span>
+                        {promoInfo.discountAmount > 0 ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                              {money(promoInfo.discountedPrice)}
+                            </span>
+                            <span className="text-[10px] line-through text-muted-foreground font-mono">
+                              {money(prod.price)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm sm:text-base font-black text-foreground font-mono">
+                            {money(prod.price)}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1">
