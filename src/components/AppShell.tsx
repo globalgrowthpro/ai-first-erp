@@ -214,12 +214,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const normalizedPath = currentPath === "/" ? "/" : currentPath.replace(/\/$/, "");
   const isAdmin = currentUser.role === "admin";
   const hasWildcardAccess =
+    isAdmin ||
     currentUser.allowedPages.includes("*") ||
     (isAdmin && currentUser.allowedPages.length === 0);
 
   const isPageAllowed =
+    isAdmin ||
     hasWildcardAccess ||
     currentUser.allowedPages.includes(normalizedPath) ||
+    (normalizedPath === "/discounts" && currentUser.allowedPages.includes("/sales")) ||
     currentUser.allowedPages.some(
       (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
     );
