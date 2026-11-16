@@ -232,7 +232,7 @@ function Purchases() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <KpiCard label={t("kpi_purchases")} value={money(total)} accent="brand" />
         <KpiCard label={t("kpi_payables")} value={money(documents.reduce((s, i) => s + (i.balance || 0), 0))} accent="ink" />
         <KpiCard label={t("purchaseOrders")} value={String(documents.length)} accent="gold" />
@@ -240,104 +240,210 @@ function Purchases() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title={t("purchaseOrders")} className="lg:col-span-2">
-          <DataTable
-            head={[
-              t("invoice"),
-              t("supplier"),
-              t("date"),
-              t("amount"),
-              t("status"),
-              pick("إجراءات", "Actions"),
-            ]}
-          >
-            {paginatedPurchases.map((po) => (
-              <tr
-                key={po.id}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest("button, a")) return;
-                  navigate({ to: "/purchases/$orderId", params: { orderId: po.id } });
-                }}
-                className="hover:bg-secondary/70 cursor-pointer transition-colors group"
-              >
-                <Td className="num font-bold">
-                  <Link
-                    to="/purchases/$orderId"
-                    params={{ orderId: po.id }}
-                    className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
-                    title={pick("عرض تفاصيل وبنود أمر الشراء", "View purchase order details & items")}
-                  >
-                    <span>{po.id}</span>
-                    <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
-                  </Link>
-                </Td>
-                <Td>
-                  <div className="space-y-0.5">
-                    <Link
-                      to="/purchases/$orderId"
-                      params={{ orderId: po.id }}
-                      className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
-                      title={pick("عرض تفاصيل أمر الشراء والمورد", "View purchase order & supplier")}
-                    >
-                      <Users className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                      <span>{pick(po.party.ar, po.party.en)}</span>
-                      <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                    </Link>
-                    {po.branch && (
-                      <span className="block text-[10px] text-muted-foreground font-medium">
-                        📍 {pick(po.branch.ar, po.branch.en)}
+          {/* Mobile Purchases Cards View (< md) */}
+          <div className="md:hidden space-y-3">
+            {documents.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-xs font-semibold">
+                {pick("لا توجد أوامر شراء مسجلة", "No purchase orders registered")}
+              </div>
+            ) : (
+              paginatedPurchases.map((po) => (
+                <div
+                  key={po.id}
+                  className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link
+                        to="/purchases/$orderId"
+                        params={{ orderId: po.id }}
+                        className="font-mono font-black text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>{po.id}</span>
+                        <ExternalLink className="size-3 shrink-0" />
+                      </Link>
+                      <div className="flex items-center gap-1 text-xs font-bold text-foreground mt-0.5 truncate">
+                        <Users className="size-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{pick(po.party.ar, po.party.en)}</span>
+                      </div>
+                      {po.branch && (
+                        <span className="text-[10px] text-muted-foreground block font-medium">
+                          📍 {pick(po.branch.ar, po.branch.en)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="shrink-0 text-end">
+                      <StatusPill status={po.status} />
+                      <span className="text-[10px] text-muted-foreground font-mono block mt-1">
+                        📅 {po.date}
                       </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-muted/40 rounded-lg p-2 text-xs border border-border/40">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">{t("amount")}</span>
+                      <span className="font-mono font-black text-foreground text-xs">{money(po.amount)}</span>
+                    </div>
+                    {po.balance !== undefined && (
+                      <div className="text-end">
+                        <span className="text-[10px] text-muted-foreground block">{t("balance")}</span>
+                        <span className={`font-mono font-black text-xs ${po.balance > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                          {money(po.balance)}
+                        </span>
+                      </div>
                     )}
                   </div>
-                </Td>
-                <Td className="num text-muted-foreground">{po.date}</Td>
-                <Td className="num font-semibold">{money(po.amount)}</Td>
-                <Td>
-                  <StatusPill status={po.status} />
-                </Td>
-                <Td>
-                  <div className="flex items-center gap-1">
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
                     <Link
                       to="/purchases/$orderId"
                       params={{ orderId: po.id }}
-                      title={pick("عرض تفاصيل وبنود أمر الشراء", "View order details & items")}
-                      className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                      className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline"
                     >
-                      <Eye className="size-4" />
+                      <Eye className="size-3.5" />
+                      <span>{pick("عرض أمر الشراء", "View PO")}</span>
                     </Link>
-                    {po.status !== "paid" && (
+
+                    <div className="flex items-center gap-1">
+                      {po.status !== "paid" && (
+                        <button
+                          type="button"
+                          onClick={() => markPaid(po.id)}
+                          title={pick("تسجيل سداد", "Mark paid")}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => markPaid(po.id)}
-                        title={pick("تسجيل سداد", "Mark paid")}
-                        className="p-1.5 rounded-md hover:bg-emerald-500/10 text-emerald-600"
+                        onClick={() => {
+                          setEditing(po);
+                          setFormOpen(true);
+                        }}
+                        title={pick("تعديل", "Edit")}
+                        className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
                       >
-                        <CheckCircle2 className="size-4" />
+                        <Edit2 className="size-3.5" />
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditing(po);
-                        setFormOpen(true);
-                      }}
-                      title={pick("تعديل", "Edit")}
-                      className="p-1.5 rounded-md hover:bg-primary/10 text-primary"
-                    >
-                      <Edit2 className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleting(po)}
-                      title={pick("حذف", "Delete")}
-                      className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleting(po)}
+                        title={pick("حذف", "Delete")}
+                        className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </Td>
-              </tr>
-            ))}
-          </DataTable>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View (md+) */}
+          <div className="hidden md:block">
+            <DataTable
+              head={[
+                t("invoice"),
+                t("supplier"),
+                t("date"),
+                t("amount"),
+                t("status"),
+                pick("إجراءات", "Actions"),
+              ]}
+            >
+              {paginatedPurchases.map((po) => (
+                <tr
+                  key={po.id}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a")) return;
+                    navigate({ to: "/purchases/$orderId", params: { orderId: po.id } });
+                  }}
+                  className="hover:bg-secondary/70 cursor-pointer transition-colors group"
+                >
+                  <Td className="num font-bold">
+                    <Link
+                      to="/purchases/$orderId"
+                      params={{ orderId: po.id }}
+                      className="hover:text-primary transition-colors inline-flex items-center gap-1 group-hover:underline text-primary font-bold"
+                      title={pick("عرض تفاصيل وبنود أمر الشراء", "View purchase order details & items")}
+                    >
+                      <span>{po.id}</span>
+                      <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                    </Link>
+                  </Td>
+                  <Td>
+                    <div className="space-y-0.5">
+                      <Link
+                        to="/purchases/$orderId"
+                        params={{ orderId: po.id }}
+                        className="font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 group hover:underline cursor-pointer"
+                        title={pick("عرض تفاصيل أمر الشراء والمورد", "View purchase order & supplier")}
+                      >
+                        <Users className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                        <span>{pick(po.party.ar, po.party.en)}</span>
+                        <ExternalLink className="size-3 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      </Link>
+                      {po.branch && (
+                        <span className="block text-[10px] text-muted-foreground font-medium">
+                          📍 {pick(po.branch.ar, po.branch.en)}
+                        </span>
+                      )}
+                    </div>
+                  </Td>
+                  <Td className="num text-muted-foreground">{po.date}</Td>
+                  <Td className="num font-semibold">{money(po.amount)}</Td>
+                  <Td>
+                    <StatusPill status={po.status} />
+                  </Td>
+                  <Td>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to="/purchases/$orderId"
+                        params={{ orderId: po.id }}
+                        title={pick("عرض تفاصيل وبنود أمر الشراء", "View order details & items")}
+                        className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Eye className="size-4" />
+                      </Link>
+                      {po.status !== "paid" && (
+                        <button
+                          type="button"
+                          onClick={() => markPaid(po.id)}
+                          title={pick("تسجيل سداد", "Mark paid")}
+                          className="p-1.5 rounded-md hover:bg-emerald-500/10 text-emerald-600"
+                        >
+                          <CheckCircle2 className="size-4" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditing(po);
+                          setFormOpen(true);
+                        }}
+                        title={pick("تعديل", "Edit")}
+                        className="p-1.5 rounded-md hover:bg-primary/10 text-primary"
+                      >
+                        <Edit2 className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleting(po)}
+                        title={pick("حذف", "Delete")}
+                        className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </Td>
+                </tr>
+              ))}
+            </DataTable>
+          </div>
           <TablePagination
             currentPage={poPage}
             totalItems={documents.length}

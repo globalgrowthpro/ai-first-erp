@@ -472,9 +472,148 @@ export function JournalEntriesTable({
         </div>
       </div>
 
-      {/* 3. The Main Journal Entries Table */}
+      {/* 3. The Main Journal Entries Table & Mobile Cards */}
       <div className="rounded-2xl border border-border/80 bg-card shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Journal Voucher Cards (< md) */}
+        <div className="md:hidden space-y-3 p-3">
+          {paginatedVouchers.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <BookOpen className="size-8 mx-auto opacity-30 mb-2" />
+              <p className="font-bold text-xs">
+                {pick("لا توجد قيود يومية مطابقة لخيارات البحث", "No journal entries found")}
+              </p>
+            </div>
+          ) : (
+            paginatedVouchers.map((voucher) => {
+              const isExpanded = expandedRows.has(voucher.id);
+              return (
+                <div
+                  key={voucher.id}
+                  className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-3 transition-all"
+                >
+                  {/* Top Bar: JV Number, Date, Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono font-black text-xs text-primary">{voucher.id}</span>
+                        {voucher.reference && (
+                          <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.2 rounded border border-border/50">
+                            {voucher.reference}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                        <Calendar className="size-3 text-muted-foreground/70" />
+                        <span className="font-mono">{voucher.date}</span>
+                        <span>•</span>
+                        <span className="font-medium text-foreground">
+                          {voucher.branchName
+                            ? pick(voucher.branchName.ar, voucher.branchName.en)
+                            : pick("الإدارة العامة", "HQ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {voucher.isBalanced ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="size-3" />
+                          <span>{pick("متزن", "Balanced")}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30">
+                          <AlertCircle className="size-3" />
+                          <span>{pick("غير متزن", "Unbalanced")}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Memo */}
+                  {voucher.memo && (
+                    <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 p-2 rounded-lg border border-border/40">
+                      {pick(voucher.memo.ar, voucher.memo.en)}
+                    </p>
+                  )}
+
+                  {/* Total Debit / Credit Summary */}
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-muted/40 rounded-lg p-2 border border-border/40">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">{pick("إجمالي المدين", "Total Debit")}</span>
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                        {money(voucher.totalDebit)}
+                      </span>
+                    </div>
+                    <div className="text-end">
+                      <span className="text-[10px] text-muted-foreground block">{pick("إجمالي الدائن", "Total Credit")}</span>
+                      <span className="font-mono font-black text-sky-600 dark:text-sky-400 text-xs">
+                        {money(voucher.totalCredit)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions & Expansion Toggle */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(voucher.id)}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                      <span>
+                        {isExpanded
+                          ? pick("إخفاء البنود", "Hide Lines")
+                          : pick(`عرض البنود (${voucher.lines.length})`, `View Lines (${voucher.lines.length})`)}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVoucherForPrint(voucher)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-bold transition-colors cursor-pointer"
+                      title={pick("طباعة سند القيد", "Print Voucher")}
+                    >
+                      <Printer className="size-3.5" />
+                      <span>{pick("طباعة", "Print")}</span>
+                    </button>
+                  </div>
+
+                  {/* Expanded Lines */}
+                  {isExpanded && (
+                    <div className="space-y-2 pt-2 border-t border-border/40">
+                      {voucher.lines.map((line, idx) => (
+                        <div
+                          key={`${line.id}-${idx}`}
+                          className="bg-secondary/40 rounded-lg p-2 text-xs space-y-1 border border-border/30"
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-bold text-foreground truncate">
+                              {pick(line.account?.ar || "غير محدد", line.account?.en || "Unknown")}
+                            </span>
+                            <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                              {line.accountCode}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] font-mono">
+                            <span className={Number(line.debit || 0) > 0 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-muted-foreground"}>
+                              مدين: {money(Number(line.debit || 0))}
+                            </span>
+                            <span className={Number(line.credit || 0) > 0 ? "text-sky-600 dark:text-sky-400 font-bold" : "text-muted-foreground"}>
+                              دائن: {money(Number(line.credit || 0))}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View (md+) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-start border-collapse">
             <thead>
               <tr className="bg-secondary/40 text-muted-foreground border-b border-border text-[11px] font-bold">

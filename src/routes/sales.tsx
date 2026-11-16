@@ -540,7 +540,7 @@ function Sales() {
       {/* View 3 & 4: Standard Invoices Table */}
       {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && salesTab !== "sales_reports" && (
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-2.5 sm:gap-4 grid-cols-1 sm:grid-cols-3">
             <KpiCard label={t("kpi_sales")} value={money(total)} accent="primary" />
             <KpiCard label={t("balance")} value={money(outstanding)} accent="gold" />
             <KpiCard label={t("kpi_receivables")} value={money(documents.reduce((s, i) => s + (i.balance || 0), 0))} accent="brand" />
@@ -749,19 +749,122 @@ function Sales() {
               </div>
             }
           >
-            <DataTable
-              head={[
-                t("invoice"),
-                t("customer"),
-                t("date"),
-                t("amount"),
-                t("balance"),
-                t("status"),
-                pick("إجراءات", "Actions"),
-              ]}
-            >
-              {paginatedDocuments
-                .map((inv) => (
+            {/* Mobile Cards View (Visible on < md) */}
+            <div className="md:hidden space-y-3">
+              {filteredDocuments.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-xs font-semibold">
+                  {pick("لا توجد فواتير مطابقة لمعايير البحث", "No invoices matching search criteria")}
+                </div>
+              ) : (
+                paginatedDocuments.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <Link
+                          to="/sales/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          className="font-mono font-black text-xs text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          <span>{inv.id}</span>
+                          <ExternalLink className="size-3 shrink-0" />
+                        </Link>
+                        <div className="flex items-center gap-1 text-xs font-bold text-foreground mt-0.5 truncate">
+                          <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="truncate">{pick(inv.party.ar, inv.party.en)}</span>
+                        </div>
+                        {inv.branch && (
+                          <span className="text-[10px] text-muted-foreground block font-medium">
+                            📍 {pick(inv.branch.ar, inv.branch.en)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="shrink-0 text-end">
+                        <StatusPill status={inv.status} />
+                        <span className="text-[10px] text-muted-foreground font-mono block mt-1">
+                          📅 {inv.date}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 bg-muted/40 rounded-lg p-2 text-xs border border-border/40">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">{t("amount")}</span>
+                        <span className="font-mono font-black text-foreground text-xs">{money(inv.amount)}</span>
+                      </div>
+                      <div className="text-end">
+                        <span className="text-[10px] text-muted-foreground block">{t("balance")}</span>
+                        <span
+                          className={`font-mono font-black text-xs ${
+                            inv.balance > 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {money(inv.balance)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                      <Link
+                        to="/sales/$invoiceId"
+                        params={{ invoiceId: inv.id }}
+                        className="inline-flex items-center gap-1 text-xs text-primary font-bold hover:underline"
+                      >
+                        <Eye className="size-3.5" />
+                        <span>{pick("تفاصيل الفاتورة", "View Details")}</span>
+                      </Link>
+
+                      <div className="flex items-center gap-1">
+                        {inv.status !== "paid" && (
+                          <button
+                            type="button"
+                            onClick={() => markPaid(inv.id)}
+                            title={pick("تسجيل تحصيل", "Mark paid")}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 cursor-pointer"
+                          >
+                            <CheckCircle2 className="size-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(inv)}
+                          title={pick("تعديل", "Edit")}
+                          className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                        >
+                          <Edit2 className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(inv)}
+                          title={pick("حذف", "Delete")}
+                          className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 cursor-pointer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View (Visible on md+) */}
+            <div className="hidden md:block">
+              <DataTable
+                head={[
+                  t("invoice"),
+                  t("customer"),
+                  t("date"),
+                  t("amount"),
+                  t("balance"),
+                  t("status"),
+                  pick("إجراءات", "Actions"),
+                ]}
+              >
+                {paginatedDocuments.map((inv) => (
                   <tr
                     key={inv.id}
                     onClick={(e) => {
@@ -846,7 +949,8 @@ function Sales() {
                     </Td>
                   </tr>
                 ))}
-            </DataTable>
+              </DataTable>
+            </div>
             <TablePagination
               currentPage={invPage}
               totalItems={filteredDocuments.length}

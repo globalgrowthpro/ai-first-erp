@@ -323,11 +323,11 @@ function Accounting() {
 
       {/* Accounting View Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full">
           <Btn
             variant={activeTab === "coa" ? "solid" : "outline"}
             onClick={() => setActiveTab("coa")}
-            className="text-xs font-bold gap-2"
+            className="text-xs font-bold gap-2 shrink-0 whitespace-nowrap"
           >
             <FolderTree className="size-4" />
             <span>{t("chartOfAccounts")}</span>
@@ -335,7 +335,7 @@ function Accounting() {
           <Btn
             variant={activeTab === "journal" ? "solid" : "outline"}
             onClick={() => setActiveTab("journal")}
-            className="text-xs font-bold gap-2"
+            className="text-xs font-bold gap-2 shrink-0 whitespace-nowrap"
           >
             <BookOpen className="size-4" />
             <span>{t("journal")}</span>
@@ -346,7 +346,7 @@ function Accounting() {
           <Btn
             variant={activeTab === "trial" ? "solid" : "outline"}
             onClick={() => setActiveTab("trial")}
-            className="text-xs font-bold gap-2"
+            className="text-xs font-bold gap-2 shrink-0 whitespace-nowrap"
           >
             <Scale className="size-4" />
             <span>{t("trialBalance")}</span>

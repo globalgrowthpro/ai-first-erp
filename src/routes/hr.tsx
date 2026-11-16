@@ -330,11 +330,11 @@ function HrPage() {
 
       {/* Main Tab Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full">
           <Btn
             variant={activeTab === "employees" ? "solid" : "outline"}
             onClick={() => setActiveTab("employees")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0 whitespace-nowrap"
           >
             <Users className="size-4" />
             {t("hr_employees")}
@@ -346,7 +346,7 @@ function HrPage() {
           <Btn
             variant={activeTab === "attendance" ? "solid" : "outline"}
             onClick={() => setActiveTab("attendance")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0 whitespace-nowrap"
           >
             <Clock className="size-4" />
             {t("hr_attendance")}
@@ -355,7 +355,7 @@ function HrPage() {
           <Btn
             variant={activeTab === "leaves" ? "solid" : "outline"}
             onClick={() => setActiveTab("leaves")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0 whitespace-nowrap"
           >
             <Calendar className="size-4" />
             {t("hr_leaves")}
@@ -369,7 +369,7 @@ function HrPage() {
           <Btn
             variant={activeTab === "payroll" ? "solid" : "outline"}
             onClick={() => setActiveTab("payroll")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0 whitespace-nowrap"
           >
             <DollarSign className="size-4" />
             {t("hr_payroll")}
@@ -378,7 +378,7 @@ function HrPage() {
           <Btn
             variant={activeTab === "ai" ? "solid" : "outline"}
             onClick={() => setActiveTab("ai")}
-            className="text-xs gap-1.5"
+            className="text-xs gap-1.5 shrink-0 whitespace-nowrap"
           >
             <Sparkles className="size-4 text-amber-500" />
             {t("hr_ai")}
@@ -671,9 +671,169 @@ function HrPage() {
             )}
           </div>
 
-          {/* Employees Table */}
+          {/* Employees Table & Mobile Cards */}
           <Panel title={pick("سجل العاملين والملفات الوظيفية", "Staff Directory & Personnel Files")}>
-            <DataTable
+            {/* Mobile Employees Cards (< md) */}
+            <div className="md:hidden space-y-3">
+              {filteredEmployees.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-xs font-semibold">
+                  {pick("لا يوجد موظفون مطابقون لشروط التصفية", "No employees match current filters")}
+                </div>
+              ) : (
+                paginatedEmployees.map((emp) => {
+                  const totalGross =
+                    emp.compensation.basicSalary +
+                    emp.compensation.housingAllowance +
+                    emp.compensation.transportAllowance +
+                    emp.compensation.foodAllowance +
+                    emp.compensation.kpiBonus;
+
+                  return (
+                    <div
+                      key={emp.id}
+                      className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          to="/hr/$employeeId"
+                          params={{ employeeId: emp.id }}
+                          className="flex items-center gap-2.5 min-w-0"
+                        >
+                          <img
+                            src={emp.avatarUrl || getDefaultAvatar(emp.gender, emp.code)}
+                            alt={pick(emp.name.ar, emp.name.en)}
+                            className="size-10 rounded-lg object-cover border border-border/80 shrink-0 shadow-xs bg-muted"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="font-bold text-foreground text-xs hover:text-primary transition-colors flex items-center gap-1 truncate">
+                              <span className="truncate">{pick(emp.name.ar, emp.name.en)}</span>
+                              {emp.userId && (
+                                <span
+                                  title={pick("مرتبط بحساب مستخدم في النظام", "Linked to ERP System User Account")}
+                                  className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0"
+                                >
+                                  <ShieldCheck className="size-2.5" />
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {pick(emp.positionName.ar, emp.positionName.en)}
+                            </p>
+                            <span className="font-mono text-[9px] text-primary font-bold">
+                              {emp.code}
+                            </span>
+                          </div>
+                        </Link>
+
+                        <div className="shrink-0 text-end">
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border",
+                              emp.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
+                                : emp.status === "on_leave"
+                                ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25"
+                                : "bg-muted text-muted-foreground border-border/60"
+                            )}
+                          >
+                            {emp.status === "active"
+                              ? pick("على رأس العمل", "Active")
+                              : emp.status === "on_leave"
+                              ? pick("في إجازة", "On Leave")
+                              : pick("فترة اختبار", "Probation")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dept & Gross Salary Grid */}
+                      <div className="grid grid-cols-2 gap-2 bg-muted/40 rounded-lg p-2 text-xs border border-border/40">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground block truncate">
+                            {pick(emp.departmentName.ar, emp.departmentName.en)}
+                          </span>
+                          <span className="text-[10px] font-medium text-foreground block truncate">
+                            📍 {pick(emp.branchName.ar, emp.branchName.en)}
+                          </span>
+                        </div>
+                        <div className="text-end">
+                          <span className="text-[10px] text-muted-foreground block">{pick("الراتب الشامل", "Gross")}</span>
+                          <span className="font-mono font-black text-xs text-foreground">
+                            {money(totalGross)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Footer: Health cert & Actions */}
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <div>
+                          {emp.healthCert ? (
+                            emp.healthCert.isExpired ? (
+                              <span className="text-[10px] font-bold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                {pick("الشهادة الصحية منتهية", "Cert Expired")}
+                              </span>
+                            ) : emp.healthCert.isExpiringSoon ? (
+                              <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                {pick("تنتهي قريباً", "Expiring Soon")}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                {pick("شهادة سارية", "Cert Valid")}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">
+                              {emp.contractType}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Link
+                            to="/hr/$employeeId"
+                            params={{ employeeId: emp.id }}
+                            title={pick("الملف الوظيفي", "View Dossier")}
+                            className="px-2 py-1 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Eye className="size-3" />
+                            <span>{pick("الملف", "Dossier")}</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingEmployee(emp);
+                              setIsEmployeeFormOpen(true);
+                            }}
+                            title={pick("تعديل", "Edit")}
+                            className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            <Edit2 className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(pick(`هل أنت متأكد من حذف ${emp.code}؟`, `Delete ${emp.code}?`))) {
+                                deleteEmployee(emp.id);
+                              }
+                            }}
+                            title={pick("حذف", "Delete")}
+                            className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 cursor-pointer"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table View (md+) */}
+            <div className="hidden md:block">
+              <DataTable
               head={[
                 pick("الكود", "Code"),
                 pick("الموظف", "Employee"),
@@ -840,6 +1000,7 @@ function HrPage() {
                 );
               })}
             </DataTable>
+            </div>
             <TablePagination
               currentPage={empPage}
               totalItems={filteredEmployees.length}

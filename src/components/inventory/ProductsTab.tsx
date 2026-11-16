@@ -1092,9 +1092,186 @@ export function ProductsTab({
         </div>
       </div>
 
-      {/* Products Table Card */}
-      <div className="surface-panel rounded-xl overflow-x-auto shadow-sm">
-        <DataTable
+      {/* Products Table & Mobile Cards Card */}
+      <div className="surface-panel rounded-xl shadow-sm overflow-hidden">
+        {/* Mobile Products Cards (< md) */}
+        <div className="md:hidden space-y-3 p-3">
+          {filteredProducts.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Boxes className="mx-auto size-8 opacity-40 mb-2" />
+              <p className="font-semibold text-xs">
+                {pick("لا توجد أصناف مطابقة للبحث", "No products matching your search")}
+              </p>
+            </div>
+          ) : (
+            (paginatedProducts || []).map((p) => {
+              const cat = categories.find((c) => c.id === p.categoryId);
+              const wh = warehouses.find((w) => w.id === p.warehouseId);
+              const unit = units.find((u) => u.id === p.unitId);
+              const isLow = p.qty <= p.minStock;
+              const itemBom =
+                boms.find((b) => b.finishedProductId === p.id && b.status === "active") ||
+                boms.find((b) => b.finishedProductId === p.id);
+              const compCount = itemBom?.components?.length || 0;
+
+              return (
+                <div
+                  key={p.id}
+                  className="surface-panel rounded-xl p-3 border border-border/80 shadow-xs space-y-2.5 transition-all"
+                >
+                  {/* Top Row: Image, SKU, Name & Badges */}
+                  <div className="flex items-start gap-2.5">
+                    {p.image ? (
+                      <img
+                        src={p.image}
+                        alt={pick(p.name.ar, p.name.en)}
+                        className="w-12 h-12 rounded-lg object-cover border border-border shadow-xs bg-secondary shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg border border-dashed border-border bg-secondary/60 flex items-center justify-center shrink-0">
+                        <Package className="size-5 text-muted-foreground/50" />
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono text-[10px] font-bold bg-secondary border border-border px-1.5 py-0.2 rounded">
+                          {p.sku}
+                        </span>
+                        {cat && (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold truncate max-w-[120px]",
+                              getCategoryStyle(cat).className
+                            )}
+                          >
+                            <span className={cn("size-1.5 rounded-full shrink-0", getCategoryStyle(cat).dot)} />
+                            <span className="truncate">{pick(cat.name.ar, cat.name.en)}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="font-bold text-foreground text-xs mt-1 truncate">{pick(p.name.ar, p.name.en)}</p>
+
+                      <div className="flex items-center gap-1 flex-wrap mt-1">
+                        {p.technicalType === "ON_DEMAND_ASSEMBLY" ||
+                        (!p.isRawMaterial && p.sku.startsWith("BRN-") && p.technicalType !== "FINISHED") ? (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 px-1 py-0.2 text-[9px] font-bold">
+                            <span>⚡</span>
+                            <span>{pick("تجميع بالفرع", "Assembly")}</span>
+                          </span>
+                        ) : p.technicalType === "SEMI_FINISHED" || (p.productType === "factory" && !p.isRawMaterial) ? (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-1 py-0.2 text-[9px] font-bold">
+                            <span>🏭</span>
+                            <span>{pick("نصف مصنع", "Semi-Fin")}</span>
+                          </span>
+                        ) : p.technicalType === "RAW_MATERIAL" || p.isRawMaterial ? (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1 py-0.2 text-[9px] font-bold">
+                            <span>📦</span>
+                            <span>{pick("مادة خام", "Raw")}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-1 py-0.2 text-[9px] font-bold">
+                            <span>🏷️</span>
+                            <span>{pick("منتج تام", "Finished")}</span>
+                          </span>
+                        )}
+
+                        {compCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => openEditModalWithComponents(p)}
+                            className="inline-flex items-center gap-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 text-[9px] font-bold cursor-pointer"
+                          >
+                            <span>🍳 {compCount}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stock & Price Metric Bar */}
+                  <div className="grid grid-cols-3 gap-1.5 bg-muted/40 rounded-lg p-2 text-xs border border-border/40 text-center">
+                    <div>
+                      <span className="text-[9px] text-muted-foreground block">{pick("الرصيد", "Stock")}</span>
+                      <div className="flex items-center justify-center gap-1">
+                        <span className={cn("font-mono font-bold text-xs", isLow ? "text-destructive" : "text-foreground")}>
+                          {n(p.qty)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{unit ? pick(unit.name.ar, unit.code) : ""}</span>
+                      </div>
+                      {isLow && (
+                        <span className="text-[8px] font-bold text-destructive block">{pick("ناقص", "Low")}</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-muted-foreground block">{t("sellingPrice")}</span>
+                      <span className="font-mono font-black text-xs text-foreground block">{money(p.sellingPrice)}</span>
+                      {p.vat !== undefined && p.vat > 0 && (
+                        <span className="text-[8px] text-muted-foreground block">+{money(p.vat)} ضريبة</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] text-muted-foreground block">{t("costPrice")}</span>
+                      <span className="font-mono font-semibold text-xs text-muted-foreground block">{money(p.costPrice)}</span>
+                      <span className="text-[8px] text-muted-foreground block truncate">{wh ? pick(wh.name.ar, wh.name.en) : "—"}</span>
+                    </div>
+                  </div>
+
+                  {/* POS Toggle & Actions */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] text-muted-foreground font-medium">{pick("POS:", "POS:")}</span>
+                      <Switch
+                        checked={Boolean(p.showOnPos)}
+                        onCheckedChange={(checked) => onUpdateProduct(p.id, { showOnPos: checked })}
+                      />
+                      <span className={cn("text-[10px] font-bold", p.showOnPos ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+                        {p.showOnPos ? pick("مفعّل", "ON") : pick("إخفاء", "OFF")}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditModalWithComponents(p)}
+                        className="p-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 cursor-pointer"
+                        title={pick("إدارة المكونات (Recipe)", "Manage Recipe")}
+                      >
+                        <ChefHat className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(p)}
+                        className="p-1.5 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground cursor-pointer"
+                        title={t("edit")}
+                      >
+                        <Edit2 className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteCandidate(p)}
+                        className="p-1.5 rounded-lg border border-border bg-card text-muted-foreground hover:text-destructive cursor-pointer"
+                        title={pick("حذف", "Delete")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View (md+) */}
+        <div className="hidden md:block overflow-x-auto">
+          <DataTable
           head={[
             pick("الصورة والكود", "Image & SKU"),
             pick("اسم الصنف / المنتج", "Product Name"),
@@ -1414,6 +1591,7 @@ export function ProductsTab({
             })
           )}
         </DataTable>
+        </div>
         <TablePagination
           currentPage={productPage}
           totalItems={filteredProducts.length}

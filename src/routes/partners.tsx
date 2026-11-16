@@ -287,7 +287,7 @@ function PartnersPage() {
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border/70">
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full w-full sm:w-auto">
           {[
             { id: "all", label: pick("الكل", "All"), count: partners.length },
             { id: "customers", label: pick("العملاء فقط", "Customers"), count: totalCustomers },
@@ -306,7 +306,7 @@ function PartnersPage() {
             <button
               key={item.id}
               onClick={() => setActiveFilter(item.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
                 activeFilter === item.id
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -342,9 +342,149 @@ function PartnersPage() {
         </div>
       </div>
 
-      {/* Partners Data Table */}
+      {/* Partners Data Table & Mobile Cards */}
       <Panel title={pick("سجل العملاء والموردين", "Partners Directory Table")}>
-        <div className="overflow-x-auto">
+        {/* Mobile Partners Cards (< md) */}
+        <div className="md:hidden space-y-3">
+          {filteredPartners.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-xs font-semibold">
+              {pick(
+                "لا يوجد عملاء أو موردون مطابقون لمعايير البحث",
+                "No partners matching current filter criteria"
+              )}
+            </div>
+          ) : (
+            paginatedPartners.map((p) => {
+              const cleanPhone = p.phone.replace(/[^0-9]/g, "");
+              return (
+                <div
+                  key={p.id}
+                  className="surface-panel rounded-xl p-3.5 border border-border/80 shadow-xs space-y-2.5 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="size-9 rounded-lg bg-card border border-border/80 p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                        {p.logo ? (
+                          <img src={p.logo} alt="" className="size-full object-contain rounded-md" />
+                        ) : (
+                          <div
+                            className={`size-full rounded-md flex items-center justify-center ${
+                              p.type === "customer" ? "bg-brand/10 text-brand" : "bg-gold/20 text-gold-foreground"
+                            }`}
+                          >
+                            {p.type === "customer" ? <Building2 className="size-4" /> : <Users className="size-4" />}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <button
+                          onClick={() => navigate({ search: { id: p.id } })}
+                          className="font-bold text-foreground text-start hover:text-primary transition-colors block cursor-pointer hover:underline text-xs truncate"
+                        >
+                          {pick(p.name.ar, p.name.en)}
+                        </button>
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                          <span className="font-mono font-bold text-primary">{p.code}</span>
+                          {p.contactPerson && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">{p.contactPerson}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${
+                        p.type === "customer"
+                          ? "bg-brand/15 text-brand border-brand/30"
+                          : "bg-gold/25 text-gold-foreground border-gold/40"
+                      }`}
+                    >
+                      {p.type === "customer" ? <Building2 className="size-3" /> : <Users className="size-3" />}
+                      <span>{p.type === "customer" ? t("customer") : t("supplier")}</span>
+                    </span>
+                  </div>
+
+                  {/* Financial & Status Metrics */}
+                  <div className="grid grid-cols-2 gap-2 bg-muted/40 rounded-lg p-2 text-xs border border-border/40">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">{pick("الرصيد الحالي", "Current Balance")}</span>
+                      <span
+                        className={`font-mono font-black text-xs ${
+                          p.balance > 0 ? "text-amber-600 dark:text-amber-400 font-extrabold" : "text-foreground"
+                        }`}
+                      >
+                        {money(p.balance)}
+                      </span>
+                    </div>
+                    <div className="text-end">
+                      <span className="text-[10px] text-muted-foreground block">{pick("الحد الائتماني", "Credit Limit")}</span>
+                      <span className="font-mono font-bold text-muted-foreground text-xs">
+                        {money(p.creditLimit)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Contact & Actions Row */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                    <div className="flex items-center gap-1.5" dir="ltr">
+                      <a
+                        href={`tel:${cleanPhone}`}
+                        dir="ltr"
+                        className="font-mono text-xs text-foreground font-semibold hover:text-primary flex items-center gap-1"
+                      >
+                        <Phone className="size-3 text-muted-foreground" />
+                        <span>{p.phone}</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${cleanPhone}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="size-6 rounded-md bg-emerald-500/10 text-emerald-600 flex items-center justify-center hover:bg-emerald-500/20 shrink-0"
+                        title="WhatsApp"
+                      >
+                        <MessageCircle className="size-3.5" />
+                      </a>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => navigate({ search: { id: p.id } })}
+                        title={pick("عرض كشف الحساب", "View account statement")}
+                        className="px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="size-3" />
+                        <span>{pick("التفاصيل", "Details")}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingPartner(p);
+                          setIsFormModalOpen(true);
+                        }}
+                        title={pick("تعديل", "Edit")}
+                        className="p-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <Edit2 className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deletePartner(p.id)}
+                        title={pick("حذف", "Delete")}
+                        className="p-1.5 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View (md+) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-start border-collapse text-xs">
             <thead>
               <tr className="border-b border-border/70 bg-secondary/40 text-[11px] font-semibold text-muted-foreground">
