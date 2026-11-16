@@ -38,6 +38,7 @@ import {
   Building2,
   MapPin,
   CheckSquare,
+  Menu,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -309,6 +310,36 @@ export function AppShell({ children }: { children: ReactNode }) {
       })
     : [];
 
+  // Mobile Navigation Drawer & Search State
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [drawerSearchQuery, setDrawerSearchQuery] = useState("");
+
+  // Close drawer and mobile search upon route change
+  useEffect(() => {
+    setIsMobileDrawerOpen(false);
+    setIsMobileSearchOpen(false);
+    setDrawerSearchQuery("");
+  }, [location.pathname]);
+
+  const filteredDrawerErp = erpNav.filter((item) => {
+    const isAllowed = isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes(item.to);
+    if (!isAllowed) return false;
+    if (!drawerSearchQuery.trim()) return true;
+    const title = t(item.key).toLowerCase();
+    const q = drawerSearchQuery.toLowerCase().trim();
+    return title.includes(q) || item.to.toLowerCase().includes(q);
+  });
+
+  const filteredDrawerControl = controlNav.filter((item) => {
+    const isAllowed = isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes(item.to);
+    if (!isAllowed) return false;
+    if (!drawerSearchQuery.trim()) return true;
+    const title = t(item.key).toLowerCase();
+    const q = drawerSearchQuery.toLowerCase().trim();
+    return title.includes(q) || item.to.toLowerCase().includes(q);
+  });
+
   // Close notifications, search & user menu on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -378,18 +409,44 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header - Hidden on POS page to eliminate double header and provide dedicated POS terminal UI */}
         {!hasOnlyAiPermission && !isPosPage && (
-          <header className="sticky top-0 z-20 flex items-center gap-2 sm:gap-2.5 border-b border-border/60 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none">
+          <header className="sticky top-0 z-20 flex items-center gap-1.5 sm:gap-2.5 border-b border-border/60 bg-card/90 backdrop-blur-md px-3 sm:px-4 py-2 sm:py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none">
+          {/* Mobile Drawer Trigger (Hamburger Menu) */}
+          {!hasOnlyPosPermission && (
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="lg:hidden inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-secondary/50 text-foreground hover:bg-secondary active:scale-95 transition-all shrink-0 cursor-pointer shadow-2xs"
+              title={pick("القائمة الرئيسية", "Navigation Menu")}
+              aria-label="Toggle Navigation Menu"
+            >
+              <Menu className="size-5" />
+            </button>
+          )}
+
           <Link
             to={hasOnlyPosPermission ? "/pos" : "/"}
-            className="w-32 shrink-0 lg:hidden"
+            className="w-24 sm:w-32 shrink-0 lg:hidden flex items-center"
             aria-label={companyName}
           >
             <img
               src={companyLogo}
               alt={companyName}
-              className="h-8 w-full object-contain"
+              className="h-7 sm:h-8 w-auto max-w-full object-contain"
             />
           </Link>
+
+          {/* Mobile Quick Search Button */}
+          {!hasOnlyPosPermission && (
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchOpen(true)}
+              className="sm:hidden inline-flex size-9 items-center justify-center rounded-xl border border-border/70 bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-95 transition-all shrink-0 cursor-pointer shadow-2xs"
+              title={pick("البحث في النظام", "Search System")}
+              aria-label="Search"
+            >
+              <Search className="size-4" />
+            </button>
+          )}
 
           {/* POS Terminal Station Badge */}
           {hasOnlyPosPermission && (
@@ -765,26 +822,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         )}
 
-        {/* Mobile Navigation */}
-        {!hasOnlyAiPermission && (
-          <nav className="flex gap-1 overflow-x-auto border-b border-border/40 bg-ink px-2 py-2 lg:hidden">
-            {[...erpNav, ...controlNav]
-              .filter((item) => isAdmin || currentUser.allowedPages.includes("*") || currentUser.allowedPages.includes(item.to))
-              .map(({ to, key }) => (
-              <Link
-                key={to}
-                to={to}
-                activeOptions={{ exact: to === "/" }}
-                className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold text-ink-foreground/70 data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
-              >
-                {t(key)}
-              </Link>
-            ))}
-          </nav>
-        )}
-
-        {/* Page Main Content */}
-        <main key={lang} className="flex-1 space-y-6 p-4 md:p-6">
+        {/* Page Main Content with Safe Bottom Spacing for Mobile Bottom Nav */}
+        <main key={lang} className="flex-1 space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
           {isPageAllowed ? (
             children
           ) : (
@@ -868,6 +907,320 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </footer>
       </div>
+
+      {/* Modern Mobile Bottom Navigation Bar (Hidden on POS page to maximize terminal) */}
+      {!hasOnlyAiPermission && !isPosPage && (
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-border/80 bg-card/95 backdrop-blur-xl px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:hidden"
+        >
+          <Link
+            to="/"
+            activeOptions={{ exact: true }}
+            className="group flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold text-muted-foreground transition-all duration-150 data-[status=active]:text-primary active:scale-95"
+          >
+            <div className="relative flex items-center justify-center rounded-xl p-1 transition-all group-data-[status=active]:bg-primary/10">
+              <LayoutDashboard className="size-5 transition-transform group-data-[status=active]:scale-110" />
+            </div>
+            <span className="leading-none">{t("nav_dashboard")}</span>
+          </Link>
+
+          <Link
+            to="/pos"
+            className="group flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold text-muted-foreground transition-all duration-150 data-[status=active]:text-primary active:scale-95"
+          >
+            <div className="relative flex items-center justify-center rounded-xl p-1 transition-all group-data-[status=active]:bg-primary/10">
+              <Store className="size-5 transition-transform group-data-[status=active]:scale-110" />
+            </div>
+            <span className="leading-none">{pick("الكاشير", "POS")}</span>
+          </Link>
+
+          <Link
+            to="/sales"
+            className="group flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold text-muted-foreground transition-all duration-150 data-[status=active]:text-primary active:scale-95"
+          >
+            <div className="relative flex items-center justify-center rounded-xl p-1 transition-all group-data-[status=active]:bg-primary/10">
+              <ReceiptText className="size-5 transition-transform group-data-[status=active]:scale-110" />
+            </div>
+            <span className="leading-none">{t("nav_sales")}</span>
+          </Link>
+
+          <Link
+            to="/ai"
+            className="group flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold text-muted-foreground transition-all duration-150 data-[status=active]:text-primary active:scale-95"
+          >
+            <div className="relative flex items-center justify-center rounded-xl p-1 transition-all group-data-[status=active]:bg-primary/10">
+              <Sparkles className="size-5 text-amber-500 transition-transform group-data-[status=active]:scale-110 group-data-[status=active]:text-primary" />
+            </div>
+            <span className="leading-none">{pick("الذكاء", "AI")}</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className={cn(
+              "group flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold transition-all duration-150 active:scale-95 cursor-pointer",
+              isMobileDrawerOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            title={pick("القائمة", "Menu")}
+          >
+            <div
+              className={cn(
+                "relative flex items-center justify-center rounded-xl p-1 transition-all",
+                isMobileDrawerOpen ? "bg-primary/10" : "group-hover:bg-secondary"
+              )}
+            >
+              <Menu className="size-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 size-2 rounded-full bg-rose-500 ring-2 ring-card" />
+              )}
+            </div>
+            <span className="leading-none">{pick("القائمة", "Menu")}</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Mobile Slide-Over Navigation Drawer */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 transition-opacity duration-300 lg:hidden",
+          isMobileDrawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+
+        {/* Drawer Body */}
+        <aside
+          className={cn(
+            "absolute top-0 bottom-0 w-80 max-w-[85vw] gradient-ink text-white shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-out",
+            dir === "rtl"
+              ? (isMobileDrawerOpen ? "translate-x-0 right-0 border-l border-border/20" : "translate-x-full right-0")
+              : (isMobileDrawerOpen ? "translate-x-0 left-0 border-r border-border/20" : "-translate-x-full left-0")
+          )}
+        >
+          {/* Drawer Header */}
+          <div className="flex items-center justify-between p-3.5 border-b border-ink-foreground/15">
+            <Link to="/" onClick={() => setIsMobileDrawerOpen(false)} className="flex items-center gap-2">
+              <div className="rounded-xl bg-white p-1.5 shadow-xs max-w-[140px]">
+                <img src={companyLogo} alt={companyName} className="h-6 w-auto object-contain" />
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(false)}
+              className="size-8 rounded-lg border border-ink-foreground/20 flex items-center justify-center text-ink-foreground/80 hover:text-white hover:bg-ink-foreground/10 active:scale-95 transition-all cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+
+          {/* Current Admin User Profile Card in Drawer */}
+          <div className="p-3 mx-3 my-2.5 rounded-xl border border-ink-foreground/15 bg-ink-foreground/5 space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`size-9 rounded-lg bg-gradient-to-tr ${currentUser.avatarBg} text-white flex items-center justify-center font-bold text-xs shadow-xs ring-1 ring-white/20 shrink-0`}
+              >
+                {currentUser.name.ar[0]}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-xs text-white truncate">
+                  {pick(currentUser.name.ar, currentUser.name.en)}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-block px-1.5 py-0.2 rounded-md bg-primary/30 border border-primary/50 text-[10px] font-bold text-white truncate">
+                    {pick(currentUser.roleLabel.ar, currentUser.roleLabel.en)}
+                  </span>
+                  <span className="flex items-center gap-1 text-[9px] text-emerald-400 font-semibold">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {pick("متصل", "Online")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Drawer Quick Filter Input */}
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute top-1/2 -translate-y-1/2 size-3.5 text-ink-foreground/50 start-2.5" />
+              <input
+                value={drawerSearchQuery}
+                onChange={(e) => setDrawerSearchQuery(e.target.value)}
+                placeholder={pick("ابحث عن أي قسم أو شاشة...", "Filter modules...")}
+                className="w-full h-8 ps-8 pe-7 rounded-lg border border-ink-foreground/20 bg-ink-foreground/10 text-xs text-white placeholder:text-ink-foreground/50 outline-none focus:border-primary/60 transition-colors"
+              />
+              {drawerSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setDrawerSearchQuery("")}
+                  className="absolute top-1/2 -translate-y-1/2 end-2 text-ink-foreground/60 hover:text-white"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Drawer Scrollable Navigation Links */}
+          <div className="flex-1 overflow-y-auto px-3 py-1 space-y-4">
+            <div>
+              <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-ink-foreground/50 mb-1">
+                {t("group_erp")}
+              </p>
+              <div className="space-y-0.5">
+                {filteredDrawerErp.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to + ("search" in item && item.search?.tab ? item.search.tab : "")}
+                      to={item.to}
+                      search={"search" in item ? item.search : undefined}
+                      activeOptions={{ exact: item.to === "/" }}
+                      onClick={() => setIsMobileDrawerOpen(false)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-ink-foreground/80 hover:text-white hover:bg-ink-foreground/10 data-[status=active]:bg-primary data-[status=active]:text-white transition-colors"
+                    >
+                      <Icon className="size-4 shrink-0 text-primary group-data-[status=active]:text-white" />
+                      <span>{t(item.key)}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="px-2 text-[10px] font-bold uppercase tracking-wider text-ink-foreground/50 mb-1">
+                {t("group_control")}
+              </p>
+              <div className="space-y-0.5">
+                {filteredDrawerControl.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      activeOptions={{ exact: false }}
+                      onClick={() => setIsMobileDrawerOpen(false)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-ink-foreground/80 hover:text-white hover:bg-ink-foreground/10 data-[status=active]:bg-primary data-[status=active]:text-white transition-colors"
+                    >
+                      <Icon className="size-4 shrink-0 text-primary group-data-[status=active]:text-white" />
+                      <span>{t(item.key)}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Drawer Bottom Actions */}
+          <div className="p-3 border-t border-ink-foreground/15 space-y-2 bg-black/20">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  toggle();
+                  setIsMobileDrawerOpen(false);
+                }}
+                className="flex items-center justify-center gap-1.5 h-8 rounded-lg border border-ink-foreground/20 bg-ink-foreground/10 text-xs font-bold text-white hover:bg-ink-foreground/20 active:scale-95 transition-all cursor-pointer"
+              >
+                <Languages className="size-3.5 text-muted-foreground" />
+                <span>{t("lang")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileDrawerOpen(false);
+                  setIsUserMenuOpen(true);
+                }}
+                className="flex items-center justify-center gap-1.5 h-8 rounded-lg border border-ink-foreground/20 bg-ink-foreground/10 text-xs font-bold text-white hover:bg-ink-foreground/20 active:scale-95 transition-all cursor-pointer"
+              >
+                <User className="size-3.5 text-muted-foreground" />
+                <span>{pick("تبديل الحساب", "Switch User")}</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileDrawerOpen(false);
+                setIsLogoutOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 h-8 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+            >
+              <LogOut className="size-3.5" />
+              <span>{t("logout")}</span>
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      {/* Mobile Full-Screen Instant Search Dialog */}
+      <Dialog open={isMobileSearchOpen} onOpenChange={setIsMobileSearchOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-border/80" dir={dir}>
+          <div className="p-3 border-b border-border/60 bg-card">
+            <div className="relative flex items-center">
+              <Search className="absolute start-3 size-4 text-muted-foreground" />
+              <input
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={pick("ابحث عن أي شاشة، فاتورة، أو تقرير...", "Search modules, invoices, reports...")}
+                className="w-full h-10 ps-9 pe-8 bg-secondary/50 rounded-xl text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute end-2.5 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+            <p className="px-2 py-1 text-[11px] font-bold uppercase text-muted-foreground">
+              {lang === "ar" ? "الصفحات المصرح بها" : "Authorized Modules"}
+            </p>
+            {searchResults.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-xs">
+                {searchQuery.trim()
+                  ? (lang === "ar" ? "لا توجد نتائج مطابقة لبحثك" : "No matching results")
+                  : (lang === "ar" ? "اكتب للبحث في كافة أقسام النظام" : "Type to search all modules")}
+              </div>
+            ) : (
+              searchResults.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.to + ("search" in item && item.search?.tab ? item.search.tab : "")}
+                    to={item.to}
+                    search={"search" in item ? item.search : undefined}
+                    onClick={() => {
+                      setIsMobileSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-secondary transition-colors text-foreground font-semibold text-xs active:bg-secondary/80"
+                  >
+                    <div className="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="size-4" />
+                    </div>
+                    <span className="flex-1 truncate">{t(item.key)}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {item.to}
+                    </span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={isLogoutOpen} onOpenChange={setIsLogoutOpen}>

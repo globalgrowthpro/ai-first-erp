@@ -321,8 +321,8 @@ function Dashboard() {
         }
       />
 
-      {/* Top 10 Dynamic KPI Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      {/* Top 10 Dynamic KPI Cards - Compact 2-cols on mobile, up to 5-cols on desktop */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <KpiCard label={t("kpi_sales")} value={money(liveTotalSales)} color="rose" />
         <KpiCard label={t("kpi_purchases")} value={money(liveTotalPurchases)} color="blue" />
         <KpiCard label={t("kpi_netProfit")} value={money(liveNetProfit)} color="amber" />

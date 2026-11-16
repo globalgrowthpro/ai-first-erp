@@ -42,12 +42,12 @@ function Settings() {
         )}
       />
 
-      {/* Main Settings Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3">
+      {/* Main Settings Navigation Tabs - Responsive Scrollable Bar on Mobile */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 border-b border-border/70 no-scrollbar text-xs">
         <Btn
           variant={activeTab === "branding" ? "solid" : "outline"}
           onClick={() => setActiveTab("branding")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Building2 className="size-4" />
           {t("companyBranding")}
@@ -55,7 +55,7 @@ function Settings() {
         <Btn
           variant={activeTab === "users" ? "solid" : "outline"}
           onClick={() => setActiveTab("users")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Users className="size-4" />
           {t("usersAndOrg")}
@@ -63,7 +63,7 @@ function Settings() {
         <Btn
           variant={activeTab === "roles" ? "solid" : "outline"}
           onClick={() => setActiveTab("roles")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <ShieldCheck className="size-4" />
           {t("rolesAndSecurity")}
@@ -71,7 +71,7 @@ function Settings() {
         <Btn
           variant={activeTab === "gateways" ? "solid" : "outline"}
           onClick={() => setActiveTab("gateways")}
-          className="text-xs"
+          className="text-xs whitespace-nowrap shrink-0"
         >
           <Radio className="size-4" />
           {pick("بوابات الرسائل والبريد (SMS & SMTP)", "Gateways & Notifications")}
@@ -79,7 +79,7 @@ function Settings() {
         <Btn
           variant={activeTab === "security" ? "solid" : "outline"}
           onClick={() => setActiveTab("security")}
-          className="text-xs border-primary/30"
+          className="text-xs border-primary/30 whitespace-nowrap shrink-0"
         >
           <ShieldAlert className="size-4 text-primary" />
           {pick("مركز الأمان والحماية (OWASP & APIs)", "Security Center & OWASP")}

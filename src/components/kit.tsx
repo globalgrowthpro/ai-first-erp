@@ -12,12 +12,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-4">
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold uppercase leading-none tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p> : null}
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 border-b border-border/60 pb-3 sm:pb-4">
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold uppercase leading-tight tracking-tight truncate">{title}</h1>
+        {subtitle ? <p className="mt-1 text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">{actions}</div> : null}
     </div>
   );
 }
@@ -227,16 +227,16 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "rounded-2xl p-4 sm:p-5 border transition-all hover:scale-[1.01] hover:shadow-lg",
+        "rounded-2xl p-3 sm:p-5 border transition-all hover:scale-[1.01] hover:shadow-lg flex flex-col justify-between",
         theme ? theme.bg : "surface-panel border-border/70",
         className
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
         {!theme && (
           <span
             className={cn(
-              "h-4 w-1.5 rounded-full shrink-0",
+              "h-3.5 sm:h-4 w-1 sm:w-1.5 rounded-full shrink-0",
               accent === "brand" && "bg-brand",
               accent === "primary" && "bg-primary",
               accent === "gold" && "bg-gold",
@@ -246,31 +246,33 @@ export function KpiCard({
         )}
         <p
           className={cn(
-            "text-[11px] font-bold uppercase tracking-wide truncate",
+            "text-[10px] sm:text-[11px] font-bold uppercase tracking-wide truncate",
             theme ? theme.label : "text-muted-foreground"
           )}
+          title={label}
         >
           {label}
         </p>
       </div>
       <p
         className={cn(
-          "num mt-2.5 sm:mt-3 text-xl sm:text-2xl font-black tracking-tight",
+          "num mt-1.5 sm:mt-3 text-base sm:text-xl md:text-2xl font-black tracking-tight leading-tight truncate",
           theme ? "text-white" : "text-foreground"
         )}
+        title={value}
       >
         {value}
       </p>
       {typeof delta === "number" && !hideDelta ? (
         <p
           className={cn(
-            "mt-1.5 text-xs font-semibold flex items-center gap-1.5",
+            "mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-semibold flex items-center gap-1 sm:gap-1.5",
             theme ? "text-white/90" : delta >= 0 ? "text-emerald-500" : "text-rose-500"
           )}
         >
           <span
             className={cn(
-              "px-1.5 py-0.5 rounded-md text-[11px] font-bold",
+              "px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold",
               theme
                 ? "bg-white/20 text-white"
                 : delta >= 0
