@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   FileSpreadsheet,
+  FileText,
   Printer,
   Calendar,
   Lock,
