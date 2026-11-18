@@ -13,8 +13,9 @@ import { DocumentFormModal, ConfirmDeleteDialog } from "@/components/documents/D
 import { AdminPosOrdersView } from "@/components/pos/AdminPosOrdersView";
 import { AdminPosShiftsView } from "@/components/pos/AdminPosShiftsView";
 import { SalesReportsHub } from "@/components/sales/SalesReportsHub";
+import { SalesAnalysisReportView } from "@/components/sales/SalesAnalysisReportView";
 import { usePosOrdersStore } from "@/lib/pos-orders-store";
-import { FileText, ShoppingBag, History, BarChart3 } from "lucide-react";
+import { FileText, ShoppingBag, History, BarChart3, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/sales")({
   head: () => ({
@@ -42,7 +43,7 @@ function Sales() {
   const [editing, setEditing] = useState<BizDocument | null>(null);
   const [deleting, setDeleting] = useState<BizDocument | null>(null);
   const [importMsg, setImportMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "all_invoices" | "commercial" | "sales_reports">("pos_orders");
+  const [salesTab, setSalesTab] = useState<"pos_orders" | "pos_shifts" | "sales_analysis" | "all_invoices" | "commercial" | "sales_reports">("pos_orders");
   const { metrics: posMetrics } = usePosOrdersStore();
   const { categories: inventoryCategories, products: inventoryProducts } = useInventoryStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -416,6 +417,16 @@ function Sales() {
               <FileSpreadsheet className="size-4" />
               <span className="hidden sm:inline">{pick("تصدير Excel", "Export Excel")}</span>
             </Btn>
+            <Link to="/sales-analysis">
+              <Btn
+                variant="outline"
+                className="text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10 gap-1.5"
+                title={pick("تقرير تحليل المبيعات التفصيلي", "Sales Analysis Report")}
+              >
+                <TrendingUp className="size-4" />
+                <span className="hidden sm:inline">{pick("تحليل المبيعات", "Sales Analysis")}</span>
+              </Btn>
+            </Link>
             <Link to="/discounts">
               <Btn
                 variant="outline"
@@ -482,6 +493,28 @@ function Sales() {
         >
           <History className="w-4 h-4" />
           <span>{pick("ورديات ونقدية الكاشير", "Cashier Shifts & Cash")}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSalesTab("sales_analysis")}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            salesTab === "sales_analysis"
+              ? "bg-primary text-primary-foreground shadow-sm scale-102"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <TrendingUp className={`w-4 h-4 ${salesTab === "sales_analysis" ? "text-amber-300" : "text-amber-500"}`} />
+          <span>{pick("تقرير تحليل المبيعات", "Sales Analysis Report")}</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              salesTab === "sales_analysis"
+                ? "bg-white text-slate-950 shadow-sm"
+                : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+            }`}
+          >
+            {pick("وزير الحلو", "Wazeer")}
+          </span>
         </button>
 
         <button
@@ -557,11 +590,14 @@ function Sales() {
       {/* View 2: Cashier Shifts & Drawer Ledger */}
       {salesTab === "pos_shifts" && <AdminPosShiftsView />}
 
+      {/* View 2.5: Sales Analysis Report (وزير الحلو) */}
+      {salesTab === "sales_analysis" && <SalesAnalysisReportView />}
+
       {/* View 5: Comprehensive Sales Reports Hub */}
       {salesTab === "sales_reports" && <SalesReportsHub />}
 
       {/* View 3 & 4: Standard Invoices Table */}
-      {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && salesTab !== "sales_reports" && (
+      {salesTab !== "pos_orders" && salesTab !== "pos_shifts" && salesTab !== "sales_analysis" && salesTab !== "sales_reports" && (
         <div className="space-y-4">
           <div className="grid gap-2.5 sm:gap-4 grid-cols-1 sm:grid-cols-3">
             <KpiCard label={t("kpi_sales")} value={money(total)} accent="primary" />

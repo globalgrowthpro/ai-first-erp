@@ -230,6 +230,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     hasWildcardAccess ||
     currentUser.allowedPages.includes(normalizedPath) ||
     (normalizedPath === "/discounts" && currentUser.allowedPages.includes("/sales")) ||
+    (normalizedPath === "/sales-analysis" &&
+      (currentUser.allowedPages.includes("/sales") || currentUser.allowedPages.includes("/reports") || currentUser.allowedPages.includes("/sales-analysis"))) ||
     ((normalizedPath === "/customers" || normalizedPath === "/suppliers") &&
       (currentUser.allowedPages.includes("/partners") || currentUser.allowedPages.includes("/customers") || currentUser.allowedPages.includes("/suppliers"))) ||
     currentUser.allowedPages.some(

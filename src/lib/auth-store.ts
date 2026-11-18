@@ -228,6 +228,7 @@ export const DEFAULT_USER: AppUser = {
     "/pos",
     "/pos-shifts",
     "/sales",
+    "/sales-analysis",
     "/discounts",
     "/purchases",
     "/accounting",

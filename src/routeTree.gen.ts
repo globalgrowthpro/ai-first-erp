@@ -27,6 +27,7 @@ import { Route as PosShiftsRouteImport } from './routes/pos-shifts'
 import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SalesRouteImport } from './routes/sales'
+import { Route as SalesAnalysisRouteImport } from './routes/sales-analysis'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as TodoRouteImport } from './routes/todo'
@@ -124,6 +125,11 @@ const SalesRoute = SalesRouteImport.update({
   path: '/sales',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesAnalysisRoute = SalesAnalysisRouteImport.update({
+  id: '/sales-analysis',
+  path: '/sales-analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
+  '/sales-analysis': typeof SalesAnalysisRoute
   '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
+  '/sales-analysis': typeof SalesAnalysisRoute
   '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/purchases': typeof PurchasesRoute
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
+  '/sales-analysis': typeof SalesAnalysisRoute
   '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/purchases'
     | '/reports'
     | '/sales'
+    | '/sales-analysis'
     | '/settings'
     | '/suppliers'
     | '/todo'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/purchases'
     | '/reports'
     | '/sales'
+    | '/sales-analysis'
     | '/settings'
     | '/suppliers'
     | '/todo'
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/purchases'
     | '/reports'
     | '/sales'
+    | '/sales-analysis'
     | '/settings'
     | '/suppliers'
     | '/todo'
@@ -334,6 +346,7 @@ export interface RootRouteChildren {
   PurchasesRoute: typeof PurchasesRoute
   ReportsRoute: typeof ReportsRoute
   SalesRoute: typeof SalesRoute
+  SalesAnalysisRoute: typeof SalesAnalysisRoute
   SettingsRoute: typeof SettingsRoute
   SuppliersRoute: typeof SuppliersRoute
   TodoRoute: typeof TodoRoute
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales-analysis': {
+      id: '/sales-analysis'
+      path: '/sales-analysis'
+      fullPath: '/sales-analysis'
+      preLoaderRoute: typeof SalesAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -534,6 +554,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasesRoute: PurchasesRoute,
   ReportsRoute: ReportsRoute,
   SalesRoute: SalesRoute,
+  SalesAnalysisRoute: SalesAnalysisRoute,
   SettingsRoute: SettingsRoute,
   SuppliersRoute: SuppliersRoute,
   TodoRoute: TodoRoute,

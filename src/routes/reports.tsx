@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Download,
   Sparkles,
@@ -438,6 +438,19 @@ function ReportsHubPage() {
         }
         actions={
           <div className="flex flex-wrap items-center gap-2.5">
+            <Link to="/sales-analysis">
+              <Btn
+                variant="outline"
+                className="border-amber-600/40 text-amber-700 dark:text-amber-300 font-bold hover:bg-amber-500/10 gap-1.5"
+                title={lang === "ar" ? "تقرير تحليل المبيعات (وزير الحلو - فرع الخصوص)" : "Sales Analysis Report (Wazeer El-Helw)"}
+              >
+                <TrendingUp className="size-4 text-amber-600 dark:text-amber-400" />
+                <span>{lang === "ar" ? "تقرير تحليل المبيعات" : "Sales Analysis"}</span>
+                <span className="rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 text-[10px] font-black">
+                  {lang === "ar" ? "وزير الحلو" : "Wazeer"}
+                </span>
+              </Btn>
+            </Link>
             <Btn
               variant="solid"
               onClick={() => {
