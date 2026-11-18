@@ -24,6 +24,12 @@ import {
   X,
   FileText,
   BadgePercent,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  Award,
+  BarChart3,
+  Flame,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
@@ -31,6 +37,7 @@ import { useI18n } from "@/lib/i18n";
 import { Btn, StatusPill, TablePagination, usePagination } from "@/components/kit";
 import { usePosOrdersStore, BRANCH_NAMES_MAP, type AdminPosOrder } from "@/lib/pos-orders-store";
 import { useSalesStore, type BizDocument } from "@/lib/documents-store";
+import { NETWORK_BRANCHES_CONFIG } from "@/lib/branches-sales-seed";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +47,7 @@ interface SalesAnalysisReportViewProps {
 }
 
 export function SalesAnalysisReportView({
-  initialBranch = "khosoos",
+  initialBranch = "all",
   onNavigateBack,
 }: SalesAnalysisReportViewProps) {
   const { lang, money, pick } = useI18n();
@@ -54,7 +61,7 @@ export function SalesAnalysisReportView({
   const [dateFrom, setDateFrom] = useState<string>("2026-10-01");
   const [dateTo, setDateTo] = useState<string>("2026-10-31");
   const [selectedShift, setSelectedShift] = useState<string>("all");
-  const [viewTab, setViewTab] = useState<"summary" | "daily_ledger" | "orders_list">("summary");
+  const [viewTab, setViewTab] = useState<"summary" | "branches_matrix" | "daily_ledger" | "orders_list">("summary");
 
   // Search & Order Details Modal
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>("");
@@ -92,7 +99,7 @@ export function SalesAnalysisReportView({
     }
   };
 
-  // Real filtered orders matching branch & date range strictly from the live store
+  // Filtered orders matching branch (or all branches) & date range strictly from the live store
   const matchingOrders = useMemo(() => {
     return (livePosOrders || []).filter((ord) => {
       if (selectedBranch !== "all" && ord.branchId !== selectedBranch) return false;
@@ -226,6 +233,101 @@ export function SalesAnalysisReportView({
     };
   }, [matchingOrders]);
 
+  // All-Branches Comparative Ranking Matrix derived from actual orders in the selected period
+  const branchComparisonRows = useMemo(() => {
+    const branchMap: Record<
+      string,
+      {
+        branchId: string;
+        branchNameAr: string;
+        branchNameEn: string;
+        city: string;
+        orderCount: number;
+        cashSales: number;
+        visaSales: number;
+        takeawaySales: number;
+        deliverySales: number;
+        dineInSales: number;
+        totalSales: number;
+      }
+    > = {};
+
+    // Initialize with known network branches
+    for (const b of NETWORK_BRANCHES_CONFIG) {
+      branchMap[b.id] = {
+        branchId: b.id,
+        branchNameAr: b.name.ar,
+        branchNameEn: b.name.en,
+        city: b.city,
+        orderCount: 0,
+        cashSales: 0,
+        visaSales: 0,
+        takeawaySales: 0,
+        deliverySales: 0,
+        dineInSales: 0,
+        totalSales: 0,
+      };
+    }
+
+    // Filter all orders in date range across all branches
+    const dateFilteredOrders = (livePosOrders || []).filter((ord) => {
+      const orderDate = (ord.createdAt || "").slice(0, 10);
+      if (dateFrom && orderDate < dateFrom) return false;
+      if (dateTo && orderDate > dateTo) return false;
+      return true;
+    });
+
+    dateFilteredOrders.forEach((ord) => {
+      const brId = ord.branchId || "other";
+      if (!branchMap[brId]) {
+        branchMap[brId] = {
+          branchId: brId,
+          branchNameAr: ord.branchName?.ar || brId,
+          branchNameEn: ord.branchName?.en || brId,
+          city: "منطقة تشغيل",
+          orderCount: 0,
+          cashSales: 0,
+          visaSales: 0,
+          takeawaySales: 0,
+          deliverySales: 0,
+          dineInSales: 0,
+          totalSales: 0,
+        };
+      }
+
+      const amt = Number(ord.total) || 0;
+      const type = (ord.orderType || "").toLowerCase();
+      const m = (ord.paymentMethod || "").toLowerCase();
+
+      branchMap[brId].orderCount += 1;
+      branchMap[brId].totalSales += amt;
+
+      if (type === "dine_in") branchMap[brId].dineInSales += amt;
+      else if (type === "delivery") branchMap[brId].deliverySales += amt;
+      else branchMap[brId].takeawaySales += amt;
+
+      if (m.includes("card") || m.includes("visa")) {
+        branchMap[brId].visaSales += amt;
+      } else {
+        branchMap[brId].cashSales += amt;
+      }
+    });
+
+    const totalNetworkSales = Object.values(branchMap).reduce((s, r) => s + r.totalSales, 0) || 1;
+
+    const rows = Object.values(branchMap).map((r) => ({
+      ...r,
+      percentShare: Number(((r.totalSales / totalNetworkSales) * 100).toFixed(1)),
+      avgTicket: r.orderCount > 0 ? Number((r.totalSales / r.orderCount).toFixed(2)) : 0,
+    }));
+
+    // Sort descending by totalSales
+    rows.sort((a, b) => b.totalSales - a.totalSales);
+    return rows;
+  }, [livePosOrders, dateFrom, dateTo]);
+
+  const topBranch = branchComparisonRows[0] || null;
+
   // Real Daily Ledger aggregated strictly from actual orders grouped by date
   const dailyLedger = useMemo(() => {
     const arabicDays = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -305,6 +407,7 @@ export function SalesAnalysisReportView({
         o.orderNumber.toLowerCase().includes(q) ||
         o.cashierName.toLowerCase().includes(q) ||
         o.customerName.toLowerCase().includes(q) ||
+        (o.branchName?.ar || o.branchId).toLowerCase().includes(q) ||
         (o.paymentMethodLabel || o.paymentMethod || "").toLowerCase().includes(q)
       );
     });
@@ -324,8 +427,8 @@ export function SalesAnalysisReportView({
 
       // Sheet 1: الملخص المالي التنفيذي
       const summaryRows = [
-        ["تقرير تحليل المبيعات — وزير الحلو", ""],
-        ["الفرع:", selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch],
+        ["تقرير تحليل المبيعات — سلسلة حلويات وزير الحلو", ""],
+        ["النطاق الجغرافي:", selectedBranch === "all" ? "كافة الفروع المجمعة (10 فروع)" : selectedBranch],
         ["الفترة الزمنية:", `من ${dateFrom} إلى ${dateTo}`],
         ["إجمالي عدد الفواتير الفعلية:", reportData.orderCount],
         ["تاريخ استخراج التقرير:", new Date().toLocaleString("ar-EG")],
@@ -347,7 +450,26 @@ export function SalesAnalysisReportView({
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
       XLSX.utils.book_append_sheet(wb, wsSummary, "الملخص المالي");
 
-      // Sheet 2: قنوات الطلب
+      // Sheet 2: مقارنة كافة الفروع (Branch Matrix)
+      const branchRows = [
+        ["الترتيب", "كود الفرع", "اسم الفرع", "المدينة / المنطقة", "عدد الفواتير", "مبيعات الكاش (ج.م)", "مبيعات الفيزا (ج.م)", "إجمالي المبيعات (ج.م)", "المساهمة من السلسلة %", "متوسط الفاتورة (ج.م)"],
+        ...branchComparisonRows.map((b, idx) => [
+          idx + 1,
+          b.branchId,
+          b.branchNameAr,
+          b.city,
+          b.orderCount,
+          b.cashSales,
+          b.visaSales,
+          b.totalSales,
+          `${b.percentShare}%`,
+          b.avgTicket,
+        ]),
+      ];
+      const wsBranches = XLSX.utils.aoa_to_sheet(branchRows);
+      XLSX.utils.book_append_sheet(wb, wsBranches, "مقارنة أداء الفروع");
+
+      // Sheet 3: قنوات الطلب
       const channelRows = [
         ["نوع الطلب / القناة", "إجمالي المبيعات (ج.م)", "عدد الطلبات", "متوسط الفاتورة (ج.م)", "النسبة %"],
         ["تيك أواي (Takeaway)", reportData.channels.takeaway.sales, reportData.channels.takeaway.count, reportData.channels.takeaway.avg, `${reportData.channels.takeaway.percent}%`],
@@ -358,7 +480,7 @@ export function SalesAnalysisReportView({
       const wsChannels = XLSX.utils.aoa_to_sheet(channelRows);
       XLSX.utils.book_append_sheet(wb, wsChannels, "أنواع الطلب");
 
-      // Sheet 3: طرق الدفع
+      // Sheet 4: طرق الدفع
       const paymentRows = [
         ["طريقة التحصيل والدفع", "عدد الحركات", "إجمالي المحصل (ج.م)", "النسبة %"],
         ["كاش نقدي (Cash)", reportData.payments.cash.count, reportData.payments.cash.total, `${reportData.payments.cash.percent}%`],
@@ -370,7 +492,7 @@ export function SalesAnalysisReportView({
       const wsPayments = XLSX.utils.aoa_to_sheet(paymentRows);
       XLSX.utils.book_append_sheet(wb, wsPayments, "طرق التحصيل");
 
-      // Sheet 4: اليومية الفعلية
+      // Sheet 5: اليومية الفعلية
       const dailyRows = [
         ["التاريخ", "اليوم", "عدد الطلبات", "تيك أواي (ج.م)", "توصيل (ج.م)", "صالة (ج.م)", "كاش (ج.م)", "فيزا (ج.م)", "الإجمالي (ج.م)", "متوسط الطلب"],
         ...dailyLedger.map((d) => [
@@ -389,26 +511,9 @@ export function SalesAnalysisReportView({
       const wsDaily = XLSX.utils.aoa_to_sheet(dailyRows);
       XLSX.utils.book_append_sheet(wb, wsDaily, "سجل اليوميات");
 
-      // Sheet 5: سجل كافة الفواتير الفردية
-      const orderRows = [
-        ["رقم الفاتورة", "التاريخ والوقت", "الكاشير", "نوع الطلب", "المنصة", "طريقة الدفع", "المبلغ الإجمالي (ج.م)", "الحالة"],
-        ...matchingOrders.map((o) => [
-          o.orderNumber,
-          o.createdAt,
-          o.cashierName,
-          o.orderType,
-          o.orderPlatformName || o.orderPlatform,
-          o.paymentMethodLabel || o.paymentMethod,
-          o.total,
-          o.status,
-        ]),
-      ];
-      const wsOrders = XLSX.utils.aoa_to_sheet(orderRows);
-      XLSX.utils.book_append_sheet(wb, wsOrders, "كافة الفواتير");
-
-      const fileName = `تقرير_تحليل_المبيعات_الفعلية_${selectedBranch}_${dateFrom}_إلى_${dateTo}.xlsx`;
+      const fileName = `تقرير_تحليل_مبيعات_${selectedBranch === "all" ? "كافة_الفروع" : selectedBranch}_${dateFrom}_إلى_${dateTo}.xlsx`;
       safeDownloadWorkbook(wb, fileName);
-      toast.success(lang === "ar" ? "تم تصدير البيانات الفعلية إلى Excel بنجاح!" : "Real sales data exported to Excel successfully!");
+      toast.success(lang === "ar" ? "تم تصدير ملف Excel الشامل بنجاح!" : "Real sales data exported to Excel successfully!");
     } catch (err) {
       console.error(err);
       toast.error(lang === "ar" ? "تعذر تصدير الملف" : "Failed to export Excel file");
@@ -422,9 +527,11 @@ export function SalesAnalysisReportView({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-slate-950">سلسلة وزير الحلو للحلويات الشرقية والغربية</h1>
-            <h2 className="text-xl font-bold text-slate-800 mt-1">تقرير تحليل المبيعات الفعلي والبيانات المباشرة</h2>
+            <h2 className="text-xl font-bold text-slate-800 mt-1">
+              {selectedBranch === "all" ? "تقرير تحليل مبيعات كافة الفروع المجمعة" : `تقرير تحليل مبيعات فرع ${selectedBranch}`}
+            </h2>
             <p className="text-sm text-slate-600 mt-0.5">
-              المكان: {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch} | الفترة: من {dateFrom} إلى {dateTo} | عدد الفواتير: {reportData.orderCount}
+              النطاق: {selectedBranch === "all" ? "كافة الفروع المعتمدة (10 فروع)" : selectedBranch} | الفترة: من {dateFrom} إلى {dateTo} | عدد الفواتير: {reportData.orderCount.toLocaleString("en-US")}
             </p>
           </div>
           <div className="text-left text-xs font-mono text-slate-500">
@@ -433,6 +540,32 @@ export function SalesAnalysisReportView({
           </div>
         </div>
       </div>
+
+      {/* Single Branch Back Banner (When a specific branch is selected) */}
+      {selectedBranch !== "all" && (
+        <div className="print:hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedBranch("all")}
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition"
+            >
+              <ArrowRight className="size-4 rtl:rotate-0 ltr:rotate-180" />
+              <span>{lang === "ar" ? "العودة لتقرير كافة الفروع المجمعة" : "Back to All Branches"}</span>
+            </button>
+            <div className="text-xs text-muted-foreground">
+              {lang === "ar" ? "أنت تتصفح حالياً تقرير:" : "Currently viewing:"}{" "}
+              <strong className="text-foreground text-sm font-black">
+                {BRANCH_NAMES_MAP[selectedBranch]?.ar || selectedBranch}
+              </strong>
+            </div>
+          </div>
+
+          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-full border border-amber-500/20">
+            {reportData.orderCount.toLocaleString("en-US")} {lang === "ar" ? "فاتورة للفرع" : "branch orders"}
+          </span>
+        </div>
+      )}
 
       {/* Top Interactive Header & Filter Bar (Screen Only) */}
       <div className="print:hidden bg-card rounded-2xl p-4 sm:p-5 shadow-xs border border-border/80 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -444,20 +577,36 @@ export function SalesAnalysisReportView({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
-                {lang === "ar" ? "تقرير تحليل المبيعات" : "Sales Analysis Report"}
+                {selectedBranch === "all"
+                  ? lang === "ar"
+                    ? "تقرير تحليل مبيعات كافة الفروع"
+                    : "All Branches Sales Analysis Report"
+                  : lang === "ar"
+                    ? `تقرير تحليل مبيعات فرع ${BRANCH_NAMES_MAP[selectedBranch]?.ar || selectedBranch}`
+                    : `Branch Sales Report: ${selectedBranch}`}
               </h1>
               <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                {lang === "ar" ? "بيانات فعلية 100%" : "100% Real Data"}
+                {selectedBranch === "all"
+                  ? lang === "ar"
+                    ? "مجمع مركزي — 10 فروع"
+                    : "10 Consolidated Branches"
+                  : lang === "ar"
+                    ? "فرع منفرد"
+                    : "Single Branch"}
               </span>
               <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-secondary text-muted-foreground font-mono">
-                {reportData.orderCount.toLocaleString("en-US")} {lang === "ar" ? "فاتورة مسجلة" : "orders"}
+                {reportData.orderCount.toLocaleString("en-US")} {lang === "ar" ? "فاتورة" : "orders"}
               </span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-0.5">
               {lang === "ar" ? "السلسلة: " : "Chain: "}
-              <strong className="text-foreground">وزير الحلو</strong> • {lang === "ar" ? "الفرع: " : "Branch: "}
+              <strong className="text-foreground">سلسلة وزير الحلو</strong> • {lang === "ar" ? "النطاق: " : "Scope: "}
               <strong className="text-foreground">
-                {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch}
+                {selectedBranch === "all"
+                  ? lang === "ar"
+                    ? "كافة الفروع المعتمدة"
+                    : "All Network Branches"
+                  : BRANCH_NAMES_MAP[selectedBranch]?.ar || selectedBranch}
               </strong>
             </p>
           </div>
@@ -473,16 +622,17 @@ export function SalesAnalysisReportView({
               onChange={(e) => setSelectedBranch(e.target.value)}
               className="bg-transparent text-foreground font-bold text-xs outline-none cursor-pointer"
             >
+              <option value="all">كافة الفروع (All Branches — 10 فروع)</option>
               <option value="khosoos">وزير فرع الخصوص (El-Khosoos)</option>
-              <option value="all">كافة الفروع (All Branches)</option>
               <option value="korba">فرع الكوربة — مصر الجديدة</option>
-              <option value="maadi">فرع المعادي — شارع النصر</option>
               <option value="tagamoa">فرع التجمع الخامس — التسعين</option>
               <option value="sheikh_zayed">فرع الشيخ زايد — أمريكانا</option>
+              <option value="maadi">فرع المعادي — شارع النصر</option>
               <option value="abbas">فرع عباس العقاد — مدينة نصر</option>
-              <option value="wost_elbalad">فرع وسط البلد — طلعت حرب</option>
               <option value="faisal">فرع فيصل الرئيسي</option>
+              <option value="wost_elbalad">فرع وسط البلد — طلعت حرب</option>
               <option value="alex">فرع الإسكندرية — سموحة</option>
+              <option value="tenth_ramadan">فرع العاشر من رمضان والمصنع</option>
             </select>
           </div>
 
@@ -494,7 +644,7 @@ export function SalesAnalysisReportView({
               onChange={(e) => handlePresetChange(e.target.value as any)}
               className="bg-transparent text-foreground font-bold text-xs outline-none cursor-pointer"
             >
-              <option value="oct_2026">أكتوبر 2026 (تقرير فرع الخصوص)</option>
+              <option value="oct_2026">أكتوبر 2026 (تقرير السلسلة المعتمد)</option>
               <option value="today">اليوم (Today)</option>
               <option value="this_month">الشهر الحالي (This Month)</option>
               <option value="last_month">الشهر السابق (Last Month)</option>
@@ -542,7 +692,7 @@ export function SalesAnalysisReportView({
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-xs"
           >
             <FileSpreadsheet className="size-3.5" />
-            <span>{lang === "ar" ? "تصدير Excel" : "Export Excel"}</span>
+            <span>{selectedBranch === "all" ? (lang === "ar" ? "تصدير مجمع Excel" : "Export Network Excel") : (lang === "ar" ? "تصدير الفرع Excel" : "Export Branch Excel")}</span>
           </Btn>
 
           <Btn
@@ -562,12 +712,12 @@ export function SalesAnalysisReportView({
         </div>
       </div>
 
-      {/* Internal Navigation Tabs (Summary vs Daily Ledger vs Real Orders List) */}
-      <div className="flex items-center gap-2 border-b border-border/80 pb-3">
+      {/* Internal Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-border/80 pb-3 overflow-x-auto">
         <button
           type="button"
           onClick={() => setViewTab("summary")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
             viewTab === "summary"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
@@ -577,17 +727,35 @@ export function SalesAnalysisReportView({
           <span>{lang === "ar" ? "ملخص التحليل المالي والأنواع" : "Executive Analysis & Breakdown"}</span>
         </button>
 
+        {selectedBranch === "all" && (
+          <button
+            type="button"
+            onClick={() => setViewTab("branches_matrix")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
+              viewTab === "branches_matrix"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BarChart3 className="size-3.5 text-amber-500" />
+            <span>{lang === "ar" ? "جدول مقارنة وترتيب الفروع" : "Branch Comparative Matrix"}</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300">
+              10 {lang === "ar" ? "فروع" : "branches"}
+            </span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => setViewTab("daily_ledger")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
             viewTab === "daily_ledger"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
           }`}
         >
           <Calendar className="size-3.5" />
-          <span>{lang === "ar" ? "سجل اليوميات الفعلية" : "Daily Sales Ledger"}</span>
+          <span>{selectedBranch === "all" ? (lang === "ar" ? "اليومية المجمعة للسلسلة" : "Consolidated Daily Sales") : (lang === "ar" ? "سجل اليوميات الفعلية للفرع" : "Branch Daily Sales")}</span>
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary text-foreground">
             {dailyLedger.length} {lang === "ar" ? "يوماً" : "days"}
           </span>
@@ -596,7 +764,7 @@ export function SalesAnalysisReportView({
         <button
           type="button"
           onClick={() => setViewTab("orders_list")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer whitespace-nowrap ${
             viewTab === "orders_list"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
@@ -618,10 +786,16 @@ export function SalesAnalysisReportView({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-black text-foreground">
-                  {lang === "ar" ? "إجمالي المبيعات ومؤشرات الأداء" : "Gross & Net Sales Overview"}
+                  {selectedBranch === "all"
+                    ? lang === "ar"
+                      ? "إجمالي مبيعات السلسلة المجمعة ومؤشرات الأداء"
+                      : "Consolidated Network Sales & KPIs"
+                    : lang === "ar"
+                      ? "إجمالي مبيعات الفرع ومؤشرات الأداء"
+                      : "Branch Gross & Net Sales Overview"}
                 </h2>
                 <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                  القسم الأول
+                  {selectedBranch === "all" ? "10 فروع" : "القسم الأول"}
                 </span>
               </div>
               <div className="text-xs font-mono text-muted-foreground">
@@ -634,7 +808,13 @@ export function SalesAnalysisReportView({
               <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden group hover:border-amber-500/40 transition">
                 <div className="flex items-center justify-between text-muted-foreground mb-2">
                   <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    {lang === "ar" ? "مبيعات الأصناف (Gross)" : "Gross Item Sales"}
+                    {selectedBranch === "all"
+                      ? lang === "ar"
+                        ? "إجمالي مبيعات السلسلة (Gross)"
+                        : "Chain Gross Sales"
+                      : lang === "ar"
+                        ? "مبيعات الأصناف (Gross)"
+                        : "Gross Item Sales"}
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                     <ShoppingBag className="size-4" />
@@ -646,7 +826,7 @@ export function SalesAnalysisReportView({
                 </div>
                 <div className="mt-2 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                   <span className="text-emerald-600 dark:text-emerald-400 font-bold">100%</span>
-                  <span>{lang === "ar" ? "إجمالي حجم المبيعات المسجلة" : "Total gross volume"}</span>
+                  <span>{selectedBranch === "all" ? (lang === "ar" ? "مبيعات الـ 10 فروع مجمعة" : "10 branches total") : (lang === "ar" ? "إجمالي حجم المبيعات المسجلة" : "Total gross volume")}</span>
                 </div>
               </div>
 
@@ -654,7 +834,13 @@ export function SalesAnalysisReportView({
               <div className="bg-card p-5 rounded-2xl border-2 border-emerald-500/40 shadow-xs bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent relative overflow-hidden group">
                 <div className="flex items-center justify-between text-muted-foreground mb-2">
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                    {lang === "ar" ? "صافي المبيعات (Net Sales)" : "Net Sales"}
+                    {selectedBranch === "all"
+                      ? lang === "ar"
+                        ? "صافي المتحصلات المجمعة"
+                        : "Consolidated Net Sales"
+                      : lang === "ar"
+                        ? "صافي المبيعات (Net Sales)"
+                        : "Net Sales"}
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <DollarSign className="size-4" />
@@ -674,7 +860,13 @@ export function SalesAnalysisReportView({
               <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-blue-500/40 transition">
                 <div className="flex items-center justify-between text-muted-foreground mb-2">
                   <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    {lang === "ar" ? "عدد الفواتير (Orders)" : "Invoices Count"}
+                    {selectedBranch === "all"
+                      ? lang === "ar"
+                        ? "إجمالي الفواتير (Network Orders)"
+                        : "Network Invoices Count"
+                      : lang === "ar"
+                        ? "عدد الفواتير (Orders)"
+                        : "Invoices Count"}
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                     <Receipt className="size-4" />
@@ -693,22 +885,34 @@ export function SalesAnalysisReportView({
                 </div>
               </div>
 
-              {/* Card 4: Average Ticket */}
-              <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-purple-500/40 transition">
+              {/* Card 4: Average Ticket & Top Branch */}
+              <div className="bg-card p-5 rounded-2xl border border-purple-500/30 shadow-xs bg-gradient-to-br from-purple-500/5 via-transparent to-transparent relative overflow-hidden">
                 <div className="flex items-center justify-between text-muted-foreground mb-2">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                    {lang === "ar" ? "متوسط الفاتورة (Ticket)" : "Average Ticket"}
+                  <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
+                    {selectedBranch === "all"
+                      ? lang === "ar"
+                        ? "متوسط الفاتورة والفرع الأول"
+                        : "Avg Ticket & Top Branch"
+                      : lang === "ar"
+                        ? "متوسط الفاتورة (Ticket)"
+                        : "Average Ticket"}
                   </span>
                   <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <TrendingUp className="size-4" />
+                    {selectedBranch === "all" ? <Award className="size-4" /> : <TrendingUp className="size-4" />}
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
                   {reportData.averageTicket.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
                   <span className="text-xs font-bold text-muted-foreground">ج.م</span>
                 </div>
-                <div className="mt-2 text-xs font-semibold text-muted-foreground">
-                  {lang === "ar" ? "معدل قيمة السلة للعملية الواحدة" : "Average customer spending per order"}
+                <div className="mt-2 text-xs font-semibold text-purple-700 dark:text-purple-300">
+                  {selectedBranch === "all" && topBranch ? (
+                    <span className="flex items-center gap-1 font-bold">
+                      الأول: 👑 {topBranch.branchNameAr} ({Math.round(topBranch.totalSales / 1000)}K ج.م)
+                    </span>
+                  ) : (
+                    <span>{lang === "ar" ? "معدل قيمة السلة للعملية الواحدة" : "Average customer spending per order"}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -781,7 +985,7 @@ export function SalesAnalysisReportView({
                     {lang === "ar" ? "أنواع الطلب وقنوات البيع" : "Order Types & Sales Channels"}
                   </h2>
                   <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                    القسم الثاني
+                    {selectedBranch === "all" ? "مجمع السلسلة" : "القسم الثاني"}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -830,7 +1034,7 @@ export function SalesAnalysisReportView({
               </div>
 
               {/* Channel 2: Delivery */}
-              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-80 hover:opacity-100 transition">
                 <div className="flex items-center justify-between mb-3">
                   <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
                     {lang === "ar" ? "التوصيل (Delivery)" : "Delivery"}
@@ -839,27 +1043,27 @@ export function SalesAnalysisReportView({
                 </div>
                 <div className="space-y-1 mt-2">
                   <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                    {reportData.channels.delivery.sales.toFixed(2)}{" "}
-                    <span className="text-xs font-bold">ج.م</span>
+                  <div className="text-xl sm:text-2xl font-black text-foreground">
+                    {reportData.channels.delivery.sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                    <span className="text-xs font-bold text-muted-foreground">ج.م</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">
-                      {reportData.channels.delivery.count} {lang === "ar" ? "طلب" : "orders"}
+                    <span className="font-bold text-foreground text-sm">
+                      {reportData.channels.delivery.count.toLocaleString("en-US")} {lang === "ar" ? "طلب" : "orders"}
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.delivery.avg.toFixed(2)} ج.م</span>
+                    <span className="font-bold text-foreground text-sm">{reportData.channels.delivery.avg.toFixed(2)} ج.م</span>
                   </div>
                 </div>
               </div>
 
               {/* Channel 3: Dine-in */}
-              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-80 hover:opacity-100 transition">
                 <div className="flex items-center justify-between mb-3">
                   <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
                     {lang === "ar" ? "الصالة (Dine-in)" : "Dine-in"}
@@ -868,27 +1072,27 @@ export function SalesAnalysisReportView({
                 </div>
                 <div className="space-y-1 mt-2">
                   <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                    {reportData.channels.dineIn.sales.toFixed(2)}{" "}
-                    <span className="text-xs font-bold">ج.م</span>
+                  <div className="text-xl sm:text-2xl font-black text-foreground">
+                    {reportData.channels.dineIn.sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                    <span className="text-xs font-bold text-muted-foreground">ج.م</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">
-                      {reportData.channels.dineIn.count} {lang === "ar" ? "طلب" : "orders"}
+                    <span className="font-bold text-foreground text-sm">
+                      {reportData.channels.dineIn.count.toLocaleString("en-US")} {lang === "ar" ? "طلب" : "orders"}
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.dineIn.avg.toFixed(2)} ج.م</span>
+                    <span className="font-bold text-foreground text-sm">{reportData.channels.dineIn.avg.toFixed(2)} ج.م</span>
                   </div>
                 </div>
               </div>
 
               {/* Channel 4: Aggregators */}
-              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-80 hover:opacity-100 transition">
                 <div className="flex items-center justify-between mb-3">
                   <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
                     {lang === "ar" ? "المصادر (Aggregators)" : "Aggregators"}
@@ -897,21 +1101,21 @@ export function SalesAnalysisReportView({
                 </div>
                 <div className="space-y-1 mt-2">
                   <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                    {reportData.channels.aggregators.sales.toFixed(2)}{" "}
-                    <span className="text-xs font-bold">ج.م</span>
+                  <div className="text-xl sm:text-2xl font-black text-foreground">
+                    {reportData.channels.aggregators.sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                    <span className="text-xs font-bold text-muted-foreground">ج.م</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">
-                      {reportData.channels.aggregators.count} {lang === "ar" ? "طلب" : "orders"}
+                    <span className="font-bold text-foreground text-sm">
+                      {reportData.channels.aggregators.count.toLocaleString("en-US")} {lang === "ar" ? "طلب" : "orders"}
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.aggregators.avg.toFixed(2)} ج.م</span>
+                    <span className="font-bold text-foreground text-sm">{reportData.channels.aggregators.avg.toFixed(2)} ج.م</span>
                   </div>
                 </div>
               </div>
@@ -927,7 +1131,7 @@ export function SalesAnalysisReportView({
                     {lang === "ar" ? "أنواع الدفع والتحصيل المالي" : "Payment Methods & Tender Breakdown"}
                   </h2>
                   <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                    القسم الثالث
+                    {selectedBranch === "all" ? "مجمع السلسلة" : "القسم الثالث"}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -985,7 +1189,7 @@ export function SalesAnalysisReportView({
                 </div>
                 <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-blue-500/20">
                   {lang === "ar" ? "العدد: " : "Count: "}
-                  <strong className="text-foreground">{reportData.payments.visa.count}</strong> {lang === "ar" ? "عملية" : "tx"}
+                  <strong className="text-foreground">{reportData.payments.visa.count.toLocaleString("en-US")}</strong> {lang === "ar" ? "عملية" : "tx"}
                 </div>
               </div>
 
@@ -1062,13 +1266,165 @@ export function SalesAnalysisReportView({
         </div>
       )}
 
-      {/* TAB 2: REAL DAILY LEDGER */}
+      {/* TAB: ALL-BRANCHES COMPARATIVE RANKING MATRIX (Visible when selectedBranch === 'all' or via tab) */}
+      {(viewTab === "branches_matrix" || (selectedBranch === "all" && viewTab === "summary")) && (
+        <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-foreground">
+                  {lang === "ar" ? "جدول مقارنة وترتيب مبيعات كافة الفروع" : "All Branches Performance & Ranking Matrix"}
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  10 {lang === "ar" ? "فروع تشغيلية" : "branches"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {lang === "ar"
+                  ? "ترتيب الفروع حسب الإيرادات، وعدد الفواتير، ونسبة المساهمة في مبيعات السلسلة مع إمكانية فحص كل فرع"
+                  : "Branch ranking by revenues, order volumes, and network share with 1-click drill-down"}
+              </p>
+            </div>
+            <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              {lang === "ar" ? "إجمالي السلسلة: " : "Network Total: "}
+              {branchComparisonRows.reduce((s, r) => s + r.totalSales, 0).toLocaleString("en-US", { minimumFractionDigits: 2 })} ج.م
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-border/80 rounded-xl">
+            <table className="w-full text-xs text-right border-collapse">
+              <thead>
+                <tr className="bg-secondary/80 text-muted-foreground font-bold border-b border-border">
+                  <th className="p-3 text-center">#</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "اسم الفرع والمنطقة" : "Branch & City"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "عدد الفواتير" : "Orders"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "مبيعات الكاش (ج.م)" : "Cash (EGP)"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "مبيعات الفيزا (ج.م)" : "Visa (EGP)"}</th>
+                  <th className="p-3 text-right font-black text-foreground">{lang === "ar" ? "إجمالي المبيعات (ج.م)" : "Total (EGP)"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "المساهمة من السلسلة (%)" : "% Share"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "متوسط الفاتورة" : "Avg Ticket"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "تقرير الفرع" : "Action"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {branchComparisonRows.map((row, idx) => (
+                  <tr
+                    key={row.branchId}
+                    className={cn(
+                      "hover:bg-muted/50 transition cursor-pointer group",
+                      idx === 0 ? "bg-amber-500/5 font-semibold" : ""
+                    )}
+                    onClick={() => setSelectedBranch(row.branchId)}
+                  >
+                    <td className="p-3 text-center">
+                      {idx === 0 ? (
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black flex items-center justify-center mx-auto text-[11px] shadow-xs">
+                          1
+                        </span>
+                      ) : (
+                        <span className="font-bold text-muted-foreground">{idx + 1}</span>
+                      )}
+                    </td>
+                    <td className="p-3 font-bold text-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>{row.branchNameAr}</span>
+                        {idx === 0 && (
+                          <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded">
+                            {lang === "ar" ? "الأول 👑" : "Rank #1 👑"}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground font-normal">{row.city}</span>
+                    </td>
+                    <td className="p-3 text-center font-bold text-foreground">
+                      {row.orderCount.toLocaleString("en-US")}
+                    </td>
+                    <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">
+                      {row.cashSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-blue-600 dark:text-blue-400 font-bold">
+                      {row.visaSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 font-black text-foreground text-sm">
+                      {row.totalSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-16 bg-secondary rounded-full h-2 overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-2 rounded-full",
+                              idx === 0
+                                ? "bg-amber-500"
+                                : idx < 3
+                                  ? "bg-emerald-500"
+                                  : idx < 6
+                                    ? "bg-blue-500"
+                                    : "bg-slate-400"
+                            )}
+                            style={{ width: `${Math.min(100, row.percentShare * 5)}%` }}
+                          />
+                        </div>
+                        <span className="font-bold text-foreground">{row.percentShare}%</span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400">
+                      {row.avgTicket.toFixed(2)} ج.م
+                    </td>
+                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBranch(row.branchId)}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground transition shadow-xs"
+                      >
+                        {lang === "ar" ? "فحص الفرع" : "Drill Down"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-secondary font-black text-foreground border-t-2 border-border">
+                  <td className="p-3 text-center" colSpan={2}>
+                    {lang === "ar" ? "المجموع المجمع للسلسلة (10 فروع)" : "Consolidated Network Grand Total"}
+                  </td>
+                  <td className="p-3 text-center text-primary">
+                    {branchComparisonRows.reduce((s, r) => s + r.orderCount, 0).toLocaleString("en-US")}
+                  </td>
+                  <td className="p-3 text-emerald-600 dark:text-emerald-400">
+                    {branchComparisonRows.reduce((s, r) => s + r.cashSales, 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-3 text-blue-600 dark:text-blue-400">
+                    {branchComparisonRows.reduce((s, r) => s + r.visaSales, 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-3 text-base text-foreground">
+                    {branchComparisonRows.reduce((s, r) => s + r.totalSales, 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="p-3 text-center text-emerald-600 dark:text-emerald-400">100.0%</td>
+                  <td className="p-3 text-center text-purple-600 dark:text-purple-400 font-mono">
+                    {reportData.averageTicket.toFixed(2)} ج.م
+                  </td>
+                  <td className="p-3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: DAILY LEDGER */}
       {viewTab === "daily_ledger" && (
         <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <h3 className="text-base font-black text-foreground">
-                {lang === "ar" ? "سجل اليوميات والورديات الفعلية" : "Actual Daily Sales Ledger"}
+                {selectedBranch === "all"
+                  ? lang === "ar"
+                    ? "اليومية المجمعة لحركات مبيعات كافة الفروع"
+                    : "Consolidated Network Daily Sales Ledger"
+                  : lang === "ar"
+                    ? `سجل اليوميات والورديات الفعلية لفرع ${BRANCH_NAMES_MAP[selectedBranch]?.ar || selectedBranch}`
+                    : `Actual Daily Sales Ledger: ${selectedBranch}`}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {lang === "ar"
@@ -1135,7 +1491,7 @@ export function SalesAnalysisReportView({
         </div>
       )}
 
-      {/* TAB 3: INDIVIDUAL ORDERS AUDIT */}
+      {/* TAB 4: INDIVIDUAL ORDERS AUDIT */}
       {viewTab === "orders_list" && (
         <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1155,7 +1511,7 @@ export function SalesAnalysisReportView({
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder={lang === "ar" ? "بحث برقم الفاتورة، الكاشير، طريقة الدفع..." : "Search order #, cashier, payment..."}
+                placeholder={lang === "ar" ? "بحث برقم الفاتورة، الكاشير، الفرع..." : "Search order #, cashier, branch..."}
                 value={orderSearchQuery}
                 onChange={(e) => {
                   setOrderSearchQuery(e.target.value);
@@ -1171,9 +1527,9 @@ export function SalesAnalysisReportView({
               <thead>
                 <tr className="bg-secondary/80 text-muted-foreground font-bold border-b border-border">
                   <th className="p-3 text-right">{lang === "ar" ? "رقم الفاتورة" : "Order #"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "الفرع" : "Branch"}</th>
                   <th className="p-3 text-right">{lang === "ar" ? "التاريخ والوقت" : "Date & Time"}</th>
                   <th className="p-3 text-right">{lang === "ar" ? "الكاشير" : "Cashier"}</th>
-                  <th className="p-3 text-right">{lang === "ar" ? "العميل" : "Customer"}</th>
                   <th className="p-3 text-center">{lang === "ar" ? "النوع والمنصة" : "Type & Platform"}</th>
                   <th className="p-3 text-center">{lang === "ar" ? "طريقة الدفع" : "Payment"}</th>
                   <th className="p-3 text-right font-black text-foreground">{lang === "ar" ? "القيمة (ج.م)" : "Amount"}</th>
@@ -1184,9 +1540,13 @@ export function SalesAnalysisReportView({
                 {paginatedOrders.map((ord) => (
                   <tr key={ord.id} className="hover:bg-muted/50 transition">
                     <td className="p-3 font-mono font-bold text-foreground">{ord.orderNumber}</td>
+                    <td className="p-3 font-bold text-foreground">
+                      <span className="px-2 py-0.5 rounded-md bg-secondary text-[11px]">
+                        {ord.branchName?.ar || ord.branchId}
+                      </span>
+                    </td>
                     <td className="p-3 font-mono text-muted-foreground">{ord.formattedDate || ord.createdAt?.slice(0, 16)}</td>
                     <td className="p-3 font-medium text-foreground">{ord.cashierName}</td>
-                    <td className="p-3 text-muted-foreground">{ord.customerName}</td>
                     <td className="p-3 text-center">
                       <span className="px-2 py-0.5 rounded-md bg-secondary text-[11px] font-bold text-foreground">
                         {ord.orderPlatformName || ord.orderPlatform}

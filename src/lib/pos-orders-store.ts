@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { generateKhosoosOctOrders } from "@/lib/khosoos-oct-seed";
+import { generateAllBranchesOctOrders } from "@/lib/branches-sales-seed";
 
 export interface PosOrderItemRecord {
   id: string;
@@ -291,9 +291,9 @@ export function generateRealisticPosSeedOrders(): AdminPosOrder[] {
     }
   }
 
-  // Include full audited October 2026 dataset for Wazeer El-Helw Khosoos branch
-  const khosoosOctOrders = generateKhosoosOctOrders();
-  seed.push(...khosoosOctOrders);
+  // Include full audited October 2026 dataset for all Wazeer El-Helw network branches (10 branches)
+  const networkOctOrders = generateAllBranchesOctOrders();
+  seed.push(...networkOctOrders);
 
   seed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return seed;
