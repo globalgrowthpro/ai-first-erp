@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateKhosoosOctOrders } from "@/lib/khosoos-oct-seed";
 
 export interface PosOrderItemRecord {
   id: string;
@@ -189,7 +190,8 @@ export function generateRealisticPosSeedOrders(): AdminPosOrder[] {
     { id: "abbas", name: { ar: "فرع عباس العقاد — مدينة نصر", en: "Abbas El-Akkad — Nasr City" }, cashier: "إسلام يحيى" },
     { id: "wost_elbalad", name: { ar: "فرع وسط البلد — طلعت حرب", en: "Downtown — Talaat Harb" }, cashier: "حسام حسن" },
     { id: "faisal", name: { ar: "فرع فيصل — شارع فيصل الرئيسي", en: "Faisal Main St." }, cashier: "ياسر إبراهيم" },
-    { id: "alex", name: { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha" }, cashier: "مروان طارق" }
+    { id: "alex", name: { ar: "فرع الإسكندرية — سموحة", en: "Alexandria — Smouha" }, cashier: "مروان طارق" },
+    { id: "khosoos", name: { ar: "فرع الخصوص — القليوبية", en: "El-Khosoos" }, cashier: "محمد فتحي" }
   ];
 
   const menuPresets = [
@@ -288,6 +290,10 @@ export function generateRealisticPosSeedOrders(): AdminPosOrder[] {
       });
     }
   }
+
+  // Include full audited October 2026 dataset for Wazeer El-Helw Khosoos branch
+  const khosoosOctOrders = generateKhosoosOctOrders();
+  seed.push(...khosoosOctOrders);
 
   seed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return seed;

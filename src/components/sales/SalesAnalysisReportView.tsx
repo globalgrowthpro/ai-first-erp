@@ -10,9 +10,7 @@ import {
   Banknote,
   Receipt,
   RotateCcw,
-  Percent,
   CheckCircle2,
-  Share2,
   FileSpreadsheet,
   Building2,
   Clock,
@@ -20,50 +18,21 @@ import {
   ChevronDown,
   Filter,
   DollarSign,
-  ArrowUpRight,
-  ShieldCheck,
   ShoppingBag,
-  ExternalLink,
+  Search,
+  Eye,
+  X,
+  FileText,
+  BadgePercent,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { safeDownloadWorkbook } from "@/lib/excel-utils";
 import { useI18n } from "@/lib/i18n";
-import { Btn, StatusPill } from "@/components/kit";
+import { Btn, StatusPill, TablePagination, usePagination } from "@/components/kit";
 import { usePosOrdersStore, BRANCH_NAMES_MAP, type AdminPosOrder } from "@/lib/pos-orders-store";
+import { useSalesStore, type BizDocument } from "@/lib/documents-store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-// Baseline snapshot from audited POS report (وزير الحلو - فرع الخصوص - أكتوبر 2026)
-const KHOSOOS_OCT_BASELINE = {
-  grossSales: 473055.45,
-  netSales: 473055.45,
-  orderCount: 2690,
-  averageTicket: 175.86,
-  discount: 0,
-  service: 0,
-  tax: 0,
-  rounding: 0,
-  tips: 0,
-  expenses: 0,
-  received: 0,
-  advance: 0,
-  closedAdvance: 0,
-  returnsCount: 0,
-  returnsAmount: 0,
-  channels: {
-    takeaway: { sales: 473055.45, count: 2690, avg: 175.86, percent: 100 },
-    delivery: { sales: 0, count: 0, avg: 0, percent: 0 },
-    dineIn: { sales: 0, count: 0, avg: 0, percent: 0 },
-    aggregators: { sales: 0, count: 0, avg: 0, percent: 0 },
-  },
-  payments: {
-    cash: { count: 2624, total: 457286.0, percent: 96.67 },
-    visa: { count: 58, total: 13213.0, percent: 2.79 },
-    aggregatorCash: { count: 6, total: 2100.15, percent: 0.44 },
-    aggregatorVisa: { count: 2, total: 456.3, percent: 0.1 },
-    other: { count: 0, total: 0, percent: 0 },
-  },
-};
 
 interface SalesAnalysisReportViewProps {
   initialBranch?: string;
@@ -75,26 +44,37 @@ export function SalesAnalysisReportView({
   onNavigateBack,
 }: SalesAnalysisReportViewProps) {
   const { lang, money, pick } = useI18n();
-  const { orders: livePosOrders } = usePosOrdersStore();
+  const { orders: livePosOrders, refresh: refreshOrders, loading: posLoading } = usePosOrdersStore();
+  const { documents: salesDocuments } = useSalesStore();
 
   // Filters State
   const [selectedChain, setSelectedChain] = useState<string>("wazeer_el_helw");
   const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch);
-  const [dateRangePreset, setDateRangePreset] = useState<"oct_2026" | "this_month" | "last_month" | "all_time" | "custom">("oct_2026");
+  const [dateRangePreset, setDateRangePreset] = useState<"oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom">("oct_2026");
   const [dateFrom, setDateFrom] = useState<string>("2026-10-01");
   const [dateTo, setDateTo] = useState<string>("2026-10-31");
   const [selectedShift, setSelectedShift] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"summary" | "daily_ledger" | "items">("summary");
+  const [viewTab, setViewTab] = useState<"summary" | "daily_ledger" | "orders_list">("summary");
+
+  // Search & Order Details Modal
+  const [orderSearchQuery, setOrderSearchQuery] = useState<string>("");
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<AdminPosOrder | null>(null);
 
   const reportPrintRef = useRef<HTMLDivElement>(null);
 
   // Handle Preset Changes
-  const handlePresetChange = (preset: "oct_2026" | "this_month" | "last_month" | "all_time" | "custom") => {
+  const handlePresetChange = (preset: "oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom") => {
     setDateRangePreset(preset);
     const now = new Date();
     if (preset === "oct_2026") {
       setDateFrom("2026-10-01");
       setDateTo("2026-10-31");
+    } else if (preset === "today") {
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const d = String(now.getDate()).padStart(2, "0");
+      setDateFrom(`${y}-${m}-${d}`);
+      setDateTo(`${y}-${m}-${d}`);
     } else if (preset === "this_month") {
       const y = now.getFullYear();
       const m = String(now.getMonth() + 1).padStart(2, "0");
@@ -112,34 +92,25 @@ export function SalesAnalysisReportView({
     }
   };
 
-  // Compute live metrics or use baseline when filtered to Khosoos Oct 2026
-  const reportData = useMemo(() => {
-    const isBaselineMatch =
-      selectedBranch === "khosoos" &&
-      dateFrom <= "2026-10-01" &&
-      dateTo >= "2026-10-31";
-
-    // Filter live orders
-    const matchingLiveOrders = (livePosOrders || []).filter((ord) => {
+  // Real filtered orders matching branch & date range strictly from the live store
+  const matchingOrders = useMemo(() => {
+    return (livePosOrders || []).filter((ord) => {
       if (selectedBranch !== "all" && ord.branchId !== selectedBranch) return false;
       const orderDate = (ord.createdAt || "").slice(0, 10);
       if (dateFrom && orderDate < dateFrom) return false;
       if (dateTo && orderDate > dateTo) return false;
       return true;
     });
+  }, [livePosOrders, selectedBranch, dateFrom, dateTo]);
 
-    // If baseline matches and live store has fewer than 100 orders, show full audited photo metrics plus any additional live ones
-    if (isBaselineMatch && matchingLiveOrders.length < 50) {
-      return KHOSOOS_OCT_BASELINE;
-    }
-
-    // Dynamic calculation from real live POS orders
-    const grossSales = matchingLiveOrders.reduce((sum, o) => sum + (o.subtotal || o.total), 0);
-    const netSales = matchingLiveOrders.reduce((sum, o) => sum + o.total, 0);
-    const orderCount = matchingLiveOrders.length;
+  // Dynamic real calculations derived 100% from matching orders
+  const reportData = useMemo(() => {
+    const grossSales = matchingOrders.reduce((sum, o) => sum + (Number(o.subtotal) || Number(o.total) || 0), 0);
+    const netSales = matchingOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const orderCount = matchingOrders.length;
     const averageTicket = orderCount > 0 ? netSales / orderCount : 0;
-    const discount = matchingLiveOrders.reduce((sum, o) => sum + (o.discountAmount || 0), 0);
-    const tax = matchingLiveOrders.reduce((sum, o) => sum + (o.vatAmount || 0), 0);
+    const discount = matchingOrders.reduce((sum, o) => sum + (Number(o.discountAmount) || 0), 0);
+    const tax = matchingOrders.reduce((sum, o) => sum + (Number(o.vatAmount) || 0), 0);
     const service = 0;
     const rounding = 0;
     const tips = 0;
@@ -147,10 +118,12 @@ export function SalesAnalysisReportView({
     const received = 0;
     const advance = 0;
     const closedAdvance = 0;
-    const returnsCount = 0;
-    const returnsAmount = 0;
+    const returnsCount = matchingOrders.filter((o) => o.status === "cancelled" || o.status === "refunded").length;
+    const returnsAmount = matchingOrders
+      .filter((o) => o.status === "cancelled" || o.status === "refunded")
+      .reduce((s, o) => s + (Number(o.total) || 0), 0);
 
-    // Channels
+    // Channels breakdown strictly calculated from actual orders
     const channels = {
       takeaway: { sales: 0, count: 0, avg: 0, percent: 0 },
       delivery: { sales: 0, count: 0, avg: 0, percent: 0 },
@@ -158,10 +131,10 @@ export function SalesAnalysisReportView({
       aggregators: { sales: 0, count: 0, avg: 0, percent: 0 },
     };
 
-    matchingLiveOrders.forEach((ord) => {
+    matchingOrders.forEach((ord) => {
       const type = (ord.orderType || "").toLowerCase();
       const plat = (ord.orderPlatform || "").toLowerCase();
-      const amt = ord.total || 0;
+      const amt = Number(ord.total) || 0;
 
       if (plat && plat !== "direct") {
         channels.aggregators.sales += amt;
@@ -180,18 +153,18 @@ export function SalesAnalysisReportView({
 
     const totalChannelSales = netSales || 1;
     channels.takeaway.avg = channels.takeaway.count ? channels.takeaway.sales / channels.takeaway.count : 0;
-    channels.takeaway.percent = Math.round((channels.takeaway.sales / totalChannelSales) * 100);
+    channels.takeaway.percent = Number(((channels.takeaway.sales / totalChannelSales) * 100).toFixed(1));
 
     channels.delivery.avg = channels.delivery.count ? channels.delivery.sales / channels.delivery.count : 0;
-    channels.delivery.percent = Math.round((channels.delivery.sales / totalChannelSales) * 100);
+    channels.delivery.percent = Number(((channels.delivery.sales / totalChannelSales) * 100).toFixed(1));
 
     channels.dineIn.avg = channels.dineIn.count ? channels.dineIn.sales / channels.dineIn.count : 0;
-    channels.dineIn.percent = Math.round((channels.dineIn.sales / totalChannelSales) * 100);
+    channels.dineIn.percent = Number(((channels.dineIn.sales / totalChannelSales) * 100).toFixed(1));
 
     channels.aggregators.avg = channels.aggregators.count ? channels.aggregators.sales / channels.aggregators.count : 0;
-    channels.aggregators.percent = Math.round((channels.aggregators.sales / totalChannelSales) * 100);
+    channels.aggregators.percent = Number(((channels.aggregators.sales / totalChannelSales) * 100).toFixed(1));
 
-    // Payments
+    // Payments breakdown strictly calculated from actual orders
     const payments = {
       cash: { count: 0, total: 0, percent: 0 },
       visa: { count: 0, total: 0, percent: 0 },
@@ -200,13 +173,13 @@ export function SalesAnalysisReportView({
       other: { count: 0, total: 0, percent: 0 },
     };
 
-    matchingLiveOrders.forEach((ord) => {
+    matchingOrders.forEach((ord) => {
       const m = (ord.paymentMethod || "").toLowerCase();
       const plat = (ord.orderPlatform || "").toLowerCase();
-      const amt = ord.total || 0;
+      const amt = Number(ord.total) || 0;
 
       if (plat && plat !== "direct") {
-        if (m === "cash") {
+        if (m === "cash" || m === "نقداً") {
           payments.aggregatorCash.count += 1;
           payments.aggregatorCash.total += amt;
         } else {
@@ -251,88 +224,128 @@ export function SalesAnalysisReportView({
       channels,
       payments,
     };
-  }, [livePosOrders, selectedBranch, dateFrom, dateTo]);
+  }, [matchingOrders]);
 
-  // Synthetic or live Daily Breakdown for the 31 days
+  // Real Daily Ledger aggregated strictly from actual orders grouped by date
   const dailyLedger = useMemo(() => {
-    const days: Array<{
-      date: string;
-      dayName: string;
-      orderCount: number;
-      takeawaySales: number;
-      deliverySales: number;
-      dineInSales: number;
-      cashSales: number;
-      visaSales: number;
-      totalSales: number;
-      avgTicket: number;
-    }> = [];
-
     const arabicDays = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    const groups: Record<
+      string,
+      {
+        date: string;
+        dayName: string;
+        orderCount: number;
+        takeawaySales: number;
+        deliverySales: number;
+        dineInSales: number;
+        cashSales: number;
+        visaSales: number;
+        totalSales: number;
+      }
+    > = {};
 
-    // Distribute total over 31 days with realistic weekend/weekday variance
-    const totalGoal = reportData.netSales;
-    const totalOrdersGoal = reportData.orderCount;
-    const totalDays = 31;
-    const avgDailySales = totalGoal / totalDays;
-    const avgDailyOrders = Math.round(totalOrdersGoal / totalDays);
+    matchingOrders.forEach((ord) => {
+      const dStr = (ord.createdAt || "").slice(0, 10);
+      if (!dStr) return;
 
-    for (let day = 1; day <= totalDays; day++) {
-      const dStr = `2026-10-${String(day).padStart(2, "0")}`;
-      const dObj = new Date(2026, 9, day);
-      const isWeekend = dObj.getDay() === 4 || dObj.getDay() === 5; // Thu / Fri
-      const multiplier = isWeekend ? 1.35 : 0.88;
+      if (!groups[dStr]) {
+        const dObj = new Date(dStr);
+        const dayIdx = isNaN(dObj.getDay()) ? 0 : dObj.getDay();
+        groups[dStr] = {
+          date: dStr,
+          dayName: arabicDays[dayIdx],
+          orderCount: 0,
+          takeawaySales: 0,
+          deliverySales: 0,
+          dineInSales: 0,
+          cashSales: 0,
+          visaSales: 0,
+          totalSales: 0,
+        };
+      }
 
-      const dayOrders = Math.round(avgDailyOrders * multiplier);
-      const daySales = Math.round(avgDailySales * multiplier * 100) / 100;
-      const cashPart = Math.round(daySales * 0.967 * 100) / 100;
-      const visaPart = Math.round((daySales - cashPart) * 100) / 100;
+      const amt = Number(ord.total) || 0;
+      const type = (ord.orderType || "").toLowerCase();
+      const m = (ord.paymentMethod || "").toLowerCase();
 
-      days.push({
-        date: dStr,
-        dayName: arabicDays[dObj.getDay()],
-        orderCount: dayOrders,
-        takeawaySales: daySales,
-        deliverySales: 0,
-        dineInSales: 0,
-        cashSales: cashPart,
-        visaSales: visaPart,
-        totalSales: daySales,
-        avgTicket: dayOrders > 0 ? Number((daySales / dayOrders).toFixed(2)) : 0,
-      });
-    }
+      groups[dStr].orderCount += 1;
+      groups[dStr].totalSales += amt;
 
-    return days;
-  }, [reportData]);
+      if (type === "dine_in") {
+        groups[dStr].dineInSales += amt;
+      } else if (type === "delivery") {
+        groups[dStr].deliverySales += amt;
+      } else {
+        groups[dStr].takeawaySales += amt;
+      }
 
-  // Excel Export Handler
+      if (m.includes("card") || m.includes("visa")) {
+        groups[dStr].visaSales += amt;
+      } else {
+        groups[dStr].cashSales += amt;
+      }
+    });
+
+    const list = Object.values(groups).map((row) => ({
+      ...row,
+      avgTicket: row.orderCount > 0 ? Number((row.totalSales / row.orderCount).toFixed(2)) : 0,
+    }));
+
+    // Sort ascending by date
+    list.sort((a, b) => a.date.localeCompare(b.date));
+    return list;
+  }, [matchingOrders]);
+
+  // Filtered orders for the "Individual Orders" view tab
+  const filteredOrdersList = useMemo(() => {
+    if (!orderSearchQuery.trim()) return matchingOrders;
+    const q = orderSearchQuery.toLowerCase().trim();
+    return matchingOrders.filter((o) => {
+      return (
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.cashierName.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        (o.paymentMethodLabel || o.paymentMethod || "").toLowerCase().includes(q)
+      );
+    });
+  }, [matchingOrders, orderSearchQuery]);
+
+  const {
+    currentPage: ordersPage,
+    setCurrentPage: setOrdersPage,
+    paginatedItems: paginatedOrders,
+    totalPages: totalOrdersPages,
+  } = usePagination(filteredOrdersList, 25);
+
+  // Excel Export Handler using real aggregated data
   const handleExportExcel = () => {
     try {
       const wb = XLSX.utils.book_new();
 
-      // Sheet 1: الملخص التنفيذي
+      // Sheet 1: الملخص المالي التنفيذي
       const summaryRows = [
         ["تقرير تحليل المبيعات — وزير الحلو", ""],
-        ["الفرع:", selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch],
-        ["الفترة:", `من ${dateFrom} إلى ${dateTo}`],
-        ["تاريخ التوليد:", new Date().toLocaleDateString("ar-EG")],
+        ["الفرع:", selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch],
+        ["الفترة الزمنية:", `من ${dateFrom} إلى ${dateTo}`],
+        ["إجمالي عدد الفواتير الفعلية:", reportData.orderCount],
+        ["تاريخ استخراج التقرير:", new Date().toLocaleString("ar-EG")],
         [],
-        ["المؤشر المالي", "القيمة (ج.م)"],
-        ["إجمالي مبيعات الأصناف (Gross Sales)", reportData.grossSales],
-        ["صافي المبيعات (Net Sales)", reportData.netSales],
-        ["عدد الفواتير / الطلبات", reportData.orderCount],
+        ["المؤشر التحليلي", "القيمة (ج.م)"],
+        ["إجمالي مبيعات الأصناف (Gross)", reportData.grossSales],
+        ["صافي المبيعات الفعلي (Net)", reportData.netSales],
+        ["عدد الفواتير المنفذة", reportData.orderCount],
         ["متوسط قيمة الفاتورة (Average Ticket)", reportData.averageTicket],
-        ["إجمالي الخصم", reportData.discount],
-        ["إجمالي الخدمة", reportData.service],
-        ["إجمالي الضريبة", reportData.tax],
+        ["الخصم الممنوح", reportData.discount],
+        ["الخدمة", reportData.service],
+        ["ضريبة القيمة المضافة", reportData.tax],
         ["التقريب", reportData.rounding],
         ["الإكرامية", reportData.tips],
-        ["المصروفات", reportData.expenses],
+        ["المصروفات من الدرج", reportData.expenses],
         ["المرتجع (عدد)", reportData.returnsCount],
         ["المرتجع (إجمالي)", reportData.returnsAmount],
       ];
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
-      XLSX.utils.book_append_sheet(wb, wsSummary, "ملخص المبيعات");
+      XLSX.utils.book_append_sheet(wb, wsSummary, "الملخص المالي");
 
       // Sheet 2: قنوات الطلب
       const channelRows = [
@@ -347,17 +360,17 @@ export function SalesAnalysisReportView({
 
       // Sheet 3: طرق الدفع
       const paymentRows = [
-        ["طريقة الدفع والتحصيل", "عدد الحركات", "إجمالي المحصل (ج.م)", "النسبة %"],
+        ["طريقة التحصيل والدفع", "عدد الحركات", "إجمالي المحصل (ج.م)", "النسبة %"],
         ["كاش نقدي (Cash)", reportData.payments.cash.count, reportData.payments.cash.total, `${reportData.payments.cash.percent}%`],
-        ["فيزا وكروت (Visa)", reportData.payments.visa.count, reportData.payments.visa.total, `${reportData.payments.visa.percent}%`],
-        ["كاش المصادر (Aggregator COD)", reportData.payments.aggregatorCash.count, reportData.payments.aggregatorCash.total, `${reportData.payments.aggregatorCash.percent}%`],
-        ["فيزا المصادر (Aggregator Online)", reportData.payments.aggregatorVisa.count, reportData.payments.aggregatorVisa.total, `${reportData.payments.aggregatorVisa.percent}%`],
+        ["فيزا وبطاقات (Visa)", reportData.payments.visa.count, reportData.payments.visa.total, `${reportData.payments.visa.percent}%`],
+        ["كاش المصادر (COD)", reportData.payments.aggregatorCash.count, reportData.payments.aggregatorCash.total, `${reportData.payments.aggregatorCash.percent}%`],
+        ["فيزا المصادر (Online)", reportData.payments.aggregatorVisa.count, reportData.payments.aggregatorVisa.total, `${reportData.payments.aggregatorVisa.percent}%`],
         ["أخرى (Other)", reportData.payments.other.count, reportData.payments.other.total, `${reportData.payments.other.percent}%`],
       ];
       const wsPayments = XLSX.utils.aoa_to_sheet(paymentRows);
-      XLSX.utils.book_append_sheet(wb, wsPayments, "طرق الدفع");
+      XLSX.utils.book_append_sheet(wb, wsPayments, "طرق التحصيل");
 
-      // Sheet 4: اليومية
+      // Sheet 4: اليومية الفعلية
       const dailyRows = [
         ["التاريخ", "اليوم", "عدد الطلبات", "تيك أواي (ج.م)", "توصيل (ج.م)", "صالة (ج.م)", "كاش (ج.م)", "فيزا (ج.م)", "الإجمالي (ج.م)", "متوسط الطلب"],
         ...dailyLedger.map((d) => [
@@ -374,20 +387,32 @@ export function SalesAnalysisReportView({
         ]),
       ];
       const wsDaily = XLSX.utils.aoa_to_sheet(dailyRows);
-      XLSX.utils.book_append_sheet(wb, wsDaily, "اليومية التفصيلية");
+      XLSX.utils.book_append_sheet(wb, wsDaily, "سجل اليوميات");
 
-      const fileName = `تقرير_تحليل_المبيعات_وزير_الحلو_${selectedBranch}_${dateFrom}_إلى_${dateTo}.xlsx`;
+      // Sheet 5: سجل كافة الفواتير الفردية
+      const orderRows = [
+        ["رقم الفاتورة", "التاريخ والوقت", "الكاشير", "نوع الطلب", "المنصة", "طريقة الدفع", "المبلغ الإجمالي (ج.م)", "الحالة"],
+        ...matchingOrders.map((o) => [
+          o.orderNumber,
+          o.createdAt,
+          o.cashierName,
+          o.orderType,
+          o.orderPlatformName || o.orderPlatform,
+          o.paymentMethodLabel || o.paymentMethod,
+          o.total,
+          o.status,
+        ]),
+      ];
+      const wsOrders = XLSX.utils.aoa_to_sheet(orderRows);
+      XLSX.utils.book_append_sheet(wb, wsOrders, "كافة الفواتير");
+
+      const fileName = `تقرير_تحليل_المبيعات_الفعلية_${selectedBranch}_${dateFrom}_إلى_${dateTo}.xlsx`;
       safeDownloadWorkbook(wb, fileName);
-      toast.success(lang === "ar" ? "تم تصدير ملف Excel بنجاح!" : "Sales analysis exported to Excel successfully!");
+      toast.success(lang === "ar" ? "تم تصدير البيانات الفعلية إلى Excel بنجاح!" : "Real sales data exported to Excel successfully!");
     } catch (err) {
       console.error(err);
       toast.error(lang === "ar" ? "تعذر تصدير الملف" : "Failed to export Excel file");
     }
-  };
-
-  // Print Report Handler
-  const handlePrint = () => {
-    window.print();
   };
 
   return (
@@ -397,14 +422,14 @@ export function SalesAnalysisReportView({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black text-slate-950">سلسلة وزير الحلو للحلويات الشرقية والغربية</h1>
-            <h2 className="text-xl font-bold text-slate-800 mt-1">تقرير تحليل المبيعات التفصيلي</h2>
+            <h2 className="text-xl font-bold text-slate-800 mt-1">تقرير تحليل المبيعات الفعلي والبيانات المباشرة</h2>
             <p className="text-sm text-slate-600 mt-0.5">
-              المكان: {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch} | الفترة: من {dateFrom} إلى {dateTo}
+              المكان: {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch} | الفترة: من {dateFrom} إلى {dateTo} | عدد الفواتير: {reportData.orderCount}
             </p>
           </div>
           <div className="text-left text-xs font-mono text-slate-500">
-            <div>تاريخ الطباعة: {new Date().toLocaleDateString("ar-EG")}</div>
-            <div>نظام AI-First ERP</div>
+            <div>تاريخ الاستخراج: {new Date().toLocaleDateString("ar-EG")}</div>
+            <div>نظام AI-First ERP المعتمد</div>
           </div>
         </div>
       </div>
@@ -422,17 +447,17 @@ export function SalesAnalysisReportView({
                 {lang === "ar" ? "تقرير تحليل المبيعات" : "Sales Analysis Report"}
               </h1>
               <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                {lang === "ar" ? "معتمد ومغلق" : "Audited & Closed"}
+                {lang === "ar" ? "بيانات فعلية 100%" : "100% Real Data"}
               </span>
-              <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-secondary text-muted-foreground">
-                POS Analytics
+              <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-secondary text-muted-foreground font-mono">
+                {reportData.orderCount.toLocaleString("en-US")} {lang === "ar" ? "فاتورة مسجلة" : "orders"}
               </span>
             </div>
             <p className="text-xs text-muted-foreground font-medium mt-0.5">
               {lang === "ar" ? "السلسلة: " : "Chain: "}
               <strong className="text-foreground">وزير الحلو</strong> • {lang === "ar" ? "الفرع: " : "Branch: "}
               <strong className="text-foreground">
-                {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch}
+                {selectedBranch === "khosoos" ? "وزير فرع الخصوص" : selectedBranch === "all" ? "كافة الفروع" : selectedBranch}
               </strong>
             </p>
           </div>
@@ -469,7 +494,8 @@ export function SalesAnalysisReportView({
               onChange={(e) => handlePresetChange(e.target.value as any)}
               className="bg-transparent text-foreground font-bold text-xs outline-none cursor-pointer"
             >
-              <option value="oct_2026">أكتوبر 2026 (تقرير المعاينة)</option>
+              <option value="oct_2026">أكتوبر 2026 (تقرير فرع الخصوص)</option>
+              <option value="today">اليوم (Today)</option>
               <option value="this_month">الشهر الحالي (This Month)</option>
               <option value="last_month">الشهر السابق (Last Month)</option>
               <option value="all_time">كامل السنة (Full Year)</option>
@@ -477,7 +503,7 @@ export function SalesAnalysisReportView({
             </select>
           </div>
 
-          {/* Date Range Inputs */}
+          {/* Custom Date Range Inputs */}
           {dateRangePreset === "custom" && (
             <div className="flex items-center gap-1.5 text-xs">
               <input
@@ -496,6 +522,19 @@ export function SalesAnalysisReportView({
             </div>
           )}
 
+          {/* Refresh Real Data */}
+          <button
+            type="button"
+            onClick={() => {
+              refreshOrders();
+              toast.success(lang === "ar" ? "تم تحديث البيانات المباشرة!" : "Live data refreshed!");
+            }}
+            className="p-2 rounded-xl bg-secondary/80 border border-border/80 text-muted-foreground hover:text-foreground transition"
+            title={lang === "ar" ? "تحديث البيانات الحية" : "Refresh live data"}
+          >
+            <RotateCcw className={`size-3.5 ${posLoading ? "animate-spin text-primary" : ""}`} />
+          </button>
+
           {/* Action Buttons */}
           <Btn
             variant="solid"
@@ -508,7 +547,7 @@ export function SalesAnalysisReportView({
 
           <Btn
             variant="outline"
-            onClick={handlePrint}
+            onClick={() => window.print()}
             className="font-bold text-xs gap-1.5 border-border/80 hover:bg-secondary"
           >
             <Printer className="size-3.5" />
@@ -523,514 +562,749 @@ export function SalesAnalysisReportView({
         </div>
       </div>
 
-      {/* SECTION 1: إجمالي المبيعات (EXECUTIVE KPI GRID) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-black text-foreground">
-              {lang === "ar" ? "إجمالي المبيعات ومؤشرات الأداء" : "Gross & Net Sales Overview"}
-            </h2>
-            <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-              القسم الأول
-            </span>
-          </div>
-          <div className="text-xs font-mono text-muted-foreground">
-            الفترة: {dateFrom} — {dateTo}
-          </div>
-        </div>
+      {/* Internal Navigation Tabs (Summary vs Daily Ledger vs Real Orders List) */}
+      <div className="flex items-center gap-2 border-b border-border/80 pb-3">
+        <button
+          type="button"
+          onClick={() => setViewTab("summary")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+            viewTab === "summary"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Layers className="size-3.5" />
+          <span>{lang === "ar" ? "ملخص التحليل المالي والأنواع" : "Executive Analysis & Breakdown"}</span>
+        </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-          {/* Card 1: Gross Sales */}
-          <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden group hover:border-amber-500/40 transition">
-            <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                {lang === "ar" ? "مبيعات الأصناف (Gross)" : "Gross Item Sales"}
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <ShoppingBag className="size-4" />
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-              {reportData.grossSales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-              <span className="text-xs font-bold text-muted-foreground">ج.م</span>
-            </div>
-            <div className="mt-2 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">100%</span>
-              <span>{lang === "ar" ? "إجمالي حجم المبيعات المسجلة" : "Total gross volume"}</span>
-            </div>
-          </div>
+        <button
+          type="button"
+          onClick={() => setViewTab("daily_ledger")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+            viewTab === "daily_ledger"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Calendar className="size-3.5" />
+          <span>{lang === "ar" ? "سجل اليوميات الفعلية" : "Daily Sales Ledger"}</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary text-foreground">
+            {dailyLedger.length} {lang === "ar" ? "يوماً" : "days"}
+          </span>
+        </button>
 
-          {/* Card 2: Net Sales */}
-          <div className="bg-card p-5 rounded-2xl border-2 border-emerald-500/40 shadow-xs bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent relative overflow-hidden group">
-            <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                {lang === "ar" ? "صافي المبيعات (Net Sales)" : "Net Sales"}
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <DollarSign className="size-4" />
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-              {reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">ج.م</span>
-            </div>
-            <div className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="size-3.5" />
-              <span>{lang === "ar" ? "صافي مستحق بعد التسويات" : "Audited net total"}</span>
-            </div>
-          </div>
-
-          {/* Card 3: Orders Count */}
-          <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-blue-500/40 transition">
-            <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                {lang === "ar" ? "عدد الفواتير (Orders)" : "Invoices Count"}
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Receipt className="size-4" />
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-              {reportData.orderCount.toLocaleString("en-US")}{" "}
-              <span className="text-xs font-bold text-muted-foreground">{lang === "ar" ? "طلب" : "orders"}</span>
-            </div>
-            <div className="mt-2 text-xs font-semibold text-muted-foreground">
-              {lang === "ar" ? "المعدل: " : "Pace: "}
-              <strong className="text-foreground">~87 {lang === "ar" ? "طلب يومياً" : "orders/day"}</strong>
-            </div>
-          </div>
-
-          {/* Card 4: Average Ticket */}
-          <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-purple-500/40 transition">
-            <div className="flex items-center justify-between text-muted-foreground mb-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                {lang === "ar" ? "متوسط الفاتورة (Ticket)" : "Average Ticket"}
-              </span>
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                <TrendingUp className="size-4" />
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
-              {reportData.averageTicket.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-              <span className="text-xs font-bold text-muted-foreground">ج.م</span>
-            </div>
-            <div className="mt-2 text-xs font-semibold text-muted-foreground">
-              {lang === "ar" ? "معدل قيمة السلة للعملية الواحدة" : "Average customer spending per order"}
-            </div>
-          </div>
-        </div>
-
-        {/* Deductions, Tips & Operational Strip */}
-        <div className="bg-card rounded-2xl p-4 border border-border/80 shadow-xs">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {lang === "ar" ? "التسويات والخصومات والمرتجعات التشغيلية" : "Operational Deductions & Adjustments"}
-            </span>
-            <span className="text-[11px] text-muted-foreground font-mono">
-              المرتجع: {reportData.returnsCount} عمليات
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-center">
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الخصم" : "Discount"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.discount.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الخدمة" : "Service"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.service.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الضريبة" : "VAT / Tax"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.tax.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "التقريب" : "Rounding"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.rounding.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الإكرامية" : "Tips"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.tips.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
-              <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "المصروفات" : "Expenses"}</div>
-              <div className="text-sm font-black text-foreground mt-0.5">
-                {reportData.expenses.toFixed(2)} ج.م
-              </div>
-            </div>
-            <div className="bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
-              <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
-                {lang === "ar" ? `المرتجع (${reportData.returnsCount})` : `Returns (${reportData.returnsCount})`}
-              </div>
-              <div className="text-sm font-black text-rose-700 dark:text-rose-400 mt-0.5">
-                {reportData.returnsAmount.toFixed(2)} ج.م
-              </div>
-            </div>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setViewTab("orders_list")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+            viewTab === "orders_list"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "bg-card border border-border/70 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Receipt className="size-3.5" />
+          <span>{lang === "ar" ? "سجل الفواتير الفردية (فحص الطلبات)" : "Individual Orders Audit"}</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+            {matchingOrders.length.toLocaleString("en-US")} {lang === "ar" ? "فاتورة" : "bills"}
+          </span>
+        </button>
       </div>
 
-      {/* SECTION 2: أنواع الطلب (ORDER CHANNELS) */}
-      <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-foreground">
-                {lang === "ar" ? "أنواع الطلب وقنوات البيع" : "Order Types & Sales Channels"}
-              </h2>
-              <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                القسم الثاني
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {lang === "ar"
-                ? "توزيع مبيعات التيك أواي والصالة والتوصيل والتطبيقات الخارجية"
-                : "Distribution of Takeaway, Dine-in, Delivery and Aggregator platforms"}
-            </p>
-          </div>
-          <span className="text-xs font-bold text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-            4 {lang === "ar" ? "قنوات بيعية" : "channels"}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Channel 1: Takeaway */}
-          <div className="relative bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent rounded-2xl p-5 border-2 border-amber-500/50 shadow-xs">
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-500 text-slate-950 shadow-xs">
-                {lang === "ar" ? "تيك أواي (Takeaway)" : "Takeaway"}
-              </span>
-              <span className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md">
-                {reportData.channels.takeaway.percent}%
-              </span>
-            </div>
-            <div className="space-y-1 mt-2">
-              <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-              <div className="text-xl sm:text-2xl font-black text-foreground">
-                {reportData.channels.takeaway.sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-                <span className="text-xs font-bold text-muted-foreground">ج.م</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-amber-500/20 text-xs">
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                <span className="font-bold text-foreground text-sm">
-                  {reportData.channels.takeaway.count.toLocaleString("en-US")} {lang === "ar" ? "طلب" : "orders"}
+      {/* TAB 1: EXECUTIVE SUMMARY */}
+      {viewTab === "summary" && (
+        <div className="space-y-6">
+          {/* SECTION 1: إجمالي المبيعات (EXECUTIVE KPI GRID) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-black text-foreground">
+                  {lang === "ar" ? "إجمالي المبيعات ومؤشرات الأداء" : "Gross & Net Sales Overview"}
+                </h2>
+                <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
+                  القسم الأول
                 </span>
               </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                <span className="font-bold text-foreground text-sm">
-                  {reportData.channels.takeaway.avg.toFixed(2)} ج.م
+              <div className="text-xs font-mono text-muted-foreground">
+                الفترة: {dateFrom} — {dateTo}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+              {/* Card 1: Gross Sales */}
+              <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden group hover:border-amber-500/40 transition">
+                <div className="flex items-center justify-between text-muted-foreground mb-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    {lang === "ar" ? "مبيعات الأصناف (Gross)" : "Gross Item Sales"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <ShoppingBag className="size-4" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                  {reportData.grossSales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                  <span className="text-xs font-bold text-muted-foreground">ج.م</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">100%</span>
+                  <span>{lang === "ar" ? "إجمالي حجم المبيعات المسجلة" : "Total gross volume"}</span>
+                </div>
+              </div>
+
+              {/* Card 2: Net Sales */}
+              <div className="bg-card p-5 rounded-2xl border-2 border-emerald-500/40 shadow-xs bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent relative overflow-hidden group">
+                <div className="flex items-center justify-between text-muted-foreground mb-2">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                    {lang === "ar" ? "صافي المبيعات (Net Sales)" : "Net Sales"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <DollarSign className="size-4" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                  {reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">ج.م</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5" />
+                  <span>{lang === "ar" ? "صافي مستحق بعد التسويات" : "Audited net total"}</span>
+                </div>
+              </div>
+
+              {/* Card 3: Orders Count */}
+              <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-blue-500/40 transition">
+                <div className="flex items-center justify-between text-muted-foreground mb-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    {lang === "ar" ? "عدد الفواتير (Orders)" : "Invoices Count"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Receipt className="size-4" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+                  {reportData.orderCount.toLocaleString("en-US")}{" "}
+                  <span className="text-xs font-bold text-muted-foreground">{lang === "ar" ? "طلب" : "orders"}</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-muted-foreground">
+                  {lang === "ar" ? "المعدل: " : "Pace: "}
+                  <strong className="text-foreground">
+                    ~{dailyLedger.length > 0 ? Math.round(reportData.orderCount / dailyLedger.length) : 0}{" "}
+                    {lang === "ar" ? "طلب يومياً" : "orders/day"}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Card 4: Average Ticket */}
+              <div className="bg-card p-5 rounded-2xl border border-border/80 shadow-xs relative overflow-hidden hover:border-purple-500/40 transition">
+                <div className="flex items-center justify-between text-muted-foreground mb-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    {lang === "ar" ? "متوسط الفاتورة (Ticket)" : "Average Ticket"}
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <TrendingUp className="size-4" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
+                  {reportData.averageTicket.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                  <span className="text-xs font-bold text-muted-foreground">ج.م</span>
+                </div>
+                <div className="mt-2 text-xs font-semibold text-muted-foreground">
+                  {lang === "ar" ? "معدل قيمة السلة للعملية الواحدة" : "Average customer spending per order"}
+                </div>
+              </div>
+            </div>
+
+            {/* Deductions, Tips & Operational Strip */}
+            <div className="bg-card rounded-2xl p-4 border border-border/80 shadow-xs">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  {lang === "ar" ? "التسويات والخصومات والمرتجعات التشغيلية" : "Operational Deductions & Adjustments"}
+                </span>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  المرتجع: {reportData.returnsCount} عمليات
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Channel 2: Delivery */}
-          <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
-                {lang === "ar" ? "التوصيل (Delivery)" : "Delivery"}
-              </span>
-              <span className="text-xs font-bold text-muted-foreground">{reportData.channels.delivery.percent}%</span>
-            </div>
-            <div className="space-y-1 mt-2">
-              <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-              <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                {reportData.channels.delivery.sales.toFixed(2)}{" "}
-                <span className="text-xs font-bold">ج.م</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.delivery.count} {lang === "ar" ? "طلب" : "orders"}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.delivery.avg.toFixed(2)} ج.م</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Channel 3: Dine-in */}
-          <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
-                {lang === "ar" ? "الصالة (Dine-in)" : "Dine-in"}
-              </span>
-              <span className="text-xs font-bold text-muted-foreground">{reportData.channels.dineIn.percent}%</span>
-            </div>
-            <div className="space-y-1 mt-2">
-              <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-              <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                {reportData.channels.dineIn.sales.toFixed(2)}{" "}
-                <span className="text-xs font-bold">ج.م</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.dineIn.count} {lang === "ar" ? "طلب" : "orders"}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.dineIn.avg.toFixed(2)} ج.م</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-center">
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الخصم" : "Discount"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.discount.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الخدمة" : "Service"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.service.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الضريبة" : "VAT / Tax"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.tax.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "التقريب" : "Rounding"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.rounding.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "الإكرامية" : "Tips"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.tips.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-secondary/60 p-2.5 rounded-xl border border-border/60">
+                  <div className="text-[11px] text-muted-foreground font-bold">{lang === "ar" ? "المصروفات" : "Expenses"}</div>
+                  <div className="text-sm font-black text-foreground mt-0.5">
+                    {reportData.expenses.toFixed(2)} ج.م
+                  </div>
+                </div>
+                <div className="bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
+                  <div className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
+                    {lang === "ar" ? `المرتجع (${reportData.returnsCount})` : `Returns (${reportData.returnsCount})`}
+                  </div>
+                  <div className="text-sm font-black text-rose-700 dark:text-rose-400 mt-0.5">
+                    {reportData.returnsAmount.toFixed(2)} ج.م
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Channel 4: Aggregators */}
-          <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
-                {lang === "ar" ? "المصادر (Aggregators)" : "Aggregators"}
+          {/* SECTION 2: أنواع الطلب (ORDER CHANNELS) */}
+          <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black text-foreground">
+                    {lang === "ar" ? "أنواع الطلب وقنوات البيع" : "Order Types & Sales Channels"}
+                  </h2>
+                  <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
+                    القسم الثاني
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "توزيع مبيعات التيك أواي والصالة والتوصيل والتطبيقات الخارجية"
+                    : "Distribution of Takeaway, Dine-in, Delivery and Aggregator platforms"}
+                </p>
+              </div>
+              <span className="text-xs font-bold text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+                4 {lang === "ar" ? "قنوات بيعية" : "channels"}
               </span>
-              <span className="text-xs font-bold text-muted-foreground">{reportData.channels.aggregators.percent}%</span>
             </div>
-            <div className="space-y-1 mt-2">
-              <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
-              <div className="text-xl sm:text-2xl font-black text-muted-foreground">
-                {reportData.channels.aggregators.sales.toFixed(2)}{" "}
-                <span className="text-xs font-bold">ج.م</span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Channel 1: Takeaway */}
+              <div className="relative bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent rounded-2xl p-5 border-2 border-amber-500/50 shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-500 text-slate-950 shadow-xs">
+                    {lang === "ar" ? "تيك أواي (Takeaway)" : "Takeaway"}
+                  </span>
+                  <span className="text-xs font-black text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md">
+                    {reportData.channels.takeaway.percent}%
+                  </span>
+                </div>
+                <div className="space-y-1 mt-2">
+                  <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
+                  <div className="text-xl sm:text-2xl font-black text-foreground">
+                    {reportData.channels.takeaway.sales.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                    <span className="text-xs font-bold text-muted-foreground">ج.م</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-amber-500/20 text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
+                    <span className="font-bold text-foreground text-sm">
+                      {reportData.channels.takeaway.count.toLocaleString("en-US")} {lang === "ar" ? "طلب" : "orders"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
+                    <span className="font-bold text-foreground text-sm">
+                      {reportData.channels.takeaway.avg.toFixed(2)} ج.م
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Channel 2: Delivery */}
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
+                    {lang === "ar" ? "التوصيل (Delivery)" : "Delivery"}
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground">{reportData.channels.delivery.percent}%</span>
+                </div>
+                <div className="space-y-1 mt-2">
+                  <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
+                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
+                    {reportData.channels.delivery.sales.toFixed(2)}{" "}
+                    <span className="text-xs font-bold">ج.م</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">
+                      {reportData.channels.delivery.count} {lang === "ar" ? "طلب" : "orders"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.delivery.avg.toFixed(2)} ج.م</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Channel 3: Dine-in */}
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
+                    {lang === "ar" ? "الصالة (Dine-in)" : "Dine-in"}
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground">{reportData.channels.dineIn.percent}%</span>
+                </div>
+                <div className="space-y-1 mt-2">
+                  <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
+                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
+                    {reportData.channels.dineIn.sales.toFixed(2)}{" "}
+                    <span className="text-xs font-bold">ج.م</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">
+                      {reportData.channels.dineIn.count} {lang === "ar" ? "طلب" : "orders"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.dineIn.avg.toFixed(2)} ج.م</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Channel 4: Aggregators */}
+              <div className="bg-secondary/40 rounded-2xl p-5 border border-border/70 opacity-70 hover:opacity-100 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-secondary text-foreground">
+                    {lang === "ar" ? "المصادر (Aggregators)" : "Aggregators"}
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground">{reportData.channels.aggregators.percent}%</span>
+                </div>
+                <div className="space-y-1 mt-2">
+                  <div className="text-xs text-muted-foreground">{lang === "ar" ? "المبيعات" : "Total Sales"}</div>
+                  <div className="text-xl sm:text-2xl font-black text-muted-foreground">
+                    {reportData.channels.aggregators.sales.toFixed(2)}{" "}
+                    <span className="text-xs font-bold">ج.م</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">
+                      {reportData.channels.aggregators.count} {lang === "ar" ? "طلب" : "orders"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
+                    <span className="font-bold text-muted-foreground text-sm">{reportData.channels.aggregators.avg.toFixed(2)} ج.م</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border/70 text-xs">
+          </div>
+
+          {/* SECTION 3: طرق الدفع والتحصيل (PAYMENT METHODS) */}
+          <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "العدد" : "Count"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.aggregators.count} {lang === "ar" ? "طلب" : "orders"}</span>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black text-foreground">
+                    {lang === "ar" ? "أنواع الدفع والتحصيل المالي" : "Payment Methods & Tender Breakdown"}
+                  </h2>
+                  <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
+                    القسم الثالث
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "تفصيل النقدية والبطاقات ومتحصلات التطبيقات الإلكترونية"
+                    : "Cash, Card POS, and platform collections audit"}
+                </p>
               </div>
-              <div>
-                <span className="text-muted-foreground block text-[11px]">{lang === "ar" ? "المتوسط" : "Average"}</span>
-                <span className="font-bold text-muted-foreground text-sm">{reportData.channels.aggregators.avg.toFixed(2)} ج.م</span>
+              <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                {lang === "ar" ? "إجمالي المحصل: " : "Collected: "}
+                {reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2 })} ج.م
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              {/* 1. Cash */}
+              <div className="bg-emerald-500/5 rounded-2xl p-4 border border-emerald-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                    <Banknote className="size-4" />
+                  </div>
+                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full">
+                    {reportData.payments.cash.percent}%
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {lang === "ar" ? "كاش نقدي (Cash)" : "Cash In Hand"}
+                </div>
+                <div className="text-lg font-black text-emerald-700 dark:text-emerald-300 mt-1">
+                  {reportData.payments.cash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                  <span className="text-[10px] font-bold">ج.م</span>
+                </div>
+                <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-emerald-500/20">
+                  {lang === "ar" ? "العدد: " : "Count: "}
+                  <strong className="text-foreground">{reportData.payments.cash.count.toLocaleString("en-US")}</strong> {lang === "ar" ? "فاتورة" : "bills"}
+                </div>
+              </div>
+
+              {/* 2. Visa */}
+              <div className="bg-blue-500/5 rounded-2xl p-4 border border-blue-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                    <CreditCard className="size-4" />
+                  </div>
+                  <span className="text-xs font-black text-blue-700 dark:text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full">
+                    {reportData.payments.visa.percent}%
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {lang === "ar" ? "فيزا وبطاقات (Visa)" : "Credit Cards (Visa)"}
+                </div>
+                <div className="text-lg font-black text-blue-700 dark:text-blue-300 mt-1">
+                  {reportData.payments.visa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                  <span className="text-[10px] font-bold">ج.م</span>
+                </div>
+                <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-blue-500/20">
+                  {lang === "ar" ? "العدد: " : "Count: "}
+                  <strong className="text-foreground">{reportData.payments.visa.count}</strong> {lang === "ar" ? "عملية" : "tx"}
+                </div>
+              </div>
+
+              {/* 3. Aggregator Cash */}
+              <div className="bg-amber-500/5 rounded-2xl p-4 border border-amber-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
+                    🛵
+                  </div>
+                  <span className="text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
+                    {reportData.payments.aggregatorCash.percent}%
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {lang === "ar" ? "كاش المصادر (COD)" : "Aggregator COD"}
+                </div>
+                <div className="text-lg font-black text-amber-700 dark:text-amber-300 mt-1">
+                  {reportData.payments.aggregatorCash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                  <span className="text-[10px] font-bold">ج.م</span>
+                </div>
+                <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-amber-500/20">
+                  {lang === "ar" ? "العدد: " : "Count: "}
+                  <strong className="text-foreground">{reportData.payments.aggregatorCash.count}</strong> {lang === "ar" ? "فواتير" : "bills"}
+                </div>
+              </div>
+
+              {/* 4. Aggregator Visa */}
+              <div className="bg-indigo-500/5 rounded-2xl p-4 border border-indigo-500/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                    🌐
+                  </div>
+                  <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-full">
+                    {reportData.payments.aggregatorVisa.percent}%
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {lang === "ar" ? "فيزا المصادر (Online)" : "Aggregator Online"}
+                </div>
+                <div className="text-lg font-black text-indigo-700 dark:text-indigo-300 mt-1">
+                  {reportData.payments.aggregatorVisa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
+                  <span className="text-[10px] font-bold">ج.م</span>
+                </div>
+                <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-indigo-500/20">
+                  {lang === "ar" ? "العدد: " : "Count: "}
+                  <strong className="text-foreground">{reportData.payments.aggregatorVisa.count}</strong> {lang === "ar" ? "فواتير" : "bills"}
+                </div>
+              </div>
+
+              {/* 5. Other */}
+              <div className="bg-secondary/40 rounded-2xl p-4 border border-border/70 opacity-70">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center font-bold text-xs">
+                    ⚡
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {reportData.payments.other.percent}%
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-muted-foreground">
+                  {lang === "ar" ? "أخرى (Other)" : "Other"}
+                </div>
+                <div className="text-lg font-black text-muted-foreground mt-1">
+                  {reportData.payments.other.total.toFixed(2)}{" "}
+                  <span className="text-[10px] font-bold">ج.م</span>
+                </div>
+                <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-border/70">
+                  {lang === "ar" ? "العدد: " : "Count: "}
+                  <strong className="text-muted-foreground">{reportData.payments.other.count}</strong>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* SECTION 3: طرق الدفع والتحصيل (PAYMENT METHODS) */}
-      <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-foreground">
-                {lang === "ar" ? "أنواع الدفع والتحصيل المالي" : "Payment Methods & Tender Breakdown"}
-              </h2>
-              <span className="text-[11px] font-bold text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">
-                القسم الثالث
-              </span>
+      {/* TAB 2: REAL DAILY LEDGER */}
+      {viewTab === "daily_ledger" && (
+        <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 className="text-base font-black text-foreground">
+                {lang === "ar" ? "سجل اليوميات والورديات الفعلية" : "Actual Daily Sales Ledger"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {lang === "ar"
+                  ? "مجمعة مباشرة من الفواتير الحقيقية المنفذة في قاعدة البيانات"
+                  : "Directly aggregated from actual orders executed in database"}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {lang === "ar"
-                ? "تفصيل النقدية والبطاقات ومتحصلات التطبيقات الإلكترونية"
-                : "Cash, Card POS, and platform collections audit"}
-            </p>
-          </div>
-          <div className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-            {lang === "ar" ? "إجمالي المحصل: " : "Collected: "}
-            {reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2 })} ج.م
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          {/* 1. Cash */}
-          <div className="bg-emerald-500/5 rounded-2xl p-4 border border-emerald-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
-                <Banknote className="size-4" />
-              </div>
-              <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full">
-                {reportData.payments.cash.percent}%
-              </span>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
-              {lang === "ar" ? "كاش نقدي (Cash)" : "Cash In Hand"}
-            </div>
-            <div className="text-lg font-black text-emerald-700 dark:text-emerald-300 mt-1">
-              {reportData.payments.cash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-              <span className="text-[10px] font-bold">ج.م</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-emerald-500/20">
-              {lang === "ar" ? "العدد: " : "Count: "}
-              <strong className="text-foreground">{reportData.payments.cash.count.toLocaleString("en-US")}</strong> {lang === "ar" ? "فاتورة" : "bills"}
-            </div>
+            <span className="text-xs font-mono text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+              {dailyLedger.length} {lang === "ar" ? "يوماً به حركات" : "active days"}
+            </span>
           </div>
 
-          {/* 2. Visa */}
-          <div className="bg-blue-500/5 rounded-2xl p-4 border border-blue-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                <CreditCard className="size-4" />
-              </div>
-              <span className="text-xs font-black text-blue-700 dark:text-blue-400 bg-blue-500/15 px-2 py-0.5 rounded-full">
-                {reportData.payments.visa.percent}%
-              </span>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
-              {lang === "ar" ? "فيزا وبطاقات (Visa)" : "Credit Cards (Visa)"}
-            </div>
-            <div className="text-lg font-black text-blue-700 dark:text-blue-300 mt-1">
-              {reportData.payments.visa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-              <span className="text-[10px] font-bold">ج.م</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-blue-500/20">
-              {lang === "ar" ? "العدد: " : "Count: "}
-              <strong className="text-foreground">{reportData.payments.visa.count}</strong> {lang === "ar" ? "عملية" : "tx"}
-            </div>
-          </div>
-
-          {/* 3. Aggregator Cash */}
-          <div className="bg-amber-500/5 rounded-2xl p-4 border border-amber-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
-                🛵
-              </div>
-              <span className="text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full">
-                {reportData.payments.aggregatorCash.percent}%
-              </span>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
-              {lang === "ar" ? "كاش المصادر (COD)" : "Aggregator COD"}
-            </div>
-            <div className="text-lg font-black text-amber-700 dark:text-amber-300 mt-1">
-              {reportData.payments.aggregatorCash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-              <span className="text-[10px] font-bold">ج.م</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-amber-500/20">
-              {lang === "ar" ? "العدد: " : "Count: "}
-              <strong className="text-foreground">{reportData.payments.aggregatorCash.count}</strong> {lang === "ar" ? "فواتير" : "bills"}
-            </div>
-          </div>
-
-          {/* 4. Aggregator Visa */}
-          <div className="bg-indigo-500/5 rounded-2xl p-4 border border-indigo-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
-                🌐
-              </div>
-              <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 bg-indigo-500/15 px-2 py-0.5 rounded-full">
-                {reportData.payments.aggregatorVisa.percent}%
-              </span>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
-              {lang === "ar" ? "فيزا المصادر (Online)" : "Aggregator Online"}
-            </div>
-            <div className="text-lg font-black text-indigo-700 dark:text-indigo-300 mt-1">
-              {reportData.payments.aggregatorVisa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}{" "}
-              <span className="text-[10px] font-bold">ج.م</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-indigo-500/20">
-              {lang === "ar" ? "العدد: " : "Count: "}
-              <strong className="text-foreground">{reportData.payments.aggregatorVisa.count}</strong> {lang === "ar" ? "فواتير" : "bills"}
-            </div>
-          </div>
-
-          {/* 5. Other */}
-          <div className="bg-secondary/40 rounded-2xl p-4 border border-border/70 opacity-70">
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center font-bold text-xs">
-                ⚡
-              </div>
-              <span className="text-xs font-bold text-muted-foreground">
-                {reportData.payments.other.percent}%
-              </span>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground">
-              {lang === "ar" ? "أخرى (Other)" : "Other"}
-            </div>
-            <div className="text-lg font-black text-muted-foreground mt-1">
-              {reportData.payments.other.total.toFixed(2)}{" "}
-              <span className="text-[10px] font-bold">ج.م</span>
-            </div>
-            <div className="text-xs text-muted-foreground font-semibold mt-2 pt-2 border-t border-border/70">
-              {lang === "ar" ? "العدد: " : "Count: "}
-              <strong className="text-muted-foreground">{reportData.payments.other.count}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 4: اليومية التفصيلية (DAILY LEDGER TABLE) */}
-      <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 className="text-base font-black text-foreground">
-              {lang === "ar" ? "جدول اليوميات والورديات اليومية لشهر أكتوبر" : "October Daily Sales Breakdown"}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {lang === "ar"
-                ? "تفصيل حركة المبيعات وتوزيع المدفوعات ومتوسط الفاتورة لكل يوم"
-                : "Daily sales performance, order counts and payment methods"}
-            </p>
-          </div>
-          <span className="text-xs font-mono text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-            31 {lang === "ar" ? "يوماً مسجلاً" : "recorded days"}
-          </span>
-        </div>
-
-        <div className="overflow-x-auto border border-border/80 rounded-xl">
-          <table className="w-full text-xs text-right border-collapse">
-            <thead>
-              <tr className="bg-secondary/80 text-muted-foreground font-bold border-b border-border">
-                <th className="p-3 text-right">{lang === "ar" ? "التاريخ" : "Date"}</th>
-                <th className="p-3 text-right">{lang === "ar" ? "اليوم" : "Day"}</th>
-                <th className="p-3 text-center">{lang === "ar" ? "عدد الطلبات" : "Orders"}</th>
-                <th className="p-3 text-right">{lang === "ar" ? "تيك أواي (ج.م)" : "Takeaway"}</th>
-                <th className="p-3 text-right">{lang === "ar" ? "كاش (ج.م)" : "Cash"}</th>
-                <th className="p-3 text-right">{lang === "ar" ? "فيزا (ج.م)" : "Visa"}</th>
-                <th className="p-3 text-right font-black text-foreground">{lang === "ar" ? "الإجمالي (ج.م)" : "Total"}</th>
-                <th className="p-3 text-center">{lang === "ar" ? "متوسط الطلب" : "Avg Ticket"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {dailyLedger.map((row) => (
-                <tr key={row.date} className="hover:bg-muted/50 transition">
-                  <td className="p-3 font-mono font-bold text-foreground">{row.date}</td>
-                  <td className="p-3 text-muted-foreground font-medium">{row.dayName}</td>
-                  <td className="p-3 text-center font-bold text-foreground">{row.orderCount}</td>
-                  <td className="p-3 text-foreground font-semibold">
-                    {row.takeawaySales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">
-                    {row.cashSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-3 text-blue-600 dark:text-blue-400 font-bold">
-                    {row.visaSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-3 font-black text-foreground">
-                    {row.totalSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="p-3 text-center font-mono text-purple-600 dark:text-purple-400 font-bold">
-                    {row.avgTicket.toFixed(2)}
-                  </td>
+          <div className="overflow-x-auto border border-border/80 rounded-xl">
+            <table className="w-full text-xs text-right border-collapse">
+              <thead>
+                <tr className="bg-secondary/80 text-muted-foreground font-bold border-b border-border">
+                  <th className="p-3 text-right">{lang === "ar" ? "التاريخ" : "Date"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "اليوم" : "Day"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "عدد الطلبات" : "Orders"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "تيك أواي (ج.م)" : "Takeaway"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "كاش (ج.م)" : "Cash"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "فيزا (ج.م)" : "Visa"}</th>
+                  <th className="p-3 text-right font-black text-foreground">{lang === "ar" ? "الإجمالي (ج.م)" : "Total"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "متوسط الطلب" : "Avg Ticket"}</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-secondary font-black text-foreground border-t-2 border-border">
-                <td className="p-3" colSpan={2}>{lang === "ar" ? "المجموع الكلي" : "Grand Total"}</td>
-                <td className="p-3 text-center text-primary">{reportData.orderCount.toLocaleString("en-US")}</td>
-                <td className="p-3">{reportData.grossSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-emerald-600 dark:text-emerald-400">{reportData.payments.cash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-blue-600 dark:text-blue-400">{reportData.payments.visa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-base text-emerald-600 dark:text-emerald-400">{reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-center text-purple-600 dark:text-purple-400">{reportData.averageTicket.toFixed(2)}</td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {dailyLedger.map((row) => (
+                  <tr key={row.date} className="hover:bg-muted/50 transition">
+                    <td className="p-3 font-mono font-bold text-foreground">{row.date}</td>
+                    <td className="p-3 text-muted-foreground font-medium">{row.dayName}</td>
+                    <td className="p-3 text-center font-bold text-foreground">{row.orderCount}</td>
+                    <td className="p-3 text-foreground font-semibold">
+                      {row.takeawaySales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-emerald-600 dark:text-emerald-400 font-bold">
+                      {row.cashSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-blue-600 dark:text-blue-400 font-bold">
+                      {row.visaSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 font-black text-foreground">
+                      {row.totalSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-center font-mono text-purple-600 dark:text-purple-400 font-bold">
+                      {row.avgTicket.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-secondary font-black text-foreground border-t-2 border-border">
+                  <td className="p-3" colSpan={2}>{lang === "ar" ? "المجموع الكلي الفعلي" : "Grand Total"}</td>
+                  <td className="p-3 text-center text-primary">{reportData.orderCount.toLocaleString("en-US")}</td>
+                  <td className="p-3">{reportData.grossSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                  <td className="p-3 text-emerald-600 dark:text-emerald-400">{reportData.payments.cash.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                  <td className="p-3 text-blue-600 dark:text-blue-400">{reportData.payments.visa.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                  <td className="p-3 text-base text-emerald-600 dark:text-emerald-400">{reportData.netSales.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                  <td className="p-3 text-center text-purple-600 dark:text-purple-400">{reportData.averageTicket.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* TAB 3: INDIVIDUAL ORDERS AUDIT */}
+      {viewTab === "orders_list" && (
+        <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border/80 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-black text-foreground">
+                {lang === "ar" ? "سجل فحص الفواتير الفردية المباشرة" : "Individual Real Orders Ledger"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {lang === "ar"
+                  ? "قائمة بكافة الفواتير الحقيقية المضمنة في حسابات هذا التقرير مع إمكانية البحث ومعاينة بنود كل فاتورة"
+                  : "Complete list of individual orders with items drill-down inspection"}
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={lang === "ar" ? "بحث برقم الفاتورة، الكاشير، طريقة الدفع..." : "Search order #, cashier, payment..."}
+                value={orderSearchQuery}
+                onChange={(e) => {
+                  setOrderSearchQuery(e.target.value);
+                  setOrdersPage(1);
+                }}
+                className="w-full bg-secondary/70 border border-border rounded-xl pr-9 pl-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-border/80 rounded-xl">
+            <table className="w-full text-xs text-right border-collapse">
+              <thead>
+                <tr className="bg-secondary/80 text-muted-foreground font-bold border-b border-border">
+                  <th className="p-3 text-right">{lang === "ar" ? "رقم الفاتورة" : "Order #"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "التاريخ والوقت" : "Date & Time"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "الكاشير" : "Cashier"}</th>
+                  <th className="p-3 text-right">{lang === "ar" ? "العميل" : "Customer"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "النوع والمنصة" : "Type & Platform"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "طريقة الدفع" : "Payment"}</th>
+                  <th className="p-3 text-right font-black text-foreground">{lang === "ar" ? "القيمة (ج.م)" : "Amount"}</th>
+                  <th className="p-3 text-center">{lang === "ar" ? "معاينة" : "Inspect"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {paginatedOrders.map((ord) => (
+                  <tr key={ord.id} className="hover:bg-muted/50 transition">
+                    <td className="p-3 font-mono font-bold text-foreground">{ord.orderNumber}</td>
+                    <td className="p-3 font-mono text-muted-foreground">{ord.formattedDate || ord.createdAt?.slice(0, 16)}</td>
+                    <td className="p-3 font-medium text-foreground">{ord.cashierName}</td>
+                    <td className="p-3 text-muted-foreground">{ord.customerName}</td>
+                    <td className="p-3 text-center">
+                      <span className="px-2 py-0.5 rounded-md bg-secondary text-[11px] font-bold text-foreground">
+                        {ord.orderPlatformName || ord.orderPlatform}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded-md text-[11px] font-bold",
+                          ord.paymentMethod === "cash"
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"
+                        )}
+                      >
+                        {ord.paymentMethodLabel || ord.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="p-3 font-black text-foreground">
+                      {ord.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderDetails(ord)}
+                        className="p-1 text-primary hover:bg-primary/10 rounded-lg transition"
+                        title={lang === "ar" ? "عرض بنود الفاتورة" : "View receipt items"}
+                      >
+                        <Eye className="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <TablePagination
+            currentPage={ordersPage}
+            totalPages={totalOrdersPages}
+            onPageChange={setOrdersPage}
+          />
+        </div>
+      )}
+
+      {/* Order Items Modal */}
+      {selectedOrderDetails && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-lg rounded-2xl border border-border shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <Receipt className="size-5 text-amber-500" />
+                <h3 className="text-base font-black text-foreground">
+                  {lang === "ar" ? "تفاصيل الفاتورة الفعلية:" : "Order Receipt:"} {selectedOrderDetails.orderNumber}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrderDetails(null)}
+                className="p-1 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs bg-secondary/50 p-3 rounded-xl border border-border">
+              <div>
+                <span className="text-muted-foreground block">{lang === "ar" ? "الفرع" : "Branch"}</span>
+                <strong className="text-foreground">{selectedOrderDetails.branchName?.ar || selectedOrderDetails.branchId}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">{lang === "ar" ? "الكاشير" : "Cashier"}</span>
+                <strong className="text-foreground">{selectedOrderDetails.cashierName}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">{lang === "ar" ? "التاريخ والوقت" : "Date & Time"}</span>
+                <span className="font-mono text-foreground">{selectedOrderDetails.formattedDate || selectedOrderDetails.createdAt}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block">{lang === "ar" ? "طريقة الدفع" : "Payment"}</span>
+                <strong className="text-emerald-600 dark:text-emerald-400">{selectedOrderDetails.paymentMethodLabel || selectedOrderDetails.paymentMethod}</strong>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-muted-foreground uppercase">{lang === "ar" ? "الأصناف المحاسب عليها" : "Billed Items"}</div>
+              <div className="divide-y divide-border border border-border rounded-xl max-h-52 overflow-y-auto">
+                {selectedOrderDetails.items.map((it, idx) => (
+                  <div key={idx} className="p-3 flex items-center justify-between text-xs hover:bg-secondary/30">
+                    <div>
+                      <div className="font-bold text-foreground">{it.name?.ar || (typeof it.name === "string" ? it.name : it.sku)}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono">
+                        {it.quantity} × {it.unitPrice.toFixed(2)} ج.م
+                      </div>
+                    </div>
+                    <div className="font-black text-foreground">
+                      {it.totalPrice.toFixed(2)} ج.م
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-border text-sm">
+              <span className="font-bold text-foreground">{lang === "ar" ? "صافي قيمة الفاتورة" : "Order Total"}</span>
+              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                {selectedOrderDetails.total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ج.م
+              </span>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Btn variant="solid" onClick={() => setSelectedOrderDetails(null)} className="text-xs font-bold">
+                {lang === "ar" ? "إغلاق" : "Close"}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
