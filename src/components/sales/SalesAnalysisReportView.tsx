@@ -57,9 +57,9 @@ export function SalesAnalysisReportView({
   // Filters State
   const [selectedChain, setSelectedChain] = useState<string>("wazeer_el_helw");
   const [selectedBranch, setSelectedBranch] = useState<string>(initialBranch);
-  const [dateRangePreset, setDateRangePreset] = useState<"oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom">("oct_2026");
-  const [dateFrom, setDateFrom] = useState<string>("2026-10-01");
-  const [dateTo, setDateTo] = useState<string>("2026-10-31");
+  const [dateRangePreset, setDateRangePreset] = useState<"all" | "oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom">("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [selectedShift, setSelectedShift] = useState<string>("all");
   const [viewTab, setViewTab] = useState<"summary" | "branches_matrix" | "daily_ledger" | "orders_list">("summary");
 
@@ -70,10 +70,13 @@ export function SalesAnalysisReportView({
   const reportPrintRef = useRef<HTMLDivElement>(null);
 
   // Handle Preset Changes
-  const handlePresetChange = (preset: "oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom") => {
+  const handlePresetChange = (preset: "all" | "oct_2026" | "this_month" | "last_month" | "today" | "all_time" | "custom") => {
     setDateRangePreset(preset);
     const now = new Date();
-    if (preset === "oct_2026") {
+    if (preset === "all") {
+      setDateFrom("");
+      setDateTo("");
+    } else if (preset === "oct_2026") {
       setDateFrom("2026-10-01");
       setDateTo("2026-10-31");
     } else if (preset === "today") {
@@ -429,7 +432,7 @@ export function SalesAnalysisReportView({
       const summaryRows = [
         ["تقرير تحليل المبيعات — سلسلة حلويات وزير الحلو", ""],
         ["النطاق الجغرافي:", selectedBranch === "all" ? "كافة الفروع المجمعة (10 فروع)" : selectedBranch],
-        ["الفترة الزمنية:", `من ${dateFrom} إلى ${dateTo}`],
+        ["الفترة الزمنية:", dateFrom && dateTo ? `من ${dateFrom} إلى ${dateTo}` : "كافة الفترات (سجل المبيعات التراكمي الكامل)"],
         ["إجمالي عدد الفواتير الفعلية:", reportData.orderCount],
         ["تاريخ استخراج التقرير:", new Date().toLocaleString("ar-EG")],
         [],
@@ -511,7 +514,8 @@ export function SalesAnalysisReportView({
       const wsDaily = XLSX.utils.aoa_to_sheet(dailyRows);
       XLSX.utils.book_append_sheet(wb, wsDaily, "سجل اليوميات");
 
-      const fileName = `تقرير_تحليل_مبيعات_${selectedBranch === "all" ? "كافة_الفروع" : selectedBranch}_${dateFrom}_إلى_${dateTo}.xlsx`;
+      const dateRangeSlug = dateFrom && dateTo ? `${dateFrom}_إلى_${dateTo}` : "كافة_الفترات";
+      const fileName = `تقرير_تحليل_مبيعات_${selectedBranch === "all" ? "كافة_الفروع" : selectedBranch}_${dateRangeSlug}.xlsx`;
       safeDownloadWorkbook(wb, fileName);
       toast.success(lang === "ar" ? "تم تصدير ملف Excel الشامل بنجاح!" : "Real sales data exported to Excel successfully!");
     } catch (err) {
@@ -531,7 +535,7 @@ export function SalesAnalysisReportView({
               {selectedBranch === "all" ? "تقرير تحليل مبيعات كافة الفروع المجمعة" : `تقرير تحليل مبيعات فرع ${selectedBranch}`}
             </h2>
             <p className="text-sm text-slate-600 mt-0.5">
-              النطاق: {selectedBranch === "all" ? "كافة الفروع المعتمدة (10 فروع)" : selectedBranch} | الفترة: من {dateFrom} إلى {dateTo} | عدد الفواتير: {reportData.orderCount.toLocaleString("en-US")}
+              النطاق: {selectedBranch === "all" ? "كافة الفروع المعتمدة (10 فروع)" : selectedBranch} | الفترة: {dateFrom && dateTo ? `من ${dateFrom} إلى ${dateTo}` : "كافة الفترات المسجلة (مطابق لسجل نقاط البيع POS)"} | عدد الفواتير: {reportData.orderCount.toLocaleString("en-US")}
             </p>
           </div>
           <div className="text-left text-xs font-mono text-slate-500">
@@ -644,6 +648,7 @@ export function SalesAnalysisReportView({
               onChange={(e) => handlePresetChange(e.target.value as any)}
               className="bg-transparent text-foreground font-bold text-xs outline-none cursor-pointer"
             >
+              <option value="all">كافة الفترات (سجل POS الكامل — شامل 2,573 طلب للكوربة)</option>
               <option value="oct_2026">أكتوبر 2026 (تقرير السلسلة المعتمد)</option>
               <option value="today">اليوم (Today)</option>
               <option value="this_month">الشهر الحالي (This Month)</option>
@@ -799,7 +804,7 @@ export function SalesAnalysisReportView({
                 </span>
               </div>
               <div className="text-xs font-mono text-muted-foreground">
-                الفترة: {dateFrom} — {dateTo}
+                {dateFrom && dateTo ? `الفترة: ${dateFrom} — ${dateTo}` : "الفترة: كافة الفترات المسجلة (سجل POS التراكمي)"}
               </div>
             </div>
 
