@@ -73,7 +73,8 @@ const erpNav = [
   { to: "/inventory", search: { tab: "branches" }, key: "nav_branches", icon: MapPin },
   { to: "/manufacturing", key: "nav_manufacturing", icon: Factory },
   { to: "/dispatch", key: "nav_dispatch", icon: Truck },
-  { to: "/partners", key: "nav_partners", icon: Users },
+  { to: "/customers", key: "nav_customers", icon: Users },
+  { to: "/suppliers", key: "nav_suppliers", icon: Building2 },
   { to: "/hr", key: "nav_hr", icon: UserCheck },
 ] as const;
 
@@ -150,7 +151,13 @@ function NavList({
 
   const hasWildcard = allowedPages.includes("*") || (isAdmin && allowedPages.length === 0);
   const visibleItems = items.filter(
-    (item) => isAdmin || hasWildcard || allowedPages.includes(item.to)
+    (item) =>
+      isAdmin ||
+      hasWildcard ||
+      allowedPages.includes(item.to) ||
+      (item.to === "/discounts" && allowedPages.includes("/sales")) ||
+      ((item.to === "/customers" || item.to === "/suppliers") &&
+        (allowedPages.includes("/partners") || allowedPages.includes("/customers") || allowedPages.includes("/suppliers")))
   );
   if (visibleItems.length === 0) return null;
 
@@ -223,6 +230,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     hasWildcardAccess ||
     currentUser.allowedPages.includes(normalizedPath) ||
     (normalizedPath === "/discounts" && currentUser.allowedPages.includes("/sales")) ||
+    ((normalizedPath === "/customers" || normalizedPath === "/suppliers") &&
+      (currentUser.allowedPages.includes("/partners") || currentUser.allowedPages.includes("/customers") || currentUser.allowedPages.includes("/suppliers"))) ||
     currentUser.allowedPages.some(
       (page) => page !== "/" && (normalizedPath === page || normalizedPath.startsWith(page + "/"))
     );

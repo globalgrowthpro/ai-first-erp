@@ -235,6 +235,8 @@ export const DEFAULT_USER: AppUser = {
     "/manufacturing",
     "/dispatch",
     "/partners",
+    "/customers",
+    "/suppliers",
     "/hr",
     "/reports",
     "/audit",

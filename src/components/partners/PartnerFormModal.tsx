@@ -31,6 +31,8 @@ interface PartnerFormModalProps {
   onClose: () => void;
   onSubmit: (partner: Omit<Partner, "id" | "createdAt" | "transactions">) => void;
   editingPartner?: Partner | null;
+  initialType?: PartnerType;
+  lockType?: boolean;
 }
 
 export function PartnerFormModal({
@@ -38,14 +40,16 @@ export function PartnerFormModal({
   onClose,
   onSubmit,
   editingPartner,
+  initialType,
+  lockType = false,
 }: PartnerFormModalProps) {
   const { t, pick, dir } = useI18n();
 
   const [code, setCode] = useState("");
   const [nameAr, setNameAr] = useState("");
   const [nameEn, setNameEn] = useState("");
-  const [type, setType] = useState<PartnerType>("customer");
-  const [group, setGroup] = useState<PartnerGroup>("hotels");
+  const [type, setType] = useState<PartnerType>(initialType || "customer");
+  const [group, setGroup] = useState<PartnerGroup>(initialType === "supplier" ? "raw_ingredients" : "hotels");
   const [taxNumber, setTaxNumber] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -79,12 +83,13 @@ export function PartnerFormModal({
       setNotes(editingPartner.notes || "");
       setLogo(editingPartner.logo || "");
     } else {
-      const prefix = type === "customer" ? "CUST" : "SUPP";
+      const activeT = initialType || type || "customer";
+      const prefix = activeT === "customer" ? "CUST" : "SUPP";
       setCode(`${prefix}-${Math.floor(1000 + Math.random() * 9000)}`);
       setNameAr("");
       setNameEn("");
-      setType("customer");
-      setGroup("hotels");
+      setType(activeT);
+      setGroup(activeT === "supplier" ? "raw_ingredients" : "hotels");
       setTaxNumber("");
       setPhone("+20 ");
       setEmail("");
@@ -98,7 +103,7 @@ export function PartnerFormModal({
       setNotes("");
       setLogo("");
     }
-  }, [editingPartner, open, type]);
+  }, [editingPartner, open, initialType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,11 +135,21 @@ export function PartnerFormModal({
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold">
-            <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Users className="size-4" />
+            <div className={`size-8 rounded-lg flex items-center justify-center ${
+              type === "customer" ? "bg-brand/15 text-brand" : "bg-gold/25 text-gold-foreground"
+            }`}>
+              {type === "customer" ? <Building2 className="size-4" /> : <Users className="size-4" />}
             </div>
             <span>
-              {editingPartner
+              {lockType
+                ? type === "customer"
+                  ? editingPartner
+                    ? pick("تعديل بيانات العميل التجاري", "Edit Corporate Customer")
+                    : pick("إضافة عميل تجاري جديد", "Add New Corporate Customer")
+                  : editingPartner
+                  ? pick("تعديل بيانات المورد المعتمد", "Edit Approved Supplier")
+                  : pick("إضافة مورد معتمد جديد", "Add New Supplier / Vendor")
+                : editingPartner
                 ? pick("تعديل بيانات العميل / المورد", "Edit Customer / Supplier")
                 : pick("إضافة شريك جديد (عميل / مورد)", "Add New Customer or Supplier")}
             </span>
@@ -142,33 +157,51 @@ export function PartnerFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Type Switcher (Customer vs Supplier) */}
-          <div className="grid grid-cols-2 gap-3 p-1 rounded-xl bg-secondary/80 border border-border/80">
-            <button
-              type="button"
-              onClick={() => setType("customer")}
-              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                type === "customer"
-                  ? "bg-brand text-brand-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Building2 className="size-3.5" />
-              <span>{pick("عميل تجاري (Customer)", "Customer")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("supplier")}
-              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                type === "supplier"
-                  ? "bg-gold text-gold-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Users className="size-3.5" />
-              <span>{pick("مورد خامات / تغليف (Supplier)", "Supplier")}</span>
-            </button>
-          </div>
+          {/* Type Switcher (Customer vs Supplier) - Hidden when lockType is enabled */}
+          {!lockType && (
+            <div className="grid grid-cols-2 gap-3 p-1 rounded-xl bg-secondary/80 border border-border/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setType("customer");
+                  if (code.startsWith("SUPP-")) {
+                    setCode(code.replace("SUPP-", "CUST-"));
+                  }
+                  if (["raw_ingredients", "packaging", "services"].includes(group)) {
+                    setGroup("hotels");
+                  }
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  type === "customer"
+                    ? "bg-brand text-brand-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Building2 className="size-3.5" />
+                <span>{pick("عميل تجاري (Customer)", "Customer")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setType("supplier");
+                  if (code.startsWith("CUST-")) {
+                    setCode(code.replace("CUST-", "SUPP-"));
+                  }
+                  if (["hotels", "restaurants", "catering", "retail"].includes(group)) {
+                    setGroup("raw_ingredients");
+                  }
+                }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  type === "supplier"
+                    ? "bg-gold text-gold-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Users className="size-3.5" />
+                <span>{pick("مورد خامات / تغليف (Supplier)", "Supplier")}</span>
+              </button>
+            </div>
+          )}
 
           {/* Code & Group */}
           <div className="grid gap-3 sm:grid-cols-2">

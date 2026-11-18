@@ -247,19 +247,63 @@ function PartnersPage() {
           "Comprehensive ledger for corporate catering clients, raw material vendors, and credit limits"
         )}
         actions={
-          <Btn
-            variant="solid"
-            onClick={() => {
-              setEditingPartner(null);
-              setIsFormModalOpen(true);
-            }}
-            className="gap-1.5"
-          >
-            <Plus className="size-4" />
-            <span>{pick("إضافة شريك جديد", "Add Partner")}</span>
-          </Btn>
+          <div className="flex items-center gap-2">
+            <Link to="/customers">
+              <Btn variant="outline" className="text-blue-600 border-blue-600/30 hover:bg-blue-500/10 gap-1.5">
+                <Building2 className="size-4" />
+                <span className="hidden sm:inline">{pick("صفحة العملاء المستقلة", "Customers Page")}</span>
+              </Btn>
+            </Link>
+            <Link to="/suppliers">
+              <Btn variant="outline" className="text-amber-600 border-amber-600/30 hover:bg-amber-500/10 gap-1.5">
+                <Users className="size-4" />
+                <span className="hidden sm:inline">{pick("صفحة الموردين المستقلة", "Suppliers Page")}</span>
+              </Btn>
+            </Link>
+            <Btn
+              variant="solid"
+              onClick={() => {
+                setEditingPartner(null);
+                setIsFormModalOpen(true);
+              }}
+              className="gap-1.5"
+            >
+              <Plus className="size-4" />
+              <span>{pick("إضافة شريك جديد", "Add Partner")}</span>
+            </Btn>
+          </div>
         }
       />
+
+      {/* Directory Section Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-border/80 pb-3 overflow-x-auto">
+        <Link
+          to="/customers"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+        >
+          <Building2 className="w-4 h-4 text-blue-500" />
+          <span>{pick("دليل العملاء التجاريين المستقل", "Customers Directory (Dedicated Page)")}</span>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-black bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+            {totalCustomers}
+          </span>
+        </Link>
+        <Link
+          to="/suppliers"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all bg-card border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted"
+        >
+          <Users className="w-4 h-4 text-amber-500" />
+          <span>{pick("دليل الموردين المستقل", "Suppliers Directory (Dedicated Page)")}</span>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-black bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+            {totalSuppliers}
+          </span>
+        </Link>
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-primary text-primary-foreground shadow-sm">
+          <span>{pick("السجل الموحد الشامل", "Unified Directory")}</span>
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-black bg-white text-slate-950 shadow-xs">
+            {partners.length}
+          </span>
+        </div>
+      </div>
 
       {/* Top Financial & Count KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -679,6 +723,7 @@ function PartnersPage() {
       {/* Create / Edit Form Modal */}
       <PartnerFormModal
         open={isFormModalOpen}
+        initialType={activeFilter === "suppliers" ? "supplier" : "customer"}
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingPartner(null);

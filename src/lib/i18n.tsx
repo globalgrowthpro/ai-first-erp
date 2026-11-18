@@ -28,6 +28,8 @@ export const dict: Dict = {
   nav_branches: { ar: "فروع وزير الحلو (15)", en: "Branches (15)" },
   nav_manufacturing: { ar: "التصنيع والتشغيل", en: "Manufacturing" },
   nav_dispatch: { ar: "أوامر التحميل", en: "Dispatch Orders" },
+  nav_customers: { ar: "العملاء", en: "Customers" },
+  nav_suppliers: { ar: "الموردون", en: "Suppliers" },
   nav_partners: { ar: "العملاء والموردون", en: "Customers & Suppliers" },
   nav_hr: { ar: "الموارد البشرية", en: "Human Resources" },
   nav_reports: { ar: "التقارير", en: "Reports" },

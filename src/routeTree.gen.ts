@@ -14,6 +14,7 @@ import { Route as AccountingRouteImport } from './routes/accounting'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AiModulesRouteImport } from './routes/ai-modules'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as DispatchRouteImport } from './routes/dispatch'
 import { Route as HelpdeskRouteImport } from './routes/helpdesk'
@@ -27,6 +28,7 @@ import { Route as PurchasesRouteImport } from './routes/purchases'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SalesRouteImport } from './routes/sales'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as TodoRouteImport } from './routes/todo'
 import { Route as HrEmployeeIdRouteImport } from './routes/hr_.$employeeId'
 import { Route as PurchasesOrderIdRouteImport } from './routes/purchases_.$orderId'
@@ -55,6 +57,11 @@ const AiModulesRoute = AiModulesRouteImport.update({
 const AuditRoute = AuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscountsRoute = DiscountsRouteImport.update({
@@ -122,6 +129,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuppliersRoute = SuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodoRoute = TodoRouteImport.update({
   id: '/todo',
   path: '/todo',
@@ -149,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
   '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
@@ -162,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
   '/hr/$employeeId': typeof HrEmployeeIdRoute
   '/purchases/$orderId': typeof PurchasesOrderIdRoute
@@ -173,6 +187,7 @@ export interface FileRoutesByTo {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
   '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
@@ -186,6 +201,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
   '/hr/$employeeId': typeof HrEmployeeIdRoute
   '/purchases/$orderId': typeof PurchasesOrderIdRoute
@@ -198,6 +214,7 @@ export interface FileRoutesById {
   '/ai': typeof AiRoute
   '/ai-modules': typeof AiModulesRoute
   '/audit': typeof AuditRoute
+  '/customers': typeof CustomersRoute
   '/discounts': typeof DiscountsRoute
   '/dispatch': typeof DispatchRoute
   '/helpdesk': typeof HelpdeskRoute
@@ -211,6 +228,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
+  '/suppliers': typeof SuppliersRoute
   '/todo': typeof TodoRoute
   '/hr_/$employeeId': typeof HrEmployeeIdRoute
   '/purchases_/$orderId': typeof PurchasesOrderIdRoute
@@ -224,6 +242,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/customers'
     | '/discounts'
     | '/dispatch'
     | '/helpdesk'
@@ -237,6 +256,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/suppliers'
     | '/todo'
     | '/hr/$employeeId'
     | '/purchases/$orderId'
@@ -248,6 +268,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/customers'
     | '/discounts'
     | '/dispatch'
     | '/helpdesk'
@@ -261,6 +282,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/suppliers'
     | '/todo'
     | '/hr/$employeeId'
     | '/purchases/$orderId'
@@ -272,6 +294,7 @@ export interface FileRouteTypes {
     | '/ai'
     | '/ai-modules'
     | '/audit'
+    | '/customers'
     | '/discounts'
     | '/dispatch'
     | '/helpdesk'
@@ -285,6 +308,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/settings'
+    | '/suppliers'
     | '/todo'
     | '/hr_/$employeeId'
     | '/purchases_/$orderId'
@@ -297,6 +321,7 @@ export interface RootRouteChildren {
   AiRoute: typeof AiRoute
   AiModulesRoute: typeof AiModulesRoute
   AuditRoute: typeof AuditRoute
+  CustomersRoute: typeof CustomersRoute
   DiscountsRoute: typeof DiscountsRoute
   DispatchRoute: typeof DispatchRoute
   HelpdeskRoute: typeof HelpdeskRoute
@@ -310,6 +335,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRoute
+  SuppliersRoute: typeof SuppliersRoute
   TodoRoute: typeof TodoRoute
   HrEmployeeIdRoute: typeof HrEmployeeIdRoute
   PurchasesOrderIdRoute: typeof PurchasesOrderIdRoute
@@ -351,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discounts': {
@@ -444,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suppliers': {
+      id: '/suppliers'
+      path: '/suppliers'
+      fullPath: '/suppliers'
+      preLoaderRoute: typeof SuppliersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/todo': {
       id: '/todo'
       path: '/todo'
@@ -481,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiRoute: AiRoute,
   AiModulesRoute: AiModulesRoute,
   AuditRoute: AuditRoute,
+  CustomersRoute: CustomersRoute,
   DiscountsRoute: DiscountsRoute,
   DispatchRoute: DispatchRoute,
   HelpdeskRoute: HelpdeskRoute,
@@ -494,6 +535,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SalesRoute: SalesRoute,
   SettingsRoute: SettingsRoute,
+  SuppliersRoute: SuppliersRoute,
   TodoRoute: TodoRoute,
   HrEmployeeIdRoute: HrEmployeeIdRoute,
   PurchasesOrderIdRoute: PurchasesOrderIdRoute,
