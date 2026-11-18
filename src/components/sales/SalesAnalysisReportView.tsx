@@ -612,11 +612,11 @@ export function SalesAnalysisReportView({
           </div>
         </div>
 
-        {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Filter Controls Row - Strictly in one single row without wrapping */}
+        <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-1 max-w-full shrink-0">
           {/* Branch Selector */}
-          <div className="flex items-center gap-1.5 bg-secondary/80 px-2.5 py-1.5 rounded-xl border border-border/80 text-xs">
-            <Store className="size-3.5 text-muted-foreground" />
+          <div className="flex items-center gap-1.5 bg-secondary/80 px-2.5 py-1.5 rounded-xl border border-border/80 text-xs shrink-0 whitespace-nowrap">
+            <Store className="size-3.5 text-muted-foreground shrink-0" />
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
@@ -637,8 +637,8 @@ export function SalesAnalysisReportView({
           </div>
 
           {/* Date Presets Dropdown */}
-          <div className="flex items-center gap-1.5 bg-secondary/80 px-2.5 py-1.5 rounded-xl border border-border/80 text-xs">
-            <Calendar className="size-3.5 text-muted-foreground" />
+          <div className="flex items-center gap-1.5 bg-secondary/80 px-2.5 py-1.5 rounded-xl border border-border/80 text-xs shrink-0 whitespace-nowrap">
+            <Calendar className="size-3.5 text-muted-foreground shrink-0" />
             <select
               value={dateRangePreset}
               onChange={(e) => handlePresetChange(e.target.value as any)}
@@ -655,7 +655,7 @@ export function SalesAnalysisReportView({
 
           {/* Custom Date Range Inputs */}
           {dateRangePreset === "custom" && (
-            <div className="flex items-center gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap">
               <input
                 type="date"
                 value={dateFrom}
@@ -679,7 +679,7 @@ export function SalesAnalysisReportView({
               refreshOrders();
               toast.success(lang === "ar" ? "تم تحديث البيانات المباشرة!" : "Live data refreshed!");
             }}
-            className="p-2 rounded-xl bg-secondary/80 border border-border/80 text-muted-foreground hover:text-foreground transition"
+            className="p-2 rounded-xl bg-secondary/80 border border-border/80 text-muted-foreground hover:text-foreground transition shrink-0"
             title={lang === "ar" ? "تحديث البيانات الحية" : "Refresh live data"}
           >
             <RotateCcw className={`size-3.5 ${posLoading ? "animate-spin text-primary" : ""}`} />
@@ -689,23 +689,23 @@ export function SalesAnalysisReportView({
           <Btn
             variant="solid"
             onClick={handleExportExcel}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-xs"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-xs shrink-0 whitespace-nowrap"
           >
             <FileSpreadsheet className="size-3.5" />
-            <span>{selectedBranch === "all" ? (lang === "ar" ? "تصدير مجمع Excel" : "Export Network Excel") : (lang === "ar" ? "تصدير الفرع Excel" : "Export Branch Excel")}</span>
+            <span>{selectedBranch === "all" ? (lang === "ar" ? "تصدير مجمع EXCEL" : "Export Network EXCEL") : (lang === "ar" ? "تصدير الفرع EXCEL" : "Export Branch EXCEL")}</span>
           </Btn>
 
           <Btn
             variant="outline"
             onClick={() => window.print()}
-            className="font-bold text-xs gap-1.5 border-border/80 hover:bg-secondary"
+            className="font-bold text-xs gap-1.5 border-border/80 hover:bg-secondary shrink-0 whitespace-nowrap"
           >
             <Printer className="size-3.5" />
             <span>{lang === "ar" ? "طباعة" : "Print"}</span>
           </Btn>
 
           {onNavigateBack && (
-            <Btn variant="ghost" onClick={onNavigateBack} className="text-xs font-bold">
+            <Btn variant="ghost" onClick={onNavigateBack} className="text-xs font-bold shrink-0 whitespace-nowrap">
               {lang === "ar" ? "رجوع" : "Back"}
             </Btn>
           )}
