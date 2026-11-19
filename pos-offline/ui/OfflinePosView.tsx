@@ -425,7 +425,7 @@ export const OfflinePosView: React.FC = () => {
 
   const defaultCategories = [
     { id: "all", ar: "الكل", icon: "✨" },
-    { id: "عشاق الرز", ar: "عشاق الرز", icon: "🥣" },
+    { id: "عشاق الرز", ar: "عشاق الرز", icon: "🍲" },
     { id: "الفتة", ar: "الفتة الملكية", icon: "🍨" },
     { id: "دنيا الدلع", ar: "دنيا الدلع والمدلعة", icon: "🍯" },
     { id: "الطواجن", ar: "طواجن ساخنة", icon: "🍲" },
@@ -737,8 +737,8 @@ export const OfflinePosView: React.FC = () => {
           </div>
 
           {/* Categories */}
-          <div className="flex items-center gap-1.5 pb-1 relative z-30 shrink-0">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 pb-2 relative z-30 shrink-0">
+            <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0">
               {defaultCategories.map((cat) => {
                 const isActive = selectedCategory === cat.id;
                 return (
@@ -746,14 +746,14 @@ export const OfflinePosView: React.FC = () => {
                     type="button"
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                    className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-md scale-102"
-                        : "bg-card border border-border/70 text-foreground hover:bg-muted"
+                        ? "bg-primary text-primary-foreground shadow-sm font-black"
+                        : "bg-card border border-border/80 text-foreground hover:bg-muted font-bold"
                     }`}
                   >
-                    <span className="text-sm">{cat.icon}</span>
                     <span>{cat.ar}</span>
+                    <span className="text-xs">{cat.icon}</span>
                   </button>
                 );
               })}
@@ -763,15 +763,15 @@ export const OfflinePosView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMoreCatOpen(!isMoreCatOpen)}
-                className="px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-card border border-border/70 text-foreground hover:bg-muted"
+                className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-card border border-border/80 text-foreground hover:bg-muted cursor-pointer"
               >
-                <span className="text-sm">📂</span>
-                <span>أقسام أخرى ({dropdownCategories.length})</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${
                     isMoreCatOpen ? "rotate-180" : ""
                   }`}
                 />
+                <span>أقسام أخرى ({dropdownCategories.length})</span>
+                <span className="text-xs">📁</span>
               </button>
 
               {isMoreCatOpen && (
@@ -816,68 +816,80 @@ export const OfflinePosView: React.FC = () => {
 
           {/* Products Grid */}
           <div className="flex-1 overflow-y-auto pr-1">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5 pb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3 pb-4">
               {filteredProducts.map((prod) => {
                 const cartQty = cart.find((c) => c.sku === prod.sku)?.quantity || 0;
+                const isSelected = cartQty > 0;
 
                 return (
                   <div
                     key={prod.sku}
                     onClick={() => addToCart(prod)}
-                    className="group relative bg-card rounded-2xl border border-border/80 p-2.5 flex flex-col justify-between transition-all duration-200 select-none overflow-hidden hover:border-primary/60 hover:shadow-xl active:scale-98 cursor-pointer"
+                    className={`group relative bg-card rounded-3xl border transition-all duration-200 select-none overflow-hidden cursor-pointer active:scale-98 p-3 flex flex-col justify-between ${
+                      isSelected
+                        ? "border-primary ring-1 ring-primary/30 shadow-md"
+                        : "border-border/80 hover:border-border shadow-2xs"
+                    }`}
                   >
-                    <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-muted/50 mb-2 border border-border/40">
+                    {/* Photo Container */}
+                    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-muted/50 mb-3 border border-border/40">
                       <img
                         src={prod.imageUrl || `/products/${prod.sku.toLowerCase()}.jpg`}
                         alt={prod.nameAr}
                         loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-108"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).src = "/products/rice-pistachio.jpg";
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none" />
 
-                      <div className="absolute top-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white/90 truncate shadow-xs">
-                          {prod.sku}
-                        </span>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs text-white bg-amber-500">
-                          الأكثر طلباً
-                        </span>
-                      </div>
+                      {/* Top Right: SKU */}
+                      <span className="absolute top-2.5 start-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs pointer-events-none">
+                        {prod.sku}
+                      </span>
 
-                      <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
-                          رصيد: {prod.stock}
-                        </span>
+                      {/* Bottom Right: Stock */}
+                      <span className="absolute bottom-2.5 start-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-xs pointer-events-none">
+                        رصيد: {prod.stock}
+                      </span>
 
-                        {cartQty > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-mono text-xs font-black shadow-md ring-2 ring-background">
-                            {cartQty}×
-                          </span>
-                        )}
-                      </div>
+                      {/* Top Left: Quantity in Cart */}
+                      {cartQty > 0 && (
+                        <span className="absolute top-2.5 end-2.5 size-6 rounded-full bg-primary text-primary-foreground font-mono text-xs font-black shadow-md ring-2 ring-background flex items-center justify-center">
+                          {cartQty}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="mb-2">
-                      <h4 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-1">
+                    {/* Product Name & Category */}
+                    <div className="mb-2 text-start">
+                      <h4
+                        className={`text-sm font-black transition-colors leading-tight line-clamp-1 ${
+                          isSelected ? "text-primary" : "text-foreground"
+                        }`}
+                      >
                         {prod.nameAr}
                       </h4>
-                      <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
+                      <span className="text-xs text-muted-foreground mt-1 block truncate">
                         {prod.categoryNameAr}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
-                      <span className="text-sm sm:text-base font-black text-foreground font-mono">
+                    {/* Bottom Row: Price on Right, Circular Plus Button on Left */}
+                    <div className="flex items-center justify-between pt-2.5 mt-auto">
+                      <span className="text-base font-black text-foreground font-mono">
                         {prod.price.toFixed(2)} ج.م
                       </span>
 
-                      <div className="flex items-center gap-1">
-                        <span className="p-1.5 rounded-xl bg-muted group-hover:bg-primary group-hover:text-primary-foreground text-foreground transition-colors shadow-xs">
-                          <Plus className="w-3.5 h-3.5" />
-                        </span>
+                      <div
+                        className={`size-7 rounded-full flex items-center justify-center font-bold text-sm shadow-2xs transition-all active:scale-90 ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground hover:opacity-95"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        +
                       </div>
                     </div>
                   </div>

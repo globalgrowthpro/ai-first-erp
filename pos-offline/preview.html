@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نقطة البيع (POS Offline Terminal) — سلسلة حلويات وزير الحلو</title>
+  <title>Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨ÙŠØ¹ (POS Offline Terminal) â€” Ø³Ù„Ø³Ù„Ø© Ø­Ù„ÙˆÙŠØ§Øª ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,12 +89,12 @@
       <!-- Modal Top Branding -->
       <div class="bg-gradient-to-r from-[#D10056] to-[#92003c] text-white p-5 text-center relative">
         <div class="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
-          <img src="wazeer-logo.png" alt="وزير الحلو" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
+          <img src="wazeer-logo.png" alt="ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
         </div>
-        <h2 class="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
-        <p class="text-xs text-white/90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
+        <h2 class="font-black text-lg">Ø³Ù„Ø³Ù„Ø© Ø­Ù„ÙˆÙŠØ§Øª ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ</h2>
+        <p class="text-xs text-white/90 font-medium">ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„ Ø§Ù„ÙƒØ§Ø´ÙŠØ± ÙˆÙØªØ­ Ø§Ù„ÙˆØ±Ø¯ÙŠØ©</p>
         <span class="inline-block mt-1 text-[10px] bg-black/30 px-2.5 py-0.5 rounded-full font-mono text-white/80">
-          فرع الكوربة — المحطة: REG-01 (Offline-First)
+          ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø© â€” Ø§Ù„Ù…Ø­Ø·Ø©: REG-01 (Offline-First)
         </span>
       </div>
 
@@ -104,13 +104,13 @@
         <!-- Error Alert -->
         <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
           <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span id="login-error-text">اسم المستخدم أو كلمة المرور غير صحيحة!</span>
+          <span id="login-error-text">Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©!</span>
         </div>
 
         <!-- Username or Code Input -->
         <div>
           <label for="login-username-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>اسم المستخدم أو البريد الإلكتروني:</span>
+            <span>Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ:</span>
             <span class="text-[10px] text-slate-400 font-normal">Username / Email</span>
           </label>
           <div class="relative">
@@ -118,7 +118,7 @@
               id="login-username-input"
               type="text"
               autocomplete="username"
-              placeholder="أدخل اسم المستخدم أو البريد..."
+              placeholder="Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ Ø§Ù„Ø¨Ø±ÙŠØ¯..."
               value=""
               class="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition"
               oninput="hideLoginError()"
@@ -131,7 +131,7 @@
         <!-- Password Input -->
         <div>
           <label for="login-password-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>كلمة المرور:</span>
+            <span>ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±:</span>
             <span class="text-[10px] text-slate-400 font-normal">Password</span>
           </label>
           <div class="relative">
@@ -139,7 +139,7 @@
               id="login-password-input"
               type="password"
               autocomplete="current-password"
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               value=""
               class="w-full text-xs font-bold py-2.5 px-3 ps-9 pe-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition font-mono"
               oninput="hideLoginError()"
@@ -150,7 +150,7 @@
               type="button"
               onclick="togglePasswordVisibility()"
               class="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-              title="إظهار / إخفاء كلمة المرور"
+              title="Ø¥Ø¸Ù‡Ø§Ø± / Ø¥Ø®ÙØ§Ø¡ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"
             >
               <svg id="eye-open-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg id="eye-closed-icon" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -165,7 +165,7 @@
             id="submit-login-btn"
             class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D10056] to-[#92003c] hover:opacity-95 text-white font-black text-sm shadow-md active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>تسجيل الدخول وفتح نقطة البيع</span>
+            <span>ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ÙˆÙØªØ­ Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨ÙŠØ¹</span>
             <svg class="w-4 h-4 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>
@@ -186,20 +186,20 @@
         <div class="h-10 px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-center shrink-0">
           <img
             src="wazeer-logo.png"
-            alt="وزير الحلو"
+            alt="ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ"
             class="h-7 w-auto max-w-[120px] object-contain"
             onerror="this.onerror=null; this.src='logo.png';"
           />
         </div>
         <div class="leading-tight hidden sm:block">
           <div class="flex items-center gap-1.5">
-            <span class="font-black text-xs text-slate-900 tracking-tight">وزير الحلو</span>
+            <span class="font-black text-xs text-slate-900 tracking-tight">ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ</span>
             <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-[#D10056] text-white font-black tracking-wider shadow-2xs">
               POS
             </span>
           </div>
           <span class="text-[10px] text-slate-500 font-mono">
-            REG-01 • v2.6
+            REG-01 â€¢ v2.6
           </span>
         </div>
       </div>
@@ -207,9 +207,9 @@
       <div class="h-6 w-px bg-slate-200 hidden md:block shrink-0"></div>
 
       <!-- Branch Indicator (Locked) -->
-      <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-800 text-xs font-semibold shrink-0" title="الفرع المخصص لنقطة البيع (مقفل على المحطة)">
+      <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-800 text-xs font-semibold shrink-0" title="Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ù…Ø®ØµØµ Ù„Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨ÙŠØ¹ (Ù…Ù‚ÙÙ„ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø­Ø·Ø©)">
         <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-        <span class="truncate max-w-[200px] text-xs font-bold" id="toolbar-branch-name">فرع الكوربة — مصر الجديدة</span>
+        <span class="truncate max-w-[200px] text-xs font-bold" id="toolbar-branch-name">ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø© â€” Ù…ØµØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</span>
         <svg class="w-3 h-3 text-slate-400 opacity-60 ms-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
       </div>
     </div>
@@ -219,45 +219,45 @@
       
       <!-- Active Cashier Pill (Locked / Switchable on PIN) -->
       <div class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold shadow-2xs h-10 select-none">
-        <span id="toolbar-cashier-avatar" class="text-base p-0.5 bg-slate-100 rounded-lg shrink-0">👨‍🍳</span>
+        <span id="toolbar-cashier-avatar" class="text-base p-0.5 bg-slate-100 rounded-lg shrink-0">ðŸ‘¨â€ðŸ³</span>
         <div class="text-start leading-tight hidden sm:block">
-          <span class="font-bold text-xs text-slate-900 block truncate max-w-[110px]" id="toolbar-cashier-name">أحمد سالم</span>
-          <span id="toolbar-cashier-role" class="text-[9px] text-slate-500 font-medium block truncate max-w-[110px]">كاشير رئيسي</span>
+          <span class="font-bold text-xs text-slate-900 block truncate max-w-[110px]" id="toolbar-cashier-name">Ø£Ø­Ù…Ø¯ Ø³Ø§Ù„Ù…</span>
+          <span id="toolbar-cashier-role" class="text-[9px] text-slate-500 font-medium block truncate max-w-[110px]">ÙƒØ§Ø´ÙŠØ± Ø±Ø¦ÙŠØ³ÙŠ</span>
         </div>
         <!-- Lock Terminal Button -->
-        <button type="button" onclick="lockTerminal()" class="ms-1 p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-rose-600 transition" title="قفل المحطة (Lock Screen)">
+        <button type="button" onclick="lockTerminal()" class="ms-1 p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-rose-600 transition" title="Ù‚ÙÙ„ Ø§Ù„Ù…Ø­Ø·Ø© (Lock Screen)">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         </button>
       </div>
 
       <!-- Shift Status Pill -->
-      <button type="button" onclick="showShiftModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group" title="تقرير الوردية وحركة الصندوق">
+      <button type="button" onclick="showShiftModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group" title="ØªÙ‚Ø±ÙŠØ± Ø§Ù„ÙˆØ±Ø¯ÙŠØ© ÙˆØ­Ø±ÙƒØ© Ø§Ù„ØµÙ†Ø¯ÙˆÙ‚">
         <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         <div class="flex items-center gap-1.5">
-          <span class="text-xs font-bold text-slate-900">الوردية</span>
+          <span class="text-xs font-bold text-slate-900">Ø§Ù„ÙˆØ±Ø¯ÙŠØ©</span>
           <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 text-[10px] font-black border border-emerald-500/30 flex items-center gap-1.5">
             <span class="relative flex h-1.5 w-1.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
-            <span>نشطة</span>
+            <span>Ù†Ø´Ø·Ø©</span>
           </span>
         </div>
       </button>
 
       <!-- My Orders Button -->
-      <button type="button" onclick="switchViewTab('screen-orders')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group" title="سجل طلباتي">
+      <button type="button" onclick="switchViewTab('screen-orders')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group" title="Ø³Ø¬Ù„ Ø·Ù„Ø¨Ø§ØªÙŠ">
         <svg class="w-3.5 h-3.5 text-[#D10056] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17V7"></path></svg>
-        <span class="text-xs hidden sm:inline">طلباتي</span>
+        <span class="text-xs hidden sm:inline">Ø·Ù„Ø¨Ø§ØªÙŠ</span>
         <span id="orders-badge-count" class="min-w-5 h-5 px-1.5 rounded-full bg-[#D10056]/10 text-[#D10056] font-mono text-[10px] font-black border border-[#D10056]/20 flex items-center justify-center">
           14
         </span>
       </button>
 
       <!-- Parked Tickets Button -->
-      <button type="button" onclick="showParkedTickets()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10" title="الفواتير المعلقة">
+      <button type="button" onclick="showParkedTickets()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10" title="Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©">
         <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-        <span class="text-xs hidden sm:inline">المعلقات</span>
+        <span class="text-xs hidden sm:inline">Ø§Ù„Ù…Ø¹Ù„Ù‚Ø§Øª</span>
         <span id="parked-badge-count" class="min-w-5 h-5 px-1.5 rounded-full bg-slate-100 text-slate-600 font-mono text-[10px] font-black flex items-center justify-center">
           0
         </span>
@@ -268,21 +268,21 @@
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
       
       <!-- Outbox Sync Pill (Interactive) -->
-      <button type="button" onclick="switchViewTab('screen-sync')" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer" title="لوحة المزامنة وقائمة الفواتير المحلية">
+      <button type="button" onclick="switchViewTab('screen-sync')" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer" title="Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© ÙˆÙ‚Ø§Ø¦Ù…Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø­Ù„ÙŠØ©">
         <span id="header-sync-dot" class="size-2 rounded-full bg-emerald-500"></span>
-        <span class="text-xs hidden sm:inline">المزامنة:</span>
+        <span class="text-xs hidden sm:inline">Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø©:</span>
         <span id="header-pending-count" class="font-mono text-xs font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md">
-          14 فواتير
+          14 ÙÙˆØ§ØªÙŠØ±
         </span>
       </button>
 
       <!-- Fullscreen Kiosk Toggle -->
-      <button type="button" onclick="toggleFullscreen()" class="size-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="وضع ملء الشاشة (F11)">
+      <button type="button" onclick="toggleFullscreen()" class="size-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="ÙˆØ¶Ø¹ Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø© (F11)">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
       </button>
 
       <!-- Lock / Logout -->
-      <button type="button" onclick="lockTerminal()" class="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="تسجيل الخروج وقفل المحطة">
+      <button type="button" onclick="lockTerminal()" class="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬ ÙˆÙ‚ÙÙ„ Ø§Ù„Ù…Ø­Ø·Ø©">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       </button>
     </div>
@@ -296,25 +296,25 @@
       <div id="net-status-pulse" class="size-2 rounded-full bg-emerald-500"></div>
       <div class="flex items-center gap-2">
         <span id="net-status-title" class="font-black text-emerald-800 text-xs">
-          متصل بالإنترنت (Online) — المزامنة السحابية فورية
+          Ù…ØªØµÙ„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª (Online) â€” Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø³Ø­Ø§Ø¨ÙŠØ© ÙÙˆØ±ÙŠØ©
         </span>
         <span id="net-status-badge" class="text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs">
-          سيرفر وزير الحلو نشط
+          Ø³ÙŠØ±ÙØ± ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ Ù†Ø´Ø·
         </span>
         <span id="net-status-desc" class="text-[11px] text-slate-600 hidden md:inline">
-          البيع متصل سحابياً مع حفظ محلي احتياطي فوري
+          Ø§Ù„Ø¨ÙŠØ¹ Ù…ØªØµÙ„ Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹ Ù…Ø¹ Ø­ÙØ¸ Ù…Ø­Ù„ÙŠ Ø§Ø­ØªÙŠØ§Ø·ÙŠ ÙÙˆØ±ÙŠ
         </span>
       </div>
     </div>
     
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-1.5 bg-white/80 px-2.5 py-0.5 rounded-lg border border-slate-200 text-[11px] font-mono">
-        <span class="text-slate-600">فواتير بانتظار الرفع:</span>
-        <strong id="bar-pending-orders" class="text-slate-800 font-bold">14 فاتورة (4,890 ج.م)</strong>
+        <span class="text-slate-600">ÙÙˆØ§ØªÙŠØ± Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ø±ÙØ¹:</span>
+        <strong id="bar-pending-orders" class="text-slate-800 font-bold">14 ÙØ§ØªÙˆØ±Ø© (4,890 Ø¬.Ù…)</strong>
       </div>
       <button id="net-sync-action-btn" onclick="triggerImmediateSync()" class="px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1">
         <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
-        <span id="sync-btn-label">مزامنة الآن</span>
+        <span id="sync-btn-label">Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø¢Ù†</span>
       </button>
     </div>
   </div>
@@ -337,7 +337,7 @@
             id="pos-search-input"
             type="text"
             oninput="handleSearch(this.value)"
-            placeholder="ابحث باسم الصنف، النكهة، أو امسح الباركود مباشرة (F3)..."
+            placeholder="Ø§Ø¨Ø­Ø« Ø¨Ø§Ø³Ù… Ø§Ù„ØµÙ†ÙØŒ Ø§Ù„Ù†ÙƒÙ‡Ø©ØŒ Ø£Ùˆ Ø§Ù…Ø³Ø­ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ù…Ø¨Ø§Ø´Ø±Ø© (F3)..."
             class="w-full ps-9 pe-9 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:border-[#D10056] focus:bg-white focus:outline-none transition-colors"
           />
           <button id="search-clear-btn" type="button" onclick="clearSearch()" class="hidden absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -351,63 +351,63 @@
         </div>
       </div>
 
-      <!-- Categories Row: 5 default tabs + Dropdown for the rest -->
-      <div class="flex items-center gap-1.5 pb-1 relative z-30 shrink-0">
-        <!-- 5 Default Categories Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0" id="category-tabs-container">
-          <button type="button" onclick="filterCategory('all')" id="cat-all" class="cat-pill active px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-[#D10056] text-white shadow-md">
-            <span class="text-sm">✨</span>
-            <span>الكل</span>
+      <!-- Categories Row: 5 default tabs + Dropdown for the rest (IDENTICAL TO ONLINE POS) -->
+      <div class="flex items-center justify-between gap-2 pb-2 relative z-30 shrink-0">
+        <!-- Default Categories Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0" id="category-tabs-container">
+          <button type="button" onclick="filterCategory('all')" id="cat-all" class="cat-pill active px-4 py-2 rounded-2xl text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-[#D10056] text-white shadow-sm cursor-pointer">
+            <span>Ø§Ù„ÙƒÙ„</span>
+            <span class="text-xs">âœ¨</span>
           </button>
-          <button type="button" onclick="filterCategory('عشاق الرز')" id="cat-عشاق الرز" class="cat-pill px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100">
-            <span class="text-sm">🥣</span>
-            <span>عشاق الرز</span>
+          <button type="button" onclick="filterCategory('Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²')" id="cat-Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²" class="cat-pill px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
+            <span>Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²</span>
+            <span class="text-xs">ðŸ²</span>
           </button>
-          <button type="button" onclick="filterCategory('الفتة')" id="cat-الفتة" class="cat-pill px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100">
-            <span class="text-sm">🍨</span>
-            <span>الفتة الملكية</span>
+          <button type="button" onclick="filterCategory('Ø§Ù„ÙØªØ©')" id="cat-Ø§Ù„ÙØªØ©" class="cat-pill px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
+            <span>Ø§Ù„ÙØªØ© Ø§Ù„Ù…Ù„ÙƒÙŠØ©</span>
+            <span class="text-xs">ðŸ¨</span>
           </button>
-          <button type="button" onclick="filterCategory('دنيا الدلع')" id="cat-دنيا الدلع" class="cat-pill px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100">
-            <span class="text-sm">🍯</span>
-            <span>دنيا الدلع والمدلعة</span>
+          <button type="button" onclick="filterCategory('Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹')" id="cat-Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹" class="cat-pill px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
+            <span>Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹ ÙˆØ§Ù„Ù…Ø¯Ù„Ø¹Ø©</span>
+            <span class="text-xs">ðŸ¯</span>
           </button>
-          <button type="button" onclick="filterCategory('الطواجن')" id="cat-الطواجن" class="cat-pill px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100">
-            <span class="text-sm">🍲</span>
-            <span>طواجن ساخنة</span>
+          <button type="button" onclick="filterCategory('Ø§Ù„Ø·ÙˆØ§Ø¬Ù†')" id="cat-Ø§Ù„Ø·ÙˆØ§Ø¬Ù†" class="cat-pill px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
+            <span>Ø·ÙˆØ§Ø¬Ù† Ø³Ø§Ø®Ù†Ø©</span>
+            <span class="text-xs">ðŸ²</span>
           </button>
         </div>
 
         <!-- Dropdown for Remaining Categories -->
         <div class="relative shrink-0">
-          <button type="button" onclick="toggleCategoryDropdown()" id="cat-dropdown-btn" class="px-3 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100">
-            <span class="text-sm">📂</span>
-            <span>أقسام أخرى (6)</span>
+          <button type="button" onclick="toggleCategoryDropdown()" id="cat-dropdown-btn" class="px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 cursor-pointer">
             <svg class="w-3.5 h-3.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <span id="cat-dropdown-label">Ø£Ù‚Ø³Ø§Ù… Ø£Ø®Ø±Ù‰ (6)</span>
+            <span class="text-xs">ðŸ“</span>
           </button>
 
           <div id="cat-dropdown-menu" class="hidden absolute z-50 top-full mt-2 end-0 min-w-56 p-1.5 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-2xl space-y-1">
             <div class="px-2.5 py-1.5 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-100 flex items-center justify-between">
-              <span>بقية الأقسام</span>
+              <span>Ø¨Ù‚ÙŠØ© Ø§Ù„Ø£Ù‚Ø³Ø§Ù…</span>
               <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 font-mono font-bold">6</span>
             </div>
             <div class="max-h-64 overflow-y-auto space-y-0.5 p-0.5">
-              <button onclick="filterCategory('كيك وتشييز')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🍰</span><span>كيك وتشيز كيك</span>
+              <button onclick="filterCategory('ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²', 'ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ² (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸ°</span><span>ÙƒÙŠÙƒ ÙˆØªØ´ÙŠØ² ÙƒÙŠÙƒ</span>
               </button>
-              <button onclick="filterCategory('كشري الحلو')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🍧</span><span>كشري الحلو الملكي</span>
+              <button onclick="filterCategory('ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ', 'ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸ§</span><span>ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ Ø§Ù„Ù…Ù„ÙƒÙŠ</span>
               </button>
-              <button onclick="filterCategory('القشطوطة')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🍮</span><span>القشطوطة الأصلية</span>
+              <button onclick="filterCategory('Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©', 'Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø© (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸ®</span><span>Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø© Ø§Ù„Ø£ØµÙ„ÙŠØ©</span>
               </button>
-              <button onclick="filterCategory('علب الهدايا')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🎁</span><span>علب هدايا وبوكسات</span>
+              <button onclick="filterCategory('Ø¹Ù„Ø¨ Ø§Ù„Ù‡Ø¯Ø§ÙŠØ§', 'Ø¹Ù„Ø¨ Ø§Ù„Ù‡Ø¯Ø§ÙŠØ§ (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸŽ</span><span>Ø¹Ù„Ø¨ Ù‡Ø¯Ø§ÙŠØ§ ÙˆØ¨ÙˆÙƒØ³Ø§Øª</span>
               </button>
-              <button onclick="filterCategory('شاورما الوزير')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🌯</span><span>شاورما الحلو</span>
+              <button onclick="filterCategory('Ø´Ø§ÙˆØ±Ù…Ø§ Ø§Ù„ÙˆØ²ÙŠØ±', 'Ø´Ø§ÙˆØ±Ù…Ø§ Ø§Ù„ÙˆØ²ÙŠØ± (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸŒ¯</span><span>Ø´Ø§ÙˆØ±Ù…Ø§ Ø§Ù„Ø­Ù„Ùˆ</span>
               </button>
-              <button onclick="filterCategory('مشروبات وإضافات')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
-                <span>🥤</span><span>مشروبات وإضافات</span>
+              <button onclick="filterCategory('Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª', 'Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª (6)')" class="w-full px-3 py-2 rounded-xl text-xs font-bold text-start flex items-center gap-2 hover:bg-slate-100 transition">
+                <span>ðŸ¥¤</span><span>Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª</span>
               </button>
             </div>
           </div>
@@ -434,35 +434,35 @@
           <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 flex-1 min-w-0 shadow-2xs">
             <svg class="w-3.5 h-3.5 text-[#D10056] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <div class="truncate leading-tight flex-1 min-w-0">
-              <span class="truncate block font-bold text-[11px] text-slate-900">عميل نقدي سريع</span>
+              <span class="truncate block font-bold text-[11px] text-slate-900">Ø¹Ù…ÙŠÙ„ Ù†Ù‚Ø¯ÙŠ Ø³Ø±ÙŠØ¹</span>
               <span class="text-[9px] text-slate-500 font-mono block">Walk-in Customer</span>
             </div>
-            <span class="text-[10px] text-[#D10056] shrink-0 font-medium cursor-pointer">تغيير</span>
+            <span class="text-[10px] text-[#D10056] shrink-0 font-medium cursor-pointer">ØªØºÙŠÙŠØ±</span>
           </div>
 
           <!-- Order Types 3-way toggle -->
           <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
             <button type="button" onclick="setOrderType('takeaway')" id="btn-type-takeaway" class="px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all bg-[#0f2744] text-white shadow-xs font-black">
               <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-              <span class="hidden sm:inline">سفري</span>
+              <span class="hidden sm:inline">Ø³ÙØ±ÙŠ</span>
             </button>
             <button type="button" onclick="setOrderType('dine_in')" id="btn-type-dine_in" class="px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all text-slate-600 hover:text-slate-900">
               <svg class="w-3 h-3 text-[#D10056]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"></path><path d="M15 2v14a2 2 0 0 1-2 2 2 2 0 0 1-2-2V2"></path><line x1="2" y1="2" x2="2" y2="22"></line></svg>
-              <span class="hidden sm:inline">صالة</span>
+              <span class="hidden sm:inline">ØµØ§Ù„Ø©</span>
             </button>
             <button type="button" onclick="setOrderType('delivery')" id="btn-type-delivery" class="px-2 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-all text-slate-600 hover:text-slate-900">
               <svg class="w-3 h-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18.5" cy="17.5" r="3.5"></circle><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="15" cy="5" r="1"></circle><path d="M12 17.5V14l-3-3 4-3 2 3h2"></path></svg>
-              <span class="hidden sm:inline">توصيل</span>
+              <span class="hidden sm:inline">ØªÙˆØµÙŠÙ„</span>
             </button>
           </div>
 
           <!-- Platform Selector -->
           <div class="relative shrink-0">
             <select class="text-[11px] font-bold py-1 px-2 pe-6 rounded-xl border border-slate-200 bg-white text-slate-800 appearance-none focus:outline-none cursor-pointer shadow-2xs">
-              <option value="direct">🏪 مباشر</option>
-              <option value="talabat">🛵 طلبات</option>
-              <option value="waffarha">🎟️ وفرها</option>
-              <option value="elmenus">🍔 المنيوز</option>
+              <option value="direct">ðŸª Ù…Ø¨Ø§Ø´Ø±</option>
+              <option value="talabat">ðŸ›µ Ø·Ù„Ø¨Ø§Øª</option>
+              <option value="waffarha">ðŸŽŸï¸ ÙˆÙØ±Ù‡Ø§</option>
+              <option value="elmenus">ðŸ” Ø§Ù„Ù…Ù†ÙŠÙˆØ²</option>
             </select>
             <svg class="w-3 h-3 absolute end-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
@@ -473,18 +473,18 @@
       <div class="px-2.5 py-1.5 bg-slate-100/60 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0 text-xs">
         <div class="flex items-center gap-2">
           <span class="text-[11px] font-bold text-slate-800">
-            <span id="cart-item-count">2</span> أصناف
-            <span class="text-[10px] text-slate-500 ms-1">(<span id="cart-piece-count">3</span> قطعة)</span>
+            <span id="cart-item-count">2</span> Ø£ØµÙ†Ø§Ù
+            <span class="text-[10px] text-slate-500 ms-1">(<span id="cart-piece-count">3</span> Ù‚Ø·Ø¹Ø©)</span>
           </span>
           <button type="button" onclick="clearCart()" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition shadow-2xs cursor-pointer">
             <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            <span>مسح السلة</span>
+            <span>Ù…Ø³Ø­ Ø§Ù„Ø³Ù„Ø©</span>
           </button>
         </div>
 
         <div class="flex items-center gap-1 text-[10px] text-slate-500">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          <span>تفريغ عند الخمول: معطّل</span>
+          <span>ØªÙØ±ÙŠØº Ø¹Ù†Ø¯ Ø§Ù„Ø®Ù…ÙˆÙ„: Ù…Ø¹Ø·Ù‘Ù„</span>
         </div>
       </div>
 
@@ -499,18 +499,18 @@
         <!-- Row 1: Summary Mini Breakdown & Quick Controls -->
         <div class="flex items-center justify-between text-xs text-slate-500 gap-2">
           <div class="flex items-center gap-2 flex-wrap">
-            <span>الفرعي: <strong class="font-mono text-slate-900" id="cart-subtotal-val">310.00 ج.م</strong></span>
-            <span id="cart-vat-label" class="hidden">ضريبة 14%: <strong class="font-mono text-slate-900" id="cart-vat-val">+0.00 ج.م</strong></span>
+            <span>Ø§Ù„ÙØ±Ø¹ÙŠ: <strong class="font-mono text-slate-900" id="cart-subtotal-val">310.00 Ø¬.Ù…</strong></span>
+            <span id="cart-vat-label" class="hidden">Ø¶Ø±ÙŠØ¨Ø© 14%: <strong class="font-mono text-slate-900" id="cart-vat-val">+0.00 Ø¬.Ù…</strong></span>
           </div>
 
           <div class="flex items-center gap-1 shrink-0">
             <!-- Quick Discount % -->
             <button type="button" onclick="toggleDiscount()" id="discount-toggle-btn" class="px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-600 hover:text-slate-900 transition">
-              %خصم
+              %Ø®ØµÙ…
             </button>
             <!-- VAT Toggle -->
             <button type="button" onclick="toggleVat()" id="vat-toggle-btn" class="px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-600 transition cursor-pointer">
-              بدون ضريبة
+              Ø¨Ø¯ÙˆÙ† Ø¶Ø±ÙŠØ¨Ø©
             </button>
           </div>
         </div>
@@ -519,35 +519,35 @@
         <div class="grid grid-cols-5 gap-1">
           <!-- 1. Cash -->
           <button type="button" onclick="selectPaymentMethod('cash')" id="pay-cash-btn" class="pay-method-btn active py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border transition-all cursor-pointer bg-emerald-500/15 border-emerald-500/50 text-emerald-800 font-black shadow-xs ring-1 ring-emerald-500/30">
-            <span>💵</span>
-            <span class="text-[10px] truncate">كاش (F4)</span>
+            <span>ðŸ’µ</span>
+            <span class="text-[10px] truncate">ÙƒØ§Ø´ (F4)</span>
           </button>
           <!-- 2. Visa -->
           <button type="button" onclick="selectPaymentMethod('card')" id="pay-card-btn" class="pay-method-btn py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all cursor-pointer">
-            <span>💳</span>
-            <span class="text-[10px] truncate">فيزا (F5)</span>
+            <span>ðŸ’³</span>
+            <span class="text-[10px] truncate">ÙÙŠØ²Ø§ (F5)</span>
           </button>
           <!-- 3. Wallet -->
           <button type="button" onclick="selectPaymentMethod('wallet')" id="pay-wallet-btn" class="pay-method-btn py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all cursor-pointer">
-            <span>📱</span>
-            <span class="text-[10px] truncate">محفظة (F6)</span>
+            <span>ðŸ“±</span>
+            <span class="text-[10px] truncate">Ù…Ø­ÙØ¸Ø© (F6)</span>
           </button>
           <!-- 4. Voucher -->
           <button type="button" onclick="selectPaymentMethod('voucher')" id="pay-voucher-btn" class="pay-method-btn py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all cursor-pointer">
-            <span>🎟️</span>
-            <span class="text-[10px] truncate">وفرها (F7)</span>
+            <span>ðŸŽŸï¸</span>
+            <span class="text-[10px] truncate">ÙˆÙØ±Ù‡Ø§ (F7)</span>
           </button>
           <!-- 5. More -->
           <button type="button" onclick="switchViewTab('screen-sync')" class="py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 transition-all cursor-pointer">
-            <span>⋯</span>
-            <span class="text-[10px]">المزيد</span>
+            <span>â‹¯</span>
+            <span class="text-[10px]">Ø§Ù„Ù…Ø²ÙŠØ¯</span>
           </button>
         </div>
 
         <!-- Row 2b: Inline Cash Tender / Change Mini Bar -->
         <div id="cash-tender-bar" class="flex items-center justify-between gap-1.5 p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs">
           <div class="flex items-center gap-1 shrink-0">
-            <span class="text-[10px] font-bold text-slate-600">المستلم:</span>
+            <span class="text-[10px] font-bold text-slate-600">Ø§Ù„Ù…Ø³ØªÙ„Ù…:</span>
             <input
               type="number"
               id="tender-amount-input"
@@ -555,13 +555,13 @@
               oninput="handleTenderChange(this.value)"
               class="w-16 px-1.5 py-0.5 text-xs text-center font-mono font-bold rounded-lg border border-emerald-500/40 bg-white text-slate-900"
             />
-            <span class="text-[9px] text-slate-500">ج.م</span>
+            <span class="text-[9px] text-slate-500">Ø¬.Ù…</span>
           </div>
 
           <!-- Quick tender buttons -->
           <div class="flex items-center gap-1 flex-wrap">
             <button type="button" onclick="setExactTender()" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-50">
-              بالضبط
+              Ø¨Ø§Ù„Ø¶Ø¨Ø·
             </button>
             <button type="button" onclick="addTender(50)" class="px-1 py-0.5 rounded text-[9px] font-mono font-bold bg-white border border-slate-200 hover:bg-slate-50">
               +50
@@ -578,8 +578,8 @@
           </div>
 
           <div class="text-end shrink-0">
-            <span class="text-[9px] text-slate-500 block leading-none">الباقي:</span>
-            <span id="cash-change-val" class="font-mono text-xs font-black text-emerald-700">0.00 ج.م</span>
+            <span class="text-[9px] text-slate-500 block leading-none">Ø§Ù„Ø¨Ø§Ù‚ÙŠ:</span>
+            <span id="cash-change-val" class="font-mono text-xs font-black text-emerald-700">0.00 Ø¬.Ù…</span>
           </div>
         </div>
 
@@ -587,27 +587,27 @@
         <div class="flex items-stretch gap-2 pt-0.5">
           <!-- Grand Total Box -->
           <div class="px-3 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-emerald-600/10 to-teal-500/15 border border-emerald-500/30 flex flex-col justify-center min-w-[130px] shrink-0">
-            <span class="text-[9px] font-black uppercase text-emerald-800 block leading-tight">الإجمالي الصافي</span>
+            <span class="text-[9px] font-black uppercase text-emerald-800 block leading-tight">Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØµØ§ÙÙŠ</span>
             <div class="flex items-baseline gap-1">
               <span id="cart-grand-total" class="text-xl sm:text-2xl font-black text-emerald-700 font-mono tracking-tight leading-none">
-                310.00 ج.م
+                310.00 Ø¬.Ù…
               </span>
             </div>
             <span class="text-[9px] text-slate-500 leading-tight">
-              <span id="cart-total-items-badge">3</span> قطع / عبوات
+              <span id="cart-total-items-badge">3</span> Ù‚Ø·Ø¹ / Ø¹Ø¨ÙˆØ§Øª
             </span>
           </div>
 
           <!-- Park Button -->
-          <button type="button" onclick="parkTicket()" class="px-2.5 py-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-black flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 shadow-2xs" title="تعليق الطلب الحالي (F2)">
+          <button type="button" onclick="parkTicket()" class="px-2.5 py-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-black flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer shrink-0 shadow-2xs" title="ØªØ¹Ù„ÙŠÙ‚ Ø§Ù„Ø·Ù„Ø¨ Ø§Ù„Ø­Ø§Ù„ÙŠ (F2)">
             <svg class="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-            <span class="text-[9px]">تعليق (F2)</span>
+            <span class="text-[9px]">ØªØ¹Ù„ÙŠÙ‚ (F2)</span>
           </button>
 
           <!-- Primary Pay & Print Button -->
           <button type="button" onclick="checkoutOrder()" id="pay-primary-btn" class="flex-1 py-2 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white text-xs sm:text-sm font-black shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-            <span class="text-base shrink-0">💵</span>
-            <span class="truncate">سداد وطباعة (F1)</span>
+            <span class="text-base shrink-0">ðŸ’µ</span>
+            <span class="truncate">Ø³Ø¯Ø§Ø¯ ÙˆØ·Ø¨Ø§Ø¹Ø© (F1)</span>
           </button>
         </div>
       </div>
@@ -622,42 +622,42 @@
       <div class="bg-[#D10056] text-white p-3 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z"></path></svg>
-          <span class="font-black text-xs">إيصال سداد — وزير الحلو</span>
+          <span class="font-black text-xs">Ø¥ÙŠØµØ§Ù„ Ø³Ø¯Ø§Ø¯ â€” ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ</span>
         </div>
-        <button onclick="closeReceiptModal()" class="text-white/80 hover:text-white">✕</button>
+        <button onclick="closeReceiptModal()" class="text-white/80 hover:text-white">âœ•</button>
       </div>
 
       <!-- Printable 80mm Receipt Body -->
       <div id="printable-receipt" class="p-4 bg-white text-slate-900 font-mono text-xs leading-relaxed overflow-y-auto space-y-2 select-text">
         <div class="text-center space-y-1 border-b border-dashed border-slate-300 pb-2">
           <div class="flex justify-center mb-1">
-            <img src="wazeer-logo.png" alt="وزير الحلو" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
+            <img src="wazeer-logo.png" alt="ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
           </div>
-          <h2 class="font-bold text-sm">سلسلة حلويات وزير الحلو</h2>
-          <p class="text-[10px] text-slate-500">شركة وزير الحلو للحلويات والمواد الغذائية ش.م.م</p>
-          <p class="text-[10px] font-bold text-slate-700">فرع الكوربة — مصر الجديدة</p>
-          <p class="text-[9px] text-slate-500 font-mono">س.ت: 489201 • ب.ض: 512-884-910</p>
+          <h2 class="font-bold text-sm">Ø³Ù„Ø³Ù„Ø© Ø­Ù„ÙˆÙŠØ§Øª ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ</h2>
+          <p class="text-[10px] text-slate-500">Ø´Ø±ÙƒØ© ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ Ù„Ù„Ø­Ù„ÙˆÙŠØ§Øª ÙˆØ§Ù„Ù…ÙˆØ§Ø¯ Ø§Ù„ØºØ°Ø§Ø¦ÙŠØ© Ø´.Ù….Ù…</p>
+          <p class="text-[10px] font-bold text-slate-700">ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø© â€” Ù…ØµØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</p>
+          <p class="text-[9px] text-slate-500 font-mono">Ø³.Øª: 489201 â€¢ Ø¨.Ø¶: 512-884-910</p>
           <div id="receipt-network-tag" class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[9px] font-bold border border-emerald-300">
-            🟢 فاتورة متزامنة سحابياً (ONLINE)
+            ðŸŸ¢ ÙØ§ØªÙˆØ±Ø© Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹ (ONLINE)
           </div>
         </div>
 
         <div class="text-[10px] space-y-0.5 border-b border-dashed border-slate-300 py-1.5">
           <div class="flex justify-between">
-            <span class="text-slate-500">رقم الفاتورة:</span>
+            <span class="text-slate-500">Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©:</span>
             <strong id="rcpt-order-id" class="font-mono">INV-KB-1059</strong>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-500">التاريخ والوقت:</span>
+            <span class="text-slate-500">Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„ÙˆÙ‚Øª:</span>
             <span id="rcpt-date-time" class="font-mono">2026-10-14 20:30:15</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-500">الكاشير:</span>
-            <span id="rcpt-cashier-label">أحمد سالم (101)</span>
+            <span class="text-slate-500">Ø§Ù„ÙƒØ§Ø´ÙŠØ±:</span>
+            <span id="rcpt-cashier-label">Ø£Ø­Ù…Ø¯ Ø³Ø§Ù„Ù… (101)</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-500">نوع الطلب:</span>
-            <span id="rcpt-order-type">سفري (Takeaway)</span>
+            <span class="text-slate-500">Ù†ÙˆØ¹ Ø§Ù„Ø·Ù„Ø¨:</span>
+            <span id="rcpt-order-type">Ø³ÙØ±ÙŠ (Takeaway)</span>
           </div>
         </div>
 
@@ -669,32 +669,32 @@
         <!-- Receipt Totals -->
         <div class="space-y-1 text-xs pt-1">
           <div class="flex justify-between">
-            <span>المجموع الفرعي:</span>
-            <strong id="rcpt-subtotal" class="font-mono">310.00 ج.م</strong>
+            <span>Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„ÙØ±Ø¹ÙŠ:</span>
+            <strong id="rcpt-subtotal" class="font-mono">310.00 Ø¬.Ù…</strong>
           </div>
           <div class="flex justify-between text-sm font-black border-t border-slate-900 pt-1">
-            <span>الإجمالي المستحق:</span>
-            <strong id="rcpt-total" class="font-mono text-emerald-700">310.00 ج.م</strong>
+            <span>Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ­Ù‚:</span>
+            <strong id="rcpt-total" class="font-mono text-emerald-700">310.00 Ø¬.Ù…</strong>
           </div>
           <div class="flex justify-between text-[11px] text-slate-600">
-            <span>طريقة السداد:</span>
-            <span id="rcpt-pay-method">نقداً (كاش)</span>
+            <span>Ø·Ø±ÙŠÙ‚Ø© Ø§Ù„Ø³Ø¯Ø§Ø¯:</span>
+            <span id="rcpt-pay-method">Ù†Ù‚Ø¯Ø§Ù‹ (ÙƒØ§Ø´)</span>
           </div>
         </div>
 
         <div class="text-center pt-3 border-t border-dashed border-slate-300 text-[10px] text-slate-500 space-y-1">
-          <p class="font-bold text-slate-700">شكراً لزيارتكم وزير الحلو — أصل الحلاوة المصرية!</p>
-          <p>خدمة العملاء: 19999 • الخط الساخن</p>
+          <p class="font-bold text-slate-700">Ø´ÙƒØ±Ø§Ù‹ Ù„Ø²ÙŠØ§Ø±ØªÙƒÙ… ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ â€” Ø£ØµÙ„ Ø§Ù„Ø­Ù„Ø§ÙˆØ© Ø§Ù„Ù…ØµØ±ÙŠØ©!</p>
+          <p>Ø®Ø¯Ù…Ø© Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡: 19999 â€¢ Ø§Ù„Ø®Ø· Ø§Ù„Ø³Ø§Ø®Ù†</p>
         </div>
       </div>
 
       <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
         <button onclick="closeReceiptModal()" class="px-4 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100">
-          إغلاق
+          Ø¥ØºÙ„Ø§Ù‚
         </button>
         <button onclick="window.print()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs flex items-center gap-1.5">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-          <span>طباعة بون فوري</span>
+          <span>Ø·Ø¨Ø§Ø¹Ø© Ø¨ÙˆÙ† ÙÙˆØ±ÙŠ</span>
         </button>
       </div>
     </div>
@@ -709,30 +709,30 @@
         <div class="flex items-center gap-2">
           <span id="sync-modal-dot" class="size-3 rounded-full bg-emerald-400"></span>
           <div>
-            <h3 class="font-bold text-sm">لوحة مزامنة الفواتير المحلية (Outbox Queue)</h3>
-            <p class="text-[10px] text-slate-400">فحص فوري للاتصال والرفع التلقائي للسيرفر</p>
+            <h3 class="font-bold text-sm">Ù„ÙˆØ­Ø© Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø­Ù„ÙŠØ© (Outbox Queue)</h3>
+            <p class="text-[10px] text-slate-400">ÙØ­Øµ ÙÙˆØ±ÙŠ Ù„Ù„Ø§ØªØµØ§Ù„ ÙˆØ§Ù„Ø±ÙØ¹ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ù„Ù„Ø³ÙŠØ±ÙØ±</p>
           </div>
         </div>
-        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white">✕</button>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white">âœ•</button>
       </div>
 
       <div class="p-4 overflow-y-auto space-y-2 flex-1 text-xs">
         <div id="sync-summary-box" class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
           <div>
-            <span class="font-bold text-slate-800">إجمالي الفواتير في قائمة الانتظار:</span>
-            <span id="sync-modal-order-count" class="font-mono font-bold text-slate-700 ms-1">14 فاتورة</span>
+            <span class="font-bold text-slate-800">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙÙˆØ§ØªÙŠØ± ÙÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±:</span>
+            <span id="sync-modal-order-count" class="font-mono font-bold text-slate-700 ms-1">14 ÙØ§ØªÙˆØ±Ø©</span>
           </div>
-          <span id="sync-modal-order-amount" class="font-mono font-bold text-emerald-700">4,890.00 ج.م</span>
+          <span id="sync-modal-order-amount" class="font-mono font-bold text-emerald-700">4,890.00 Ø¬.Ù…</span>
         </div>
 
         <table class="w-full text-start border border-slate-200 rounded-xl overflow-hidden">
           <thead class="bg-slate-100 text-slate-600 font-bold text-[11px]">
             <tr>
-              <th class="p-2 text-start">رقم الفاتورة</th>
-              <th class="p-2 text-start">التاريخ والوقت</th>
-              <th class="p-2 text-start">الأصناف</th>
-              <th class="p-2 text-start">المبلغ</th>
-              <th class="p-2 text-start">حالة المزامنة</th>
+              <th class="p-2 text-start">Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©</th>
+              <th class="p-2 text-start">Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„ÙˆÙ‚Øª</th>
+              <th class="p-2 text-start">Ø§Ù„Ø£ØµÙ†Ø§Ù</th>
+              <th class="p-2 text-start">Ø§Ù„Ù…Ø¨Ù„Øº</th>
+              <th class="p-2 text-start">Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø©</th>
             </tr>
           </thead>
           <tbody id="sync-table-body" class="divide-y divide-slate-100 font-mono text-[11px]">
@@ -743,10 +743,10 @@
 
       <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
         <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100">
-          إغلاق
+          Ø¥ØºÙ„Ø§Ù‚
         </button>
         <button onclick="triggerImmediateSync()" id="sync-modal-action-btn" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs">
-          <span>فحص الاتصال ومزامنة الفواتير الآن</span>
+          <span>ÙØ­Øµ Ø§Ù„Ø§ØªØµØ§Ù„ ÙˆÙ…Ø²Ø§Ù…Ù†Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ø¢Ù†</span>
         </button>
       </div>
     </div>
@@ -760,1182 +760,1182 @@
     const PRODUCTS = [
   {
     "sku": "SKU-10025",
-    "nameAr": "أرز بلبن اسكندرانى",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø§Ø³ÙƒÙ†Ø¯Ø±Ø§Ù†Ù‰",
     "nameEn": "Alexandrian Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 70,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10026",
-    "nameAr": "أرز بلبن ايس كريم",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø§ÙŠØ³ ÙƒØ±ÙŠÙ…",
     "nameEn": "Rice Pudding with Ice Cream",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 60,
     "stock": 25,
-    "image": "../public/products/ice-cream.jpg"
+    "image": "products/ice-cream.jpg"
   },
   {
     "sku": "SKU-10027",
-    "nameAr": "أرز بلبن بستاشيو",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Pistachio Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg"
+    "image": "products/kashtouta-pistachio.jpg"
   },
   {
     "sku": "SKU-10028",
-    "nameAr": "أرز بلبن خريطة",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø®Ø±ÙŠØ·Ø©",
     "nameEn": "Khareeta Rice Pudding (Special Mix)",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 80,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10029",
-    "nameAr": "أرز بلبن ساده",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø³Ø§Ø¯Ù‡",
     "nameEn": "Plain Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 35,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10030",
-    "nameAr": "أرز بلبن سوبر  هيرو",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø³ÙˆØ¨Ø±  Ù‡ÙŠØ±Ùˆ",
     "nameEn": "Super Hero Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10031",
-    "nameAr": "صاج قشطوطة",
+    "nameAr": "ØµØ§Ø¬ Ù‚Ø´Ø·ÙˆØ·Ø©",
     "nameEn": "Kashtouta Sponge Sheet",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 95.03,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10032",
-    "nameAr": "صاج فادج ( 1.600 ك )",
+    "nameAr": "ØµØ§Ø¬ ÙØ§Ø¯Ø¬ ( 1.600 Ùƒ )",
     "nameEn": "Fudge Sheet (1.6kg)",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 91.99,
     "stock": 30,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10033",
-    "nameAr": "صاج فادج ( 2.200 )",
+    "nameAr": "ØµØ§Ø¬ ÙØ§Ø¯Ø¬ ( 2.200 )",
     "nameEn": "Fudge Sheet (2.2kg)",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 117.75,
     "stock": 30,
-    "image": "../public/products/rice-nutella.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-nutella.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10034",
-    "nameAr": "تورت فادج 26 سم",
+    "nameAr": "ØªÙˆØ±Øª ÙØ§Ø¯Ø¬ 26 Ø³Ù…",
     "nameEn": "Fudge Cake Base 26cm",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 56.61,
     "stock": 30,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10035",
-    "nameAr": "مولتن كيك خام",
+    "nameAr": "Ù…ÙˆÙ„ØªÙ† ÙƒÙŠÙƒ Ø®Ø§Ù…",
     "nameEn": "Raw Molten Lava Cake",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 12.32,
     "stock": 30,
-    "image": "../public/products/molten-cake.jpg"
+    "image": "products/molten-cake.jpg"
   },
   {
     "sku": "SKU-10036",
-    "nameAr": "صاج ريد فيلفيت",
+    "nameAr": "ØµØ§Ø¬ Ø±ÙŠØ¯ ÙÙŠÙ„ÙÙŠØª",
     "nameEn": "Red Velvet Sheet",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 74.63,
     "stock": 30,
-    "image": "../public/products/red-velvet.jpg"
+    "image": "products/red-velvet.jpg"
   },
   {
     "sku": "SKU-10037",
-    "nameAr": "تورت ريد فيلفيت 26 سم",
+    "nameAr": "ØªÙˆØ±Øª Ø±ÙŠØ¯ ÙÙŠÙ„ÙÙŠØª 26 Ø³Ù…",
     "nameEn": "Red Velvet Cake Base 26cm",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 47.36,
     "stock": 30,
-    "image": "../public/products/red-velvet.jpg"
+    "image": "products/red-velvet.jpg"
   },
   {
     "sku": "SKU-10038",
-    "nameAr": "سبونش أبيض",
+    "nameAr": "Ø³Ø¨ÙˆÙ†Ø´ Ø£Ø¨ÙŠØ¶",
     "nameEn": "Vanilla Sponge Sheet",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 56.12,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10039",
-    "nameAr": "سبونش شوكلت",
+    "nameAr": "Ø³Ø¨ÙˆÙ†Ø´ Ø´ÙˆÙƒÙ„Øª",
     "nameEn": "Chocolate Sponge Sheet",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 71.87,
     "stock": 30,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10040",
-    "nameAr": "فولكانو ( كيك بوم )",
+    "nameAr": "ÙÙˆÙ„ÙƒØ§Ù†Ùˆ ( ÙƒÙŠÙƒ Ø¨ÙˆÙ… )",
     "nameEn": "Volcano Cake Bomb",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 10.86,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10041",
-    "nameAr": "براونيز",
+    "nameAr": "Ø¨Ø±Ø§ÙˆÙ†ÙŠØ²",
     "nameEn": "Fudge Brownies Slab",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 193.07,
     "stock": 30,
-    "image": "../public/products/molten-cake.jpg",
-    "badge": "فاخر"
+    "image": "products/molten-cake.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10042",
-    "nameAr": "مارجيلان أبيض",
-    "nameEn": "مارجيلان أبيض",
-    "category": "كيك وتشييز",
+    "nameAr": "Ù…Ø§Ø±Ø¬ÙŠÙ„Ø§Ù† Ø£Ø¨ÙŠØ¶",
+    "nameEn": "Ù…Ø§Ø±Ø¬ÙŠÙ„Ø§Ù† Ø£Ø¨ÙŠØ¶",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 59.05,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10043",
-    "nameAr": "مارجيلان شوكلت",
-    "nameEn": "مارجيلان شوكلت",
-    "category": "كيك وتشييز",
+    "nameAr": "Ù…Ø§Ø±Ø¬ÙŠÙ„Ø§Ù† Ø´ÙˆÙƒÙ„Øª",
+    "nameEn": "Ù…Ø§Ø±Ø¬ÙŠÙ„Ø§Ù† Ø´ÙˆÙƒÙ„Øª",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 77.94,
     "stock": 30,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10044",
-    "nameAr": "بسكوت سابليه",
+    "nameAr": "Ø¨Ø³ÙƒÙˆØª Ø³Ø§Ø¨Ù„ÙŠÙ‡",
     "nameEn": "Sable Biscuit Base",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 67.63,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10045",
-    "nameAr": "أرز باللبن خام",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ø§Ù„Ù„Ø¨Ù† Ø®Ø§Ù…",
     "nameEn": "Raw Cooked Rice Pudding Base",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 32.73,
     "stock": 30,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10046",
-    "nameAr": "أرز بلبن سوبر لوكس",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ø³ÙˆØ¨Ø± Ù„ÙˆÙƒØ³",
     "nameEn": "Super Lux Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 130,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10047",
-    "nameAr": "أرز بلبن صاروخ",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† ØµØ§Ø±ÙˆØ®",
     "nameEn": "Saroukh (Rocket) Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10048",
-    "nameAr": "أرز بلبن لوتس",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù„ÙˆØªØ³",
     "nameEn": "Lotus Biscoff Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 70,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10049",
-    "nameAr": "أرز بلبن مانجواي",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù…Ø§Ù†Ø¬ÙˆØ§ÙŠ",
     "nameEn": "Mangawy (Mango) Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 70,
     "stock": 25,
-    "image": "../public/products/kashtouta-mango.jpg"
+    "image": "products/kashtouta-mango.jpg"
   },
   {
     "sku": "SKU-10050",
-    "nameAr": "أرز بلبن مكسرات",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù…ÙƒØ³Ø±Ø§Øª",
     "nameEn": "Mixed Nuts Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 70,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10051",
-    "nameAr": "أرز بلبن نوتيلا",
+    "nameAr": "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Nutella Rice Pudding",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 65,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10052",
-    "nameAr": "الحله",
+    "nameAr": "Ø§Ù„Ø­Ù„Ù‡",
     "nameEn": "Bowl",
-    "category": "الفتة",
+    "category": "Ø§Ù„ÙØªØ©",
     "price": 150,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10053",
-    "nameAr": "الخضة بستاشيو",
+    "nameAr": "Ø§Ù„Ø®Ø¶Ø© Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Pistachio shock",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 155,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10054",
-    "nameAr": "الخضة شيكولاتة",
+    "nameAr": "Ø§Ù„Ø®Ø¶Ø© Ø´ÙŠÙƒÙˆÙ„Ø§ØªØ©",
     "nameEn": "Chocolate Shock",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 125,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10055",
-    "nameAr": "الخضة كيندر",
+    "nameAr": "Ø§Ù„Ø®Ø¶Ø© ÙƒÙŠÙ†Ø¯Ø±",
     "nameEn": "Kinder Shock",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 125,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10056",
-    "nameAr": "المحترمة قنبلة",
+    "nameAr": "Ø§Ù„Ù…Ø­ØªØ±Ù…Ø© Ù‚Ù†Ø¨Ù„Ø©",
     "nameEn": "Polite Bomb",
-    "category": "الفتة",
+    "category": "Ø§Ù„ÙØªØ©",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/fatta-wazeer.jpg",
-    "badge": "فاخر"
+    "image": "products/fatta-wazeer.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10057",
-    "nameAr": "بستك ناو",
+    "nameAr": "Ø¨Ø³ØªÙƒ Ù†Ø§Ùˆ",
     "nameEn": "Bestek Nao",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10058",
-    "nameAr": "تشيز طاخ بستاشيو",
+    "nameAr": "ØªØ´ÙŠØ² Ø·Ø§Ø® Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Cheese Takh Pistachio",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 110,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10059",
-    "nameAr": "تشيز طاخ نوتيلا",
+    "nameAr": "ØªØ´ÙŠØ² Ø·Ø§Ø® Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Cheese Takh Nutella",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 90,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10060",
-    "nameAr": "ديناميت",
+    "nameAr": "Ø¯ÙŠÙ†Ø§Ù…ÙŠØª",
     "nameEn": "Dynamite",
-    "category": "الفتة",
+    "category": "Ø§Ù„ÙØªØ©",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/fatta-wazeer.jpg"
+    "image": "products/fatta-wazeer.jpg"
   },
   {
     "sku": "SKU-10061",
-    "nameAr": "سنيكرو",
+    "nameAr": "Ø³Ù†ÙŠÙƒØ±Ùˆ",
     "nameEn": "Snickero",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10062",
-    "nameAr": "قنبلة",
+    "nameAr": "Ù‚Ù†Ø¨Ù„Ø©",
     "nameEn": "Bomb",
-    "category": "الفتة",
+    "category": "Ø§Ù„ÙØªØ©",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/fatta-wazeer.jpg",
-    "badge": "فاخر"
+    "image": "products/fatta-wazeer.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10063",
-    "nameAr": "كيت كاته",
+    "nameAr": "ÙƒÙŠØª ÙƒØ§ØªÙ‡",
     "nameEn": "Keet Kata",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10064",
-    "nameAr": "كيك بوم بستاشيو",
+    "nameAr": "ÙƒÙŠÙƒ Ø¨ÙˆÙ… Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Cake Boom Pistachio",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 110,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10065",
-    "nameAr": "كيك بوم كيندر",
+    "nameAr": "ÙƒÙŠÙƒ Ø¨ÙˆÙ… ÙƒÙŠÙ†Ø¯Ø±",
     "nameEn": "Cake Boom Kinder",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10066",
-    "nameAr": "كيك بوم لوتس",
+    "nameAr": "ÙƒÙŠÙƒ Ø¨ÙˆÙ… Ù„ÙˆØªØ³",
     "nameEn": "Cake Boom Lutos",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10067",
-    "nameAr": "كيك بوم نوتيلا",
+    "nameAr": "ÙƒÙŠÙƒ Ø¨ÙˆÙ… Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Cake Boom Nutella",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10068",
-    "nameAr": "كيندر سينجل",
+    "nameAr": "ÙƒÙŠÙ†Ø¯Ø± Ø³ÙŠÙ†Ø¬Ù„",
     "nameEn": "Single Kinder",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 105,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10069",
-    "nameAr": "إضافة  فسدق",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ©  ÙØ³Ø¯Ù‚",
     "nameEn": "add Pistachio",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 30,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10070",
-    "nameAr": "إضافة ايس كريم",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ø§ÙŠØ³ ÙƒØ±ÙŠÙ…",
     "nameEn": "Add Ice Cream",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 30,
     "stock": 25,
-    "image": "../public/products/ice-cream.jpg"
+    "image": "products/ice-cream.jpg"
   },
   {
     "sku": "SKU-10071",
-    "nameAr": "إضافة بسبوسة",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ø¨Ø³Ø¨ÙˆØ³Ø©",
     "nameEn": "Add Basbosa",
-    "category": "علب الهدايا",
+    "category": "Ø¹Ù„Ø¨ Ø§Ù„Ù‡Ø¯Ø§ÙŠØ§",
     "price": 20,
     "stock": 25,
-    "image": "../public/products/baklava-box.jpg"
+    "image": "products/baklava-box.jpg"
   },
   {
     "sku": "SKU-10072",
-    "nameAr": "إضافة بسكويت أوريو",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ø¨Ø³ÙƒÙˆÙŠØª Ø£ÙˆØ±ÙŠÙˆ",
     "nameEn": "Add Oreo",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10073",
-    "nameAr": "إضافة بسكويت لوتس",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ø¨Ø³ÙƒÙˆÙŠØª Ù„ÙˆØªØ³",
     "nameEn": "Add Lotus",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10074",
-    "nameAr": "إضافة صوص بستاشيو",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© ØµÙˆØµ Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Add Pistachio Sauce",
-    "category": "مشروبات وإضافات",
+    "category": "Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª",
     "price": 30,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg"
+    "image": "products/kashtouta-pistachio.jpg"
   },
   {
     "sku": "SKU-10075",
-    "nameAr": "إضافة صوص كراميل",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© ØµÙˆØµ ÙƒØ±Ø§Ù…ÙŠÙ„",
     "nameEn": "Add Caramel",
-    "category": "مشروبات وإضافات",
+    "category": "Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª",
     "price": 20,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10076",
-    "nameAr": "إضافة صوص كندار",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© ØµÙˆØµ ÙƒÙ†Ø¯Ø§Ø±",
     "nameEn": "Add Kinder",
-    "category": "مشروبات وإضافات",
+    "category": "Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª",
     "price": 20,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10077",
-    "nameAr": "إضافة صوص لوتس بلجيكي",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© ØµÙˆØµ Ù„ÙˆØªØ³ Ø¨Ù„Ø¬ÙŠÙƒÙŠ",
     "nameEn": "Add Lotus Sauce",
-    "category": "مشروبات وإضافات",
+    "category": "Ù…Ø´Ø±ÙˆØ¨Ø§Øª ÙˆØ¥Ø¶Ø§ÙØ§Øª",
     "price": 30,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10078",
-    "nameAr": "إضافة قشطه",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ù‚Ø´Ø·Ù‡",
     "nameEn": "Add Keshta",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10079",
-    "nameAr": "إضافة كنافه",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© ÙƒÙ†Ø§ÙÙ‡",
     "nameEn": "Add Konafa",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 15,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10080",
-    "nameAr": "إضافة مانجا",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ù…Ø§Ù†Ø¬Ø§",
     "nameEn": "Add Mango",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10081",
-    "nameAr": "إضافة مكسرات",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ù…ÙƒØ³Ø±Ø§Øª",
     "nameEn": "Add Nuts",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 35,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10082",
-    "nameAr": "إضافة موز",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ù…ÙˆØ²",
     "nameEn": "Add Banana",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10083",
-    "nameAr": "إضافة نوتيلا",
+    "nameAr": "Ø¥Ø¶Ø§ÙØ© Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Add Nutella",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 25,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10084",
-    "nameAr": "آيس كريم بولة واحدة",
+    "nameAr": "Ø¢ÙŠØ³ ÙƒØ±ÙŠÙ… Ø¨ÙˆÙ„Ø© ÙˆØ§Ø­Ø¯Ø©",
     "nameEn": "Ice Cream Bowl",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 30,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10085",
-    "nameAr": "آيس كريم ٢ بولة",
+    "nameAr": "Ø¢ÙŠØ³ ÙƒØ±ÙŠÙ… Ù¢ Ø¨ÙˆÙ„Ø©",
     "nameEn": "Ice Cream @ Bowls",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 55,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10086",
-    "nameAr": "اضافة بسكويت",
+    "nameAr": "Ø§Ø¶Ø§ÙØ© Ø¨Ø³ÙƒÙˆÙŠØª",
     "nameEn": "Add Cone",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 5,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10087",
-    "nameAr": "دوناتس انواع",
+    "nameAr": "Ø¯ÙˆÙ†Ø§ØªØ³ Ø§Ù†ÙˆØ§Ø¹",
     "nameEn": "Donuts",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 35,
     "stock": 25,
-    "image": "../public/products/donuts.jpg"
+    "image": "products/donuts.jpg"
   },
   {
     "sku": "SKU-10088",
-    "nameAr": "دوناتس عرض 4 قطع",
+    "nameAr": "Ø¯ÙˆÙ†Ø§ØªØ³ Ø¹Ø±Ø¶ 4 Ù‚Ø·Ø¹",
     "nameEn": "Donuts Offer 4 PCS",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 125,
     "stock": 25,
-    "image": "../public/products/donuts.jpg",
-    "badge": "فاخر"
+    "image": "products/donuts.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10089",
-    "nameAr": "جار تشيز كيك راسبري",
+    "nameAr": "Ø¬Ø§Ø± ØªØ´ÙŠØ² ÙƒÙŠÙƒ Ø±Ø§Ø³Ø¨Ø±ÙŠ",
     "nameEn": "Cheese Cake Rasberry",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10090",
-    "nameAr": "جار تشيز كيك لوتس",
+    "nameAr": "Ø¬Ø§Ø± ØªØ´ÙŠØ² ÙƒÙŠÙƒ Ù„ÙˆØªØ³",
     "nameEn": "Cheese Cake Lotus",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10091",
-    "nameAr": "جار تشيز كيل شوكليت",
+    "nameAr": "Ø¬Ø§Ø± ØªØ´ÙŠØ² ÙƒÙŠÙ„ Ø´ÙˆÙƒÙ„ÙŠØª",
     "nameEn": "Cheese Cake Chockolate",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10092",
-    "nameAr": "جار دريم كيك",
+    "nameAr": "Ø¬Ø§Ø± Ø¯Ø±ÙŠÙ… ÙƒÙŠÙƒ",
     "nameEn": "Drea Cake",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10093",
-    "nameAr": "رويال بندق",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ Ø¨Ù†Ø¯Ù‚",
     "nameEn": "Royal Hazelnut",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10094",
-    "nameAr": "رويال دبي",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ Ø¯Ø¨ÙŠ",
     "nameEn": "Royal Dubai",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 80,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10095",
-    "nameAr": "رويال ريد فيلفيت",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ Ø±ÙŠØ¯ ÙÙŠÙ„ÙÙŠØª",
     "nameEn": "Royal Red Velvet",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/red-velvet.jpg"
+    "image": "products/red-velvet.jpg"
   },
   {
     "sku": "SKU-10096",
-    "nameAr": "رويال كافيه",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ ÙƒØ§ÙÙŠÙ‡",
     "nameEn": "Royal Coffee",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10097",
-    "nameAr": "رويال كرانشي بستاشيو",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ ÙƒØ±Ø§Ù†Ø´ÙŠ Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Royal Crunchy Pistachio",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg"
+    "image": "products/kashtouta-pistachio.jpg"
   },
   {
     "sku": "SKU-10098",
-    "nameAr": "رويال كرانشي لوتس",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ ÙƒØ±Ø§Ù†Ø´ÙŠ Ù„ÙˆØªØ³",
     "nameEn": "Royal Crunchy Lotus",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10099",
-    "nameAr": "رويال كرانشي نوتيلا",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ ÙƒØ±Ø§Ù†Ø´ÙŠ Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Royal Crunchy Nutella",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10100",
-    "nameAr": "رويال كيت كات",
+    "nameAr": "Ø±ÙˆÙŠØ§Ù„ ÙƒÙŠØª ÙƒØ§Øª",
     "nameEn": "Royal Keet Kat",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10101",
-    "nameAr": "كرانش لوتس",
+    "nameAr": "ÙƒØ±Ø§Ù†Ø´ Ù„ÙˆØªØ³",
     "nameEn": "Crunchy Lotus",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10102",
-    "nameAr": "متسلطنة مانجو متسطيلة",
+    "nameAr": "Ù…ØªØ³Ù„Ø·Ù†Ø© Ù…Ø§Ù†Ø¬Ùˆ Ù…ØªØ³Ø·ÙŠÙ„Ø©",
     "nameEn": "Mnago Heaven",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/kashtouta-mango.jpg"
+    "image": "products/kashtouta-mango.jpg"
   },
   {
     "sku": "SKU-10103",
-    "nameAr": "طاجن ام على",
+    "nameAr": "Ø·Ø§Ø¬Ù† Ø§Ù… Ø¹Ù„Ù‰",
     "nameEn": "Om Ali",
-    "category": "الطواجن",
+    "category": "Ø§Ù„Ø·ÙˆØ§Ø¬Ù†",
     "price": 60,
     "stock": 25,
-    "image": "../public/products/om-ali.jpg"
+    "image": "products/om-ali.jpg"
   },
   {
     "sku": "SKU-10104",
-    "nameAr": "طاجن ام على قشطة",
+    "nameAr": "Ø·Ø§Ø¬Ù† Ø§Ù… Ø¹Ù„Ù‰ Ù‚Ø´Ø·Ø©",
     "nameEn": "Om Ali Keshta",
-    "category": "الطواجن",
+    "category": "Ø§Ù„Ø·ÙˆØ§Ø¬Ù†",
     "price": 70,
     "stock": 25,
-    "image": "../public/products/om-ali.jpg"
+    "image": "products/om-ali.jpg"
   },
   {
     "sku": "SKU-10105",
-    "nameAr": "طاجن أم على مكسرات",
+    "nameAr": "Ø·Ø§Ø¬Ù† Ø£Ù… Ø¹Ù„Ù‰ Ù…ÙƒØ³Ø±Ø§Øª",
     "nameEn": "Om Ali Nuts",
-    "category": "الطواجن",
+    "category": "Ø§Ù„Ø·ÙˆØ§Ø¬Ù†",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/om-ali.jpg"
+    "image": "products/om-ali.jpg"
   },
   {
     "sku": "SKU-10106",
-    "nameAr": "طاجن ام علي قشطة مكسرات",
+    "nameAr": "Ø·Ø§Ø¬Ù† Ø§Ù… Ø¹Ù„ÙŠ Ù‚Ø´Ø·Ø© Ù…ÙƒØ³Ø±Ø§Øª",
     "nameEn": "Om Ali Keshta & Nuts",
-    "category": "الطواجن",
+    "category": "Ø§Ù„Ø·ÙˆØ§Ø¬Ù†",
     "price": 90,
     "stock": 25,
-    "image": "../public/products/om-ali.jpg"
+    "image": "products/om-ali.jpg"
   },
   {
     "sku": "SKU-10107",
-    "nameAr": "طاجن نوتيلا",
+    "nameAr": "Ø·Ø§Ø¬Ù† Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Nutella Tajen",
-    "category": "الطواجن",
+    "category": "Ø§Ù„Ø·ÙˆØ§Ø¬Ù†",
     "price": 65,
     "stock": 25,
-    "image": "../public/products/om-ali.jpg"
+    "image": "products/om-ali.jpg"
   },
   {
     "sku": "SKU-10108",
-    "nameAr": "قشطوطة  نوتيلا",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø©  Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Kashtota Nutella",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10109",
-    "nameAr": "قشطوطة أسكندرانى",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø³ÙƒÙ†Ø¯Ø±Ø§Ù†Ù‰",
     "nameEn": "Kashtota Alexandria",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10110",
-    "nameAr": "قشطوطة الخريطة",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø§Ù„Ø®Ø±ÙŠØ·Ø©",
     "nameEn": "Kashtota Khareta",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10111",
-    "nameAr": "قشطوطة الوزير",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø§Ù„ÙˆØ²ÙŠØ±",
     "nameEn": "Kashtota Wazeer",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10112",
-    "nameAr": "قشطوطة بستاشيو",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Kashtota Pistachio",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 110,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10113",
-    "nameAr": "قشطوطة ساده",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø³Ø§Ø¯Ù‡",
     "nameEn": "Kashtota Plain",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 75,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10114",
-    "nameAr": "قشطوطة سوبر لوكس",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø³ÙˆØ¨Ø± Ù„ÙˆÙƒØ³",
     "nameEn": "Kashtota Super Lux",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 125,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10115",
-    "nameAr": "قشطوطة سوبر هيرو",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø³ÙˆØ¨Ø± Ù‡ÙŠØ±Ùˆ",
     "nameEn": "Kashtota Super Hero",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10116",
-    "nameAr": "قشطوطة كراميل",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© ÙƒØ±Ø§Ù…ÙŠÙ„",
     "nameEn": "Kashtota Caramel",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 80,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10117",
-    "nameAr": "قشطوطة لوتس",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ù„ÙˆØªØ³",
     "nameEn": "Kashtota Lotus",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 105,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/cheesecake-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10118",
-    "nameAr": "قشطوطة مانجو",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ù…Ø§Ù†Ø¬Ùˆ",
     "nameEn": "Kashtota Mango",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/kashtouta-mango.jpg"
+    "image": "products/kashtouta-mango.jpg"
   },
   {
     "sku": "SKU-10119",
-    "nameAr": "قشطوطة مكس فروت",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ù…ÙƒØ³ ÙØ±ÙˆØª",
     "nameEn": "Kashtota Mix Fruit",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10120",
-    "nameAr": "قشطوطة مكسرات",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ù…ÙƒØ³Ø±Ø§Øª",
     "nameEn": "Kashtota Nuts",
-    "category": "القشطوطة",
+    "category": "Ø§Ù„Ù‚Ø´Ø·ÙˆØ·Ø©",
     "price": 105,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10121",
-    "nameAr": "قشطوطة أرز اسكندرانى",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø§Ø³ÙƒÙ†Ø¯Ø±Ø§Ù†Ù‰",
     "nameEn": "Rice pudding Kashtota Alexandria",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10122",
-    "nameAr": "قشطوطة أرز الخريطة",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø§Ù„Ø®Ø±ÙŠØ·Ø©",
     "nameEn": "Rice pudding Kashtota Khareta",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10123",
-    "nameAr": "قشطوطة أرز بستاشيو",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ø³ØªØ§Ø´ÙŠÙˆ",
     "nameEn": "Rice pudding Kashtota Pistachio",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/kashtouta-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10124",
-    "nameAr": "قشطوطة أرز بلبن",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù†",
     "nameEn": "Rice pudding Kashtota Plain",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 80,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10125",
-    "nameAr": "قشطوطة أرز بلبن كراميل",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† ÙƒØ±Ø§Ù…ÙŠÙ„",
     "nameEn": "Rice pudding Kashtota Caramel",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 90,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10126",
-    "nameAr": "قشطوطة أرز بلبن لوتس",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù„ÙˆØªØ³",
     "nameEn": "Rice pudding Kashtota Lotus",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 110,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/cheesecake-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10127",
-    "nameAr": "قشطوطة أرز بلبن مانجو",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù…Ø§Ù†Ø¬Ùˆ",
     "nameEn": "Rice pudding Kashtota Mango",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 105,
     "stock": 25,
-    "image": "../public/products/kashtouta-mango.jpg",
-    "badge": "فاخر"
+    "image": "products/kashtouta-mango.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10128",
-    "nameAr": "قشطوطة أرز بلبن مسكرات",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù…Ø³ÙƒØ±Ø§Øª",
     "nameEn": "Rice pudding Kashtota Nuts",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 105,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10129",
-    "nameAr": "قشطوطة أرز بلبن نوتيلا",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Rice pudding Kashtota Nutella",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10130",
-    "nameAr": "قشطوطة أرز ميكس فروت",
+    "nameAr": "Ù‚Ø´Ø·ÙˆØ·Ø© Ø£Ø±Ø² Ù…ÙŠÙƒØ³ ÙØ±ÙˆØª",
     "nameEn": "Rice pudding Kashtota Mix Fruit",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg"
+    "image": "products/rice-pistachio.jpg"
   },
   {
     "sku": "SKU-10131",
-    "nameAr": "كشرى اسكندرانى",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ø§Ø³ÙƒÙ†Ø¯Ø±Ø§Ù†Ù‰",
     "nameEn": "Koshary Alexandria",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 90,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10132",
-    "nameAr": "كشرى السلطان",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ø§Ù„Ø³Ù„Ø·Ø§Ù†",
     "nameEn": "Koshary Sultan",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 110,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg",
-    "badge": "فاخر"
+    "image": "products/koshary-luxe.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10133",
-    "nameAr": "كشرى بصل اخضر",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ø¨ØµÙ„ Ø§Ø®Ø¶Ø±",
     "nameEn": "Koshary Pistachio",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg",
-    "badge": "فاخر"
+    "image": "products/koshary-luxe.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10134",
-    "nameAr": "كشرى لوتس",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù„ÙˆØªØ³",
     "nameEn": "Koshary Lotus",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/cheesecake-pistachio.jpg"
+    "image": "products/cheesecake-pistachio.jpg"
   },
   {
     "sku": "SKU-10135",
-    "nameAr": "كشرى مانجا",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù…Ø§Ù†Ø¬Ø§",
     "nameEn": "Koshary Mango",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10136",
-    "nameAr": "كشرى موز كراميل",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù…ÙˆØ² ÙƒØ±Ø§Ù…ÙŠÙ„",
     "nameEn": "Koshary Banana Caramel",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 90,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10137",
-    "nameAr": "كشرى ميكس الوزير",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù…ÙŠÙƒØ³ Ø§Ù„ÙˆØ²ÙŠØ±",
     "nameEn": "Koshary Mix Wazeer",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10138",
-    "nameAr": "كشرى ميكس فروت",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù…ÙŠÙƒØ³ ÙØ±ÙˆØª",
     "nameEn": "Koshary Mix Fruit",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10139",
-    "nameAr": "كشرى نوتيلا",
+    "nameAr": "ÙƒØ´Ø±Ù‰ Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Koshary Nutella",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 95,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10140",
-    "nameAr": "كشري سوبر لوكس",
+    "nameAr": "ÙƒØ´Ø±ÙŠ Ø³ÙˆØ¨Ø± Ù„ÙˆÙƒØ³",
     "nameEn": "Koshary Super Lux",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 120,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg",
-    "badge": "فاخر"
+    "image": "products/koshary-luxe.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10141",
-    "nameAr": "كشري سوبر هيرو",
+    "nameAr": "ÙƒØ´Ø±ÙŠ Ø³ÙˆØ¨Ø± Ù‡ÙŠØ±Ùˆ",
     "nameEn": "Koshary Super Hero",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg",
-    "badge": "فاخر"
+    "image": "products/koshary-luxe.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10142",
-    "nameAr": "كشري كيندر",
+    "nameAr": "ÙƒØ´Ø±ÙŠ ÙƒÙŠÙ†Ø¯Ø±",
     "nameEn": "Koshary Kinder",
-    "category": "كشري الحلو",
+    "category": "ÙƒØ´Ø±ÙŠ Ø§Ù„Ø­Ù„Ùˆ",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/koshary-luxe.jpg"
+    "image": "products/koshary-luxe.jpg"
   },
   {
     "sku": "SKU-10143",
-    "nameAr": "كيكة لندن كيندر",
+    "nameAr": "ÙƒÙŠÙƒØ© Ù„Ù†Ø¯Ù† ÙƒÙŠÙ†Ø¯Ø±",
     "nameEn": "Cake London Kinder",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 150,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10144",
-    "nameAr": "كيكة لندن كيندر وسط",
+    "nameAr": "ÙƒÙŠÙƒØ© Ù„Ù†Ø¯Ù† ÙƒÙŠÙ†Ø¯Ø± ÙˆØ³Ø·",
     "nameEn": "Cake London Kinder Medium",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10145",
-    "nameAr": "كيكة لندن نوتيلا وسط",
+    "nameAr": "ÙƒÙŠÙƒØ© Ù„Ù†Ø¯Ù† Ù†ÙˆØªÙŠÙ„Ø§ ÙˆØ³Ø·",
     "nameEn": "Cake London Nutella Medium",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 115,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-nutella.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10146",
-    "nameAr": "كيكة لندن نوتيلا",
+    "nameAr": "ÙƒÙŠÙƒØ© Ù„Ù†Ø¯Ù† Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Cake London Nutella",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 150,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-nutella.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10147",
-    "nameAr": "مدلعة كراميل",
+    "nameAr": "Ù…Ø¯Ù„Ø¹Ø© ÙƒØ±Ø§Ù…ÙŠÙ„",
     "nameEn": "Medala3a",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 85,
     "stock": 25,
-    "image": "../public/products/medalaa.jpg"
+    "image": "products/medalaa.jpg"
   },
   {
     "sku": "SKU-10148",
-    "nameAr": "مدلعة مانجو",
+    "nameAr": "Ù…Ø¯Ù„Ø¹Ø© Ù…Ø§Ù†Ø¬Ùˆ",
     "nameEn": "Medala3a Mango",
-    "category": "دنيا الدلع",
+    "category": "Ø¯Ù†ÙŠØ§ Ø§Ù„Ø¯Ù„Ø¹",
     "price": 100,
     "stock": 25,
-    "image": "../public/products/kashtouta-mango.jpg"
+    "image": "products/kashtouta-mango.jpg"
   },
   {
     "sku": "SKU-10149",
-    "nameAr": "مولتن كيك نوتيلا",
+    "nameAr": "Ù…ÙˆÙ„ØªÙ† ÙƒÙŠÙƒ Ù†ÙˆØªÙŠÙ„Ø§",
     "nameEn": "Molten Cake Nutella",
-    "category": "كيك وتشييز",
+    "category": "ÙƒÙŠÙƒ ÙˆØªØ´ÙŠÙŠØ²",
     "price": 85,
     "stock": 25,
-    "image": "../public/products/rice-nutella.jpg"
+    "image": "products/rice-nutella.jpg"
   },
   {
     "sku": "SKU-10150",
-    "nameAr": "عرض هامور 1",
+    "nameAr": "Ø¹Ø±Ø¶ Ù‡Ø§Ù…ÙˆØ± 1",
     "nameEn": "Hamour !",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 220,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   },
   {
     "sku": "SKU-10151",
-    "nameAr": "عرض هامور ٢",
+    "nameAr": "Ø¹Ø±Ø¶ Ù‡Ø§Ù…ÙˆØ± Ù¢",
     "nameEn": "Hamour 2",
-    "category": "عشاق الرز",
+    "category": "Ø¹Ø´Ø§Ù‚ Ø§Ù„Ø±Ø²",
     "price": 220,
     "stock": 25,
-    "image": "../public/products/rice-pistachio.jpg",
-    "badge": "فاخر"
+    "image": "products/rice-pistachio.jpg",
+    "badge": "ÙØ§Ø®Ø±"
   }
 ];
 
@@ -1947,174 +1947,174 @@
       {
         username: "cashier",
         code: "100",
-        aliases: ["cashier@wazeer-elhelw.com", "pos_cashier", "كاشير", "100"],
+        aliases: ["cashier@wazeer-elhelw.com", "pos_cashier", "ÙƒØ§Ø´ÙŠØ±", "100"],
         passwords: ["Pos@123456", "123456", "Pos@2026"],
-        name: "كاشير نقطة البيع (أحمد سالم)",
-        role: "كاشير رئيسي",
-        avatar: "👨‍🍳",
-        branch: "فرع الكوربة — مصر الجديدة"
+        name: "ÙƒØ§Ø´ÙŠØ± Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨ÙŠØ¹ (Ø£Ø­Ù…Ø¯ Ø³Ø§Ù„Ù…)",
+        role: "ÙƒØ§Ø´ÙŠØ± Ø±Ø¦ÙŠØ³ÙŠ",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø© â€” Ù…ØµØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©"
       },
       // 2. Online Administrator (ADMIN_ACCOUNT_CREDENTIALS: wazeerAdmin / #786$Wazeri)
       {
         username: "wazeerAdmin",
         code: "999",
-        aliases: ["wazeeradmin", "admin", "wazeeradmin@erp.org", "hafez@wazeer-elhelw.com", "مدير", "999"],
+        aliases: ["wazeeradmin", "admin", "wazeeradmin@erp.org", "hafez@wazeer-elhelw.com", "Ù…Ø¯ÙŠØ±", "999"],
         passwords: ["#786$Wazeri", "Admin@2026", "123456", "0000"],
-        name: "أدمين وزير الحلو (مسؤول النظام)",
-        role: "مسؤول النظام",
-        avatar: "👨‍💼",
-        branch: "الإدارة العامة للفروع"
+        name: "Ø£Ø¯Ù…ÙŠÙ† ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ (Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„Ù†Ø¸Ø§Ù…)",
+        role: "Ù…Ø³Ø¤ÙˆÙ„ Ø§Ù„Ù†Ø¸Ø§Ù…",
+        avatar: "ðŸ‘¨â€ðŸ’¼",
+        branch: "Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø¹Ø§Ù…Ø© Ù„Ù„ÙØ±ÙˆØ¹"
       },
       // 3. Official Branch Cashiers Registry (All 15 Branches from BRANCH_CASHIERS_REGISTRY)
       {
         username: "cashier_korba",
         code: "101",
-        aliases: ["cashier.korba@wazeer-elhelw.com", "korba", "101", "أحمد سالم"],
+        aliases: ["cashier.korba@wazeer-elhelw.com", "korba", "101", "Ø£Ø­Ù…Ø¯ Ø³Ø§Ù„Ù…"],
         passwords: ["Korba@2026", "Pos@123456", "101", "123456"],
-        name: "أحمد سالم",
-        role: "كاشير رئيسي",
-        avatar: "👨‍🍳",
-        branch: "فرع الكوربة"
+        name: "Ø£Ø­Ù…Ø¯ Ø³Ø§Ù„Ù…",
+        role: "ÙƒØ§Ø´ÙŠØ± Ø±Ø¦ÙŠØ³ÙŠ",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø©"
       },
       {
         username: "cashier_abbas",
         code: "102",
-        aliases: ["cashier.abbas@wazeer-elhelw.com", "abbas", "102", "محمد فتحي"],
+        aliases: ["cashier.abbas@wazeer-elhelw.com", "abbas", "102", "Ù…Ø­Ù…Ø¯ ÙØªØ­ÙŠ"],
         passwords: ["Abbas@2026", "Pos@123456", "102", "123456"],
-        name: "محمد فتحي",
-        role: "كاشير صالة",
-        avatar: "👨‍🍳",
-        branch: "فرع عباس العقاد"
+        name: "Ù…Ø­Ù…Ø¯ ÙØªØ­ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ± ØµØ§Ù„Ø©",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø¹Ø¨Ø§Ø³ Ø§Ù„Ø¹Ù‚Ø§Ø¯"
       },
       {
         username: "cashier_helmeya",
         code: "103",
         aliases: ["cashier.helmeya@wazeer-elhelw.com", "helmeya", "103"],
         passwords: ["Helmeya@2026", "Pos@123456", "103"],
-        name: "خالد سعيد",
-        role: "كاشير تيك أواي",
-        avatar: "👨‍🍳",
-        branch: "فرع الحلمية"
+        name: "Ø®Ø§Ù„Ø¯ Ø³Ø¹ÙŠØ¯",
+        role: "ÙƒØ§Ø´ÙŠØ± ØªÙŠÙƒ Ø£ÙˆØ§ÙŠ",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø­Ù„Ù…ÙŠØ©"
       },
       {
         username: "cashier_khosoos",
         code: "104",
         aliases: ["cashier.khosoos@wazeer-elhelw.com", "khosoos", "104"],
         passwords: ["Khosoos@2026", "Pos@123456", "104"],
-        name: "محمود بدوي",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع الخصوص"
+        name: "Ù…Ø­Ù…ÙˆØ¯ Ø¨Ø¯ÙˆÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø®ØµÙˆØµ"
       },
       {
         username: "cashier_downtown",
         code: "105",
         aliases: ["cashier.downtown@wazeer-elhelw.com", "downtown", "105"],
         passwords: ["Balad@2026", "Pos@123456", "105"],
-        name: "أشرف عثمان",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع وسط البلد"
+        name: "Ø£Ø´Ø±Ù Ø¹Ø«Ù…Ø§Ù†",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ ÙˆØ³Ø· Ø§Ù„Ø¨Ù„Ø¯"
       },
       {
         username: "cashier_giza",
         code: "106",
         aliases: ["cashier.giza@wazeer-elhelw.com", "giza", "106"],
         passwords: ["Giza@2026", "Pos@123456", "106"],
-        name: "حسام حسن",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع الجيزة"
+        name: "Ø­Ø³Ø§Ù… Ø­Ø³Ù†",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø¬ÙŠØ²Ø©"
       },
       {
         username: "cashier_faisal",
         code: "107",
         aliases: ["cashier.faisal@wazeer-elhelw.com", "faisal", "107"],
         passwords: ["Faisal@2026", "Pos@123456", "107"],
-        name: "عادل رمزي",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع فيصل"
+        name: "Ø¹Ø§Ø¯Ù„ Ø±Ù…Ø²ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ ÙÙŠØµÙ„"
       },
       {
         username: "cashier_darsalam",
         code: "108",
         aliases: ["cashier.darsalam@wazeer-elhelw.com", "darsalam", "108"],
         passwords: ["Salam@2026", "Pos@123456", "108"],
-        name: "كرم عبد العظيم",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع دار السلام"
+        name: "ÙƒØ±Ù… Ø¹Ø¨Ø¯ Ø§Ù„Ø¹Ø¸ÙŠÙ…",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø¯Ø§Ø± Ø§Ù„Ø³Ù„Ø§Ù…"
       },
       {
         username: "cashier_october",
         code: "109",
         aliases: ["cashier.october@wazeer-elhelw.com", "october", "109"],
         passwords: ["October@2026", "Pos@123456", "109"],
-        name: "أيمن الشاذلي",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع حدائق أكتوبر"
+        name: "Ø£ÙŠÙ…Ù† Ø§Ù„Ø´Ø§Ø°Ù„ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø­Ø¯Ø§Ø¦Ù‚ Ø£ÙƒØªÙˆØ¨Ø±"
       },
       {
         username: "cashier_ahram",
         code: "110",
         aliases: ["cashier.ahram@wazeer-elhelw.com", "ahram", "110"],
         passwords: ["Ahram@2026", "Pos@123456", "110"],
-        name: "ياسر مصطفى",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع حدائق الأهرام"
+        name: "ÙŠØ§Ø³Ø± Ù…ØµØ·ÙÙ‰",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø­Ø¯Ø§Ø¦Ù‚ Ø§Ù„Ø£Ù‡Ø±Ø§Ù…"
       },
       {
         username: "cashier_hosary",
         code: "111",
         aliases: ["cashier.hosary@wazeer-elhelw.com", "hosary", "111"],
         passwords: ["Hosary@2026", "Pos@123456", "111"],
-        name: "عمرو شريف",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع الحصري"
+        name: "Ø¹Ù…Ø±Ùˆ Ø´Ø±ÙŠÙ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø­ØµØ±ÙŠ"
       },
       {
         username: "cashier_zayed",
         code: "112",
         aliases: ["cashier.zayed@wazeer-elhelw.com", "sheikh_zayed", "112"],
         passwords: ["Zayed@2026", "Pos@123456", "112"],
-        name: "عمر الدسوقي",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع الشيخ زايد"
+        name: "Ø¹Ù…Ø± Ø§Ù„Ø¯Ø³ÙˆÙ‚ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø´ÙŠØ® Ø²Ø§ÙŠØ¯"
       },
       {
         username: "cashier_mansoura",
         code: "113",
         aliases: ["cashier.mansoura@wazeer-elhelw.com", "mansoura", "113"],
         passwords: ["Mansoura@2026", "Pos@123456", "113"],
-        name: "سامح التابعي",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع المنصورة"
+        name: "Ø³Ø§Ù…Ø­ Ø§Ù„ØªØ§Ø¨Ø¹ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ù…Ù†ØµÙˆØ±Ø©"
       },
       {
         username: "cashier_banha",
         code: "114",
         aliases: ["cashier.banha@wazeer-elhelw.com", "banha", "114"],
         passwords: ["Banha@2026", "Pos@123456", "114"],
-        name: "نبيل شكري",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع بنها"
+        name: "Ù†Ø¨ÙŠÙ„ Ø´ÙƒØ±ÙŠ",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø¨Ù†Ù‡Ø§"
       },
       {
         username: "cashier_tenth",
         code: "115",
         aliases: ["cashier.tenth@wazeer-elhelw.com", "tenth", "115"],
         passwords: ["Tenth@2026", "Pos@123456", "115"],
-        name: "طارق سليم",
-        role: "كاشير",
-        avatar: "👨‍🍳",
-        branch: "فرع العاشر من رمضان"
+        name: "Ø·Ø§Ø±Ù‚ Ø³Ù„ÙŠÙ…",
+        role: "ÙƒØ§Ø´ÙŠØ±",
+        avatar: "ðŸ‘¨â€ðŸ³",
+        branch: "ÙØ±Ø¹ Ø§Ù„Ø¹Ø§Ø´Ø± Ù…Ù† Ø±Ù…Ø¶Ø§Ù†"
       }
     ];
 
@@ -2135,19 +2135,19 @@
     let cart = [
       {
         sku: "OM-ALI-01",
-        nameAr: "طاجن أم علي مكسرات",
+        nameAr: "Ø·Ø§Ø¬Ù† Ø£Ù… Ø¹Ù„ÙŠ Ù…ÙƒØ³Ø±Ø§Øª",
         unitPrice: 110,
         quantity: 2,
         stock: 42,
-        image: "../public/products/om-ali.jpg"
+        image: "products/om-ali.jpg"
       },
       {
         sku: "KASHT-PIST-01",
-        nameAr: "قشطوطة بستاشيو فاخر",
+        nameAr: "Ù‚Ø´Ø·ÙˆØ·Ø© Ø¨Ø³ØªØ§Ø´ÙŠÙˆ ÙØ§Ø®Ø±",
         unitPrice: 90,
         quantity: 1,
         stock: 28,
-        image: "../public/products/kashtouta-pistachio.jpg"
+        image: "products/kashtouta-pistachio.jpg"
       }
     ];
 
@@ -2225,32 +2225,32 @@
         bar.className = "transition-colors duration-300 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none bg-emerald-500/10 border-b border-emerald-500/30 text-emerald-950";
         pulse.className = "size-2 rounded-full bg-emerald-500";
         title.className = "font-black text-emerald-800 text-xs";
-        title.textContent = `متصل بالإنترنت (Online) — المزامنة فورية (${latency > 0 ? latency + 'ms' : 'مباشر'})`;
+        title.textContent = `Ù…ØªØµÙ„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª (Online) â€” Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© ÙÙˆØ±ÙŠØ© (${latency > 0 ? latency + 'ms' : 'Ù…Ø¨Ø§Ø´Ø±'})`;
         badge.className = "text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs";
-        badge.textContent = "سيرفر وزير الحلو متصل";
-        desc.textContent = "البيع متصل سحابياً مع حفظ محلي احتياطي فوري";
+        badge.textContent = "Ø³ÙŠØ±ÙØ± ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ Ù…ØªØµÙ„";
+        desc.textContent = "Ø§Ù„Ø¨ÙŠØ¹ Ù…ØªØµÙ„ Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹ Ù…Ø¹ Ø­ÙØ¸ Ù…Ø­Ù„ÙŠ Ø§Ø­ØªÙŠØ§Ø·ÙŠ ÙÙˆØ±ÙŠ";
         syncDot.className = "size-2 rounded-full bg-emerald-500";
         actionBtn.className = "px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1";
         
         if (rcptTag) {
           rcptTag.className = "inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[9px] font-bold border border-emerald-300";
-          rcptTag.textContent = "🟢 فاتورة متزامنة سحابياً (ONLINE)";
+          rcptTag.textContent = "ðŸŸ¢ ÙØ§ØªÙˆØ±Ø© Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹ (ONLINE)";
         }
       } else {
         // AMBER / RED OFFLINE THEME
         bar.className = "transition-colors duration-300 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border-b border-amber-500/30 text-amber-950";
         pulse.className = "size-2 rounded-full bg-rose-500 animate-ping";
         title.className = "font-black text-rose-700 text-xs";
-        title.textContent = "وضع غير متصل بالإنترنت (Offline Mode نشط) — انقطع الاتصال";
+        title.textContent = "ÙˆØ¶Ø¹ ØºÙŠØ± Ù…ØªØµÙ„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª (Offline Mode Ù†Ø´Ø·) â€” Ø§Ù†Ù‚Ø·Ø¹ Ø§Ù„Ø§ØªØµØ§Ù„";
         badge.className = "text-[10px] bg-amber-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs";
-        badge.textContent = "حفظ محلي آمن (IndexedDB)";
-        desc.textContent = "البيع والطباعة مستمرة 100% بدون أي توقف";
+        badge.textContent = "Ø­ÙØ¸ Ù…Ø­Ù„ÙŠ Ø¢Ù…Ù† (IndexedDB)";
+        desc.textContent = "Ø§Ù„Ø¨ÙŠØ¹ ÙˆØ§Ù„Ø·Ø¨Ø§Ø¹Ø© Ù…Ø³ØªÙ…Ø±Ø© 100% Ø¨Ø¯ÙˆÙ† Ø£ÙŠ ØªÙˆÙ‚Ù";
         syncDot.className = "size-2 rounded-full bg-amber-500 animate-pulse";
         actionBtn.className = "px-2.5 py-0.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1";
 
         if (rcptTag) {
           rcptTag.className = "inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-bold border border-amber-300";
-          rcptTag.textContent = "⚡ فاتورة محفوظة محلياً (OFFLINE MODE)";
+          rcptTag.textContent = "âš¡ ÙØ§ØªÙˆØ±Ø© Ù…Ø­ÙÙˆØ¸Ø© Ù…Ø­Ù„ÙŠØ§Ù‹ (OFFLINE MODE)";
         }
       }
     }
@@ -2310,13 +2310,13 @@
       const rawPassword = (pInput?.value || "").trim();
 
       if (!rawUsername) {
-        showLoginError("يرجى إدخال اسم المستخدم أو كود الكاشير");
+        showLoginError("ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ ÙƒÙˆØ¯ Ø§Ù„ÙƒØ§Ø´ÙŠØ±");
         uInput?.focus();
         return;
       }
 
       if (!rawPassword) {
-        showLoginError("يرجى إدخال كلمة المرور");
+        showLoginError("ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±");
         pInput?.focus();
         return;
       }
@@ -2329,7 +2329,7 @@
       );
 
       if (!account) {
-        showLoginError("اسم المستخدم أو كود الكاشير غير مسجل في النظام!");
+        showLoginError("Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ ÙƒÙˆØ¯ Ø§Ù„ÙƒØ§Ø´ÙŠØ± ØºÙŠØ± Ù…Ø³Ø¬Ù„ ÙÙŠ Ø§Ù„Ù†Ø¸Ø§Ù…!");
         return;
       }
 
@@ -2352,7 +2352,7 @@
         // Clear password for security
         if (pInput) pInput.value = "";
       } else {
-        showLoginError("كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.");
+        showLoginError("ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©! ÙŠØ±Ø¬Ù‰ Ø§Ù„ØªØ£ÙƒØ¯ ÙˆØ¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©.");
         if (pInput) {
           pInput.value = "";
           pInput.focus();
@@ -2395,58 +2395,60 @@
       container.innerHTML = filtered.map(prod => {
         const inCartItem = cart.find(c => c.sku === prod.sku);
         const inCartQty = inCartItem ? inCartItem.quantity : 0;
+        const isSelected = inCartQty > 0;
 
         return `
-          <div onclick="addToCart('${prod.sku}')" class="group relative bg-white rounded-2xl border border-slate-200 p-2.5 flex flex-col justify-between transition-all duration-200 select-none overflow-hidden hover:border-[#D10056]/60 hover:shadow-xl active:scale-98 cursor-pointer">
-            <div class="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-slate-100 mb-2 border border-slate-200">
+          <div onclick="addToCart('${prod.sku}')" class="group relative bg-white rounded-3xl border transition-all duration-200 select-none overflow-hidden cursor-pointer active:scale-98 p-3 flex flex-col justify-between ${isSelected ? 'border-[#D10056] ring-1 ring-[#D10056]/30 shadow-md' : 'border-slate-200/90 hover:border-slate-300 shadow-2xs'}">
+            <!-- Product Photo Container with Rounded Corners -->
+            <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 mb-3 border border-slate-200/50">
               <img
                 src="${prod.image}"
                 alt="${prod.nameAr}"
                 loading="lazy"
-                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-108"
-                onerror="this.onerror=null; this.src='../public/products/rice-pistachio.jpg';"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onerror="this.onerror=null; this.src='products/rice-pistachio.jpg';"
               />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none"></div>
 
-              <div class="absolute top-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
-                <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white/90 truncate shadow-xs">
-                  ${prod.sku}
-                </span>
-                ${prod.badge ? `
-                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs text-white bg-amber-500">
-                    ${prod.badge}
-                  </span>
-                ` : ''}
-              </div>
+              <!-- Top-Right Badge: SKU (Black Pill) -->
+              <span class="absolute top-2.5 start-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs pointer-events-none">
+                ${prod.sku}
+              </span>
 
-              <div class="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
-                <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
-                  رصيد: ${prod.stock}
+              <!-- Bottom-Right Badge: Stock (Emerald Pill) -->
+              <span class="absolute bottom-2.5 start-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-xs pointer-events-none">
+                Ø±ØµÙŠØ¯: ${prod.stock}
+              </span>
+
+              <!-- Top-Left Badge: In Cart Count (if selected) -->
+              ${inCartQty > 0 ? `
+                <span class="absolute top-2.5 end-2.5 size-6 rounded-full bg-[#D10056] text-white font-mono text-xs font-black shadow-md ring-2 ring-white flex items-center justify-center">
+                  ${inCartQty}
                 </span>
-                ${inCartQty > 0 ? `
-                  <span class="px-2 py-0.5 rounded-full bg-[#D10056] text-white font-mono text-xs font-black shadow-md ring-2 ring-white">
-                    ${inCartQty}×
-                  </span>
-                ` : ''}
-              </div>
+              ` : ''}
             </div>
 
-            <div class="mb-2">
-              <h4 class="text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#D10056] transition-colors leading-snug line-clamp-1">
+            <!-- Product Title & Category -->
+            <div class="mb-2 text-start">
+              <h4 class="text-sm font-black transition-colors leading-tight line-clamp-1 ${isSelected ? 'text-[#D10056]' : 'text-slate-900'}">
                 ${prod.nameAr}
               </h4>
-              <span class="text-[10px] text-slate-500 mt-0.5 block truncate">
+              <span class="text-xs text-slate-400 font-medium mt-1 block truncate">
                 ${prod.category}
               </span>
             </div>
 
-            <div class="flex items-center justify-between pt-1.5 border-t border-slate-100">
-              <span class="text-sm sm:text-base font-black text-slate-900 font-mono">
-                ${prod.price.toFixed(2)} ج.م
+            <!-- Bottom Row: Price on Right, Circular Plus Button on Left -->
+            <div class="flex items-center justify-between pt-2.5 mt-auto">
+              <!-- Price (RTL Start = Right) -->
+              <span class="text-base font-black text-slate-900 font-mono">
+                ${prod.price.toFixed(2)} Ø¬.Ù…
               </span>
-              <span class="p-1.5 rounded-xl bg-slate-100 group-hover:bg-[#D10056] group-hover:text-white text-slate-700 transition-colors shadow-xs">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </span>
+
+              <!-- Circular Plus Button (RTL End = Left) -->
+              <div class="size-7 rounded-full flex items-center justify-center font-bold text-sm shadow-2xs transition-all active:scale-90 ${isSelected ? 'bg-[#D10056] text-white hover:opacity-95' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+                +
+              </div>
             </div>
           </div>
         `;
@@ -2520,8 +2522,8 @@
       document.getElementById("cart-piece-count").textContent = totalPcs;
       document.getElementById("cart-total-items-badge").textContent = totalPcs;
 
-      document.getElementById("cart-subtotal-val").textContent = subtotal.toFixed(2) + " ج.م";
-      document.getElementById("cart-grand-total").textContent = grandTotal.toFixed(2) + " ج.م";
+      document.getElementById("cart-subtotal-val").textContent = subtotal.toFixed(2) + " Ø¬.Ù…";
+      document.getElementById("cart-grand-total").textContent = grandTotal.toFixed(2) + " Ø¬.Ù…";
       
       tenderAmount = grandTotal;
       const tenderInput = document.getElementById("tender-amount-input");
@@ -2532,8 +2534,8 @@
         container.innerHTML = `
           <div class="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-4 text-slate-400">
             <svg class="w-10 h-10 opacity-30 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
-            <p class="text-xs font-bold text-slate-800">الفاتورة فارغة حالياً</p>
-            <span class="text-[10px] text-slate-400 mt-0.5">اختر من قائمة الأصناف لإضافتها مباشرة</span>
+            <p class="text-xs font-bold text-slate-800">Ø§Ù„ÙØ§ØªÙˆØ±Ø© ÙØ§Ø±ØºØ© Ø­Ø§Ù„ÙŠØ§Ù‹</p>
+            <span class="text-[10px] text-slate-400 mt-0.5">Ø§Ø®ØªØ± Ù…Ù† Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ØµÙ†Ø§Ù Ù„Ø¥Ø¶Ø§ÙØªÙ‡Ø§ Ù…Ø¨Ø§Ø´Ø±Ø©</span>
           </div>
         `;
         return;
@@ -2548,16 +2550,16 @@
                 src="${item.image}"
                 alt="${item.nameAr}"
                 class="w-9 h-9 rounded-xl object-cover shrink-0 border border-slate-200 shadow-xs"
-                onerror="this.onerror=null; this.src='../public/products/rice-pistachio.jpg';"
+                onerror="this.onerror=null; this.src='products/rice-pistachio.jpg';"
               />
               <div class="flex-1 min-w-0">
                 <span class="text-xs font-black text-slate-900 block leading-tight truncate">
                   ${item.nameAr}
                 </span>
                 <div class="flex items-center gap-1.5 text-[10px] text-slate-500 truncate font-mono">
-                  <span>${item.unitPrice.toFixed(2)} ج.م</span>
-                  <span>•</span>
-                  <span>المتاح: ${item.stock}</span>
+                  <span>${item.unitPrice.toFixed(2)} Ø¬.Ù…</span>
+                  <span>â€¢</span>
+                  <span>Ø§Ù„Ù…ØªØ§Ø­: ${item.stock}</span>
                 </div>
               </div>
             </div>
@@ -2577,7 +2579,7 @@
 
               <div class="w-16 text-end">
                 <span class="text-xs font-black text-[#16A34A] block font-mono">
-                  ${lineTotal.toFixed(2)} ج.م
+                  ${lineTotal.toFixed(2)} Ø¬.Ù…
                 </span>
               </div>
 
@@ -2591,17 +2593,29 @@
     }
 
     // Category Tabs Filtering
-    function filterCategory(catId) {
+    function filterCategory(catId, dropdownLabel) {
       currentCategory = catId;
       document.querySelectorAll(".cat-pill").forEach(btn => {
-        btn.classList.remove("bg-[#D10056]", "text-white", "shadow-md");
+        btn.classList.remove("bg-[#D10056]", "text-white", "shadow-sm");
         btn.classList.add("bg-white", "border", "border-slate-200", "text-slate-800");
       });
 
+      const dropBtn = document.getElementById("cat-dropdown-btn");
+      const dropLabel = document.getElementById("cat-dropdown-label");
+
       const activeBtn = document.getElementById("cat-" + catId);
       if (activeBtn) {
-        activeBtn.classList.add("bg-[#D10056]", "text-white", "shadow-md");
+        activeBtn.classList.add("bg-[#D10056]", "text-white", "shadow-sm");
         activeBtn.classList.remove("bg-white", "text-slate-800");
+        if (dropBtn) {
+          dropBtn.classList.remove("bg-[#D10056]", "text-white", "shadow-sm");
+          dropBtn.classList.add("bg-white", "border", "border-slate-200", "text-slate-800");
+          if (dropLabel) dropLabel.textContent = "Ø£Ù‚Ø³Ø§Ù… Ø£Ø®Ø±Ù‰ (6)";
+        }
+      } else if (dropBtn && dropLabel && dropdownLabel) {
+        dropBtn.classList.add("bg-[#D10056]", "text-white", "shadow-sm");
+        dropBtn.classList.remove("bg-white", "text-slate-800");
+        dropLabel.textContent = dropdownLabel;
       }
 
       document.getElementById("cat-dropdown-menu")?.classList.add("hidden");
@@ -2683,18 +2697,18 @@
 
     function updateChangeDisplay(total) {
       const change = Math.max(0, tenderAmount - total);
-      document.getElementById("cash-change-val").textContent = change.toFixed(2) + " ج.م";
+      document.getElementById("cash-change-val").textContent = change.toFixed(2) + " Ø¬.Ù…";
     }
 
     function toggleVat() {
       applyVat = !applyVat;
       const btn = document.getElementById("vat-toggle-btn");
       if (applyVat) {
-        btn.textContent = "ضريبة 14%";
+        btn.textContent = "Ø¶Ø±ÙŠØ¨Ø© 14%";
         btn.className = "px-2 py-0.5 rounded-md text-[10px] font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 transition cursor-pointer shadow-2xs";
         document.getElementById("cart-vat-label").classList.remove("hidden");
       } else {
-        btn.textContent = "بدون ضريبة";
+        btn.textContent = "Ø¨Ø¯ÙˆÙ† Ø¶Ø±ÙŠØ¨Ø©";
         btn.className = "px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-600 transition cursor-pointer";
         document.getElementById("cart-vat-label").classList.add("hidden");
       }
@@ -2705,10 +2719,10 @@
       discountPercent = discountPercent === 0 ? 10 : discountPercent === 10 ? 20 : 0;
       const btn = document.getElementById("discount-toggle-btn");
       if (discountPercent > 0) {
-        btn.textContent = `%${discountPercent} خصم`;
+        btn.textContent = `%${discountPercent} Ø®ØµÙ…`;
         btn.className = "px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-rose-500/40 bg-rose-500/15 text-rose-600 transition";
       } else {
-        btn.textContent = "%خصم";
+        btn.textContent = "%Ø®ØµÙ…";
         btn.className = "px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 bg-slate-100 text-slate-600 hover:text-slate-900 transition";
       }
       renderCart();
@@ -2729,9 +2743,9 @@
       // Populate Receipt
       document.getElementById("rcpt-order-id").textContent = orderNumber;
       document.getElementById("rcpt-date-time").textContent = new Date().toLocaleString("en-US", { hour12: false });
-      document.getElementById("rcpt-subtotal").textContent = subtotal.toFixed(2) + " ج.م";
-      document.getElementById("rcpt-total").textContent = total.toFixed(2) + " ج.م";
-      document.getElementById("rcpt-pay-method").textContent = paymentMethod === "cash" ? "نقداً (كاش)" : "فيزا / شبكة";
+      document.getElementById("rcpt-subtotal").textContent = subtotal.toFixed(2) + " Ø¬.Ù…";
+      document.getElementById("rcpt-total").textContent = total.toFixed(2) + " Ø¬.Ù…";
+      document.getElementById("rcpt-pay-method").textContent = paymentMethod === "cash" ? "Ù†Ù‚Ø¯Ø§Ù‹ (ÙƒØ§Ø´)" : "ÙÙŠØ²Ø§ / Ø´Ø¨ÙƒØ©";
       document.getElementById("rcpt-cashier-label").textContent = `${activeCashier.name} (${activeCashier.code})`;
       
       const itemsContainer = document.getElementById("rcpt-items-list");
@@ -2739,9 +2753,9 @@
         <div class="flex justify-between items-center text-[11px]">
           <div>
             <span class="font-bold">${i.nameAr}</span>
-            <span class="text-slate-500 block text-[10px]">${i.quantity} × ${i.unitPrice.toFixed(2)}</span>
+            <span class="text-slate-500 block text-[10px]">${i.quantity} Ã— ${i.unitPrice.toFixed(2)}</span>
           </div>
-          <strong class="font-mono">${(i.unitPrice * i.quantity).toFixed(2)} ج.م</strong>
+          <strong class="font-mono">${(i.unitPrice * i.quantity).toFixed(2)} Ø¬.Ù…</strong>
         </div>
       `).join('');
 
@@ -2751,8 +2765,8 @@
       // Increment Pending Queue if offline, or sync directly if online
       pendingOrdersCount++;
       document.getElementById("orders-badge-count").textContent = pendingOrdersCount;
-      document.getElementById("header-pending-count").textContent = pendingOrdersCount + " فواتير";
-      document.getElementById("bar-pending-orders").textContent = `${pendingOrdersCount} فاتورة (${(4890 + total).toLocaleString()} ج.م)`;
+      document.getElementById("header-pending-count").textContent = pendingOrdersCount + " ÙÙˆØ§ØªÙŠØ±";
+      document.getElementById("bar-pending-orders").textContent = `${pendingOrdersCount} ÙØ§ØªÙˆØ±Ø© (${(4890 + total).toLocaleString()} Ø¬.Ù…)`;
 
       // Clear Cart
       cart = [];
@@ -2780,11 +2794,11 @@
       if (!tbody) return;
 
       const mockOrders = [
-        { id: "INV-KB-1058", time: "18:22:10", items: "طاجن أم علي (1)", amount: "110.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
-        { id: "INV-KB-1057", time: "18:19:44", items: "قشطوطة مانجو (2)", amount: "170.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
-        { id: "INV-KB-1056", time: "18:15:02", items: "علبة بقلاوة 1ك (1)", amount: "260.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
-        { id: "INV-KB-1055", time: "18:11:33", items: "أرز بلبن نوتيلا (3)", amount: "165.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
-        { id: "INV-KB-1054", time: "18:05:19", items: "فتة وزير الحلو (2)", amount: "270.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" }
+        { id: "INV-KB-1058", time: "18:22:10", items: "Ø·Ø§Ø¬Ù† Ø£Ù… Ø¹Ù„ÙŠ (1)", amount: "110.00", status: isOnline ? "Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹" : "Ù…Ø¹Ù„Ù‚ Ù…Ø­Ù„ÙŠØ§Ù‹" },
+        { id: "INV-KB-1057", time: "18:19:44", items: "Ù‚Ø´Ø·ÙˆØ·Ø© Ù…Ø§Ù†Ø¬Ùˆ (2)", amount: "170.00", status: isOnline ? "Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹" : "Ù…Ø¹Ù„Ù‚ Ù…Ø­Ù„ÙŠØ§Ù‹" },
+        { id: "INV-KB-1056", time: "18:15:02", items: "Ø¹Ù„Ø¨Ø© Ø¨Ù‚Ù„Ø§ÙˆØ© 1Ùƒ (1)", amount: "260.00", status: isOnline ? "Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹" : "Ù…Ø¹Ù„Ù‚ Ù…Ø­Ù„ÙŠØ§Ù‹" },
+        { id: "INV-KB-1055", time: "18:11:33", items: "Ø£Ø±Ø² Ø¨Ù„Ø¨Ù† Ù†ÙˆØªÙŠÙ„Ø§ (3)", amount: "165.00", status: isOnline ? "Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹" : "Ù…Ø¹Ù„Ù‚ Ù…Ø­Ù„ÙŠØ§Ù‹" },
+        { id: "INV-KB-1054", time: "18:05:19", items: "ÙØªØ© ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ (2)", amount: "270.00", status: isOnline ? "Ù…ØªØ²Ø§Ù…Ù†Ø© Ø³Ø­Ø§Ø¨ÙŠØ§Ù‹" : "Ù…Ø¹Ù„Ù‚ Ù…Ø­Ù„ÙŠØ§Ù‹" }
       ];
 
       tbody.innerHTML = mockOrders.map(o => `
@@ -2792,7 +2806,7 @@
           <td class="p-2 font-bold text-slate-900">${o.id}</td>
           <td class="p-2 text-slate-500">${o.time}</td>
           <td class="p-2 text-slate-700 font-sans">${o.items}</td>
-          <td class="p-2 font-bold text-emerald-700">${o.amount} ج.م</td>
+          <td class="p-2 font-bold text-emerald-700">${o.amount} Ø¬.Ù…</td>
           <td class="p-2">
             <span class="px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} text-[10px] font-bold">
               ${o.status}
@@ -2804,21 +2818,21 @@
 
     function triggerImmediateSync() {
       if (!isOnline) {
-        alert("⚠️ لا يتوفر اتصال بالإنترنت حالياً!\nسيتم حفظ كافة الفواتير محلياً بأمان، ورفعها تلقائياً بمجرد استعادة الشبكة.");
+        alert("âš ï¸ Ù„Ø§ ÙŠØªÙˆÙØ± Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª Ø­Ø§Ù„ÙŠØ§Ù‹!\nØ³ÙŠØªÙ… Ø­ÙØ¸ ÙƒØ§ÙØ© Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ù…Ø­Ù„ÙŠØ§Ù‹ Ø¨Ø£Ù…Ø§Ù†ØŒ ÙˆØ±ÙØ¹Ù‡Ø§ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¨Ù…Ø¬Ø±Ø¯ Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø´Ø¨ÙƒØ©.");
         return;
       }
 
       const syncBtn = document.getElementById("sync-btn-label");
-      if (syncBtn) syncBtn.textContent = "جاري الرفع...";
+      if (syncBtn) syncBtn.textContent = "Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø±ÙØ¹...";
 
       setTimeout(() => {
         pendingOrdersCount = 0;
         document.getElementById("orders-badge-count").textContent = "0";
-        document.getElementById("header-pending-count").textContent = "0 معلق";
-        document.getElementById("bar-pending-orders").textContent = "0 فاتورة (0 ج.م)";
-        if (syncBtn) syncBtn.textContent = "تمت المزامنة";
+        document.getElementById("header-pending-count").textContent = "0 Ù…Ø¹Ù„Ù‚";
+        document.getElementById("bar-pending-orders").textContent = "0 ÙØ§ØªÙˆØ±Ø© (0 Ø¬.Ù…)";
+        if (syncBtn) syncBtn.textContent = "ØªÙ…Øª Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø©";
         populateSyncTable();
-        alert("✅ تمت مزامنة كافة الفواتير المحلية بنجاح مع السيرفر السحابي لسلسلة وزير الحلو!");
+        alert("âœ… ØªÙ…Øª Ù…Ø²Ø§Ù…Ù†Ø© ÙƒØ§ÙØ© Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ø­Ù„ÙŠØ© Ø¨Ù†Ø¬Ø§Ø­ Ù…Ø¹ Ø§Ù„Ø³ÙŠØ±ÙØ± Ø§Ù„Ø³Ø­Ø§Ø¨ÙŠ Ù„Ø³Ù„Ø³Ù„Ø© ÙˆØ²ÙŠØ± Ø§Ù„Ø­Ù„Ùˆ!");
       }, 900);
     }
 
@@ -2856,16 +2870,17 @@
     }
 
     function parkTicket() {
-      alert("تم تعليق الفاتورة الحالية في قائمة المعلقات بنجاح (Hold Ticket #1)");
+      alert("ØªÙ… ØªØ¹Ù„ÙŠÙ‚ Ø§Ù„ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ© ÙÙŠ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø§Øª Ø¨Ù†Ø¬Ø§Ø­ (Hold Ticket #1)");
     }
 
     function showParkedTickets() {
-      alert("لا توجد فواتير معلقة أخرى في الوقت الحالي.");
+      alert("Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙˆØ§ØªÙŠØ± Ù…Ø¹Ù„Ù‚Ø© Ø£Ø®Ø±Ù‰ ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„Ø­Ø§Ù„ÙŠ.");
     }
 
     function showShiftModal() {
-      alert(`تقرير وردية الكاشير: ${activeCashier.name}\nالفرع: فرع الكوربة — مصر الجديدة\nإجمالي مبيعات الوردية: 4,890.00 ج.م\nعدد الفواتير: ${pendingOrdersCount} فاتورة\nحالة الصندوق: متطابق ومغلق`);
+      alert(`ØªÙ‚Ø±ÙŠØ± ÙˆØ±Ø¯ÙŠØ© Ø§Ù„ÙƒØ§Ø´ÙŠØ±: ${activeCashier.name}\nØ§Ù„ÙØ±Ø¹: ÙØ±Ø¹ Ø§Ù„ÙƒÙˆØ±Ø¨Ø© â€” Ù…ØµØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©\nØ¥Ø¬Ù…Ø§Ù„ÙŠ Ù…Ø¨ÙŠØ¹Ø§Øª Ø§Ù„ÙˆØ±Ø¯ÙŠØ©: 4,890.00 Ø¬.Ù…\nØ¹Ø¯Ø¯ Ø§Ù„ÙÙˆØ§ØªÙŠØ±: ${pendingOrdersCount} ÙØ§ØªÙˆØ±Ø©\nØ­Ø§Ù„Ø© Ø§Ù„ØµÙ†Ø¯ÙˆÙ‚: Ù…ØªØ·Ø§Ø¨Ù‚ ÙˆÙ…ØºÙ„Ù‚`);
     }
   </script>
 </body>
 </html>
+
