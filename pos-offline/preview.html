@@ -89,7 +89,7 @@
       <!-- Modal Top Branding -->
       <div class="bg-gradient-to-r from-[#D10056] to-[#92003c] text-white p-5 text-center relative">
         <div class="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
-          <img src="../public/wazeer-logo.png" alt="وزير الحلو" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='../public/wazeer-emblem.png';" />
+          <img src="wazeer-logo.png" alt="وزير الحلو" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
         </div>
         <h2 class="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
         <p class="text-xs text-white/90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
@@ -173,10 +173,10 @@
         <!-- Official Wazeer El-Helw Logo Container -->
         <div class="h-10 px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-center shrink-0">
           <img
-            src="../public/wazeer-logo.png"
+            src="wazeer-logo.png"
             alt="وزير الحلو"
             class="h-7 w-auto max-w-[120px] object-contain"
-            onerror="this.onerror=null; this.src='../public/wazeer-emblem.png';"
+            onerror="this.onerror=null; this.src='logo.png';"
           />
         </div>
         <div class="leading-tight hidden sm:block">
@@ -619,7 +619,7 @@
       <div id="printable-receipt" class="p-4 bg-white text-slate-900 font-mono text-xs leading-relaxed overflow-y-auto space-y-2 select-text">
         <div class="text-center space-y-1 border-b border-dashed border-slate-300 pb-2">
           <div class="flex justify-center mb-1">
-            <img src="../public/wazeer-logo.png" alt="وزير الحلو" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='../public/wazeer-emblem.png';" />
+            <img src="wazeer-logo.png" alt="وزير الحلو" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
           </div>
           <h2 class="font-bold text-sm">سلسلة حلويات وزير الحلو</h2>
           <p class="text-[10px] text-slate-500">شركة وزير الحلو للحلويات والمواد الغذائية ش.م.م</p>
@@ -948,7 +948,7 @@
         const timeout = setTimeout(() => controller.abort(), 3000);
 
         // Fetch lightweight probe with cache buster
-        await fetch("../public/wazeer-logo.png?_t=" + Date.now(), {
+        await fetch("wazeer-logo.png?_t=" + Date.now(), {
           method: "HEAD",
           cache: "no-store",
           signal: controller.signal

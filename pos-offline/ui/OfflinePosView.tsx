@@ -327,11 +327,11 @@ export const OfflinePosView: React.FC = () => {
             <div className="bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground p-5 text-center">
               <div className="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
                 <img
-                  src="/wazeer-logo.png"
+                  src="/pos-offline/wazeer-logo.png"
                   alt="وزير الحلو"
                   className="h-9 w-auto object-contain"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                    (e.currentTarget as HTMLImageElement).src = "/wazeer-logo.png";
                   }}
                 />
               </div>
@@ -442,11 +442,11 @@ export const OfflinePosView: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <div className="h-10 px-2.5 py-1 rounded-xl bg-white dark:bg-card border border-border/70 shadow-2xs flex items-center justify-center shrink-0">
               <img
-                src="/wazeer-logo.png"
+                src="/pos-offline/wazeer-logo.png"
                 alt="وزير الحلو"
                 className="h-7 w-auto max-w-[120px] object-contain"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                  (e.currentTarget as HTMLImageElement).src = "/wazeer-logo.png";
                 }}
               />
             </div>
@@ -1184,11 +1184,11 @@ export const OfflinePosView: React.FC = () => {
               <div className="text-center space-y-1 border-b border-dashed border-slate-300 pb-2">
                 <div className="flex justify-center mb-1">
                   <img
-                    src="/wazeer-logo.png"
+                    src="/pos-offline/wazeer-logo.png"
                     alt="وزير الحلو"
                     className="h-10 w-auto object-contain"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                      (e.currentTarget as HTMLImageElement).src = "/wazeer-logo.png";
                     }}
                   />
                 </div>
