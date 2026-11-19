@@ -466,9 +466,6 @@ export const OfflinePosView: React.FC = () => {
               </div>
               <h2 className="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
               <p className="text-xs opacity-90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
-              <span className="inline-block mt-1 text-[10px] bg-black/30 px-2.5 py-0.5 rounded-full font-mono text-white/80">
-                {termCfg.branchNameAr || "فرع الكوربة"} — المحطة: REG-01
-              </span>
             </div>
 
             <form onSubmit={handleCashierLogin} className="p-6 space-y-4">
