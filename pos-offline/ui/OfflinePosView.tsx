@@ -59,6 +59,106 @@ interface CartLineItem {
   image?: string;
 }
 
+
+// ---------------------------------------------------------------------------
+// PROMOTIONAL DISCOUNT CALCULATION (OFFLINE Wazeer El-Helw Rules)
+// ---------------------------------------------------------------------------
+const DEFAULT_DISCOUNT_RULES = [
+  {
+    id: "disc-summer-rice",
+    code: "PROMO-RICE-20",
+    nameAr: "عرض الصيف — خصم 20% على عشاق الرز والأرز بلبن",
+    type: "percentage",
+    value: 20,
+    scope: "categories",
+    categories: ["عشاق الرز"],
+    isActive: true
+  },
+  {
+    id: "disc-pistachio",
+    code: "PROMO-PIST-15",
+    nameAr: "عرض البستاشيو والخريطة الملكي (خصم 15%)",
+    type: "percentage",
+    value: 15,
+    scope: "products",
+    skus: ["SKU-10027", "SKU-10028"],
+    isActive: true
+  },
+  {
+    id: "disc-tajen",
+    code: "PROMO-TAJEN-15",
+    nameAr: "عرض طواجن السعادة الساخنة (خصم 15 ج.م)",
+    type: "fixed_amount",
+    value: 15,
+    scope: "categories",
+    categories: ["الطواجن"],
+    isActive: true
+  }
+];
+
+function calculateProductDiscount(prod: OfflineProductRecord) {
+  let rules = DEFAULT_DISCOUNT_RULES;
+  try {
+    const stored = localStorage.getItem("wazeer_erp_discounts_v1");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        rules = parsed.map((r: any) => ({
+          ...r,
+          categories: r.categoryIds || r.categories || [],
+          skus: r.productIds || r.skus || [],
+          nameAr: r.name?.ar || r.nameAr || r.name
+        }));
+      }
+    }
+  } catch {}
+
+  let bestSaving = 0;
+  let bestRule: any = null;
+
+  for (const rule of rules) {
+    if (!rule.isActive) continue;
+
+    let applies = false;
+    if (rule.scope === "all_products") {
+      applies = true;
+    } else if (rule.scope === "categories") {
+      applies = (rule.categories || []).some((c: string) =>
+        c === prod.categoryNameAr || prod.categoryNameAr.includes(c) || c.includes(prod.categoryNameAr)
+      );
+    } else if (rule.scope === "products") {
+      applies = (rule.skus || []).includes(prod.sku);
+    }
+
+    if (applies) {
+      let saving = 0;
+      if (rule.type === "percentage") {
+        saving = (prod.price * rule.value) / 100;
+        if (rule.maxDiscountAmount && rule.maxDiscountAmount > 0) {
+          saving = Math.min(saving, rule.maxDiscountAmount);
+        }
+      } else if (rule.type === "fixed_amount") {
+        saving = Math.min(rule.value, prod.price);
+      }
+
+      if (saving > bestSaving) {
+        bestSaving = saving;
+        bestRule = rule;
+      }
+    }
+  }
+
+  const discountedPrice = Math.max(0, Math.round((prod.price - bestSaving) * 100) / 100);
+  return {
+    originalPrice: prod.price,
+    discountedPrice,
+    discountAmount: Math.round(bestSaving * 100) / 100,
+    hasDiscount: bestSaving > 0,
+    rule: bestRule,
+    badgeText: bestRule ? (bestRule.type === "percentage" ? `-%${bestRule.value}` : `-${bestRule.value}ج`) : null
+  };
+}
+
 export const OfflinePosView: React.FC = () => {
   // Cashier Authentication State (LOCKED BY DEFAULT FOR SECURITY)
   const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(true);
@@ -107,6 +207,56 @@ export const OfflinePosView: React.FC = () => {
   const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
   const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
   const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
+  const [showMyOrdersModal, setShowMyOrdersModal] = useState<boolean>(false);
+  const [ordersSearchQuery, setOrdersSearchQuery] = useState<string>("");
+  const [shiftOrders, setShiftOrders] = useState<any[]>([
+    {
+      id: "INV-KB-1058",
+      time: "20:30:15",
+      itemsSummary: "طاجن أم علي مكسرات (2)، قشطوطة بستاشيو فاخر (1)",
+      total: 310,
+      payMethod: "cash",
+      payMethodLabel: "كاش 💵",
+      isSynced: true
+    },
+    {
+      id: "INV-KB-1057",
+      time: "20:18:42",
+      itemsSummary: "أرز بلبن بستاشيو (1)",
+      total: 100,
+      payMethod: "card",
+      payMethodLabel: "فيزا 💳",
+      isSynced: true
+    },
+    {
+      id: "INV-KB-1056",
+      time: "20:05:10",
+      itemsSummary: "كنافة نابلسية بالجبنة (1)",
+      total: 310,
+      payMethod: "cash",
+      payMethodLabel: "كاش 💵",
+      isSynced: true
+    },
+    {
+      id: "INV-KB-1055",
+      time: "19:48:33",
+      itemsSummary: "مشكل شرقي وزير الحلو 1ك (1)",
+      total: 260,
+      payMethod: "cash",
+      payMethodLabel: "كاش 💵",
+      isSynced: true
+    },
+    {
+      id: "INV-KB-1054",
+      time: "19:35:19",
+      itemsSummary: "أرز بلبن خريطة (2)",
+      total: 160,
+      payMethod: "cash",
+      payMethodLabel: "كاش 💵",
+      isSynced: true
+    }
+  ]);
+
   const [lastReceiptNumber, setLastReceiptNumber] = useState<string>("INV-KB-1059");
   const [isCheckingOut, setIsCheckingOut] = useState<boolean>(false);
   const [isKioskMode, setIsKioskMode] = useState<boolean>(false);
@@ -641,13 +791,14 @@ export const OfflinePosView: React.FC = () => {
           {/* My Orders Button */}
           <button
             type="button"
+            onClick={() => setShowMyOrdersModal(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card hover:bg-muted/80 border border-border/60 text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group"
             title="سجل طلباتي"
           >
             <Receipt className="w-3.5 h-3.5 text-primary shrink-0 group-hover:scale-110 transition-transform" />
             <span className="text-xs hidden sm:inline">طلباتي</span>
             <span className="min-w-5 h-5 px-1.5 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-black border border-primary/20 flex items-center justify-center">
-              14
+              {shiftOrders.length}
             </span>
           </button>
 
@@ -831,6 +982,7 @@ export const OfflinePosView: React.FC = () => {
               {filteredProducts.map((prod) => {
                 const cartQty = cart.find((c) => c.sku === prod.sku)?.quantity || 0;
                 const isSelected = cartQty > 0;
+                const promo = calculateProductDiscount(prod);
 
                 return (
                   <div
@@ -855,10 +1007,17 @@ export const OfflinePosView: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none" />
 
-                      {/* Top Right: SKU */}
-                      <span className="absolute top-2.5 start-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs pointer-events-none">
-                        {prod.sku}
-                      </span>
+                      {/* Top Right: SKU + Discount */}
+                      <div className="absolute top-2.5 start-2.5 flex items-center gap-1.5 pointer-events-none">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs">
+                          {prod.sku}
+                        </span>
+                        {promo.hasDiscount && (
+                          <span className="text-[9px] font-mono font-black px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground shadow-xs animate-pulse">
+                            {promo.badgeText}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Bottom Right: Stock */}
                       <span className="absolute bottom-2.5 start-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-xs pointer-events-none">
@@ -889,9 +1048,22 @@ export const OfflinePosView: React.FC = () => {
 
                     {/* Bottom Row: Price on Right, Circular Plus Button on Left */}
                     <div className="flex items-center justify-between pt-2.5 mt-auto">
-                      <span className="text-base font-black text-foreground font-mono">
-                        {prod.price.toFixed(2)} ج.م
-                      </span>
+                      <div>
+                        {promo.hasDiscount ? (
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-base font-black text-emerald-600 font-mono">
+                              {promo.discountedPrice.toFixed(2)} ج.م
+                            </span>
+                            <span className="text-xs line-through text-muted-foreground font-mono">
+                              {prod.price.toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-base font-black text-foreground font-mono">
+                            {prod.price.toFixed(2)} ج.م
+                          </span>
+                        )}
+                      </div>
 
                       <div
                         className={`size-7 rounded-full flex items-center justify-center font-bold text-sm shadow-2xs transition-all active:scale-90 ${
@@ -1295,6 +1467,128 @@ export const OfflinePosView: React.FC = () => {
           isOpen={showSetupModal}
           onClose={() => setShowSetupModal(false)}
         />
+      )}
+
+      
+      {/* ========================================================================= */}
+      {/* MY ORDERS MODAL ("طلباتي")                                                */}
+      {/* ========================================================================= */}
+      {showMyOrdersModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card rounded-3xl border border-border/80 shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Receipt className="w-5 h-5" />
+                <div>
+                  <h3 className="font-bold text-sm leading-tight">سجل طلباتي في الوردية (My Orders)</h3>
+                  <p className="text-[11px] opacity-85">
+                    {activeCashierName} • 📍 {termCfg.branchNameAr || "فرع الكوربة — مصر الجديدة"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMyOrdersModal(false)}
+                className="hover:opacity-80 p-1 text-primary-foreground cursor-pointer text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick KPI Strip */}
+            <div className="p-3.5 bg-muted/30 border-b border-border/50 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs shrink-0">
+              <div className="bg-card p-2.5 rounded-2xl border border-border/60 shadow-2xs">
+                <span className="text-[10px] text-muted-foreground block">إجمالي الطلبات:</span>
+                <strong className="text-sm font-mono font-black text-foreground">{shiftOrders.length} طلب</strong>
+              </div>
+              <div className="bg-card p-2.5 rounded-2xl border border-border/60 shadow-2xs">
+                <span className="text-[10px] text-muted-foreground block">مبيعات الوردية:</span>
+                <strong className="text-sm font-mono font-black text-emerald-600">
+                  {shiftOrders.reduce((sum, o) => sum + o.total, 0).toLocaleString()} ج.م
+                </strong>
+              </div>
+              <div className="bg-card p-2.5 rounded-2xl border border-border/60 shadow-2xs">
+                <span className="text-[10px] text-muted-foreground block">نقداً (كاش):</span>
+                <strong className="text-sm font-mono font-black text-foreground">
+                  {shiftOrders.filter(o => o.payMethod === "cash").reduce((sum, o) => sum + o.total, 0).toLocaleString()} ج.م
+                </strong>
+              </div>
+              <div className="bg-card p-2.5 rounded-2xl border border-border/60 shadow-2xs">
+                <span className="text-[10px] text-muted-foreground block">فيزا / بطاقات:</span>
+                <strong className="text-sm font-mono font-black text-primary">
+                  {shiftOrders.filter(o => o.payMethod !== "cash").reduce((sum, o) => sum + o.total, 0).toLocaleString()} ج.م
+                </strong>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-3 border-b border-border/40 flex items-center gap-2 shrink-0">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={ordersSearchQuery}
+                  onChange={(e) => setOrdersSearchQuery(e.target.value)}
+                  placeholder="بحث برقم الفاتورة أو اسم الصنف أو طريقة الدفع..."
+                  className="w-full text-xs font-bold py-2 px-3 ps-8 rounded-xl border border-border/60 bg-muted/30 focus:bg-card focus:border-primary focus:outline-none transition"
+                />
+                <Search className="w-3.5 h-3.5 text-muted-foreground absolute top-2.5 start-2.5" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-mono px-2">
+                {shiftOrders.filter(o => !ordersSearchQuery || o.id.toLowerCase().includes(ordersSearchQuery.toLowerCase()) || o.itemsSummary.toLowerCase().includes(ordersSearchQuery.toLowerCase())).length} فاتورة
+              </span>
+            </div>
+
+            {/* Orders Table */}
+            <div className="p-3 overflow-y-auto flex-1">
+              <table className="w-full text-start border border-border/60 rounded-2xl overflow-hidden">
+                <thead className="bg-muted/40 text-muted-foreground font-bold text-[11px]">
+                  <tr>
+                    <th className="p-2.5 text-start">رقم الطلب</th>
+                    <th className="p-2.5 text-start">الوقت</th>
+                    <th className="p-2.5 text-start">الأصناف والكميات</th>
+                    <th className="p-2.5 text-start">طريقة الدفع</th>
+                    <th className="p-2.5 text-start">المبلغ</th>
+                    <th className="p-2.5 text-start">حالة المزامنة</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40 text-xs">
+                  {shiftOrders
+                    .filter(o => !ordersSearchQuery || o.id.toLowerCase().includes(ordersSearchQuery.toLowerCase()) || o.itemsSummary.toLowerCase().includes(ordersSearchQuery.toLowerCase()))
+                    .map((order) => (
+                      <tr key={order.id} className="hover:bg-muted/30 transition">
+                        <td className="p-2.5 font-mono font-bold text-foreground">{order.id}</td>
+                        <td className="p-2.5 font-mono text-muted-foreground text-[11px]">{order.time}</td>
+                        <td className="p-2.5 font-bold text-foreground">{order.itemsSummary}</td>
+                        <td className="p-2.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${order.payMethod === 'cash' ? 'bg-emerald-500/10 text-emerald-700' : 'bg-purple-500/10 text-purple-700'}`}>
+                            {order.payMethodLabel}
+                          </span>
+                        </td>
+                        <td className="p-2.5 font-mono font-black text-foreground">{order.total.toFixed(2)} ج.م</td>
+                        <td className="p-2.5">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${order.isSynced ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'}`}>
+                            {order.isSynced ? 'متزامنة سحابياً 🟢' : 'معلقة محلياً 🟠'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-muted/30 border-t border-border/50 flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-muted-foreground">سجل فواتير الوردية النشطة • الحفظ فوري محلياً وسحابياً</span>
+              <button
+                type="button"
+                onClick={() => setShowMyOrdersModal(false)}
+                className="px-5 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-bold transition cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showReceiptModal && (

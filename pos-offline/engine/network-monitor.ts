@@ -28,8 +28,8 @@ class PosNetworkMonitor {
     if (typeof window !== "undefined") {
       window.addEventListener("online", () => this.handleBrowserStateChange(true));
       window.addEventListener("offline", () => this.handleBrowserStateChange(false));
-      // Start background heartbeat ping every 20 seconds
-      this.startHeartbeat(20000);
+      // Start background heartbeat ping every 5 seconds
+      this.startHeartbeat(5000);
     }
   }
 
@@ -66,27 +66,31 @@ class PosNetworkMonitor {
 
     const start = performance.now();
     try {
-      // Ping lightweight favicon or health probe with cache-busting timestamp
+      // Ping external internet endpoints with cache-busting timestamp & no-cors
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      const res = await fetch(`/favicon.ico?_t=${Date.now()}`, {
-        method: "HEAD",
-        cache: "no-store",
-        signal: controller.signal,
-      });
+      await Promise.any([
+        fetch(`https://www.google.com/favicon.ico?_t=${Date.now()}`, {
+          method: "HEAD",
+          mode: "no-cors",
+          cache: "no-store",
+          signal: controller.signal,
+        }),
+        fetch(`https://cloudflare.com/favicon.ico?_t=${Date.now()}`, {
+          method: "HEAD",
+          mode: "no-cors",
+          cache: "no-store",
+          signal: controller.signal,
+        }),
+      ]);
 
       clearTimeout(timeoutId);
       const elapsed = Math.round(performance.now() - start);
-      this.latencyMs = elapsed;
-
-      if (res.ok || res.status === 304 || res.status === 200) {
-        this.state = elapsed > 2500 ? "slow" : "online";
-      } else {
-        this.state = "online";
-      }
+      this.latencyMs = Math.max(12, elapsed);
+      this.state = this.latencyMs > 1200 ? "slow" : "online";
     } catch {
-      // If probe times out or network error occurs while navigator.onLine is true, consider offline
+      // If probe times out or network error occurs, consider truly offline
       this.state = "offline";
       this.latencyMs = 0;
     }

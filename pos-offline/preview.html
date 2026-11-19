@@ -710,6 +710,88 @@
     </div>
   </div>
 
+    <!-- ========================================================================= -->
+  <!-- 4b. MY ORDERS LOG MODAL ("طلباتي") - 100% MATCHING ONLINE POS            -->
+  <!-- ========================================================================= -->
+  <div id="my-orders-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="bg-[#D10056] text-white p-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17V7"></path></svg>
+          <div>
+            <h3 class="font-bold text-sm leading-tight">سجل طلباتي في الوردية (My Orders)</h3>
+            <p class="text-[11px] text-white/85" id="orders-modal-cashier-sub">أحمد سالم (101) • 📍 فرع الكوربة — مصر الجديدة • طلبات الكاشير الحالية</p>
+          </div>
+        </div>
+        <button onclick="closeMyOrdersModal()" class="size-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer text-sm font-bold">✕</button>
+      </div>
+
+      <!-- Quick KPI Strip -->
+      <div class="p-3.5 bg-slate-50 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs shrink-0">
+        <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] text-slate-500 block">إجمالي الطلبات:</span>
+          <strong id="kpi-orders-count" class="text-sm font-mono font-black text-slate-900">14 طلب</strong>
+        </div>
+        <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] text-slate-500 block">مبيعات الوردية:</span>
+          <strong id="kpi-orders-total" class="text-sm font-mono font-black text-emerald-700">4,890.00 ج.م</strong>
+        </div>
+        <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] text-slate-500 block">نقداً (كاش):</span>
+          <strong id="kpi-orders-cash" class="text-sm font-mono font-black text-slate-800">3,800.00 ج.م</strong>
+        </div>
+        <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] text-slate-500 block">فيزا / بطاقات:</span>
+          <strong id="kpi-orders-card" class="text-sm font-mono font-black text-[#D10056]">1,090.00 ج.م</strong>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="p-3 border-b border-slate-100 flex items-center gap-2 shrink-0">
+        <div class="relative flex-1">
+          <input
+            type="text"
+            id="orders-filter-input"
+            oninput="filterMyOrders(this.value)"
+            placeholder="بحث برقم الفاتورة أو اسم الصنف أو طريقة الدفع..."
+            class="w-full text-xs font-bold py-2 px-3 ps-8 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#D10056] focus:outline-none transition"
+          />
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute top-2.5 start-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <span class="text-[11px] text-slate-500 font-mono px-2" id="orders-filter-count">14 فاتورة</span>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="p-3 overflow-y-auto flex-1">
+        <table class="w-full text-start border border-slate-200 rounded-2xl overflow-hidden">
+          <thead class="bg-slate-100 text-slate-600 font-bold text-[11px]">
+            <tr>
+              <th class="p-2.5 text-start">رقم الطلب</th>
+              <th class="p-2.5 text-start">الوقت</th>
+              <th class="p-2.5 text-start">الأصناف والكميات</th>
+              <th class="p-2.5 text-start">طريقة الدفع</th>
+              <th class="p-2.5 text-start">المبلغ</th>
+              <th class="p-2.5 text-start">حالة المزامنة</th>
+              <th class="p-2.5 text-center">إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="my-orders-table-body" class="divide-y divide-slate-100 text-xs">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+        <span class="text-[11px] text-slate-500">سجل فواتير الوردية النشطة • الحفظ فوري محلياً وسحابياً</span>
+        <button onclick="closeMyOrdersModal()" class="px-5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer">
+          إغلاق
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ========================================================================= -->
   <!-- 5. OUTBOX SYNC QUEUE MODAL                                                -->
   <!-- ========================================================================= -->
@@ -2174,10 +2256,10 @@
     // REAL INTERNET STATUS MONITORING (PROACTIVE HEARTBEAT)
     // =========================================================================
     function startRealNetworkProbing() {
-      // 1. Initial check
+      // 1. Initial check immediately on load
       checkRealInternet();
 
-      // 2. Browser event listeners
+      // 2. Browser event listeners for instant reactive state switch
       window.addEventListener("online", () => {
         checkRealInternet();
       });
@@ -2185,37 +2267,45 @@
         applyNetworkState(false, 0);
       });
 
-      // 3. Periodic real active probe every 8 seconds
-      setInterval(checkRealInternet, 8000);
+      // 3. Auto checking real connectivity every 5 seconds (as required)
+      setInterval(checkRealInternet, 5000);
     }
 
     async function checkRealInternet() {
-      if (!navigator.onLine) {
+      // If browser OS stack reports offline, immediately apply offline mode
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
         applyNetworkState(false, 0);
         return;
       }
 
       const start = performance.now();
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
 
-        // Fetch lightweight probe with cache buster
-        await fetch("wazeer-logo.png?_t=" + Date.now(), {
-          method: "HEAD",
-          cache: "no-store",
-          signal: controller.signal
-        });
+      try {
+        // Probe genuine external endpoints using no-cors.
+        // If internet cable is unplugged or Wi-Fi is disconnected, fetch immediately rejects with TypeError.
+        await Promise.any([
+          fetch("https://www.google.com/favicon.ico?_t=" + Date.now(), {
+            method: "HEAD",
+            mode: "no-cors",
+            cache: "no-store",
+            signal: controller.signal
+          }),
+          fetch("https://cloudflare.com/favicon.ico?_t=" + Date.now(), {
+            method: "HEAD",
+            mode: "no-cors",
+            cache: "no-store",
+            signal: controller.signal
+          })
+        ]);
         clearTimeout(timeout);
-        const latency = Math.round(performance.now() - start);
+        const latency = Math.max(12, Math.round(performance.now() - start));
         applyNetworkState(true, latency);
-      } catch (e) {
-        // Fallback test
-        if (navigator.onLine) {
-          applyNetworkState(true, 45);
-        } else {
-          applyNetworkState(false, 0);
-        }
+      } catch (err) {
+        clearTimeout(timeout);
+        // External probe failed completely -> truly offline!
+        applyNetworkState(false, 0);
       }
     }
 
@@ -2415,7 +2505,113 @@
     // =========================================================================
     // CATALOG & CART RENDERING (IDENTICAL TO ONLINE POS)
     // =========================================================================
-        function renderProducts() {
+        
+    // ---------------------------------------------------------------------------
+    // PROMOTIONAL DISCOUNT RULES SYSTEM (Wazeer El-Helw Promotions)
+    // ---------------------------------------------------------------------------
+    const DEFAULT_DISCOUNT_RULES = [
+      {
+        id: "disc-summer-rice",
+        code: "PROMO-RICE-20",
+        nameAr: "عرض الصيف — خصم 20% على عشاق الرز والأرز بلبن",
+        type: "percentage",
+        value: 20,
+        scope: "categories",
+        categories: ["عشاق الرز"],
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        isActive: true
+      },
+      {
+        id: "disc-pistachio",
+        code: "PROMO-PIST-15",
+        nameAr: "عرض البستاشيو والخريطة الملكي (خصم 15%)",
+        type: "percentage",
+        value: 15,
+        scope: "products",
+        skus: ["SKU-10027", "SKU-10028"],
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        isActive: true
+      },
+      {
+        id: "disc-tajen",
+        code: "PROMO-TAJEN-15",
+        nameAr: "عرض طواجن السعادة الساخنة (خصم 15 ج.م)",
+        type: "fixed_amount",
+        value: 15,
+        scope: "categories",
+        categories: ["الطواجن"],
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        isActive: true
+      }
+    ];
+
+    function calculateProductDiscount(prod) {
+      let rules = DEFAULT_DISCOUNT_RULES;
+      try {
+        const stored = localStorage.getItem("wazeer_erp_discounts_v1");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rules = parsed.map(r => ({
+              ...r,
+              categories: r.categoryIds || r.categories || [],
+              skus: r.productIds || r.skus || [],
+              nameAr: r.name?.ar || r.nameAr || r.name
+            }));
+          }
+        }
+      } catch (e) {}
+
+      let bestSaving = 0;
+      let bestRule = null;
+
+      for (const rule of rules) {
+        if (!rule.isActive) continue;
+
+        let applies = false;
+        if (rule.scope === "all_products") {
+          applies = true;
+        } else if (rule.scope === "categories") {
+          applies = (rule.categories || []).some(c =>
+            c === prod.category || prod.category.includes(c) || c.includes(prod.category)
+          );
+        } else if (rule.scope === "products") {
+          applies = (rule.skus || []).includes(prod.sku);
+        }
+
+        if (applies) {
+          let saving = 0;
+          if (rule.type === "percentage") {
+            saving = (prod.price * rule.value) / 100;
+            if (rule.maxDiscountAmount && rule.maxDiscountAmount > 0) {
+              saving = Math.min(saving, rule.maxDiscountAmount);
+            }
+          } else if (rule.type === "fixed_amount") {
+            saving = Math.min(rule.value, prod.price);
+          }
+
+          if (saving > bestSaving) {
+            bestSaving = saving;
+            bestRule = rule;
+          }
+        }
+      }
+
+      const discountedPrice = Math.max(0, Math.round((prod.price - bestSaving) * 100) / 100);
+      return {
+        originalPrice: prod.price,
+        discountedPrice: discountedPrice,
+        discountAmount: Math.round(bestSaving * 100) / 100,
+        hasDiscount: bestSaving > 0,
+        rule: bestRule,
+        badgeText: bestRule ? (bestRule.type === "percentage" ? `-%${bestRule.value}` : `-${bestRule.value}ج`) : null
+      };
+    }
+
+    function renderProducts() {
       const container = document.getElementById("products-grid");
       if (!container) return;
 
@@ -2431,6 +2627,7 @@
         const inCartItem = cart.find(c => c.sku === prod.sku);
         const inCartQty = inCartItem ? inCartItem.quantity : 0;
         const isSelected = inCartQty > 0;
+        const promo = calculateProductDiscount(prod);
 
         return `
           <div onclick="addToCart('${prod.sku}')" class="group relative bg-white rounded-3xl border transition-all duration-200 select-none overflow-hidden cursor-pointer active:scale-98 p-3 flex flex-col justify-between ${isSelected ? 'border-[#D10056] ring-1 ring-[#D10056]/30 shadow-md' : 'border-slate-200/90 hover:border-slate-300 shadow-2xs'}">
@@ -2445,10 +2642,17 @@
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none"></div>
 
-              <!-- Top-Right Badge: SKU (Black Pill) -->
-              <span class="absolute top-2.5 start-2.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs pointer-events-none">
-                ${prod.sku}
-              </span>
+              <!-- Top Badges: SKU (Black Pill) + Promo Discount Badge (Pink Pill) -->
+              <div class="absolute top-2.5 start-2.5 flex items-center gap-1.5 pointer-events-none">
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/60 text-white shadow-xs">
+                  ${prod.sku}
+                </span>
+                ${promo.hasDiscount ? `
+                  <span class="text-[9px] font-mono font-black px-1.5 py-0.5 rounded-md bg-[#D10056] text-white shadow-xs animate-pulse">
+                    ${promo.badgeText}
+                  </span>
+                ` : ''}
+              </div>
 
               <!-- Bottom-Right Badge: Stock (Emerald Pill) -->
               <span class="absolute bottom-2.5 start-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-xs pointer-events-none">
@@ -2475,10 +2679,23 @@
 
             <!-- Bottom Row: Price on Right, Circular Plus Button on Left -->
             <div class="flex items-center justify-between pt-2.5 mt-auto">
-              <!-- Price (RTL Start = Right) -->
-              <span class="text-base font-black text-slate-900 font-mono">
-                ${prod.price.toFixed(2)} ج.م
-              </span>
+              <!-- Price (with discount support) -->
+              <div>
+                ${promo.hasDiscount ? `
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-base font-black text-emerald-600 font-mono">
+                      ${promo.discountedPrice.toFixed(2)} ج.م
+                    </span>
+                    <span class="text-xs line-through text-slate-400 font-mono">
+                      ${prod.price.toFixed(2)}
+                    </span>
+                  </div>
+                ` : `
+                  <span class="text-base font-black text-slate-900 font-mono">
+                    ${prod.price.toFixed(2)} ج.م
+                  </span>
+                `}
+              </div>
 
               <!-- Circular Plus Button (RTL End = Left) -->
               <div class="size-7 rounded-full flex items-center justify-center font-bold text-sm shadow-2xs transition-all active:scale-90 ${isSelected ? 'bg-[#D10056] text-white hover:opacity-95' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
@@ -2495,14 +2712,19 @@
       const prod = PRODUCTS.find(p => p.sku === sku);
       if (!prod) return;
 
-      const existing = cart.find(c => c.sku === sku);
+      const promo = calculateProductDiscount(prod);
+      const existing = cart.find(i => i.sku === sku);
       if (existing) {
-        if (existing.quantity < prod.stock) existing.quantity++;
+        if (existing.quantity < prod.stock) {
+          existing.quantity++;
+        }
       } else {
         cart.push({
           sku: prod.sku,
           nameAr: prod.nameAr,
-          unitPrice: prod.price,
+          unitPrice: promo.discountedPrice,
+          originalPrice: prod.price,
+          discountAmount: promo.discountAmount,
           quantity: 1,
           stock: prod.stock,
           image: prod.image
@@ -2761,7 +2983,27 @@
 
       const orderNumber = "INV-KB-" + Math.floor(1000 + Math.random() * 9000);
       const subtotal = cart.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
-      const total = subtotal;
+      const discountVal = subtotal * (discountPercent / 100);
+      const total = Math.max(0, subtotal - discountVal);
+      const nowTime = new Date().toLocaleTimeString("en-US", { hour12: false });
+
+      // Create new order record
+      const itemsSummary = cart.map(i => `${i.nameAr} (${i.quantity})`).join('، ');
+      const newOrder = {
+        id: orderNumber,
+        time: nowTime,
+        itemsSummary: itemsSummary,
+        items: JSON.parse(JSON.stringify(cart)),
+        subtotal: subtotal,
+        total: total,
+        payMethod: paymentMethod,
+        payMethodLabel: paymentMethod === "cash" ? "كاش 💵" : "فيزا 💳",
+        cashier: `${activeCashier.name} (${activeCashier.code})`,
+        isSynced: isOnline
+      };
+
+      // Add to beginning of shift orders
+      MY_ORDERS.unshift(newOrder);
 
       // Populate Receipt
       document.getElementById("rcpt-order-id").textContent = orderNumber;
@@ -2785,16 +3027,20 @@
       // Open Modal
       document.getElementById("receipt-modal").classList.remove("hidden");
 
-      // Increment Pending Queue if offline, or sync directly if online
-      pendingOrdersCount++;
-      document.getElementById("orders-badge-count").textContent = pendingOrdersCount;
+      // Update badges
+      document.getElementById("orders-badge-count").textContent = MY_ORDERS.length;
+      if (!isOnline) {
+        pendingOrdersCount++;
+      }
       document.getElementById("header-pending-count").textContent = pendingOrdersCount + " فواتير";
-      document.getElementById("bar-pending-orders").textContent = `${pendingOrdersCount} فاتورة (${(4890 + total).toLocaleString()} ج.م)`;
+      const totalShiftRev = MY_ORDERS.reduce((sum, o) => sum + o.total, 0);
+      document.getElementById("bar-pending-orders").textContent = `${pendingOrdersCount} فاتورة (${Math.round(totalShiftRev).toLocaleString()} ج.م)`;
 
       // Clear Cart
       cart = [];
       renderProducts();
       renderCart();
+      renderMyOrdersTable();
     }
 
     function closeReceiptModal() {
@@ -2802,8 +3048,309 @@
     }
 
     // Sync Queue Modal
+    
+    // Initial Seed Orders for Cashier Shift
+    let MY_ORDERS = [
+      {
+        id: "INV-KB-1058",
+        time: "20:30:15",
+        itemsSummary: "طاجن أم علي مكسرات (2)، قشطوطة بستاشيو فاخر (1)",
+        items: [
+          { nameAr: "طاجن أم علي مكسرات", quantity: 2, unitPrice: 110 },
+          { nameAr: "قشطوطة بستاشيو فاخر", quantity: 1, unitPrice: 90 }
+        ],
+        subtotal: 310,
+        total: 310,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1057",
+        time: "20:18:42",
+        itemsSummary: "أرز بلبن بستاشيو (1)",
+        items: [
+          { nameAr: "أرز بلبن بستاشيو", quantity: 1, unitPrice: 100 }
+        ],
+        subtotal: 100,
+        total: 100,
+        payMethod: "card",
+        payMethodLabel: "فيزا 💳",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1056",
+        time: "20:05:10",
+        itemsSummary: "كنافة نابلسية بالجبنة (1)",
+        items: [
+          { nameAr: "كنافة نابلسية بالجبنة", quantity: 1, unitPrice: 310 }
+        ],
+        subtotal: 310,
+        total: 310,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1055",
+        time: "19:48:33",
+        itemsSummary: "مشكل شرقي وزير الحلو 1ك (1)",
+        items: [
+          { nameAr: "مشكل شرقي وزير الحلو 1ك", quantity: 1, unitPrice: 260 }
+        ],
+        subtotal: 260,
+        total: 260,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1054",
+        time: "19:35:19",
+        itemsSummary: "أرز بلبن خريطة (2)",
+        items: [
+          { nameAr: "أرز بلبن خريطة", quantity: 2, unitPrice: 80 }
+        ],
+        subtotal: 160,
+        total: 160,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1053",
+        time: "19:15:00",
+        itemsSummary: "طاجن نوتيلا (2)، إضافة قشطة (1)",
+        items: [
+          { nameAr: "طاجن نوتيلا", quantity: 2, unitPrice: 65 },
+          { nameAr: "إضافة قشطه", quantity: 1, unitPrice: 25 }
+        ],
+        subtotal: 155,
+        total: 155,
+        payMethod: "card",
+        payMethodLabel: "فيزا 💳",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1052",
+        time: "18:55:20",
+        itemsSummary: "قشطوطة لوتس (2)",
+        items: [
+          { nameAr: "قشطوطة لوتس", quantity: 2, unitPrice: 90 }
+        ],
+        subtotal: 180,
+        total: 180,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1051",
+        time: "18:40:12",
+        itemsSummary: "فتة وزير الحلو (3)",
+        items: [
+          { nameAr: "فتة وزير الحلو", quantity: 3, unitPrice: 135 }
+        ],
+        subtotal: 405,
+        total: 405,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1050",
+        time: "18:25:05",
+        itemsSummary: "كشري الحلو فستق (2)",
+        items: [
+          { nameAr: "كشري الحلو فستق", quantity: 2, unitPrice: 110 }
+        ],
+        subtotal: 220,
+        total: 220,
+        payMethod: "card",
+        payMethodLabel: "فيزا 💳",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1049",
+        time: "18:02:44",
+        itemsSummary: "أرز بلبن إسكندراني (4)",
+        items: [
+          { nameAr: "أرز بلبن اسكندراني", quantity: 4, unitPrice: 70 }
+        ],
+        subtotal: 280,
+        total: 280,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1048",
+        time: "17:45:00",
+        itemsSummary: "أم علي مكسرات (3)",
+        items: [
+          { nameAr: "طاجن أم علي مكسرات", quantity: 3, unitPrice: 110 }
+        ],
+        subtotal: 330,
+        total: 330,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1047",
+        time: "17:20:18",
+        itemsSummary: "مدلعة مكسرات (2)",
+        items: [
+          { nameAr: "مدلعة مكسرات", quantity: 2, unitPrice: 140 }
+        ],
+        subtotal: 280,
+        total: 280,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1046",
+        time: "17:05:00",
+        itemsSummary: "أرز بلبن آيس كريم (3)",
+        items: [
+          { nameAr: "أرز بلبن ايس كريم", quantity: 3, unitPrice: 60 }
+        ],
+        subtotal: 180,
+        total: 180,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1045",
+        time: "16:40:10",
+        itemsSummary: "كنافة عثمانلية بالقشطة (2)",
+        items: [
+          { nameAr: "كنافة عثمانلية", quantity: 2, unitPrice: 115 }
+        ],
+        subtotal: 230,
+        total: 230,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        cashier: "أحمد سالم (101)",
+        isSynced: true
+      }
+    ];
+
+    function openMyOrdersModal() {
+      document.getElementById("my-orders-modal").classList.remove("hidden");
+      renderMyOrdersTable();
+    }
+
+    function closeMyOrdersModal() {
+      document.getElementById("my-orders-modal").classList.add("hidden");
+    }
+
+    function filterMyOrders(query) {
+      renderMyOrdersTable(query);
+    }
+
+    function renderMyOrdersTable(filterQuery = "") {
+      const tbody = document.getElementById("my-orders-table-body");
+      if (!tbody) return;
+
+      const q = filterQuery.trim().toLowerCase();
+      const filtered = MY_ORDERS.filter(o => {
+        if (!q) return true;
+        return o.id.toLowerCase().includes(q) ||
+               o.itemsSummary.toLowerCase().includes(q) ||
+               o.payMethod.toLowerCase().includes(q) ||
+               o.payMethodLabel.includes(q);
+      });
+
+      // Update KPIs
+      const totalAmount = MY_ORDERS.reduce((sum, o) => sum + o.total, 0);
+      const cashAmount = MY_ORDERS.filter(o => o.payMethod === "cash").reduce((sum, o) => sum + o.total, 0);
+      const cardAmount = MY_ORDERS.filter(o => o.payMethod !== "cash").reduce((sum, o) => sum + o.total, 0);
+
+      const kpiCount = document.getElementById("kpi-orders-count");
+      const kpiTotal = document.getElementById("kpi-orders-total");
+      const kpiCash = document.getElementById("kpi-orders-cash");
+      const kpiCard = document.getElementById("kpi-orders-card");
+      const filterCountEl = document.getElementById("orders-filter-count");
+
+      if (kpiCount) kpiCount.textContent = MY_ORDERS.length + " طلب";
+      if (kpiTotal) kpiTotal.textContent = totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 }) + " ج.م";
+      if (kpiCash) kpiCash.textContent = cashAmount.toLocaleString("en-US", { minimumFractionDigits: 2 }) + " ج.م";
+      if (kpiCard) kpiCard.textContent = cardAmount.toLocaleString("en-US", { minimumFractionDigits: 2 }) + " ج.م";
+      if (filterCountEl) filterCountEl.textContent = filtered.length + " فاتورة";
+
+      tbody.innerHTML = filtered.map(order => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-2.5 font-mono font-bold text-slate-900">${order.id}</td>
+          <td class="p-2.5 font-mono text-slate-500 text-[11px]">${order.time}</td>
+          <td class="p-2.5 font-bold text-slate-800">${order.itemsSummary}</td>
+          <td class="p-2.5">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${order.payMethod === 'cash' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'}">
+              ${order.payMethodLabel}
+            </span>
+          </td>
+          <td class="p-2.5 font-mono font-black text-slate-900">${order.total.toFixed(2)} ج.م</td>
+          <td class="p-2.5">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${order.isSynced ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${order.isSynced ? 'متزامنة سحابياً 🟢' : 'معلقة محلياً 🟠'}
+            </span>
+          </td>
+          <td class="p-2.5 text-center">
+            <button onclick="reprintOrderReceipt('${order.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition cursor-pointer flex items-center gap-1 mx-auto">
+              <span>🖨️</span>
+              <span>بون</span>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function reprintOrderReceipt(orderId) {
+      const order = MY_ORDERS.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById("rcpt-order-id").textContent = order.id;
+      document.getElementById("rcpt-date-time").textContent = order.time;
+      document.getElementById("rcpt-subtotal").textContent = order.subtotal.toFixed(2) + " ج.م";
+      document.getElementById("rcpt-total").textContent = order.total.toFixed(2) + " ج.م";
+      document.getElementById("rcpt-pay-method").textContent = order.payMethod === "cash" ? "نقداً (كاش)" : "فيزا / شبكة";
+      document.getElementById("rcpt-cashier-label").textContent = order.cashier;
+
+      const itemsContainer = document.getElementById("rcpt-items-list");
+      if (itemsContainer && order.items) {
+        itemsContainer.innerHTML = order.items.map(i => `
+          <div class="flex justify-between items-center text-[11px]">
+            <div>
+              <span class="font-bold">${i.nameAr}</span>
+              <span class="text-slate-500 block text-[10px]">${i.quantity} × ${i.unitPrice.toFixed(2)}</span>
+            </div>
+            <strong class="font-mono">${(i.unitPrice * i.quantity).toFixed(2)} ج.م</strong>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById("receipt-modal").classList.remove("hidden");
+    }
+
     function switchViewTab(tab) {
-      if (tab === "screen-sync") {
+      if (tab === "screen-orders") {
+        openMyOrdersModal();
+      } else if (tab === "screen-sync") {
         document.getElementById("sync-queue-modal").classList.remove("hidden");
       }
     }
