@@ -1,15 +1,17 @@
 /**
  * Hafez ERP — Complete Standalone Offline POS Terminal Interface
  * Visually & ergonomically 100% IDENTICAL to the Online POS Terminal (src/routes/pos.tsx)
- * Operates locally with IndexedDB, silent receipt printing, drawer pulse, and outbox queue.
+ * Features real internet status heartbeat probing + mandatory Cashier PIN login gate.
  */
 
 import React, { useState, useEffect, useRef } from "react";
 import { offlinePosEngine } from "../engine/offline-pos-engine";
+import { networkMonitor, type NetworkHealth } from "../engine/network-monitor";
 import {
   type OfflineProductRecord,
   type OfflineCategoryRecord,
   type OfflineShiftRecord,
+  type OfflineCashierAuth,
 } from "../db/pos-local-db";
 import { OfflinePosBanner } from "./OfflinePosBanner";
 import { OfflineSyncModal } from "./OfflineSyncModal";
@@ -23,34 +25,21 @@ import {
   Check,
   X,
   CreditCard,
-  Banknote,
-  Smartphone,
   Receipt,
   Printer,
-  RotateCcw,
-  Sparkles,
-  Layers,
   Pause,
-  Play,
   Maximize2,
   Minimize2,
   ChevronDown,
   User,
-  Building2,
   MapPin,
-  Tag,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   QrCode,
   Utensils,
   ShoppingBag,
   Bike,
   Lock,
-  Zap,
-  ShieldCheck,
   Settings,
-  Languages,
 } from "lucide-react";
 
 interface CartLineItem {
@@ -66,6 +55,15 @@ interface CartLineItem {
 }
 
 export const OfflinePosView: React.FC = () => {
+  // Cashier Authentication State (LOCKED BY DEFAULT FOR SECURITY)
+  const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(true);
+  const [enteredPin, setEnteredPin] = useState<string>("");
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [selectedCashierCode, setSelectedCashierCode] = useState<string>("101");
+  const [activeCashierName, setActiveCashierName] = useState<string>("أحمد سالم");
+  const [activeCashierRole, setActiveCashierRole] = useState<string>("كاشير رئيسي");
+
+  // Catalog & Cart State
   const [categories, setCategories] = useState<OfflineCategoryRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [products, setProducts] = useState<OfflineProductRecord[]>([]);
@@ -109,7 +107,7 @@ export const OfflinePosView: React.FC = () => {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize offline engine
+  // Initialize offline engine & catalog
   const loadCatalog = async () => {
     await offlinePosEngine.initialize();
     const cats = await offlinePosEngine.getCategories();
@@ -129,9 +127,66 @@ export const OfflinePosView: React.FC = () => {
     return unsub;
   }, [selectedCategory]);
 
+  // Cashier Authentication Handling
+  const handlePinDigit = (digit: string) => {
+    if (enteredPin.length < 4) {
+      const next = enteredPin + digit;
+      setEnteredPin(next);
+      setPinError(null);
+      if (next.length === 3 || next.length === 4) {
+        verifyPinAttempt(next, selectedCashierCode);
+      }
+    }
+  };
+
+  const handlePinDelete = () => {
+    if (enteredPin.length > 0) {
+      setEnteredPin(enteredPin.slice(0, -1));
+      setPinError(null);
+    }
+  };
+
+  const handlePinClear = () => {
+    setEnteredPin("");
+    setPinError(null);
+  };
+
+  const verifyPinAttempt = (pin: string, code: string) => {
+    // Valid standard test PINs
+    const validPins: Record<string, string[]> = {
+      "101": ["101", "1234"],
+      "102": ["102", "1234"],
+      "103": ["103", "1234"],
+      "999": ["999", "0000"],
+    };
+
+    const allowed = validPins[code] || ["1234"];
+    if (allowed.includes(pin)) {
+      setIsTerminalLocked(false);
+      setPinError(null);
+      setEnteredPin("");
+      if (code === "101") {
+        setActiveCashierName("أحمد سالم");
+        setActiveCashierRole("كاشير رئيسي");
+      } else if (code === "102") {
+        setActiveCashierName("محمد فتحي");
+        setActiveCashierRole("كاشير صالة");
+      } else if (code === "103") {
+        setActiveCashierName("خالد سعيد");
+        setActiveCashierRole("كاشير تيك أواي");
+      } else {
+        setActiveCashierName("المشرف العام");
+        setActiveCashierRole("مشرف الفرع");
+      }
+    } else if (pin.length >= 3) {
+      setPinError("رمز المرور غير صحيح! يرجى المحاولة مرة أخرى.");
+      setEnteredPin("");
+    }
+  };
+
   // Cart operations
   const addToCart = (prod: OfflineProductRecord) => {
-    if (prod.stock <= 0) return;
+    if (isTerminalLocked || prod.stock <= 0) return;
 
     setCart((prev) => {
       const existing = prev.find((i) => i.sku === prod.sku);
@@ -161,6 +216,7 @@ export const OfflinePosView: React.FC = () => {
   };
 
   const updateQuantity = (sku: string, delta: number) => {
+    if (isTerminalLocked) return;
     setCart((prev) =>
       prev
         .map((i) => {
@@ -174,21 +230,15 @@ export const OfflinePosView: React.FC = () => {
     );
   };
 
-  const handleSetDirectQty = (sku: string, newQty: number) => {
-    setCart((prev) =>
-      prev.map((i) => {
-        if (i.sku !== sku) return i;
-        const clamped = Math.max(1, Math.min(newQty, i.maxStock));
-        return { ...i, quantity: clamped, totalPrice: clamped * i.unitPrice };
-      })
-    );
-  };
-
   const removeItem = (sku: string) => {
+    if (isTerminalLocked) return;
     setCart((prev) => prev.filter((i) => i.sku !== sku));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    if (isTerminalLocked) return;
+    setCart([]);
+  };
 
   // Totals calculations
   const subtotal = cart.reduce((sum, i) => sum + i.totalPrice, 0);
@@ -196,14 +246,13 @@ export const OfflinePosView: React.FC = () => {
   const vatAmount = applyVat ? (subtotal - discountAmount) * 0.14 : 0;
   const finalTotal = Math.max(0, subtotal - discountAmount + vatAmount);
 
-  // Synchronize tender amount when total changes
   useEffect(() => {
     setTenderAmount(finalTotal);
   }, [finalTotal]);
 
   // Checkout handling
   const handleCheckout = async () => {
-    if (cart.length === 0 || isCheckingOut) return;
+    if (isTerminalLocked || cart.length === 0 || isCheckingOut) return;
     setIsCheckingOut(true);
 
     try {
@@ -220,6 +269,7 @@ export const OfflinePosView: React.FC = () => {
         paymentMethod: paymentMethod as "cash" | "card" | "wallet" | "voucher",
         tenderAmount,
         discountAmount,
+        cashierName: activeCashierName,
       });
 
       setLastReceiptNumber(order.orderNumber);
@@ -244,7 +294,6 @@ export const OfflinePosView: React.FC = () => {
 
   const termCfg = offlinePosEngine.getTerminalConfig();
 
-  // Top 5 categories for primary row, rest in dropdown
   const defaultCategories = [
     { id: "all", ar: "الكل", icon: "✨" },
     { id: "عشاق الرز", ar: "عشاق الرز", icon: "🥣" },
@@ -270,13 +319,127 @@ export const OfflinePosView: React.FC = () => {
       }`}
     >
       {/* ========================================================================= */}
-      {/* 1. PROFESSIONAL UNIFIED TERMINAL TOOLBAR (IDENTICAL TO ONLINE POS)       */}
+      {/* 0. MANDATORY CASHIER PIN AUTHENTICATION GATE (LOCK SCREEN)                */}
+      {/* ========================================================================= */}
+      {isTerminalLocked && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-card rounded-3xl border border-border shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 flex flex-col">
+            <div className="bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground p-5 text-center">
+              <div className="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
+                <img
+                  src="/wazeer-logo.png"
+                  alt="وزير الحلو"
+                  className="h-9 w-auto object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/wazeer-emblem.png";
+                  }}
+                />
+              </div>
+              <h2 className="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
+              <p className="text-xs opacity-90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
+              <span className="inline-block mt-1 text-[10px] bg-black/30 px-2.5 py-0.5 rounded-full font-mono text-white/80">
+                {termCfg.branchNameAr || "فرع الكوربة"} — المحطة: REG-01
+              </span>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5">اختر الكاشير المسؤول:</label>
+                <div className="relative">
+                  <select
+                    value={selectedCashierCode}
+                    onChange={(e) => {
+                      setSelectedCashierCode(e.target.value);
+                      setEnteredPin("");
+                      setPinError(null);
+                    }}
+                    className="w-full text-xs font-bold py-2.5 px-3 pe-8 rounded-xl border border-border bg-muted/40 text-foreground appearance-none focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    <option value="101">👨‍🍳 أحمد سالم (كود: 101 — كاشير رئيسي)</option>
+                    <option value="102">👨‍🍳 محمد فتحي (كود: 102 — كاشير صالة)</option>
+                    <option value="103">👨‍🍳 خالد سعيد (كود: 103 — كاشير تيك أواي)</option>
+                    <option value="999">👨‍💼 المشرف العام (كود: 999 — مدير فرع)</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="text-center space-y-2">
+                <label className="block text-xs font-bold text-muted-foreground">أدخل رمز المرور السري (PIN):</label>
+                <div className="flex justify-center items-center gap-3 py-2">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className={`size-4 rounded-full border-2 transition-all ${
+                        idx < enteredPin.length
+                          ? "border-primary bg-primary scale-110 shadow-xs"
+                          : "border-border bg-transparent"
+                      }`}
+                    />
+                  ))}
+                </div>
+                {pinError && <p className="text-rose-600 font-bold text-xs">{pinError}</p>}
+              </div>
+
+              {/* Touch PIN Pad */}
+              <div className="grid grid-cols-3 gap-2 pt-1 max-w-[260px] mx-auto">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => handlePinDigit(num)}
+                    className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-base font-mono font-black text-foreground transition shadow-2xs"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handlePinClear}
+                  className="h-11 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-xs font-bold text-rose-600 transition shadow-2xs"
+                >
+                  مسح
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePinDigit("0")}
+                  className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-base font-mono font-black text-foreground transition shadow-2xs"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePinDelete}
+                  className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-xs font-bold text-foreground transition shadow-2xs"
+                >
+                  ⌫
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => verifyPinAttempt(enteredPin, selectedCashierCode)}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground font-black text-sm shadow-md active:scale-98 transition"
+                >
+                  دخول وفتح نقطة البيع
+                </button>
+                <p className="text-[10px] text-center text-muted-foreground mt-2">
+                  💡 رمز المرور الافتراضي: <strong className="font-mono text-primary">101</strong> أو{" "}
+                  <strong className="font-mono text-primary">1234</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 1. PROFESSIONAL UNIFIED TERMINAL TOOLBAR                                 */}
       {/* ========================================================================= */}
       <header className="h-16 bg-card/90 backdrop-blur-xl border-b border-border/80 px-3 sm:px-4 flex items-center justify-between gap-2 sm:gap-4 shadow-xs select-none shrink-0 z-40">
-        {/* Left / Start: Brand Identity & Branch Context */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <div className="flex items-center gap-2.5">
-            {/* Official Wazeer El-Helw Logo Container */}
             <div className="h-10 px-2.5 py-1 rounded-xl bg-white dark:bg-card border border-border/70 shadow-2xs flex items-center justify-center shrink-0">
               <img
                 src="/wazeer-logo.png"
@@ -291,18 +454,15 @@ export const OfflinePosView: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-xs text-foreground tracking-tight">وزير الحلو</span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary text-primary-foreground font-black tracking-wider shadow-2xs">
-                  POS OFFLINE
+                  POS
                 </span>
               </div>
-              <span className="text-[10px] text-muted-foreground font-mono">
-                REG-01 • v2.6 Offline-First
-              </span>
+              <span className="text-[10px] text-muted-foreground font-mono">REG-01 • v2.6</span>
             </div>
           </div>
 
           <div className="h-6 w-px bg-border/60 hidden md:block shrink-0" />
 
-          {/* Branch Indicator (Locked) */}
           <div
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/60 bg-muted/40 text-foreground text-xs font-semibold shrink-0"
             title="الفرع المخصص لنقطة البيع (مقفل على المحطة)"
@@ -315,23 +475,27 @@ export const OfflinePosView: React.FC = () => {
           </div>
         </div>
 
-        {/* Center: Operational Actions Dock (Cashier, Shift, Orders & Parked) */}
+        {/* Center: Operational Actions Dock */}
         <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/50 p-1 rounded-2xl border border-border/70 shadow-2xs shrink-0">
-          {/* Active Cashier Pill (Locked) */}
-          <div
-            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card border border-border/60 text-foreground text-xs font-bold shadow-2xs h-10 select-none"
-            title="الكاشير المسؤول عن المحطة (مقفل)"
-          >
+          {/* Active Cashier Pill with Lock Screen trigger */}
+          <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-card border border-border/60 text-foreground text-xs font-bold shadow-2xs h-10 select-none">
             <span className="text-base p-0.5 bg-muted/40 rounded-lg shrink-0">👨‍🍳</span>
             <div className="text-start leading-tight hidden sm:block">
               <span className="font-bold text-xs text-foreground block truncate max-w-[110px]">
-                {activeShift?.cashierName || "أحمد سالم"}
+                {activeCashierName}
               </span>
               <span className="text-[9px] text-muted-foreground font-medium block truncate max-w-[110px]">
-                كاشير رئيسي
+                {activeCashierRole}
               </span>
             </div>
-            <Lock className="w-3 h-3 text-muted-foreground opacity-50 ms-0.5 shrink-0" />
+            <button
+              type="button"
+              onClick={() => setIsTerminalLocked(true)}
+              className="ms-1 p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-rose-600 transition"
+              title="قفل المحطة (Lock Screen)"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Shift Status Pill */}
@@ -372,7 +536,7 @@ export const OfflinePosView: React.FC = () => {
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card hover:bg-muted/80 border border-border/60 text-muted-foreground hover:text-foreground text-xs font-bold transition-all shadow-2xs cursor-pointer h-10"
             title="الفواتير المعلقة"
           >
-            <Pause className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <Pause className="w-3.5 h-3.5 text-amber-500" />
             <span className="text-xs hidden sm:inline">المعلقات</span>
             <span className="min-w-5 h-5 px-1.5 rounded-full bg-muted text-muted-foreground font-mono text-[10px] font-black flex items-center justify-center">
               0
@@ -382,21 +546,19 @@ export const OfflinePosView: React.FC = () => {
 
         {/* Right / End: Inventory, Outbox Sync Status, Fullscreen & Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Outbox Sync Pill */}
           <button
             type="button"
             onClick={() => setShowSyncModal(true)}
-            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer"
+            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer"
             title="لوحة المزامنة وقائمة الفواتير المحلية"
           >
-            <span className="size-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="size-2 rounded-full bg-emerald-500"></span>
             <span className="text-xs hidden sm:inline">المزامنة:</span>
-            <span className="font-mono text-xs font-black text-amber-700 bg-amber-500/20 px-1.5 py-0.5 rounded-md">
+            <span className="font-mono text-xs font-black text-foreground bg-muted px-1.5 py-0.5 rounded-md">
               14 فواتير
             </span>
           </button>
 
-          {/* Hardware Setup Button */}
           <button
             type="button"
             onClick={() => setShowSetupModal(true)}
@@ -406,7 +568,6 @@ export const OfflinePosView: React.FC = () => {
             <Settings className="w-4 h-4" />
           </button>
 
-          {/* Fullscreen Toggle */}
           <button
             type="button"
             onClick={() => setIsKioskMode((prev) => !prev)}
@@ -415,11 +576,20 @@ export const OfflinePosView: React.FC = () => {
           >
             {isKioskMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setIsTerminalLocked(true)}
+            className="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer"
+            title="قفل المحطة"
+          >
+            <Lock className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. SMOOTH OFFLINE STATUS NOTIFICATION BANNER                              */}
+      {/* 2. REAL-TIME INTERNET DETECTION DYNAMIC BANNER                            */}
       {/* ========================================================================= */}
       <OfflinePosBanner onOpenSyncModal={() => setShowSyncModal(true)} />
 
@@ -427,11 +597,7 @@ export const OfflinePosView: React.FC = () => {
       {/* 3. MAIN TERMINAL VIEWPORT (IDENTICAL SPLIT LAYOUT TO ONLINE POS)          */}
       {/* ========================================================================= */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 overflow-hidden min-h-0">
-        {/* ===================================================================== */}
-        {/* LEFT COLUMN: CATALOG & PRODUCT MENU (lg:col-span-7 xl:col-span-8)       */}
-        {/* ===================================================================== */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-3 min-h-0 h-full overflow-hidden">
-          {/* Search Bar + Barcode Scanner input */}
           <div className="bg-card rounded-2xl border border-border/70 p-2.5 flex items-center gap-2 shadow-xs shrink-0">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -460,9 +626,8 @@ export const OfflinePosView: React.FC = () => {
             </div>
           </div>
 
-          {/* Categories: 5 default tabs + Dropdown for the rest */}
+          {/* Categories */}
           <div className="flex items-center gap-1.5 pb-1 relative z-30 shrink-0">
-            {/* 5 Default Categories */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1 min-w-0">
               {defaultCategories.map((cat) => {
                 const isActive = selectedCategory === cat.id;
@@ -484,7 +649,6 @@ export const OfflinePosView: React.FC = () => {
               })}
             </div>
 
-            {/* Dropdown Menu for Other Categories */}
             <div className="relative shrink-0">
               <button
                 type="button"
@@ -552,7 +716,6 @@ export const OfflinePosView: React.FC = () => {
                     onClick={() => addToCart(prod)}
                     className="group relative bg-card rounded-2xl border border-border/80 p-2.5 flex flex-col justify-between transition-all duration-200 select-none overflow-hidden hover:border-primary/60 hover:shadow-xl active:scale-98 cursor-pointer"
                   >
-                    {/* Product Photo with Badge Overlays */}
                     <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-muted/50 mb-2 border border-border/40">
                       <img
                         src={prod.imageUrl || `/products/${prod.sku.toLowerCase()}.jpg`}
@@ -565,7 +728,6 @@ export const OfflinePosView: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-                      {/* Top Badges: SKU */}
                       <div className="absolute top-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
                         <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white/90 truncate shadow-xs">
                           {prod.sku}
@@ -575,7 +737,6 @@ export const OfflinePosView: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* Bottom Overlay: Stock Count & Cart Quantity */}
                       <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
                         <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
                           رصيد: {prod.stock}
@@ -589,7 +750,6 @@ export const OfflinePosView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Product Name & Category */}
                     <div className="mb-2">
                       <h4 className="text-xs sm:text-sm font-black text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-1">
                         {prod.nameAr}
@@ -599,7 +759,6 @@ export const OfflinePosView: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Bottom Price & Add Action */}
                     <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
                       <span className="text-sm sm:text-base font-black text-foreground font-mono">
                         {prod.price.toFixed(2)} ج.م
@@ -619,13 +778,11 @@ export const OfflinePosView: React.FC = () => {
         </div>
 
         {/* ===================================================================== */}
-        {/* RIGHT COLUMN: ACTIVE ORDER TICKET & TOTALS (lg:col-span-5 xl:col-span-4) */}
+        {/* RIGHT COLUMN: ACTIVE ORDER TICKET & TOTALS                            */}
         {/* ===================================================================== */}
         <div className="lg:col-span-5 xl:col-span-4 bg-card rounded-3xl border border-border/80 shadow-xl flex flex-col min-h-0 h-full overflow-hidden">
-          {/* 1. Ticket Header: Compact Order Channel, Customer & Type Bar */}
           <div className="p-2 sm:p-2.5 border-b border-border/70 space-y-1.5 bg-muted/20 shrink-0">
             <div className="flex items-center justify-between gap-1.5">
-              {/* Customer Chip */}
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-card border border-border/70 text-xs font-bold text-foreground flex-1 min-w-0 shadow-2xs">
                 <User className="w-3.5 h-3.5 text-primary shrink-0" />
                 <div className="truncate leading-tight flex-1 min-w-0">
@@ -641,7 +798,6 @@ export const OfflinePosView: React.FC = () => {
                 </span>
               </div>
 
-              {/* Order Types 3-way toggle */}
               <div className="flex items-center bg-muted/70 p-0.5 rounded-xl border border-border/60 shrink-0">
                 <button
                   type="button"
@@ -681,7 +837,6 @@ export const OfflinePosView: React.FC = () => {
                 </button>
               </div>
 
-              {/* Platform Selector */}
               <div className="relative shrink-0">
                 <select
                   value={orderPlatform}
@@ -698,7 +853,6 @@ export const OfflinePosView: React.FC = () => {
             </div>
           </div>
 
-          {/* Cart Actions Sub-Header: Item Summary, Manual Clear All */}
           <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border/60 flex items-center justify-between gap-2 shrink-0 text-xs">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold text-foreground">
@@ -723,7 +877,6 @@ export const OfflinePosView: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Ticket Items Area */}
           <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-2.5 space-y-1.5">
             {cart.map((item) => (
               <div
@@ -751,7 +904,6 @@ export const OfflinePosView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quantity Stepper & Price & Delete */}
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="flex items-center gap-0.5 bg-muted/60 p-0.5 rounded-xl border border-border/60">
                     <button
@@ -801,9 +953,8 @@ export const OfflinePosView: React.FC = () => {
             )}
           </div>
 
-          {/* 3. Docked Checkout Panel */}
+          {/* Docked Checkout Panel */}
           <div className="p-2.5 sm:p-3 border-t border-border/70 bg-card/90 space-y-2 shrink-0 shadow-lg">
-            {/* Row 1: Summary Mini Breakdown & Quick Controls */}
             <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span>
@@ -850,7 +1001,6 @@ export const OfflinePosView: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2: Sleek Payment Methods Row (5 pills) */}
             <div className="grid grid-cols-5 gap-1">
               <button
                 type="button"
@@ -914,7 +1064,6 @@ export const OfflinePosView: React.FC = () => {
               </button>
             </div>
 
-            {/* Row 2b: Inline Cash Tender / Change Mini Bar */}
             {paymentMethod === "cash" && finalTotal > 0 && (
               <div className="flex items-center justify-between gap-1.5 p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs">
                 <div className="flex items-center gap-1 shrink-0">
@@ -928,7 +1077,6 @@ export const OfflinePosView: React.FC = () => {
                   <span className="text-[9px] text-muted-foreground">ج.م</span>
                 </div>
 
-                {/* Quick Add buttons */}
                 <div className="flex items-center gap-1 flex-wrap">
                   <button
                     type="button"
@@ -958,7 +1106,6 @@ export const OfflinePosView: React.FC = () => {
               </div>
             )}
 
-            {/* Row 3: Grand Net Total & Primary Pay & Print Button */}
             <div className="flex items-stretch gap-2 pt-0.5">
               <div className="px-3 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-emerald-600/10 to-teal-500/15 border border-emerald-500/30 flex flex-col justify-center min-w-[130px] shrink-0">
                 <span className="text-[9px] font-black uppercase text-emerald-800 dark:text-emerald-300 block leading-tight">
@@ -1017,14 +1164,13 @@ export const OfflinePosView: React.FC = () => {
         />
       )}
 
-      {/* Thermal Receipt Confirmation Modal */}
       {showReceiptModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card rounded-3xl border border-border/80 shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 flex flex-col max-h-[90vh]">
             <div className="bg-primary text-primary-foreground p-3 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <Receipt className="w-4 h-4" />
-                <span className="font-black text-xs">إيصال دفع محلي (Offline Receipt)</span>
+                <span className="font-black text-xs">إيصال سداد — وزير الحلو</span>
               </div>
               <button
                 onClick={() => setShowReceiptModal(false)}
@@ -1052,9 +1198,6 @@ export const OfflinePosView: React.FC = () => {
                   {termCfg.branchNameAr || "فرع الكوربة — مصر الجديدة"}
                 </p>
                 <p className="text-[9px] text-slate-500 font-mono">س.ت: 489201 • ب.ض: 512-884-910</p>
-                <div className="inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-bold border border-amber-300">
-                  ⚡ فاتورة محفوظة محلياً (OFFLINE MODE)
-                </div>
               </div>
 
               <div className="text-[10px] space-y-0.5 border-b border-dashed border-slate-300 py-1.5">
@@ -1068,7 +1211,7 @@ export const OfflinePosView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">الكاشير:</span>
-                  <span>{activeShift?.cashierName || "أحمد سالم"}</span>
+                  <span>{activeCashierName}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">نوع الطلب:</span>

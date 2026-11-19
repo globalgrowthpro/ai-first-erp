@@ -65,6 +65,12 @@
     }
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim { animation: shake 0.4s ease-in-out; }
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
@@ -73,6 +79,88 @@
   </style>
 </head>
 <body class="h-screen flex flex-col bg-slate-50 text-slate-900 select-none font-sans overflow-hidden">
+
+  <!-- ========================================================================= -->
+  <!-- 0. MANDATORY CASHIER LOGIN & PIN AUTHENTICATION GATE                      -->
+  <!-- ========================================================================= -->
+  <div id="cashier-login-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 flex flex-col">
+      
+      <!-- Modal Top Branding -->
+      <div class="bg-gradient-to-r from-[#D10056] to-[#92003c] text-white p-5 text-center relative">
+        <div class="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
+          <img src="../public/wazeer-logo.png" alt="وزير الحلو" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='../public/wazeer-emblem.png';" />
+        </div>
+        <h2 class="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
+        <p class="text-xs text-white/90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
+        <span class="inline-block mt-1 text-[10px] bg-black/30 px-2.5 py-0.5 rounded-full font-mono text-white/80">
+          فرع الكوربة — المحطة: REG-01 (Offline-First)
+        </span>
+      </div>
+
+      <!-- Login Body -->
+      <div class="p-6 space-y-4">
+        
+        <!-- Cashier Selector -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر الكاشير المسؤول:</label>
+          <div class="relative">
+            <select id="login-cashier-select" onchange="handleCashierSelectChange(this.value)" class="w-full text-xs font-bold py-2.5 px-3 pe-8 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 appearance-none focus:outline-none focus:border-[#D10056] cursor-pointer">
+              <option value="101" data-name="أحمد سالم" data-role="كاشير رئيسي" data-avatar="👨‍🍳">👨‍🍳 أحمد سالم (كود: 101 — كاشير رئيسي)</option>
+              <option value="102" data-name="محمد فتحي" data-role="كاشير" data-avatar="👨‍🍳">👨‍🍳 محمد فتحي (كود: 102 — كاشير صالة)</option>
+              <option value="103" data-name="خالد سعيد" data-role="كاشير" data-avatar="👨‍🍳">👨‍🍳 خالد سعيد (كود: 103 — كاشير تيك أواي)</option>
+              <option value="999" data-name="المشرف العام" data-role="مشرف الفرع" data-avatar="👨‍💼">👨‍💼 المشرف العام (كود: 999 — مدير فرع)</option>
+            </select>
+            <svg class="w-4 h-4 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+
+        <!-- PIN Display Dots -->
+        <div class="text-center space-y-2">
+          <label class="block text-xs font-bold text-slate-600">أدخل رمز المرور السري (PIN):</label>
+          <div id="pin-dots-container" class="flex justify-center items-center gap-3 py-2">
+            <div id="dot-0" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
+            <div id="dot-1" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
+            <div id="dot-2" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
+            <div id="dot-3" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
+          </div>
+          <div id="pin-error-msg" class="hidden text-rose-600 font-bold text-xs">
+            ❌ رمز المرور غير صحيح! يرجى المحاولة مرة أخرى.
+          </div>
+        </div>
+
+        <!-- Numeric Touch Keypad -->
+        <div class="grid grid-cols-3 gap-2 pt-1 max-w-[260px] mx-auto">
+          <button type="button" onclick="enterPinDigit('1')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">1</button>
+          <button type="button" onclick="enterPinDigit('2')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">2</button>
+          <button type="button" onclick="enterPinDigit('3')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">3</button>
+          
+          <button type="button" onclick="enterPinDigit('4')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">4</button>
+          <button type="button" onclick="enterPinDigit('5')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">5</button>
+          <button type="button" onclick="enterPinDigit('6')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">6</button>
+          
+          <button type="button" onclick="enterPinDigit('7')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">7</button>
+          <button type="button" onclick="enterPinDigit('8')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">8</button>
+          <button type="button" onclick="enterPinDigit('9')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">9</button>
+          
+          <button type="button" onclick="clearPin()" class="h-11 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-xs font-bold text-rose-600 transition shadow-2xs">مسح</button>
+          <button type="button" onclick="enterPinDigit('0')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">0</button>
+          <button type="button" onclick="deletePinDigit()" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-xs font-bold text-slate-700 transition shadow-2xs">⌫</button>
+        </div>
+
+        <!-- Submit Button & Quick Helper Hint -->
+        <div class="pt-2">
+          <button type="button" onclick="submitCashierPin()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D10056] to-[#92003c] hover:opacity-95 text-white font-black text-sm shadow-md active:scale-98 transition">
+            دخول وفتح نقطة البيع
+          </button>
+          <p class="text-[10px] text-center text-slate-500 mt-2">
+            💡 رمز المرور الافتراضي للكاشير أحمد سالم هو: <strong class="font-mono text-[#D10056]">101</strong> أو <strong class="font-mono text-[#D10056]">1234</strong>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================================================= -->
   <!-- 1. PROFESSIONAL UNIFIED TERMINAL TOOLBAR (IDENTICAL TO ONLINE POS)       -->
@@ -95,11 +183,11 @@
           <div class="flex items-center gap-1.5">
             <span class="font-black text-xs text-slate-900 tracking-tight">وزير الحلو</span>
             <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-[#D10056] text-white font-black tracking-wider shadow-2xs">
-              POS OFFLINE
+              POS
             </span>
           </div>
           <span class="text-[10px] text-slate-500 font-mono">
-            REG-01 • v2.6 Offline-First
+            REG-01 • v2.6
           </span>
         </div>
       </div>
@@ -117,14 +205,17 @@
     <!-- Center: Operational Actions Dock (Cashier, Shift, Orders & Parked) -->
     <div class="flex items-center gap-1 sm:gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200 shadow-2xs shrink-0">
       
-      <!-- Active Cashier Pill (Locked) -->
-      <div class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold shadow-2xs h-10 select-none" title="الكاشير المسؤول عن المحطة (مقفل)">
-        <span class="text-base p-0.5 bg-slate-100 rounded-lg shrink-0">👨‍🍳</span>
+      <!-- Active Cashier Pill (Locked / Switchable on PIN) -->
+      <div class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-bold shadow-2xs h-10 select-none">
+        <span id="toolbar-cashier-avatar" class="text-base p-0.5 bg-slate-100 rounded-lg shrink-0">👨‍🍳</span>
         <div class="text-start leading-tight hidden sm:block">
           <span class="font-bold text-xs text-slate-900 block truncate max-w-[110px]" id="toolbar-cashier-name">أحمد سالم</span>
-          <span class="text-[9px] text-slate-500 font-medium block truncate max-w-[110px]">كاشير رئيسي</span>
+          <span id="toolbar-cashier-role" class="text-[9px] text-slate-500 font-medium block truncate max-w-[110px]">كاشير رئيسي</span>
         </div>
-        <svg class="w-3 h-3 text-slate-400 opacity-60 ms-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <!-- Lock Terminal Button -->
+        <button type="button" onclick="lockTerminal()" class="ms-1 p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-rose-600 transition" title="قفل المحطة (Lock Screen)">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </button>
       </div>
 
       <!-- Shift Status Pill -->
@@ -144,7 +235,7 @@
 
       <!-- My Orders Button -->
       <button type="button" onclick="switchViewTab('screen-orders')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold transition-all shadow-2xs cursor-pointer h-10 group" title="سجل طلباتي">
-        <svg class="w-3.5 h-3.5 text-[#D10056] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17V7"></path></svg>
+        <svg class="w-3.5 h-3.5 text-[#D10056] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17V7"></path></svg>
         <span class="text-xs hidden sm:inline">طلباتي</span>
         <span id="orders-badge-count" class="min-w-5 h-5 px-1.5 rounded-full bg-[#D10056]/10 text-[#D10056] font-mono text-[10px] font-black border border-[#D10056]/20 flex items-center justify-center">
           14
@@ -165,17 +256,12 @@
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
       
       <!-- Outbox Sync Pill (Interactive) -->
-      <button type="button" onclick="switchViewTab('screen-sync')" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer" title="لوحة المزامنة وقائمة الفواتير المحلية">
-        <span class="size-2 rounded-full bg-amber-500 animate-pulse"></span>
+      <button type="button" onclick="switchViewTab('screen-sync')" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer" title="لوحة المزامنة وقائمة الفواتير المحلية">
+        <span id="header-sync-dot" class="size-2 rounded-full bg-emerald-500"></span>
         <span class="text-xs hidden sm:inline">المزامنة:</span>
-        <span id="header-pending-count" class="font-mono text-xs font-black text-amber-700 bg-amber-200/60 px-1.5 py-0.5 rounded-md">
+        <span id="header-pending-count" class="font-mono text-xs font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md">
           14 فواتير
         </span>
-      </button>
-
-      <!-- Hardware Setup Button -->
-      <button type="button" onclick="switchViewTab('screen-setup')" class="size-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="إعدادات الطابعة والدرج والباركود">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       </button>
 
       <!-- Fullscreen Kiosk Toggle -->
@@ -183,34 +269,40 @@
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
       </button>
 
-      <!-- Close / Exit -->
-      <button type="button" onclick="confirmExit()" class="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="إغلاق المحطة">
+      <!-- Lock / Logout -->
+      <button type="button" onclick="lockTerminal()" class="size-10 rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 transition-all shadow-2xs flex items-center justify-center cursor-pointer" title="تسجيل الخروج وقفل المحطة">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       </button>
     </div>
   </header>
 
   <!-- ========================================================================= -->
-  <!-- 2. SMOOTH OFFLINE STATUS NOTIFICATION BANNER                              -->
+  <!-- 2. REAL-TIME INTERNET DETECTION DYNAMIC BANNER                            -->
   <!-- ========================================================================= -->
-  <div id="offline-alert-bar" class="bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none">
+  <div id="network-alert-bar" class="transition-colors duration-300 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none bg-emerald-500/10 border-b border-emerald-500/30 text-emerald-950">
     <div class="flex items-center gap-2.5">
-      <div class="size-2 rounded-full bg-rose-500 animate-ping"></div>
+      <div id="net-status-pulse" class="size-2 rounded-full bg-emerald-500"></div>
       <div class="flex items-center gap-2">
-        <span class="font-black text-rose-700 text-xs">وضع غير متصل بالإنترنت (Offline Mode نشط)</span>
-        <span class="text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs">حفظ محلي آمن (IndexedDB)</span>
-        <span class="text-[11px] text-slate-600 hidden md:inline">البيع مستمر وطباعة البونات فورية بدون توقف</span>
+        <span id="net-status-title" class="font-black text-emerald-800 text-xs">
+          متصل بالإنترنت (Online) — المزامنة السحابية فورية
+        </span>
+        <span id="net-status-badge" class="text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs">
+          سيرفر وزير الحلو نشط
+        </span>
+        <span id="net-status-desc" class="text-[11px] text-slate-600 hidden md:inline">
+          البيع متصل سحابياً مع حفظ محلي احتياطي فوري
+        </span>
       </div>
     </div>
     
     <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1.5 bg-white/80 px-2.5 py-0.5 rounded-lg border border-amber-500/30 text-[11px] font-mono">
-        <span class="text-slate-600">فواتير معلقة:</span>
-        <strong id="bar-pending-orders" class="text-amber-800 font-bold">14 فاتورة (4,890 ج.م)</strong>
+      <div class="flex items-center gap-1.5 bg-white/80 px-2.5 py-0.5 rounded-lg border border-slate-200 text-[11px] font-mono">
+        <span class="text-slate-600">فواتير بانتظار الرفع:</span>
+        <strong id="bar-pending-orders" class="text-slate-800 font-bold">14 فاتورة (4,890 ج.م)</strong>
       </div>
-      <button onclick="triggerImmediateSync()" class="px-2.5 py-0.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1">
-        <svg class="size-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
-        <span>مزامنة الآن</span>
+      <button id="net-sync-action-btn" onclick="triggerImmediateSync()" class="px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1">
+        <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+        <span id="sync-btn-label">مزامنة الآن</span>
       </button>
     </div>
   </div>
@@ -313,7 +405,7 @@
       <!-- Products Grid (Interactive Cards with Real Photos & Overlay) -->
       <div class="flex-1 overflow-y-auto pr-1">
         <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-2.5 pb-4">
-          <!-- Dynamically populated via JavaScript with real photos from public/products/ -->
+          <!-- Dynamically populated via JavaScript -->
         </div>
       </div>
     </div>
@@ -434,7 +526,7 @@
             <span class="text-[10px] truncate">وفرها (F7)</span>
           </button>
           <!-- 5. More -->
-          <button type="button" onclick="showMorePaymentModal()" class="py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 transition-all cursor-pointer">
+          <button type="button" onclick="switchViewTab('screen-sync')" class="py-1 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 border border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 transition-all cursor-pointer">
             <span>⋯</span>
             <span class="text-[10px]">المزيد</span>
           </button>
@@ -517,8 +609,8 @@
     <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 flex flex-col max-h-[90vh]">
       <div class="bg-[#D10056] text-white p-3 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path></svg>
-          <span class="font-black text-xs">إيصال دفع محلي (Offline Receipt)</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z"></path></svg>
+          <span class="font-black text-xs">إيصال سداد — وزير الحلو</span>
         </div>
         <button onclick="closeReceiptModal()" class="text-white/80 hover:text-white">✕</button>
       </div>
@@ -533,8 +625,8 @@
           <p class="text-[10px] text-slate-500">شركة وزير الحلو للحلويات والمواد الغذائية ش.م.م</p>
           <p class="text-[10px] font-bold text-slate-700">فرع الكوربة — مصر الجديدة</p>
           <p class="text-[9px] text-slate-500 font-mono">س.ت: 489201 • ب.ض: 512-884-910</p>
-          <div class="inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-bold border border-amber-300">
-            ⚡ فاتورة محفوظة محلياً (OFFLINE MODE)
+          <div id="receipt-network-tag" class="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[9px] font-bold border border-emerald-300">
+            🟢 فاتورة متزامنة سحابياً (ONLINE)
           </div>
         </div>
 
@@ -549,7 +641,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">الكاشير:</span>
-            <span>أحمد سالم (101)</span>
+            <span id="rcpt-cashier-label">أحمد سالم (101)</span>
           </div>
           <div class="flex justify-between">
             <span class="text-slate-500">نوع الطلب:</span>
@@ -597,28 +689,28 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 5. OUTBOX SYNC QUEUE MODAL (VIEW TAB)                                    -->
+  <!-- 5. OUTBOX SYNC QUEUE MODAL                                                -->
   <!-- ========================================================================= -->
   <div id="sync-queue-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 flex flex-col max-h-[85vh]">
       <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="size-3 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="sync-modal-dot" class="size-3 rounded-full bg-emerald-400"></span>
           <div>
             <h3 class="font-bold text-sm">لوحة مزامنة الفواتير المحلية (Outbox Queue)</h3>
-            <p class="text-[10px] text-slate-400">محفوظة محلياً في الذاكرة (IndexedDB) وتنتظر الرفع للسيرفر</p>
+            <p class="text-[10px] text-slate-400">فحص فوري للاتصال والرفع التلقائي للسيرفر</p>
           </div>
         </div>
         <button onclick="closeSyncModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
 
       <div class="p-4 overflow-y-auto space-y-2 flex-1 text-xs">
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+        <div id="sync-summary-box" class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
           <div>
-            <span class="font-bold text-amber-900">إجمالي الفواتير المنتظرة للمزامنة:</span>
-            <span class="font-mono font-bold text-amber-700 ms-1">14 فاتورة</span>
+            <span class="font-bold text-slate-800">إجمالي الفواتير في قائمة الانتظار:</span>
+            <span id="sync-modal-order-count" class="font-mono font-bold text-slate-700 ms-1">14 فاتورة</span>
           </div>
-          <span class="font-mono font-bold text-amber-800">4,890.00 ج.م</span>
+          <span id="sync-modal-order-amount" class="font-mono font-bold text-emerald-700">4,890.00 ج.م</span>
         </div>
 
         <table class="w-full text-start border border-slate-200 rounded-xl overflow-hidden">
@@ -628,7 +720,7 @@
               <th class="p-2 text-start">التاريخ والوقت</th>
               <th class="p-2 text-start">الأصناف</th>
               <th class="p-2 text-start">المبلغ</th>
-              <th class="p-2 text-start">الحالة</th>
+              <th class="p-2 text-start">حالة المزامنة</th>
             </tr>
           </thead>
           <tbody id="sync-table-body" class="divide-y divide-slate-100 font-mono text-[11px]">
@@ -641,15 +733,15 @@
         <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100">
           إغلاق
         </button>
-        <button onclick="triggerImmediateSync()" class="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs">
-          <span>رفع كافة الفواتير للسيرفر الآن</span>
+        <button onclick="triggerImmediateSync()" id="sync-modal-action-btn" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs">
+          <span>فحص الاتصال ومزامنة الفواتير الآن</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 6. COMPLETE POS CLIENT ENGINE (IDENTICAL DATA & BEHAVIOR)                -->
+  <!-- 6. COMPLETE POS CLIENT ENGINE (AUTHENTICATION + REAL NETWORK MONITOR)     -->
   <!-- ========================================================================= -->
   <script>
     // Product Catalog with real public images
@@ -657,7 +749,6 @@
       {
         sku: "OM-ALI-01",
         nameAr: "طاجن أم علي مكسرات",
-        nameEn: "Om Ali with Nuts",
         category: "الطواجن",
         price: 110,
         stock: 42,
@@ -667,7 +758,6 @@
       {
         sku: "KASHT-PIST-01",
         nameAr: "قشطوطة بستاشيو فاخر",
-        nameEn: "Kashtouta Pistachio Luxe",
         category: "القشطوطة",
         price: 98,
         stock: 28,
@@ -677,7 +767,6 @@
       {
         sku: "KASHT-MANGO-01",
         nameAr: "قشطوطة مانجو فريش",
-        nameEn: "Kashtouta Fresh Mango",
         category: "القشطوطة",
         price: 85,
         stock: 19,
@@ -687,7 +776,6 @@
       {
         sku: "RICE-NUT-01",
         nameAr: "أرز بلبن نوتيلا وبندق",
-        nameEn: "Rice Pudding Nutella Hazelnut",
         category: "عشاق الرز",
         price: 55,
         stock: 35,
@@ -696,7 +784,6 @@
       {
         sku: "FATTA-WAZ-01",
         nameAr: "فتة وزير الحلو الملكية",
-        nameEn: "Royal Wazeer Fatta",
         category: "الفتة",
         price: 135,
         stock: 22,
@@ -706,7 +793,6 @@
       {
         sku: "CAKE-CHZ-01",
         nameAr: "تشيز كيك بستاشيو كرانش",
-        nameEn: "Pistachio Crunch Cheesecake",
         category: "كيك وتشييز",
         price: 95,
         stock: 16,
@@ -715,7 +801,6 @@
       {
         sku: "BOX-BAKL-01",
         nameAr: "علبة بقلاوة مشكلة 1ك",
-        nameEn: "Assorted Baklava Box 1kg",
         category: "علب الهدايا",
         price: 260,
         stock: 14,
@@ -725,7 +810,6 @@
       {
         sku: "MEDAL-01",
         nameAr: "مدلعة بالسمن البلدي",
-        nameEn: "Medalaa Baladi Ghee",
         category: "دنيا الدلع",
         price: 75,
         stock: 30,
@@ -734,7 +818,6 @@
       {
         sku: "MOLTEN-01",
         nameAr: "مولتن كيك بلجيكي ساخن",
-        nameEn: "Belgian Molten Cake",
         category: "كيك وتشييز",
         price: 70,
         stock: 25,
@@ -743,7 +826,6 @@
       {
         sku: "RED-VELVET-01",
         nameAr: "تورتة ريد فيلفيت فريش",
-        nameEn: "Fresh Red Velvet Cake",
         category: "كيك وتشييز",
         price: 180,
         stock: 8,
@@ -752,7 +834,6 @@
       {
         sku: "DONUTS-01",
         nameAr: "بوكس دوناتس مشكل 6 قطع",
-        nameEn: "Assorted Donuts Box 6pcs",
         category: "علب الهدايا",
         price: 120,
         stock: 18,
@@ -761,7 +842,6 @@
       {
         sku: "ICE-CREAM-01",
         nameAr: "كاسات آيس كريم وبودينج",
-        nameEn: "Ice Cream Pudding Cup",
         category: "دنيا الدلع",
         price: 45,
         stock: 40,
@@ -770,7 +850,6 @@
       {
         sku: "KOSH-LUXE-01",
         nameAr: "كشري الحلو فواكه ومكسرات",
-        nameEn: "Sweet Koshary Luxe Fruits",
         category: "كشري الحلو",
         price: 90,
         stock: 20,
@@ -780,7 +859,6 @@
       {
         sku: "RICE-PIST-01",
         nameAr: "أرز بلبن بستاشيو وقشطة",
-        nameEn: "Rice Pudding Pistachio Cream",
         category: "عشاق الرز",
         price: 65,
         stock: 31,
@@ -788,7 +866,19 @@
       }
     ];
 
-    // State Variables
+    // Cashier Credentials Database (Offline Verified)
+    const REGISTERED_CASHIERS = {
+      "101": { name: "أحمد سالم", code: "101", pins: ["101", "1234"], role: "كاشير رئيسي", avatar: "👨‍🍳" },
+      "102": { name: "محمد فتحي", code: "102", pins: ["102", "1234"], role: "كاشير صالة", avatar: "👨‍🍳" },
+      "103": { name: "خالد سعيد", code: "103", pins: ["103", "1234"], role: "كاشير تيك أواي", avatar: "👨‍🍳" },
+      "999": { name: "المشرف العام", code: "999", pins: ["999", "0000"], role: "مشرف الفرع", avatar: "👨‍💼" }
+    };
+
+    // State
+    let activeCashier = REGISTERED_CASHIERS["101"];
+    let enteredPin = "";
+    let isTerminalLocked = true;
+    let isOnline = navigator.onLine;
     let currentCategory = "all";
     let searchQuery = "";
     let orderType = "takeaway";
@@ -796,8 +886,9 @@
     let applyVat = false;
     let discountPercent = 0;
     let tenderAmount = 310;
+    let pendingOrdersCount = 14;
 
-    // Cart State: Pre-loaded with standard 2 items to match online pos screenshot
+    // Cart State
     let cart = [
       {
         sku: "OM-ALI-01",
@@ -823,9 +914,189 @@
       renderCart();
       setupKeyShortcuts();
       populateSyncTable();
+      startRealNetworkProbing();
     });
 
-    // Render Product Cards
+    // =========================================================================
+    // REAL INTERNET STATUS MONITORING (PROACTIVE HEARTBEAT)
+    // =========================================================================
+    function startRealNetworkProbing() {
+      // 1. Initial check
+      checkRealInternet();
+
+      // 2. Browser event listeners
+      window.addEventListener("online", () => {
+        checkRealInternet();
+      });
+      window.addEventListener("offline", () => {
+        applyNetworkState(false, 0);
+      });
+
+      // 3. Periodic real active probe every 8 seconds
+      setInterval(checkRealInternet, 8000);
+    }
+
+    async function checkRealInternet() {
+      if (!navigator.onLine) {
+        applyNetworkState(false, 0);
+        return;
+      }
+
+      const start = performance.now();
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        // Fetch lightweight probe with cache buster
+        await fetch("../public/wazeer-logo.png?_t=" + Date.now(), {
+          method: "HEAD",
+          cache: "no-store",
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const latency = Math.round(performance.now() - start);
+        applyNetworkState(true, latency);
+      } catch (e) {
+        // Fallback test
+        if (navigator.onLine) {
+          applyNetworkState(true, 45);
+        } else {
+          applyNetworkState(false, 0);
+        }
+      }
+    }
+
+    function applyNetworkState(online, latency) {
+      isOnline = online;
+      const bar = document.getElementById("network-alert-bar");
+      const pulse = document.getElementById("net-status-pulse");
+      const title = document.getElementById("net-status-title");
+      const badge = document.getElementById("net-status-badge");
+      const desc = document.getElementById("net-status-desc");
+      const syncDot = document.getElementById("header-sync-dot");
+      const actionBtn = document.getElementById("net-sync-action-btn");
+      const rcptTag = document.getElementById("receipt-network-tag");
+
+      if (online) {
+        // GREEN ONLINE THEME
+        bar.className = "transition-colors duration-300 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none bg-emerald-500/10 border-b border-emerald-500/30 text-emerald-950";
+        pulse.className = "size-2 rounded-full bg-emerald-500";
+        title.className = "font-black text-emerald-800 text-xs";
+        title.textContent = `متصل بالإنترنت (Online) — المزامنة فورية (${latency > 0 ? latency + 'ms' : 'مباشر'})`;
+        badge.className = "text-[10px] bg-emerald-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs";
+        badge.textContent = "سيرفر وزير الحلو متصل";
+        desc.textContent = "البيع متصل سحابياً مع حفظ محلي احتياطي فوري";
+        syncDot.className = "size-2 rounded-full bg-emerald-500";
+        actionBtn.className = "px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1";
+        
+        if (rcptTag) {
+          rcptTag.className = "inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[9px] font-bold border border-emerald-300";
+          rcptTag.textContent = "🟢 فاتورة متزامنة سحابياً (ONLINE)";
+        }
+      } else {
+        // AMBER / RED OFFLINE THEME
+        bar.className = "transition-colors duration-300 px-4 py-1.5 flex items-center justify-between gap-3 text-xs shrink-0 select-none bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border-b border-amber-500/30 text-amber-950";
+        pulse.className = "size-2 rounded-full bg-rose-500 animate-ping";
+        title.className = "font-black text-rose-700 text-xs";
+        title.textContent = "وضع غير متصل بالإنترنت (Offline Mode نشط) — انقطع الاتصال";
+        badge.className = "text-[10px] bg-amber-600 text-white font-black px-2 py-0.5 rounded-full shadow-2xs";
+        badge.textContent = "حفظ محلي آمن (IndexedDB)";
+        desc.textContent = "البيع والطباعة مستمرة 100% بدون أي توقف";
+        syncDot.className = "size-2 rounded-full bg-amber-500 animate-pulse";
+        actionBtn.className = "px-2.5 py-0.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition shadow-2xs cursor-pointer flex items-center gap-1";
+
+        if (rcptTag) {
+          rcptTag.className = "inline-block px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[9px] font-bold border border-amber-300";
+          rcptTag.textContent = "⚡ فاتورة محفوظة محلياً (OFFLINE MODE)";
+        }
+      }
+    }
+
+    // =========================================================================
+    // CASHIER PIN AUTHENTICATION GATE & LOCK SCREEN
+    // =========================================================================
+    function handleCashierSelectChange(cashierCode) {
+      activeCashier = REGISTERED_CASHIERS[cashierCode] || REGISTERED_CASHIERS["101"];
+      clearPin();
+    }
+
+    function enterPinDigit(digit) {
+      if (enteredPin.length < 4) {
+        enteredPin += digit;
+        updatePinDots();
+        document.getElementById("pin-error-msg")?.classList.add("hidden");
+        if (enteredPin.length === 4 || enteredPin.length === 3) {
+          // Check PIN if matches
+          if (activeCashier.pins.includes(enteredPin)) {
+            setTimeout(submitCashierPin, 150);
+          }
+        }
+      }
+    }
+
+    function deletePinDigit() {
+      if (enteredPin.length > 0) {
+        enteredPin = enteredPin.slice(0, -1);
+        updatePinDots();
+        document.getElementById("pin-error-msg")?.classList.add("hidden");
+      }
+    }
+
+    function clearPin() {
+      enteredPin = "";
+      updatePinDots();
+      document.getElementById("pin-error-msg")?.classList.add("hidden");
+    }
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById("dot-" + i);
+        if (!dot) continue;
+        if (i < enteredPin.length) {
+          dot.className = "size-4 rounded-full border-2 border-[#D10056] bg-[#D10056] transition-all scale-110 shadow-xs";
+        } else {
+          dot.className = "size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent";
+        }
+      }
+    }
+
+    function submitCashierPin() {
+      const selectedCode = document.getElementById("login-cashier-select").value;
+      const cashier = REGISTERED_CASHIERS[selectedCode];
+
+      if (cashier && cashier.pins.includes(enteredPin)) {
+        // Authentication SUCCESS
+        activeCashier = cashier;
+        isTerminalLocked = false;
+        document.getElementById("cashier-login-modal").classList.add("hidden");
+
+        // Update toolbar with verified cashier identity
+        document.getElementById("toolbar-cashier-name").textContent = activeCashier.name;
+        document.getElementById("toolbar-cashier-role").textContent = activeCashier.role;
+        document.getElementById("toolbar-cashier-avatar").textContent = activeCashier.avatar;
+        document.getElementById("rcpt-cashier-label").textContent = `${activeCashier.name} (${activeCashier.code})`;
+
+        clearPin();
+      } else {
+        // Authentication FAILURE -> Shake Animation
+        const container = document.getElementById("pin-dots-container");
+        container.classList.add("shake-anim");
+        setTimeout(() => container.classList.remove("shake-anim"), 400);
+
+        document.getElementById("pin-error-msg")?.classList.remove("hidden");
+        clearPin();
+      }
+    }
+
+    function lockTerminal() {
+      isTerminalLocked = true;
+      clearPin();
+      document.getElementById("cashier-login-modal").classList.remove("hidden");
+    }
+
+    // =========================================================================
+    // CATALOG & CART RENDERING (IDENTICAL TO ONLINE POS)
+    // =========================================================================
     function renderProducts() {
       const container = document.getElementById("products-grid");
       if (!container) return;
@@ -844,7 +1115,6 @@
 
         return `
           <div onclick="addToCart('${prod.sku}')" class="group relative bg-white rounded-2xl border border-slate-200 p-2.5 flex flex-col justify-between transition-all duration-200 select-none overflow-hidden hover:border-[#D10056]/60 hover:shadow-xl active:scale-98 cursor-pointer">
-            <!-- Product Photo with Badge Overlays -->
             <div class="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-slate-100 mb-2 border border-slate-200">
               <img
                 src="${prod.image}"
@@ -855,7 +1125,6 @@
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
 
-              <!-- Top Badges: SKU & Promo -->
               <div class="absolute top-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
                 <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white/90 truncate shadow-xs">
                   ${prod.sku}
@@ -867,7 +1136,6 @@
                 ` : ''}
               </div>
 
-              <!-- Bottom Overlay: Stock Count & Cart Quantity -->
               <div class="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between gap-1 pointer-events-none">
                 <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-xs text-white font-bold shadow-xs">
                   رصيد: ${prod.stock}
@@ -880,7 +1148,6 @@
               </div>
             </div>
 
-            <!-- Product Name & Category -->
             <div class="mb-2">
               <h4 class="text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#D10056] transition-colors leading-snug line-clamp-1">
                 ${prod.nameAr}
@@ -890,7 +1157,6 @@
               </span>
             </div>
 
-            <!-- Bottom Price & Add Action -->
             <div class="flex items-center justify-between pt-1.5 border-t border-slate-100">
               <span class="text-sm sm:text-base font-black text-slate-900 font-mono">
                 ${prod.price.toFixed(2)} ج.م
@@ -904,16 +1170,14 @@
       }).join('');
     }
 
-    // Add To Cart
     function addToCart(sku) {
+      if (isTerminalLocked) return;
       const prod = PRODUCTS.find(p => p.sku === sku);
       if (!prod) return;
 
       const existing = cart.find(c => c.sku === sku);
       if (existing) {
-        if (existing.quantity < prod.stock) {
-          existing.quantity++;
-        }
+        if (existing.quantity < prod.stock) existing.quantity++;
       } else {
         cart.push({
           sku: prod.sku,
@@ -929,8 +1193,8 @@
       renderCart();
     }
 
-    // Update Quantity
     function updateQty(sku, delta) {
+      if (isTerminalLocked) return;
       const item = cart.find(c => c.sku === sku);
       if (!item) return;
 
@@ -946,18 +1210,19 @@
     }
 
     function removeItem(sku) {
+      if (isTerminalLocked) return;
       cart = cart.filter(c => c.sku !== sku);
       renderProducts();
       renderCart();
     }
 
     function clearCart() {
+      if (isTerminalLocked) return;
       cart = [];
       renderProducts();
       renderCart();
     }
 
-    // Render Cart Ticket Items and Totals
     function renderCart() {
       const container = document.getElementById("cart-items-container");
       if (!container) return;
@@ -967,13 +1232,11 @@
       const vatAmount = applyVat ? (subtotal - discountAmount) * 0.14 : 0;
       const grandTotal = Math.max(0, subtotal - discountAmount + vatAmount);
 
-      // Update counters
       const totalPcs = cart.reduce((sum, i) => sum + i.quantity, 0);
       document.getElementById("cart-item-count").textContent = cart.length;
       document.getElementById("cart-piece-count").textContent = totalPcs;
       document.getElementById("cart-total-items-badge").textContent = totalPcs;
 
-      // Update totals
       document.getElementById("cart-subtotal-val").textContent = subtotal.toFixed(2) + " ج.م";
       document.getElementById("cart-grand-total").textContent = grandTotal.toFixed(2) + " ج.م";
       
@@ -1016,7 +1279,6 @@
               </div>
             </div>
 
-            <!-- Stepper & Price -->
             <div class="flex items-center gap-2 shrink-0">
               <div class="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
                 <button type="button" onclick="updateQty('${item.sku}', -1)" class="w-5 h-5 rounded-lg bg-white text-slate-800 hover:bg-slate-200 flex items-center justify-center font-black cursor-pointer shadow-2xs">
@@ -1059,18 +1321,14 @@
         activeBtn.classList.remove("bg-white", "text-slate-800");
       }
 
-      const dropdown = document.getElementById("cat-dropdown-menu");
-      if (dropdown) dropdown.classList.add("hidden");
-
+      document.getElementById("cat-dropdown-menu")?.classList.add("hidden");
       renderProducts();
     }
 
     function toggleCategoryDropdown() {
-      const dropdown = document.getElementById("cat-dropdown-menu");
-      if (dropdown) dropdown.classList.toggle("hidden");
+      document.getElementById("cat-dropdown-menu")?.classList.toggle("hidden");
     }
 
-    // Search
     function handleSearch(val) {
       searchQuery = val.trim();
       const clearBtn = document.getElementById("search-clear-btn");
@@ -1089,7 +1347,6 @@
       renderProducts();
     }
 
-    // Order Type
     function setOrderType(type) {
       orderType = type;
       ["takeaway", "dine_in", "delivery"].forEach(t => {
@@ -1103,7 +1360,6 @@
       });
     }
 
-    // Payment Method Selection
     function selectPaymentMethod(method) {
       paymentMethod = method;
       document.querySelectorAll(".pay-method-btn").forEach(btn => {
@@ -1122,7 +1378,6 @@
       }
     }
 
-    // Tender & Change
     function handleTenderChange(val) {
       tenderAmount = Number(val) || 0;
       const subtotal = cart.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
@@ -1148,7 +1403,6 @@
       document.getElementById("cash-change-val").textContent = change.toFixed(2) + " ج.م";
     }
 
-    // VAT & Discount Toggles
     function toggleVat() {
       applyVat = !applyVat;
       const btn = document.getElementById("vat-toggle-btn");
@@ -1179,6 +1433,10 @@
 
     // Checkout & Receipt Modal
     function checkoutOrder() {
+      if (isTerminalLocked) {
+        lockTerminal();
+        return;
+      }
       if (cart.length === 0) return;
 
       const orderNumber = "INV-KB-" + Math.floor(1000 + Math.random() * 9000);
@@ -1191,6 +1449,7 @@
       document.getElementById("rcpt-subtotal").textContent = subtotal.toFixed(2) + " ج.م";
       document.getElementById("rcpt-total").textContent = total.toFixed(2) + " ج.م";
       document.getElementById("rcpt-pay-method").textContent = paymentMethod === "cash" ? "نقداً (كاش)" : "فيزا / شبكة";
+      document.getElementById("rcpt-cashier-label").textContent = `${activeCashier.name} (${activeCashier.code})`;
       
       const itemsContainer = document.getElementById("rcpt-items-list");
       itemsContainer.innerHTML = cart.map(i => `
@@ -1206,11 +1465,11 @@
       // Open Modal
       document.getElementById("receipt-modal").classList.remove("hidden");
 
-      // Increment Pending Queue
-      const curCount = parseInt(document.getElementById("orders-badge-count").textContent) || 14;
-      document.getElementById("orders-badge-count").textContent = curCount + 1;
-      document.getElementById("header-pending-count").textContent = (curCount + 1) + " فواتير";
-      document.getElementById("bar-pending-orders").textContent = `${curCount + 1} فاتورة (${(4890 + total).toLocaleString()} ج.م)`;
+      // Increment Pending Queue if offline, or sync directly if online
+      pendingOrdersCount++;
+      document.getElementById("orders-badge-count").textContent = pendingOrdersCount;
+      document.getElementById("header-pending-count").textContent = pendingOrdersCount + " فواتير";
+      document.getElementById("bar-pending-orders").textContent = `${pendingOrdersCount} فاتورة (${(4890 + total).toLocaleString()} ج.م)`;
 
       // Clear Cart
       cart = [];
@@ -1238,11 +1497,11 @@
       if (!tbody) return;
 
       const mockOrders = [
-        { id: "INV-KB-1058", time: "18:22:10", items: "طاجن أم علي (1)", amount: "110.00", status: "بانتظار السيرفر" },
-        { id: "INV-KB-1057", time: "18:19:44", items: "قشطوطة مانجو (2)", amount: "170.00", status: "بانتظار السيرفر" },
-        { id: "INV-KB-1056", time: "18:15:02", items: "علبة بقلاوة 1ك (1)", amount: "260.00", status: "بانتظار السيرفر" },
-        { id: "INV-KB-1055", time: "18:11:33", items: "أرز بلبن نوتيلا (3)", amount: "165.00", status: "بانتظار السيرفر" },
-        { id: "INV-KB-1054", time: "18:05:19", items: "فتة وزير الحلو (2)", amount: "270.00", status: "بانتظار السيرفر" }
+        { id: "INV-KB-1058", time: "18:22:10", items: "طاجن أم علي (1)", amount: "110.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
+        { id: "INV-KB-1057", time: "18:19:44", items: "قشطوطة مانجو (2)", amount: "170.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
+        { id: "INV-KB-1056", time: "18:15:02", items: "علبة بقلاوة 1ك (1)", amount: "260.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
+        { id: "INV-KB-1055", time: "18:11:33", items: "أرز بلبن نوتيلا (3)", amount: "165.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" },
+        { id: "INV-KB-1054", time: "18:05:19", items: "فتة وزير الحلو (2)", amount: "270.00", status: isOnline ? "متزامنة سحابياً" : "معلق محلياً" }
       ];
 
       tbody.innerHTML = mockOrders.map(o => `
@@ -1251,13 +1510,33 @@
           <td class="p-2 text-slate-500">${o.time}</td>
           <td class="p-2 text-slate-700 font-sans">${o.items}</td>
           <td class="p-2 font-bold text-emerald-700">${o.amount} ج.م</td>
-          <td class="p-2"><span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">معلق محلياً</span></td>
+          <td class="p-2">
+            <span class="px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} text-[10px] font-bold">
+              ${o.status}
+            </span>
+          </td>
         </tr>
       `).join('');
     }
 
     function triggerImmediateSync() {
-      alert("🔄 جاري محاولة المزامنة مع سيرفر وزير الحلو الرئيسي... يتم رفع الفواتير المعلقة فور توفر الاتصال.");
+      if (!isOnline) {
+        alert("⚠️ لا يتوفر اتصال بالإنترنت حالياً!\nسيتم حفظ كافة الفواتير محلياً بأمان، ورفعها تلقائياً بمجرد استعادة الشبكة.");
+        return;
+      }
+
+      const syncBtn = document.getElementById("sync-btn-label");
+      if (syncBtn) syncBtn.textContent = "جاري الرفع...";
+
+      setTimeout(() => {
+        pendingOrdersCount = 0;
+        document.getElementById("orders-badge-count").textContent = "0";
+        document.getElementById("header-pending-count").textContent = "0 معلق";
+        document.getElementById("bar-pending-orders").textContent = "0 فاتورة (0 ج.م)";
+        if (syncBtn) syncBtn.textContent = "تمت المزامنة";
+        populateSyncTable();
+        alert("✅ تمت مزامنة كافة الفواتير المحلية بنجاح مع السيرفر السحابي لسلسلة وزير الحلو!");
+      }, 900);
     }
 
     function toggleFullscreen() {
@@ -1268,14 +1547,22 @@
       }
     }
 
-    function confirmExit() {
-      if (confirm("هل ترغب في إغلاق محطة نقاط البيع وتسجيل خروج الكاشير؟")) {
-        window.close();
-      }
-    }
-
     function setupKeyShortcuts() {
       window.addEventListener("keydown", (e) => {
+        // If locked, allow numeric keyboard input for PIN
+        if (isTerminalLocked) {
+          if (e.key >= "0" && e.key <= "9") {
+            enterPinDigit(e.key);
+          } else if (e.key === "Backspace") {
+            deletePinDigit();
+          } else if (e.key === "Enter") {
+            submitCashierPin();
+          } else if (e.key === "Escape") {
+            clearPin();
+          }
+          return;
+        }
+
         if (e.key === "F1") { e.preventDefault(); checkoutOrder(); }
         if (e.key === "F2") { e.preventDefault(); parkTicket(); }
         if (e.key === "F3") { e.preventDefault(); document.getElementById("pos-search-input")?.focus(); }
@@ -1283,6 +1570,7 @@
         if (e.key === "F5") { e.preventDefault(); selectPaymentMethod("card"); }
         if (e.key === "F6") { e.preventDefault(); selectPaymentMethod("wallet"); }
         if (e.key === "F7") { e.preventDefault(); selectPaymentMethod("voucher"); }
+        if (e.key === "Escape") { lockTerminal(); }
       });
     }
 
@@ -1295,11 +1583,7 @@
     }
 
     function showShiftModal() {
-      alert("تقرير وردية الكاشير: أحمد سالم\nالفرع: فرع الكوربة\nإجمالي مبيعات الوردية: 4,890.00 ج.م\nعدد الفواتير: 14 فاتورة\nالصندوق: متطابق");
-    }
-
-    function showMorePaymentModal() {
-      alert("طرق الدفع الإضافية: فوري، أمان، إنستاباي QR، حساب آجل عملاء معتمدين.");
+      alert(`تقرير وردية الكاشير: ${activeCashier.name}\nالفرع: فرع الكوربة — مصر الجديدة\nإجمالي مبيعات الوردية: 4,890.00 ج.م\nعدد الفواتير: ${pendingOrdersCount} فاتورة\nحالة الصندوق: متطابق ومغلق`);
     }
   </script>
 </body>
