@@ -453,7 +453,21 @@ export const OfflinePosView: React.FC = () => {
       {isTerminalLocked && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-card rounded-3xl border border-border shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 flex flex-col">
-            <div className="bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground p-5 text-center">
+            <div className="bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground p-5 text-center relative">
+              {/* Close / Exit System Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("هل ترغب بالفعل في إغلاق وإيقاف نقطة البيع؟")) {
+                    window.close();
+                  }
+                }}
+                title="إغلاق وإيقاف نقطة البيع"
+                className="absolute top-3.5 end-3.5 size-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs active:scale-95 shadow-xs"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <div className="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
                 <img
                   src="/pos-offline/wazeer-logo.png"

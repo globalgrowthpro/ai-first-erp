@@ -88,12 +88,24 @@
       
       <!-- Modal Top Branding -->
       <div class="bg-gradient-to-r from-[#D10056] to-[#92003c] text-white p-5 text-center relative">
+        <!-- Close / Exit POS System Button -->
+        <button
+          type="button"
+          onclick="exitSystem()"
+          title="إغلاق وإيقاف نقطة البيع"
+          class="absolute top-3.5 end-3.5 size-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs active:scale-95 shadow-sm"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
         <div class="size-16 mx-auto bg-white rounded-2xl p-2 shadow-lg mb-2 flex items-center justify-center">
           <img src="wazeer-logo.png" alt="وزير الحلو" class="h-9 w-auto object-contain" onerror="this.onerror=null; this.src='logo.png';" />
         </div>
         <h2 class="font-black text-lg">سلسلة حلويات وزير الحلو</h2>
         <p class="text-xs text-white/90 font-medium">تسجيل دخول الكاشير وفتح الوردية</p>
-        
       </div>
 
       <!-- Login Body -->
@@ -2298,6 +2310,31 @@
         modalBox.classList.add("shake-anim");
         setTimeout(() => modalBox.classList.remove("shake-anim"), 400);
       }
+    }
+
+    function exitSystem() {
+      const confirmed = confirm("هل ترغب بالفعل في إغلاق وإيقاف نقطة البيع (POS)؟");
+      if (!confirmed) return;
+
+      // Try closing the window/tab directly
+      window.close();
+
+      // Fallback display if direct close is blocked by browser security
+      setTimeout(() => {
+        document.body.innerHTML = `
+          <div class="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center select-none font-sans">
+            <div class="size-20 rounded-3xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-4 shadow-xl">
+              <svg class="w-10 h-10 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            </div>
+            <h2 class="text-xl font-black mb-1">تم إيقاف تشغيل نقطة البيع بنجاح</h2>
+            <p class="text-sm text-slate-400 mb-6 max-w-sm">كافة البيانات والفواتير محفوظة محلياً في الذاكرة الآمنة. يمكنك إغلاق هذه النافذة أو المتصفح الآن بأمان.</p>
+            <button onclick="location.reload()" class="px-5 py-2.5 rounded-2xl bg-[#D10056] text-white text-xs font-bold hover:bg-[#B2054C] transition shadow-lg flex items-center gap-2 cursor-pointer">
+              <span>إعادة تشغيل نقطة البيع</span>
+              <span>🔄</span>
+            </button>
+          </div>
+        `;
+      }, 150);
     }
 
     function submitCashierLogin() {
