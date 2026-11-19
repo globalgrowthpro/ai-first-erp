@@ -13,6 +13,7 @@ import {
   type OfflineShiftRecord,
   type OfflineCashierAuth,
 } from "../db/pos-local-db";
+import { OFFLINE_SEED_PRODUCTS } from "../db/seed-offline-data";
 import { OfflinePosBanner } from "./OfflinePosBanner";
 import { OfflineSyncModal } from "./OfflineSyncModal";
 import { OfflineTerminalSetup } from "./OfflineTerminalSetup";
@@ -66,7 +67,7 @@ export const OfflinePosView: React.FC = () => {
   // Catalog & Cart State
   const [categories, setCategories] = useState<OfflineCategoryRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [products, setProducts] = useState<OfflineProductRecord[]>([]);
+  const [products, setProducts] = useState<OfflineProductRecord[]>(OFFLINE_SEED_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [cart, setCart] = useState<CartLineItem[]>([
     {

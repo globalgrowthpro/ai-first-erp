@@ -1,28 +1,59 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $targetBat = Join-Path $scriptDir "START-POS-OFFLINE.bat"
-$iconPath = Join-Path $scriptDir "pos-icon.ico"
-$desktopPath = [System.Environment]::GetFolderPath("Desktop")
+$iconPath = Join-Path $scriptDir "wazeer-brand-pos.ico"
 
-# Create standard Windows desktop shortcut
+# Check standard desktop locations (including OneDrive redirected desktop)
+$desktopPaths = @(
+    [System.Environment]::GetFolderPath("Desktop"),
+    (Join-Path $env:USERPROFILE "OneDrive\Desktop"),
+    (Join-Path $env:USERPROFILE "Desktop")
+) | Select-Object -Unique
+
 $shortcutName = "Wazeer-POS-Offline.lnk"
-$shortcutFile = Join-Path $desktopPath $shortcutName
 
-$ws = New-Object -ComObject WScript.Shell
-$shortcut = $ws.CreateShortcut($shortcutFile)
-$shortcut.TargetPath = $targetBat
-$shortcut.WorkingDirectory = $scriptDir
-$shortcut.Description = "Wazeer El-Helw - POS Offline Terminal"
+foreach ($desk in $desktopPaths) {
+    if (Test-Path $desk) {
+        $shortcutFile = Join-Path $desk $shortcutName
+        
+        # Remove old cached shortcut file if present
+        if (Test-Path $shortcutFile) {
+            Remove-Item -Path $shortcutFile -Force -ErrorAction SilentlyContinue
+        }
 
-if (Test-Path $iconPath) {
-    $shortcut.IconLocation = "$iconPath,0"
+        $ws = New-Object -ComObject WScript.Shell
+        $shortcut = $ws.CreateShortcut($shortcutFile)
+        $shortcut.TargetPath = $targetBat
+        $shortcut.WorkingDirectory = $scriptDir
+        $shortcut.Description = "سلسلة حلويات وزير الحلو — نقطة البيع POS"
+
+        if (Test-Path $iconPath) {
+            $shortcut.IconLocation = "$iconPath,0"
+        }
+
+        $shortcut.Save()
+
+        if (Test-Path $shortcutFile) {
+            Write-Host "[SUCCESS] Created POS shortcut at: $shortcutFile" -ForegroundColor Green
+        }
+    }
 }
 
-$shortcut.Save()
-
-if (Test-Path $shortcutFile) {
-    Write-Host "`n[SUCCESS] Desktop shortcut created successfully at:" -ForegroundColor Green
-    Write-Host ">> $shortcutFile" -ForegroundColor Cyan
-    Write-Host "You can now double-click the icon on your desktop to launch the POS terminal!`n" -ForegroundColor Green
+# Force Windows Explorer to flush icon cache and repaint desktop icons
+try {
+    Add-Type -TypeDefinition @"
+    using System;
+    using System.Runtime.InteropServices;
+    public class ShellNotifier {
+        [DllImport("shell32.dll")]
+        public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+    }
+"@
+    # 0x08000000 = SHCNE_ASSOCCHANGED
+    [ShellNotifier]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
+    Write-Host "[SUCCESS] Flushed Windows icon cache." -ForegroundColor Cyan
+} catch {
+    # Non-critical fallback
+    ie4uinit.exe -show 2>$null
 }

@@ -1,0 +1,1181 @@
+[
+  {
+    "sku": "SKU-10025",
+    "nameAr": "أرز بلبن اسكندرانى",
+    "nameEn": "Alexandrian Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 70,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10026",
+    "nameAr": "أرز بلبن ايس كريم",
+    "nameEn": "Rice Pudding with Ice Cream",
+    "category": "عشاق الرز",
+    "price": 60,
+    "stock": 25,
+    "image": "../public/products/ice-cream.jpg"
+  },
+  {
+    "sku": "SKU-10027",
+    "nameAr": "أرز بلبن بستاشيو",
+    "nameEn": "Pistachio Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10028",
+    "nameAr": "أرز بلبن خريطة",
+    "nameEn": "Khareeta Rice Pudding (Special Mix)",
+    "category": "عشاق الرز",
+    "price": 80,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10029",
+    "nameAr": "أرز بلبن ساده",
+    "nameEn": "Plain Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 35,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10030",
+    "nameAr": "أرز بلبن سوبر  هيرو",
+    "nameEn": "Super Hero Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10031",
+    "nameAr": "صاج قشطوطة",
+    "nameEn": "Kashtouta Sponge Sheet",
+    "category": "القشطوطة",
+    "price": 95.03,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10032",
+    "nameAr": "صاج فادج ( 1.600 ك )",
+    "nameEn": "Fudge Sheet (1.6kg)",
+    "category": "كيك وتشييز",
+    "price": 91.99,
+    "stock": 30,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10033",
+    "nameAr": "صاج فادج ( 2.200 )",
+    "nameEn": "Fudge Sheet (2.2kg)",
+    "category": "كيك وتشييز",
+    "price": 117.75,
+    "stock": 30,
+    "image": "../public/products/rice-nutella.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10034",
+    "nameAr": "تورت فادج 26 سم",
+    "nameEn": "Fudge Cake Base 26cm",
+    "category": "كيك وتشييز",
+    "price": 56.61,
+    "stock": 30,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10035",
+    "nameAr": "مولتن كيك خام",
+    "nameEn": "Raw Molten Lava Cake",
+    "category": "كيك وتشييز",
+    "price": 12.32,
+    "stock": 30,
+    "image": "../public/products/molten-cake.jpg"
+  },
+  {
+    "sku": "SKU-10036",
+    "nameAr": "صاج ريد فيلفيت",
+    "nameEn": "Red Velvet Sheet",
+    "category": "كيك وتشييز",
+    "price": 74.63,
+    "stock": 30,
+    "image": "../public/products/red-velvet.jpg"
+  },
+  {
+    "sku": "SKU-10037",
+    "nameAr": "تورت ريد فيلفيت 26 سم",
+    "nameEn": "Red Velvet Cake Base 26cm",
+    "category": "كيك وتشييز",
+    "price": 47.36,
+    "stock": 30,
+    "image": "../public/products/red-velvet.jpg"
+  },
+  {
+    "sku": "SKU-10038",
+    "nameAr": "سبونش أبيض",
+    "nameEn": "Vanilla Sponge Sheet",
+    "category": "كيك وتشييز",
+    "price": 56.12,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10039",
+    "nameAr": "سبونش شوكلت",
+    "nameEn": "Chocolate Sponge Sheet",
+    "category": "كيك وتشييز",
+    "price": 71.87,
+    "stock": 30,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10040",
+    "nameAr": "فولكانو ( كيك بوم )",
+    "nameEn": "Volcano Cake Bomb",
+    "category": "كيك وتشييز",
+    "price": 10.86,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10041",
+    "nameAr": "براونيز",
+    "nameEn": "Fudge Brownies Slab",
+    "category": "كيك وتشييز",
+    "price": 193.07,
+    "stock": 30,
+    "image": "../public/products/molten-cake.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10042",
+    "nameAr": "مارجيلان أبيض",
+    "nameEn": "مارجيلان أبيض",
+    "category": "كيك وتشييز",
+    "price": 59.05,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10043",
+    "nameAr": "مارجيلان شوكلت",
+    "nameEn": "مارجيلان شوكلت",
+    "category": "كيك وتشييز",
+    "price": 77.94,
+    "stock": 30,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10044",
+    "nameAr": "بسكوت سابليه",
+    "nameEn": "Sable Biscuit Base",
+    "category": "دنيا الدلع",
+    "price": 67.63,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10045",
+    "nameAr": "أرز باللبن خام",
+    "nameEn": "Raw Cooked Rice Pudding Base",
+    "category": "عشاق الرز",
+    "price": 32.73,
+    "stock": 30,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10046",
+    "nameAr": "أرز بلبن سوبر لوكس",
+    "nameEn": "Super Lux Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 130,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10047",
+    "nameAr": "أرز بلبن صاروخ",
+    "nameEn": "Saroukh (Rocket) Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10048",
+    "nameAr": "أرز بلبن لوتس",
+    "nameEn": "Lotus Biscoff Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 70,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10049",
+    "nameAr": "أرز بلبن مانجواي",
+    "nameEn": "Mangawy (Mango) Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 70,
+    "stock": 25,
+    "image": "../public/products/kashtouta-mango.jpg"
+  },
+  {
+    "sku": "SKU-10050",
+    "nameAr": "أرز بلبن مكسرات",
+    "nameEn": "Mixed Nuts Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 70,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10051",
+    "nameAr": "أرز بلبن نوتيلا",
+    "nameEn": "Nutella Rice Pudding",
+    "category": "عشاق الرز",
+    "price": 65,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10052",
+    "nameAr": "الحله",
+    "nameEn": "Bowl",
+    "category": "الفتة",
+    "price": 150,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10053",
+    "nameAr": "الخضة بستاشيو",
+    "nameEn": "Pistachio shock",
+    "category": "عشاق الرز",
+    "price": 155,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10054",
+    "nameAr": "الخضة شيكولاتة",
+    "nameEn": "Chocolate Shock",
+    "category": "عشاق الرز",
+    "price": 125,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10055",
+    "nameAr": "الخضة كيندر",
+    "nameEn": "Kinder Shock",
+    "category": "عشاق الرز",
+    "price": 125,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10056",
+    "nameAr": "المحترمة قنبلة",
+    "nameEn": "Polite Bomb",
+    "category": "الفتة",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/fatta-wazeer.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10057",
+    "nameAr": "بستك ناو",
+    "nameEn": "Bestek Nao",
+    "category": "عشاق الرز",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10058",
+    "nameAr": "تشيز طاخ بستاشيو",
+    "nameEn": "Cheese Takh Pistachio",
+    "category": "كيك وتشييز",
+    "price": 110,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10059",
+    "nameAr": "تشيز طاخ نوتيلا",
+    "nameEn": "Cheese Takh Nutella",
+    "category": "كيك وتشييز",
+    "price": 90,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10060",
+    "nameAr": "ديناميت",
+    "nameEn": "Dynamite",
+    "category": "الفتة",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/fatta-wazeer.jpg"
+  },
+  {
+    "sku": "SKU-10061",
+    "nameAr": "سنيكرو",
+    "nameEn": "Snickero",
+    "category": "عشاق الرز",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10062",
+    "nameAr": "قنبلة",
+    "nameEn": "Bomb",
+    "category": "الفتة",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/fatta-wazeer.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10063",
+    "nameAr": "كيت كاته",
+    "nameEn": "Keet Kata",
+    "category": "عشاق الرز",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10064",
+    "nameAr": "كيك بوم بستاشيو",
+    "nameEn": "Cake Boom Pistachio",
+    "category": "كيك وتشييز",
+    "price": 110,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10065",
+    "nameAr": "كيك بوم كيندر",
+    "nameEn": "Cake Boom Kinder",
+    "category": "كيك وتشييز",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10066",
+    "nameAr": "كيك بوم لوتس",
+    "nameEn": "Cake Boom Lutos",
+    "category": "كيك وتشييز",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10067",
+    "nameAr": "كيك بوم نوتيلا",
+    "nameEn": "Cake Boom Nutella",
+    "category": "كيك وتشييز",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10068",
+    "nameAr": "كيندر سينجل",
+    "nameEn": "Single Kinder",
+    "category": "عشاق الرز",
+    "price": 105,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10069",
+    "nameAr": "إضافة  فسدق",
+    "nameEn": "add Pistachio",
+    "category": "عشاق الرز",
+    "price": 30,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10070",
+    "nameAr": "إضافة ايس كريم",
+    "nameEn": "Add Ice Cream",
+    "category": "دنيا الدلع",
+    "price": 30,
+    "stock": 25,
+    "image": "../public/products/ice-cream.jpg"
+  },
+  {
+    "sku": "SKU-10071",
+    "nameAr": "إضافة بسبوسة",
+    "nameEn": "Add Basbosa",
+    "category": "علب الهدايا",
+    "price": 20,
+    "stock": 25,
+    "image": "../public/products/baklava-box.jpg"
+  },
+  {
+    "sku": "SKU-10072",
+    "nameAr": "إضافة بسكويت أوريو",
+    "nameEn": "Add Oreo",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10073",
+    "nameAr": "إضافة بسكويت لوتس",
+    "nameEn": "Add Lotus",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10074",
+    "nameAr": "إضافة صوص بستاشيو",
+    "nameEn": "Add Pistachio Sauce",
+    "category": "مشروبات وإضافات",
+    "price": 30,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10075",
+    "nameAr": "إضافة صوص كراميل",
+    "nameEn": "Add Caramel",
+    "category": "مشروبات وإضافات",
+    "price": 20,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10076",
+    "nameAr": "إضافة صوص كندار",
+    "nameEn": "Add Kinder",
+    "category": "مشروبات وإضافات",
+    "price": 20,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10077",
+    "nameAr": "إضافة صوص لوتس بلجيكي",
+    "nameEn": "Add Lotus Sauce",
+    "category": "مشروبات وإضافات",
+    "price": 30,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10078",
+    "nameAr": "إضافة قشطه",
+    "nameEn": "Add Keshta",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10079",
+    "nameAr": "إضافة كنافه",
+    "nameEn": "Add Konafa",
+    "category": "عشاق الرز",
+    "price": 15,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10080",
+    "nameAr": "إضافة مانجا",
+    "nameEn": "Add Mango",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10081",
+    "nameAr": "إضافة مكسرات",
+    "nameEn": "Add Nuts",
+    "category": "عشاق الرز",
+    "price": 35,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10082",
+    "nameAr": "إضافة موز",
+    "nameEn": "Add Banana",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10083",
+    "nameAr": "إضافة نوتيلا",
+    "nameEn": "Add Nutella",
+    "category": "عشاق الرز",
+    "price": 25,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10084",
+    "nameAr": "آيس كريم بولة واحدة",
+    "nameEn": "Ice Cream Bowl",
+    "category": "عشاق الرز",
+    "price": 30,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10085",
+    "nameAr": "آيس كريم ٢ بولة",
+    "nameEn": "Ice Cream @ Bowls",
+    "category": "عشاق الرز",
+    "price": 55,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10086",
+    "nameAr": "اضافة بسكويت",
+    "nameEn": "Add Cone",
+    "category": "عشاق الرز",
+    "price": 5,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10087",
+    "nameAr": "دوناتس انواع",
+    "nameEn": "Donuts",
+    "category": "دنيا الدلع",
+    "price": 35,
+    "stock": 25,
+    "image": "../public/products/donuts.jpg"
+  },
+  {
+    "sku": "SKU-10088",
+    "nameAr": "دوناتس عرض 4 قطع",
+    "nameEn": "Donuts Offer 4 PCS",
+    "category": "دنيا الدلع",
+    "price": 125,
+    "stock": 25,
+    "image": "../public/products/donuts.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10089",
+    "nameAr": "جار تشيز كيك راسبري",
+    "nameEn": "Cheese Cake Rasberry",
+    "category": "كيك وتشييز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10090",
+    "nameAr": "جار تشيز كيك لوتس",
+    "nameEn": "Cheese Cake Lotus",
+    "category": "كيك وتشييز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10091",
+    "nameAr": "جار تشيز كيل شوكليت",
+    "nameEn": "Cheese Cake Chockolate",
+    "category": "كيك وتشييز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10092",
+    "nameAr": "جار دريم كيك",
+    "nameEn": "Drea Cake",
+    "category": "كيك وتشييز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10093",
+    "nameAr": "رويال بندق",
+    "nameEn": "Royal Hazelnut",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10094",
+    "nameAr": "رويال دبي",
+    "nameEn": "Royal Dubai",
+    "category": "عشاق الرز",
+    "price": 80,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10095",
+    "nameAr": "رويال ريد فيلفيت",
+    "nameEn": "Royal Red Velvet",
+    "category": "كيك وتشييز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/red-velvet.jpg"
+  },
+  {
+    "sku": "SKU-10096",
+    "nameAr": "رويال كافيه",
+    "nameEn": "Royal Coffee",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10097",
+    "nameAr": "رويال كرانشي بستاشيو",
+    "nameEn": "Royal Crunchy Pistachio",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10098",
+    "nameAr": "رويال كرانشي لوتس",
+    "nameEn": "Royal Crunchy Lotus",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10099",
+    "nameAr": "رويال كرانشي نوتيلا",
+    "nameEn": "Royal Crunchy Nutella",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10100",
+    "nameAr": "رويال كيت كات",
+    "nameEn": "Royal Keet Kat",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10101",
+    "nameAr": "كرانش لوتس",
+    "nameEn": "Crunchy Lotus",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10102",
+    "nameAr": "متسلطنة مانجو متسطيلة",
+    "nameEn": "Mnago Heaven",
+    "category": "عشاق الرز",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/kashtouta-mango.jpg"
+  },
+  {
+    "sku": "SKU-10103",
+    "nameAr": "طاجن ام على",
+    "nameEn": "Om Ali",
+    "category": "الطواجن",
+    "price": 60,
+    "stock": 25,
+    "image": "../public/products/om-ali.jpg"
+  },
+  {
+    "sku": "SKU-10104",
+    "nameAr": "طاجن ام على قشطة",
+    "nameEn": "Om Ali Keshta",
+    "category": "الطواجن",
+    "price": 70,
+    "stock": 25,
+    "image": "../public/products/om-ali.jpg"
+  },
+  {
+    "sku": "SKU-10105",
+    "nameAr": "طاجن أم على مكسرات",
+    "nameEn": "Om Ali Nuts",
+    "category": "الطواجن",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/om-ali.jpg"
+  },
+  {
+    "sku": "SKU-10106",
+    "nameAr": "طاجن ام علي قشطة مكسرات",
+    "nameEn": "Om Ali Keshta & Nuts",
+    "category": "الطواجن",
+    "price": 90,
+    "stock": 25,
+    "image": "../public/products/om-ali.jpg"
+  },
+  {
+    "sku": "SKU-10107",
+    "nameAr": "طاجن نوتيلا",
+    "nameEn": "Nutella Tajen",
+    "category": "الطواجن",
+    "price": 65,
+    "stock": 25,
+    "image": "../public/products/om-ali.jpg"
+  },
+  {
+    "sku": "SKU-10108",
+    "nameAr": "قشطوطة  نوتيلا",
+    "nameEn": "Kashtota Nutella",
+    "category": "القشطوطة",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10109",
+    "nameAr": "قشطوطة أسكندرانى",
+    "nameEn": "Kashtota Alexandria",
+    "category": "القشطوطة",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10110",
+    "nameAr": "قشطوطة الخريطة",
+    "nameEn": "Kashtota Khareta",
+    "category": "القشطوطة",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10111",
+    "nameAr": "قشطوطة الوزير",
+    "nameEn": "Kashtota Wazeer",
+    "category": "القشطوطة",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10112",
+    "nameAr": "قشطوطة بستاشيو",
+    "nameEn": "Kashtota Pistachio",
+    "category": "القشطوطة",
+    "price": 110,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10113",
+    "nameAr": "قشطوطة ساده",
+    "nameEn": "Kashtota Plain",
+    "category": "القشطوطة",
+    "price": 75,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10114",
+    "nameAr": "قشطوطة سوبر لوكس",
+    "nameEn": "Kashtota Super Lux",
+    "category": "القشطوطة",
+    "price": 125,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10115",
+    "nameAr": "قشطوطة سوبر هيرو",
+    "nameEn": "Kashtota Super Hero",
+    "category": "القشطوطة",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10116",
+    "nameAr": "قشطوطة كراميل",
+    "nameEn": "Kashtota Caramel",
+    "category": "القشطوطة",
+    "price": 80,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10117",
+    "nameAr": "قشطوطة لوتس",
+    "nameEn": "Kashtota Lotus",
+    "category": "القشطوطة",
+    "price": 105,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10118",
+    "nameAr": "قشطوطة مانجو",
+    "nameEn": "Kashtota Mango",
+    "category": "القشطوطة",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/kashtouta-mango.jpg"
+  },
+  {
+    "sku": "SKU-10119",
+    "nameAr": "قشطوطة مكس فروت",
+    "nameEn": "Kashtota Mix Fruit",
+    "category": "القشطوطة",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10120",
+    "nameAr": "قشطوطة مكسرات",
+    "nameEn": "Kashtota Nuts",
+    "category": "القشطوطة",
+    "price": 105,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10121",
+    "nameAr": "قشطوطة أرز اسكندرانى",
+    "nameEn": "Rice pudding Kashtota Alexandria",
+    "category": "عشاق الرز",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10122",
+    "nameAr": "قشطوطة أرز الخريطة",
+    "nameEn": "Rice pudding Kashtota Khareta",
+    "category": "عشاق الرز",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10123",
+    "nameAr": "قشطوطة أرز بستاشيو",
+    "nameEn": "Rice pudding Kashtota Pistachio",
+    "category": "عشاق الرز",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/kashtouta-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10124",
+    "nameAr": "قشطوطة أرز بلبن",
+    "nameEn": "Rice pudding Kashtota Plain",
+    "category": "عشاق الرز",
+    "price": 80,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10125",
+    "nameAr": "قشطوطة أرز بلبن كراميل",
+    "nameEn": "Rice pudding Kashtota Caramel",
+    "category": "عشاق الرز",
+    "price": 90,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10126",
+    "nameAr": "قشطوطة أرز بلبن لوتس",
+    "nameEn": "Rice pudding Kashtota Lotus",
+    "category": "عشاق الرز",
+    "price": 110,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10127",
+    "nameAr": "قشطوطة أرز بلبن مانجو",
+    "nameEn": "Rice pudding Kashtota Mango",
+    "category": "عشاق الرز",
+    "price": 105,
+    "stock": 25,
+    "image": "../public/products/kashtouta-mango.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10128",
+    "nameAr": "قشطوطة أرز بلبن مسكرات",
+    "nameEn": "Rice pudding Kashtota Nuts",
+    "category": "عشاق الرز",
+    "price": 105,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10129",
+    "nameAr": "قشطوطة أرز بلبن نوتيلا",
+    "nameEn": "Rice pudding Kashtota Nutella",
+    "category": "عشاق الرز",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10130",
+    "nameAr": "قشطوطة أرز ميكس فروت",
+    "nameEn": "Rice pudding Kashtota Mix Fruit",
+    "category": "عشاق الرز",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10131",
+    "nameAr": "كشرى اسكندرانى",
+    "nameEn": "Koshary Alexandria",
+    "category": "كشري الحلو",
+    "price": 90,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10132",
+    "nameAr": "كشرى السلطان",
+    "nameEn": "Koshary Sultan",
+    "category": "كشري الحلو",
+    "price": 110,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10133",
+    "nameAr": "كشرى بصل اخضر",
+    "nameEn": "Koshary Pistachio",
+    "category": "كشري الحلو",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10134",
+    "nameAr": "كشرى لوتس",
+    "nameEn": "Koshary Lotus",
+    "category": "كشري الحلو",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/cheesecake-pistachio.jpg"
+  },
+  {
+    "sku": "SKU-10135",
+    "nameAr": "كشرى مانجا",
+    "nameEn": "Koshary Mango",
+    "category": "كشري الحلو",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10136",
+    "nameAr": "كشرى موز كراميل",
+    "nameEn": "Koshary Banana Caramel",
+    "category": "كشري الحلو",
+    "price": 90,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10137",
+    "nameAr": "كشرى ميكس الوزير",
+    "nameEn": "Koshary Mix Wazeer",
+    "category": "كشري الحلو",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10138",
+    "nameAr": "كشرى ميكس فروت",
+    "nameEn": "Koshary Mix Fruit",
+    "category": "كشري الحلو",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10139",
+    "nameAr": "كشرى نوتيلا",
+    "nameEn": "Koshary Nutella",
+    "category": "كشري الحلو",
+    "price": 95,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10140",
+    "nameAr": "كشري سوبر لوكس",
+    "nameEn": "Koshary Super Lux",
+    "category": "كشري الحلو",
+    "price": 120,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10141",
+    "nameAr": "كشري سوبر هيرو",
+    "nameEn": "Koshary Super Hero",
+    "category": "كشري الحلو",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10142",
+    "nameAr": "كشري كيندر",
+    "nameEn": "Koshary Kinder",
+    "category": "كشري الحلو",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/koshary-luxe.jpg"
+  },
+  {
+    "sku": "SKU-10143",
+    "nameAr": "كيكة لندن كيندر",
+    "nameEn": "Cake London Kinder",
+    "category": "كيك وتشييز",
+    "price": 150,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10144",
+    "nameAr": "كيكة لندن كيندر وسط",
+    "nameEn": "Cake London Kinder Medium",
+    "category": "كيك وتشييز",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10145",
+    "nameAr": "كيكة لندن نوتيلا وسط",
+    "nameEn": "Cake London Nutella Medium",
+    "category": "كيك وتشييز",
+    "price": 115,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10146",
+    "nameAr": "كيكة لندن نوتيلا",
+    "nameEn": "Cake London Nutella",
+    "category": "كيك وتشييز",
+    "price": 150,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10147",
+    "nameAr": "مدلعة كراميل",
+    "nameEn": "Medala3a",
+    "category": "دنيا الدلع",
+    "price": 85,
+    "stock": 25,
+    "image": "../public/products/medalaa.jpg"
+  },
+  {
+    "sku": "SKU-10148",
+    "nameAr": "مدلعة مانجو",
+    "nameEn": "Medala3a Mango",
+    "category": "دنيا الدلع",
+    "price": 100,
+    "stock": 25,
+    "image": "../public/products/kashtouta-mango.jpg"
+  },
+  {
+    "sku": "SKU-10149",
+    "nameAr": "مولتن كيك نوتيلا",
+    "nameEn": "Molten Cake Nutella",
+    "category": "كيك وتشييز",
+    "price": 85,
+    "stock": 25,
+    "image": "../public/products/rice-nutella.jpg"
+  },
+  {
+    "sku": "SKU-10150",
+    "nameAr": "عرض هامور 1",
+    "nameEn": "Hamour !",
+    "category": "عشاق الرز",
+    "price": 220,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  },
+  {
+    "sku": "SKU-10151",
+    "nameAr": "عرض هامور ٢",
+    "nameEn": "Hamour 2",
+    "category": "عشاق الرز",
+    "price": 220,
+    "stock": 25,
+    "image": "../public/products/rice-pistachio.jpg",
+    "badge": "فاخر"
+  }
+]
