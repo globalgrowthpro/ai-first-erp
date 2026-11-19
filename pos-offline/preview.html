@@ -110,16 +110,16 @@
         <!-- Username or Code Input -->
         <div>
           <label for="login-username-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>اسم المستخدم أو كود الكاشير:</span>
-            <span class="text-[10px] text-slate-400 font-normal">Username / Code</span>
+            <span>اسم المستخدم أو البريد الإلكتروني (Online POS Account):</span>
+            <span class="text-[10px] text-slate-400 font-normal">Username / Email</span>
           </label>
           <div class="relative">
             <input
               id="login-username-input"
               type="text"
               autocomplete="username"
-              placeholder="مثال: cashier_korba أو 101"
-              value="cashier_korba"
+              placeholder="مثال: cashier أو cashier_korba"
+              value="cashier"
               class="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition"
               oninput="hideLoginError()"
               onkeydown="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('login-password-input').focus(); }"
@@ -131,7 +131,7 @@
         <!-- Password Input -->
         <div>
           <label for="login-password-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>كلمة المرور:</span>
+            <span>كلمة المرور (Online POS Password):</span>
             <span class="text-[10px] text-slate-400 font-normal">Password</span>
           </label>
           <div class="relative">
@@ -140,7 +140,7 @@
               type="password"
               autocomplete="current-password"
               placeholder="أدخل كلمة المرور..."
-              value="Korba@2026"
+              value="Pos@123456"
               class="w-full text-xs font-bold py-2.5 px-3 ps-9 pe-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition font-mono"
               oninput="hideLoginError()"
               onkeydown="if(event.key === 'Enter') { event.preventDefault(); submitCashierLogin(); }"
@@ -161,30 +161,30 @@
         <!-- Quick Demo Accounts (One-click fill) -->
         <div class="pt-1">
           <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
-            <span>⚡ تعبئة سريعة للتجربة:</span>
-            <span class="text-[10px] text-slate-400">انقر للتعبئة الفورية</span>
+            <span>⚡ تعبئة سريعة لحسابات Online POS:</span>
+            <span class="text-[10px] text-slate-400">انقر للتعبئة المباشرة</span>
           </div>
           <div class="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onclick="fillCredentials('cashier', 'Pos@123456')"
+              class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
+            >
+              كاشير Online POS
+            </button>
             <button
               type="button"
               onclick="fillCredentials('cashier_korba', 'Korba@2026')"
               class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
             >
-              أحمد سالم (101)
+              كاشير الكوربة
             </button>
             <button
               type="button"
-              onclick="fillCredentials('cashier_abbas', 'Abbas@2026')"
+              onclick="fillCredentials('wazeerAdmin', '#786$Wazeri')"
               class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
             >
-              محمد فتحي (102)
-            </button>
-            <button
-              type="button"
-              onclick="fillCredentials('admin', 'Admin@2026')"
-              class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
-            >
-              المشرف العام (999)
+              أدمن وزير الحلو
             </button>
           </div>
         </div>
@@ -199,9 +199,11 @@
             <span>تسجيل الدخول وفتح نقطة البيع</span>
             <svg class="w-4 h-4 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
-          <p class="text-[10px] text-center text-slate-500 mt-2 leading-relaxed">
-            💡 اسم المستخدم: <strong class="font-mono text-[#D10056]">cashier_korba</strong> (أو <strong class="font-mono text-[#D10056]">101</strong>) • كلمة المرور: <strong class="font-mono text-[#D10056]">Korba@2026</strong> (أو <strong class="font-mono text-[#D10056]">123456</strong>)
-          </p>
+          <div class="mt-2.5 p-2 rounded-xl bg-slate-100/80 border border-slate-200 space-y-1 text-[10px] text-slate-600 text-start leading-relaxed">
+            <div>🔑 <strong>حساب كاشير Online POS الافتراضي:</strong> <code class="font-mono text-[#D10056] font-bold">cashier</code> / <code class="font-mono text-[#D10056] font-bold">Pos@123456</code></div>
+            <div>📍 <strong>كاشير فرع الكوربة:</strong> <code class="font-mono text-[#D10056] font-bold">cashier_korba</code> / <code class="font-mono text-[#D10056] font-bold">Korba@2026</code></div>
+            <div>🛡️ <strong>حساب مسؤول النظام:</strong> <code class="font-mono text-[#D10056] font-bold">wazeerAdmin</code> / <code class="font-mono text-[#D10056] font-bold">#786$Wazeri</code></div>
+          </div>
         </div>
 
       </form>
@@ -1973,47 +1975,182 @@
   }
 ];
 
-    // Cashier & Staff Credentials Database (Offline Verified)
+    // =========================================================================
+    // EXACT SAME CREDENTIALS AS ONLINE POS & ERP (FROM src/lib/auth-store.ts)
+    // =========================================================================
     const REGISTERED_ACCOUNTS = [
+      // 1. Primary Online POS Cashier (POS_CASHIER_CREDENTIALS: cashier / Pos@123456)
       {
-        username: "cashier_korba",
-        code: "101",
-        aliases: ["101", "ahmed", "ahmed_salem", "كاشير"],
-        passwords: ["Korba@2026", "123456", "101", "1234"],
-        name: "أحمد سالم",
+        username: "cashier",
+        code: "100",
+        aliases: ["cashier@wazeer-elhelw.com", "pos_cashier", "كاشير", "100"],
+        passwords: ["Pos@123456", "123456", "Pos@2026"],
+        name: "كاشير نقطة البيع (أحمد سالم)",
         role: "كاشير رئيسي",
         avatar: "👨‍🍳",
         branch: "فرع الكوربة — مصر الجديدة"
       },
+      // 2. Online Administrator (ADMIN_ACCOUNT_CREDENTIALS: wazeerAdmin / #786$Wazeri)
+      {
+        username: "wazeerAdmin",
+        code: "999",
+        aliases: ["wazeeradmin", "admin", "wazeeradmin@erp.org", "hafez@wazeer-elhelw.com", "مدير", "999"],
+        passwords: ["#786$Wazeri", "Admin@2026", "123456", "0000"],
+        name: "أدمين وزير الحلو (مسؤول النظام)",
+        role: "مسؤول النظام",
+        avatar: "👨‍💼",
+        branch: "الإدارة العامة للفروع"
+      },
+      // 3. Official Branch Cashiers Registry (All 15 Branches from BRANCH_CASHIERS_REGISTRY)
+      {
+        username: "cashier_korba",
+        code: "101",
+        aliases: ["cashier.korba@wazeer-elhelw.com", "korba", "101", "أحمد سالم"],
+        passwords: ["Korba@2026", "Pos@123456", "101", "123456"],
+        name: "أحمد سالم",
+        role: "كاشير رئيسي",
+        avatar: "👨‍🍳",
+        branch: "فرع الكوربة"
+      },
       {
         username: "cashier_abbas",
         code: "102",
-        aliases: ["102", "mohamed", "fathy"],
-        passwords: ["Abbas@2026", "123456", "102", "1234"],
+        aliases: ["cashier.abbas@wazeer-elhelw.com", "abbas", "102", "محمد فتحي"],
+        passwords: ["Abbas@2026", "Pos@123456", "102", "123456"],
         name: "محمد فتحي",
         role: "كاشير صالة",
         avatar: "👨‍🍳",
-        branch: "فرع عباس العقاد — مدينة نصر"
+        branch: "فرع عباس العقاد"
       },
       {
-        username: "cashier_zayed",
+        username: "cashier_helmeya",
         code: "103",
-        aliases: ["103", "khaled", "saeed"],
-        passwords: ["Zayed@2026", "123456", "103", "1234"],
+        aliases: ["cashier.helmeya@wazeer-elhelw.com", "helmeya", "103"],
+        passwords: ["Helmeya@2026", "Pos@123456", "103"],
         name: "خالد سعيد",
         role: "كاشير تيك أواي",
         avatar: "👨‍🍳",
-        branch: "فرع الشيخ زايد — ووك أوف كايرو"
+        branch: "فرع الحلمية"
       },
       {
-        username: "admin",
-        code: "999",
-        aliases: ["999", "wazeeradmin", "manager", "مشرف"],
-        passwords: ["Admin@2026", "123456", "999", "0000"],
-        name: "المشرف العام",
-        role: "مشرف الفرع",
-        avatar: "👨‍💼",
-        branch: "الإدارة العامة للفروع"
+        username: "cashier_khosoos",
+        code: "104",
+        aliases: ["cashier.khosoos@wazeer-elhelw.com", "khosoos", "104"],
+        passwords: ["Khosoos@2026", "Pos@123456", "104"],
+        name: "محمود بدوي",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع الخصوص"
+      },
+      {
+        username: "cashier_downtown",
+        code: "105",
+        aliases: ["cashier.downtown@wazeer-elhelw.com", "downtown", "105"],
+        passwords: ["Balad@2026", "Pos@123456", "105"],
+        name: "أشرف عثمان",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع وسط البلد"
+      },
+      {
+        username: "cashier_giza",
+        code: "106",
+        aliases: ["cashier.giza@wazeer-elhelw.com", "giza", "106"],
+        passwords: ["Giza@2026", "Pos@123456", "106"],
+        name: "حسام حسن",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع الجيزة"
+      },
+      {
+        username: "cashier_faisal",
+        code: "107",
+        aliases: ["cashier.faisal@wazeer-elhelw.com", "faisal", "107"],
+        passwords: ["Faisal@2026", "Pos@123456", "107"],
+        name: "عادل رمزي",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع فيصل"
+      },
+      {
+        username: "cashier_darsalam",
+        code: "108",
+        aliases: ["cashier.darsalam@wazeer-elhelw.com", "darsalam", "108"],
+        passwords: ["Salam@2026", "Pos@123456", "108"],
+        name: "كرم عبد العظيم",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع دار السلام"
+      },
+      {
+        username: "cashier_october",
+        code: "109",
+        aliases: ["cashier.october@wazeer-elhelw.com", "october", "109"],
+        passwords: ["October@2026", "Pos@123456", "109"],
+        name: "أيمن الشاذلي",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع حدائق أكتوبر"
+      },
+      {
+        username: "cashier_ahram",
+        code: "110",
+        aliases: ["cashier.ahram@wazeer-elhelw.com", "ahram", "110"],
+        passwords: ["Ahram@2026", "Pos@123456", "110"],
+        name: "ياسر مصطفى",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع حدائق الأهرام"
+      },
+      {
+        username: "cashier_hosary",
+        code: "111",
+        aliases: ["cashier.hosary@wazeer-elhelw.com", "hosary", "111"],
+        passwords: ["Hosary@2026", "Pos@123456", "111"],
+        name: "عمرو شريف",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع الحصري"
+      },
+      {
+        username: "cashier_zayed",
+        code: "112",
+        aliases: ["cashier.zayed@wazeer-elhelw.com", "sheikh_zayed", "112"],
+        passwords: ["Zayed@2026", "Pos@123456", "112"],
+        name: "عمر الدسوقي",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع الشيخ زايد"
+      },
+      {
+        username: "cashier_mansoura",
+        code: "113",
+        aliases: ["cashier.mansoura@wazeer-elhelw.com", "mansoura", "113"],
+        passwords: ["Mansoura@2026", "Pos@123456", "113"],
+        name: "سامح التابعي",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع المنصورة"
+      },
+      {
+        username: "cashier_banha",
+        code: "114",
+        aliases: ["cashier.banha@wazeer-elhelw.com", "banha", "114"],
+        passwords: ["Banha@2026", "Pos@123456", "114"],
+        name: "نبيل شكري",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع بنها"
+      },
+      {
+        username: "cashier_tenth",
+        code: "115",
+        aliases: ["cashier.tenth@wazeer-elhelw.com", "tenth", "115"],
+        passwords: ["Tenth@2026", "Pos@123456", "115"],
+        name: "طارق سليم",
+        role: "كاشير",
+        avatar: "👨‍🍳",
+        branch: "فرع العاشر من رمضان"
       }
     ];
 

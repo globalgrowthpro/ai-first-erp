@@ -62,11 +62,11 @@ interface CartLineItem {
 export const OfflinePosView: React.FC = () => {
   // Cashier Authentication State (LOCKED BY DEFAULT FOR SECURITY)
   const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(true);
-  const [loginUsername, setLoginUsername] = useState<string>("cashier_korba");
-  const [loginPassword, setLoginPassword] = useState<string>("Korba@2026");
+  const [loginUsername, setLoginUsername] = useState<string>("cashier");
+  const [loginPassword, setLoginPassword] = useState<string>("Pos@123456");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [activeCashierName, setActiveCashierName] = useState<string>("أحمد سالم");
+  const [activeCashierName, setActiveCashierName] = useState<string>("كاشير نقطة البيع (أحمد سالم)");
   const [activeCashierRole, setActiveCashierRole] = useState<string>("كاشير رئيسي");
 
   // Catalog & Cart State
@@ -133,39 +133,146 @@ export const OfflinePosView: React.FC = () => {
     return unsub;
   }, [selectedCategory]);
 
-  // Cashier Authentication Handling (Username & Password)
+  // Cashier Authentication Handling (EXACT CREDENTIALS FROM ONLINE POS & ERP: src/lib/auth-store.ts)
   const registeredAccounts = [
+    // 1. Primary Online POS Cashier (POS_CASHIER_CREDENTIALS)
+    {
+      username: "cashier",
+      code: "100",
+      aliases: ["cashier@wazeer-elhelw.com", "pos_cashier", "كاشير", "100"],
+      passwords: ["Pos@123456", "123456", "Pos@2026"],
+      name: "كاشير نقطة البيع (أحمد سالم)",
+      role: "كاشير رئيسي",
+    },
+    // 2. Online Administrator (ADMIN_ACCOUNT_CREDENTIALS)
+    {
+      username: "wazeerAdmin",
+      code: "999",
+      aliases: ["wazeeradmin", "admin", "wazeeradmin@erp.org", "hafez@wazeer-elhelw.com", "مدير", "999"],
+      passwords: ["#786$Wazeri", "Admin@2026", "123456", "0000"],
+      name: "أدمين وزير الحلو (مسؤول النظام)",
+      role: "مسؤول النظام",
+    },
+    // 3. Official Branch Cashiers Registry (All 15 Branches from BRANCH_CASHIERS_REGISTRY)
     {
       username: "cashier_korba",
       code: "101",
-      aliases: ["101", "ahmed", "ahmed_salem", "كاشير"],
-      passwords: ["Korba@2026", "123456", "101", "1234"],
-      name: "أحمد سالم",
+      aliases: ["cashier.korba@wazeer-elhelw.com", "korba", "101", "أحمد سالم"],
+      passwords: ["Korba@2026", "Pos@123456", "101", "123456"],
+      name: "أحمد سالم (الكوربة)",
       role: "كاشير رئيسي",
     },
     {
       username: "cashier_abbas",
       code: "102",
-      aliases: ["102", "mohamed", "fathy"],
-      passwords: ["Abbas@2026", "123456", "102", "1234"],
-      name: "محمد فتحي",
+      aliases: ["cashier.abbas@wazeer-elhelw.com", "abbas", "102", "محمد فتحي"],
+      passwords: ["Abbas@2026", "Pos@123456", "102", "123456"],
+      name: "محمد فتحي (عباس العقاد)",
       role: "كاشير صالة",
     },
     {
-      username: "cashier_zayed",
+      username: "cashier_helmeya",
       code: "103",
-      aliases: ["103", "khaled", "saeed"],
-      passwords: ["Zayed@2026", "123456", "103", "1234"],
-      name: "خالد سعيد",
+      aliases: ["cashier.helmeya@wazeer-elhelw.com", "helmeya", "103"],
+      passwords: ["Helmeya@2026", "Pos@123456", "103"],
+      name: "خالد سعيد (الحلمية)",
       role: "كاشير تيك أواي",
     },
     {
-      username: "admin",
-      code: "999",
-      aliases: ["999", "wazeeradmin", "manager", "مشرف"],
-      passwords: ["Admin@2026", "123456", "999", "0000"],
-      name: "المشرف العام",
-      role: "مشرف الفرع",
+      username: "cashier_khosoos",
+      code: "104",
+      aliases: ["cashier.khosoos@wazeer-elhelw.com", "khosoos", "104"],
+      passwords: ["Khosoos@2026", "Pos@123456", "104"],
+      name: "محمود بدوي (الخصوص)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_downtown",
+      code: "105",
+      aliases: ["cashier.downtown@wazeer-elhelw.com", "downtown", "105"],
+      passwords: ["Balad@2026", "Pos@123456", "105"],
+      name: "أشرف عثمان (وسط البلد)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_giza",
+      code: "106",
+      aliases: ["cashier.giza@wazeer-elhelw.com", "giza", "106"],
+      passwords: ["Giza@2026", "Pos@123456", "106"],
+      name: "حسام حسن (الجيزة)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_faisal",
+      code: "107",
+      aliases: ["cashier.faisal@wazeer-elhelw.com", "faisal", "107"],
+      passwords: ["Faisal@2026", "Pos@123456", "107"],
+      name: "عادل رمزي (فيصل)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_darsalam",
+      code: "108",
+      aliases: ["cashier.darsalam@wazeer-elhelw.com", "darsalam", "108"],
+      passwords: ["Salam@2026", "Pos@123456", "108"],
+      name: "كرم عبد العظيم (دار السلام)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_october",
+      code: "109",
+      aliases: ["cashier.october@wazeer-elhelw.com", "october", "109"],
+      passwords: ["October@2026", "Pos@123456", "109"],
+      name: "أيمن الشاذلي (حدائق أكتوبر)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_ahram",
+      code: "110",
+      aliases: ["cashier.ahram@wazeer-elhelw.com", "ahram", "110"],
+      passwords: ["Ahram@2026", "Pos@123456", "110"],
+      name: "ياسر مصطفى (حدائق الأهرام)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_hosary",
+      code: "111",
+      aliases: ["cashier.hosary@wazeer-elhelw.com", "hosary", "111"],
+      passwords: ["Hosary@2026", "Pos@123456", "111"],
+      name: "عمرو شريف (الحصري)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_zayed",
+      code: "112",
+      aliases: ["cashier.zayed@wazeer-elhelw.com", "sheikh_zayed", "112"],
+      passwords: ["Zayed@2026", "Pos@123456", "112"],
+      name: "عمر الدسوقي (الشيخ زايد)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_mansoura",
+      code: "113",
+      aliases: ["cashier.mansoura@wazeer-elhelw.com", "mansoura", "113"],
+      passwords: ["Mansoura@2026", "Pos@123456", "113"],
+      name: "سامح التابعي (المنصورة)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_banha",
+      code: "114",
+      aliases: ["cashier.banha@wazeer-elhelw.com", "banha", "114"],
+      passwords: ["Banha@2026", "Pos@123456", "114"],
+      name: "نبيل شكري (بنها)",
+      role: "كاشير",
+    },
+    {
+      username: "cashier_tenth",
+      code: "115",
+      aliases: ["cashier.tenth@wazeer-elhelw.com", "tenth", "115"],
+      passwords: ["Tenth@2026", "Pos@123456", "115"],
+      name: "طارق سليم (العاشر من رمضان)",
+      role: "كاشير",
     },
   ];
 
@@ -375,8 +482,8 @@ export const OfflinePosView: React.FC = () => {
               {/* Username Input */}
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
-                  <span>اسم المستخدم أو كود الكاشير:</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">Username / Code</span>
+                  <span>اسم المستخدم أو البريد الإلكتروني (Online POS Account):</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Username / Email</span>
                 </label>
                 <div className="relative">
                   <input
@@ -386,7 +493,7 @@ export const OfflinePosView: React.FC = () => {
                       setLoginUsername(e.target.value);
                       setLoginError(null);
                     }}
-                    placeholder="مثال: cashier_korba أو 101"
+                    placeholder="مثال: cashier أو cashier_korba"
                     className="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 transition"
                   />
                   <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -396,7 +503,7 @@ export const OfflinePosView: React.FC = () => {
               {/* Password Input */}
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
-                  <span>كلمة المرور:</span>
+                  <span>كلمة المرور (Online POS Password):</span>
                   <span className="text-[10px] text-muted-foreground font-normal">Password</span>
                 </label>
                 <div className="relative">
@@ -425,10 +532,21 @@ export const OfflinePosView: React.FC = () => {
               {/* Demo Accounts Quick-fill */}
               <div className="pt-1">
                 <div className="text-[11px] font-bold text-muted-foreground mb-1.5 flex items-center justify-between">
-                  <span>⚡ تعبئة سريعة للتجربة:</span>
+                  <span>⚡ تعبئة سريعة لحسابات Online POS:</span>
                   <span className="text-[10px] text-muted-foreground/70">انقر للتعبئة الفورية</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginUsername("cashier");
+                      setLoginPassword("Pos@123456");
+                      setLoginError(null);
+                    }}
+                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
+                  >
+                    كاشير Online POS
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -438,29 +556,18 @@ export const OfflinePosView: React.FC = () => {
                     }}
                     className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
                   >
-                    أحمد سالم (101)
+                    كاشير الكوربة
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setLoginUsername("cashier_abbas");
-                      setLoginPassword("Abbas@2026");
+                      setLoginUsername("wazeerAdmin");
+                      setLoginPassword("#786$Wazeri");
                       setLoginError(null);
                     }}
                     className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
                   >
-                    محمد فتحي (102)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginUsername("admin");
-                      setLoginPassword("Admin@2026");
-                      setLoginError(null);
-                    }}
-                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
-                  >
-                    المشرف العام (999)
+                    أدمن وزير الحلو
                   </button>
                 </div>
               </div>
@@ -474,9 +581,11 @@ export const OfflinePosView: React.FC = () => {
                   <span>تسجيل الدخول وفتح نقطة البيع</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <p className="text-[10px] text-center text-muted-foreground mt-2 leading-relaxed">
-                  💡 اسم المستخدم: <strong className="font-mono text-primary">cashier_korba</strong> (أو <strong className="font-mono text-primary">101</strong>) • كلمة المرور: <strong className="font-mono text-primary">Korba@2026</strong> (أو <strong className="font-mono text-primary">123456</strong>)
-                </p>
+                <div className="mt-2.5 p-2 rounded-xl bg-muted/50 border border-border/60 space-y-1 text-[10px] text-muted-foreground text-start leading-relaxed">
+                  <div>🔑 <strong>حساب كاشير Online POS:</strong> <code class="font-mono text-primary font-bold">cashier</code> / <code class="font-mono text-primary font-bold">Pos@123456</code></div>
+                  <div>📍 <strong>كاشير فرع الكوربة:</strong> <code class="font-mono text-primary font-bold">cashier_korba</code> / <code class="font-mono text-primary font-bold">Korba@2026</code></div>
+                  <div>🛡️ <strong>حساب مسؤول النظام:</strong> <code class="font-mono text-primary font-bold">wazeerAdmin</code> / <code class="font-mono text-primary font-bold">#786$Wazeri</code></div>
+                </div>
               </div>
             </form>
           </div>
