@@ -27,6 +27,8 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 55,
     stock: 45,
     unit: "طاجن",
+    image: "/products/om-ali.jpg",
+    badge: "الأكثر طلباً",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -41,6 +43,8 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 42,
     stock: 28,
     unit: "علبة",
+    image: "/products/kashtouta-pistachio.jpg",
+    badge: "جديد",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -55,6 +59,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 60,
     stock: 35,
     unit: "علبة",
+    image: "/products/kashtouta-mango.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -69,6 +74,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 28,
     stock: 50,
     unit: "طاجن",
+    image: "/products/rice-nutella.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -83,6 +89,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 38,
     stock: 32,
     unit: "كاسة",
+    image: "/products/fatta-wazeer.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -98,7 +105,9 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     price: 310,
     costPrice: 160,
     stock: 18,
-    unit: "صينية وسط",
+    unit: "صينية",
+    image: "/products/cheesecake-pistachio.jpg",
+    badge: "ساخن",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -113,6 +122,8 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 130,
     stock: 60,
     unit: "طبق 1 كجم",
+    image: "/products/baklava-box.jpg",
+    badge: "مميز",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -127,6 +138,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 95,
     stock: 25,
     unit: "صينية",
+    image: "/products/medalaa.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -141,6 +153,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 120,
     stock: 30,
     unit: "علبة 500جم",
+    image: "/products/baklava-box.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -155,6 +168,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 85,
     stock: 40,
     unit: "كيلو",
+    image: "/products/koshary-luxe.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -171,6 +185,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 220,
     stock: 12,
     unit: "تورتة",
+    image: "/products/molten-cake.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -185,6 +200,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 200,
     stock: 10,
     unit: "تورتة",
+    image: "/products/red-velvet.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -199,6 +215,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 135,
     stock: 22,
     unit: "دستة",
+    image: "/products/donuts.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -215,6 +232,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 32,
     stock: 45,
     unit: "كاسة",
+    image: "/products/ice-cream.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -229,6 +247,7 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 35,
     stock: 38,
     unit: "كاسة",
+    image: "/products/rice-pistachio.jpg",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -245,6 +264,8 @@ export const OFFLINE_SEED_PRODUCTS: OfflineProductRecord[] = [
     costPrice: 350,
     stock: 15,
     unit: "صندوق فاخر",
+    image: "/products/baklava-box.jpg",
+    badge: "VIP",
     isAvailable: true,
     updatedAt: "2026-11-19T00:00:00Z",
   },
@@ -255,7 +276,6 @@ export const OFFLINE_SEED_CASHIERS: OfflineCashierAuth[] = [
     cashierId: "usr-korba",
     branchId: "korba",
     nameAr: "أحمد سالم (الكوربة)",
-    // SHA-256 for PIN: "1234" (03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4)
     pinHash: "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
     role: "pos_cashier",
     permissions: ["create_order", "print_receipt", "refund_upto_500", "close_shift"],
@@ -274,7 +294,6 @@ export const OFFLINE_SEED_CASHIERS: OfflineCashierAuth[] = [
     cashierId: "usr-supervisor",
     branchId: "korba",
     nameAr: "المشرف العام (فرع الكوربة)",
-    // SHA-256 for PIN: "9999" (c51ce410c124a10e0db5e4b97fc2af39)
     pinHash: "c51ce410c124a10e0db5e4b97fc2af3973a90995f1a675db909ac26f01b78923",
     role: "pos_supervisor",
     permissions: ["create_order", "unlimited_discount", "void_order", "reconcile_shift", "export_offline_queue"],
@@ -282,9 +301,6 @@ export const OFFLINE_SEED_CASHIERS: OfflineCashierAuth[] = [
   },
 ];
 
-/**
- * Seed initial catalog & credentials into local IndexedDB if empty
- */
 export async function seedInitialOfflineData(): Promise<{ productsCount: number; categoriesCount: number }> {
   const existingProds = await posLocalDb.count("products_cache");
   if (existingProds === 0) {
@@ -292,7 +308,6 @@ export async function seedInitialOfflineData(): Promise<{ productsCount: number;
     await posLocalDb.putBulk("products_cache", OFFLINE_SEED_PRODUCTS);
     await posLocalDb.putBulk("cashiers_auth", OFFLINE_SEED_CASHIERS);
 
-    // Initial default terminal config
     await posLocalDb.put("terminal_config", {
       key: "active_branch",
       value: {

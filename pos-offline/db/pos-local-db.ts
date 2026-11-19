@@ -62,6 +62,8 @@ export interface OfflineProductRecord {
   costPrice?: number;
   stock: number;
   unit: string;
+  image?: string;
+  badge?: string;
   isAvailable: boolean;
   updatedAt: string;
 }
