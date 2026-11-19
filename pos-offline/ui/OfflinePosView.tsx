@@ -62,8 +62,8 @@ interface CartLineItem {
 export const OfflinePosView: React.FC = () => {
   // Cashier Authentication State (LOCKED BY DEFAULT FOR SECURITY)
   const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(true);
-  const [loginUsername, setLoginUsername] = useState<string>("cashier");
-  const [loginPassword, setLoginPassword] = useState<string>("Pos@123456");
+  const [loginUsername, setLoginUsername] = useState<string>("");
+  const [loginPassword, setLoginPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [activeCashierName, setActiveCashierName] = useState<string>("كاشير نقطة البيع (أحمد سالم)");
@@ -482,7 +482,7 @@ export const OfflinePosView: React.FC = () => {
               {/* Username Input */}
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
-                  <span>اسم المستخدم أو البريد الإلكتروني (Online POS Account):</span>
+                  <span>اسم المستخدم أو البريد الإلكتروني:</span>
                   <span className="text-[10px] text-muted-foreground font-normal">Username / Email</span>
                 </label>
                 <div className="relative">
@@ -493,7 +493,7 @@ export const OfflinePosView: React.FC = () => {
                       setLoginUsername(e.target.value);
                       setLoginError(null);
                     }}
-                    placeholder="مثال: cashier أو cashier_korba"
+                    placeholder="أدخل اسم المستخدم أو البريد..."
                     className="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 transition"
                   />
                   <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -503,7 +503,7 @@ export const OfflinePosView: React.FC = () => {
               {/* Password Input */}
               <div>
                 <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
-                  <span>كلمة المرور (Online POS Password):</span>
+                  <span>كلمة المرور:</span>
                   <span className="text-[10px] text-muted-foreground font-normal">Password</span>
                 </label>
                 <div className="relative">
@@ -514,7 +514,7 @@ export const OfflinePosView: React.FC = () => {
                       setLoginPassword(e.target.value);
                       setLoginError(null);
                     }}
-                    placeholder="أدخل كلمة المرور..."
+                    placeholder="••••••••"
                     className="w-full text-xs font-bold py-2.5 px-3 ps-9 pe-9 rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 transition font-mono"
                   />
                   <Lock className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -529,49 +529,6 @@ export const OfflinePosView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Demo Accounts Quick-fill */}
-              <div className="pt-1">
-                <div className="text-[11px] font-bold text-muted-foreground mb-1.5 flex items-center justify-between">
-                  <span>⚡ تعبئة سريعة لحسابات Online POS:</span>
-                  <span className="text-[10px] text-muted-foreground/70">انقر للتعبئة الفورية</span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginUsername("cashier");
-                      setLoginPassword("Pos@123456");
-                      setLoginError(null);
-                    }}
-                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
-                  >
-                    كاشير Online POS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginUsername("cashier_korba");
-                      setLoginPassword("Korba@2026");
-                      setLoginError(null);
-                    }}
-                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
-                  >
-                    كاشير الكوربة
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginUsername("wazeerAdmin");
-                      setLoginPassword("#786$Wazeri");
-                      setLoginError(null);
-                    }}
-                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
-                  >
-                    أدمن وزير الحلو
-                  </button>
-                </div>
-              </div>
-
               {/* Submit Button */}
               <div className="pt-2">
                 <button
@@ -581,11 +538,6 @@ export const OfflinePosView: React.FC = () => {
                   <span>تسجيل الدخول وفتح نقطة البيع</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <div className="mt-2.5 p-2 rounded-xl bg-muted/50 border border-border/60 space-y-1 text-[10px] text-muted-foreground text-start leading-relaxed">
-                  <div>🔑 <strong>حساب كاشير Online POS:</strong> <code class="font-mono text-primary font-bold">cashier</code> / <code class="font-mono text-primary font-bold">Pos@123456</code></div>
-                  <div>📍 <strong>كاشير فرع الكوربة:</strong> <code class="font-mono text-primary font-bold">cashier_korba</code> / <code class="font-mono text-primary font-bold">Korba@2026</code></div>
-                  <div>🛡️ <strong>حساب مسؤول النظام:</strong> <code class="font-mono text-primary font-bold">wazeerAdmin</code> / <code class="font-mono text-primary font-bold">#786$Wazeri</code></div>
-                </div>
               </div>
             </form>
           </div>
