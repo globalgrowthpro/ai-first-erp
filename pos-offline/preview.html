@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>واجهات نظام نقاط البيع بدون إنترنت (POS Offline System) — وزير الحلو</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#fbf7ee',
+              500: '#d97706',
+              600: '#b45309',
+              900: '#451a03',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .pulse-glow {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-white">
+
+  <!-- Main Navigation Tabs Header -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-4 py-3 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="size-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-amber-500/20">
+          و
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-black text-white">سلسلة حلويات وزير الحلو</h1>
+            <span class="text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">تصميم واجهات POS Offline</span>
+          </div>
+          <p class="text-xs text-slate-400">معاينة الشاشات التفاعلية قبل البدء في البرمجة الميدانية</p>
+        </div>
+      </div>
+
+      <!-- Screen Switcher Pills -->
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-bold gap-1">
+        <button onclick="switchScreen('screen-pos')" id="tab-screen-pos" class="tab-btn px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 shadow-sm transition">
+          1. شاشة الكاشير (وضع Offline)
+        </button>
+        <button onclick="switchScreen('screen-sync')" id="tab-screen-sync" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          2. لوحة المزامنة (Outbox Queue)
+        </button>
+        <button onclick="switchScreen('screen-setup')" id="tab-screen-setup" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          3. إعداد العتاد والفرع (Hardware Setup)
+        </button>
+      </div>
+
+      <!-- Quick Interactive Offline Toggle -->
+      <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60 text-xs">
+        <span class="text-slate-400 font-semibold">محاكاة الشبكة:</span>
+        <button onclick="toggleNetwork()" id="network-btn" class="flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30">
+          <span class="size-2 rounded-full bg-red-500 animate-pulse"></span>
+          <span>منقطع (Offline)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SCREEN 1: POS CASHIER TERMINAL (OFFLINE MODE) -->
+  <main id="screen-pos" class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col gap-3">
+    <!-- Top Offline Alert Banner -->
+    <div id="offline-banner" class="bg-gradient-to-r from-red-950 via-red-900 to-amber-950 border border-red-500/50 rounded-2xl p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 text-lg">
+          📡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-red-200 text-sm">وضع غير متصل بالإنترنت (Offline Mode نشط)</span>
+            <span class="bg-red-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full pulse-glow">حفظ محلي آمن</span>
+          </div>
+          <p class="text-slate-300 text-[11px] mt-0.5">
+            البيع مستمر بشكل طبيعي 100%. الفواتير تُحفظ في الذاكرة المحلية (IndexedDB) وتُطبع فوراً.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-900/90 border border-slate-700 px-3 py-1.5 rounded-xl flex items-center gap-2">
+          <span class="text-slate-400">الفواتير المعلقة محلياً:</span>
+          <span id="pending-count-badge" class="font-mono font-black text-amber-400 text-sm">14 فاتورة (4,890 ج.م)</span>
+        </div>
+        <button onclick="simulateSync()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-sm">
+          <span>🔄 فحص وإرسال</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- POS Header Info Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-3">
+        <span class="font-bold text-amber-400">فرع الكوربة — مصر الجديدة</span>
+        <span class="text-slate-600">•</span>
+        <span class="text-slate-300 font-mono font-semibold">جهاز: term-01</span>
+        <span class="text-slate-600">•</span>
+        <span class="text-slate-300">الكاشير: <strong class="text-white">أحمد سالم</strong></span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400">
+        <span>الوردية: <strong class="text-emerald-400 font-mono">04:22:15</strong></span>
+        <span>الطابعة: <strong class="text-emerald-400">POS-80 (جاهزة ✅)</strong></span>
+        <span>درج النقدية: <strong class="text-emerald-400">متصل (RJ11)</strong></span>
+      </div>
+    </div>
+
+    <!-- POS Grid: Products (Right) + Cart (Left) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1">
+      
+      <!-- Right: Products Catalog & Categories (8 Cols) -->
+      <div class="lg:col-span-8 flex flex-col gap-3">
+        <!-- Categories Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
+          <button class="bg-amber-500 text-slate-950 px-4 py-2 rounded-xl shrink-0 shadow-sm">الكل (182 صنف)</button>
+          <button class="bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2 rounded-xl border border-slate-800 shrink-0 transition">أرز بلبن وقشطوطة</button>
+          <button class="bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2 rounded-xl border border-slate-800 shrink-0 transition">حلويات شرقية فاخرة</button>
+          <button class="bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2 rounded-xl border border-slate-800 shrink-0 transition">تورت وجاتوه ومناسبات</button>
+          <button class="bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2 rounded-xl border border-slate-800 shrink-0 transition">كاسات آيس كريم وبودينج</button>
+        </div>
+
+        <!-- Products Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+          <!-- Item 1 -->
+          <div onclick="addToCart('طاجن أم علي بالمكسرات', 110)" class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 p-3 rounded-2xl cursor-pointer transition flex flex-col justify-between group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">مخزون: 42</span>
+              <span class="text-xs font-mono font-bold text-amber-400">110 ج.م</span>
+            </div>
+            <div class="my-3">
+              <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">طاجن أم علي مكسرات</h3>
+              <p class="text-[11px] text-slate-400">قشطة بلدي ومكسرات محمصة</p>
+            </div>
+            <button class="w-full py-1.5 rounded-xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-xs font-bold transition">
+              + إضافة للسلة
+            </button>
+          </div>
+
+          <!-- Item 2 -->
+          <div onclick="addToCart('قشطوطة أرز بلبن بستاشيو', 90)" class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 p-3 rounded-2xl cursor-pointer transition flex flex-col justify-between group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">مخزون: 28</span>
+              <span class="text-xs font-mono font-bold text-amber-400">90 ج.م</span>
+            </div>
+            <div class="my-3">
+              <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">قشطوطة بستاشيو فاخر</h3>
+              <p class="text-[11px] text-slate-400">طبقة كيك حليب وصوص فستق</p>
+            </div>
+            <button class="w-full py-1.5 rounded-xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-xs font-bold transition">
+              + إضافة للسلة
+            </button>
+          </div>
+
+          <!-- Item 3 -->
+          <div onclick="addToCart('صينية كنافة نابلسية سخنة', 310)" class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 p-3 rounded-2xl cursor-pointer transition flex flex-col justify-between group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">مخزون: 15</span>
+              <span class="text-xs font-mono font-bold text-amber-400">310 ج.م</span>
+            </div>
+            <div class="my-3">
+              <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">كنافة نابلسية بالجبنة</h3>
+              <p class="text-[11px] text-slate-400">جبنة عكاوي سايحة مع فستق</p>
+            </div>
+            <button class="w-full py-1.5 rounded-xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-xs font-bold transition">
+              + إضافة للسلة
+            </button>
+          </div>
+
+          <!-- Item 4 -->
+          <div onclick="addToCart('طبق مشكل شرقي فاخر 1 كجم', 260)" class="bg-slate-900 border border-slate-800 hover:border-amber-500/50 p-3 rounded-2xl cursor-pointer transition flex flex-col justify-between group">
+            <div class="flex items-start justify-between">
+              <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">مخزون: 50</span>
+              <span class="text-xs font-mono font-bold text-amber-400">260 ج.م</span>
+            </div>
+            <div class="my-3">
+              <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">مشكل شرقي وزير الحلو 1ك</h3>
+              <p class="text-[11px] text-slate-400">بقلاوة، بسبوسة، كنافة، رموش</p>
+            </div>
+            <button class="w-full py-1.5 rounded-xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-slate-950 text-xs font-bold transition">
+              + إضافة للسلة
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Left: Cart & Instant Checkout (4 Cols) -->
+      <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-lg">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+              <h2 class="font-black text-white text-base">فاتورة الطلب الحالي</h2>
+              <span class="text-[10px] font-mono bg-slate-800 text-amber-400 px-2 py-0.5 rounded-md">#INV-KB-1050</span>
+            </div>
+            <span class="text-[11px] font-bold text-slate-400">تيك أواي مباشر</span>
+          </div>
+
+          <!-- Cart Items List -->
+          <div id="cart-list" class="divide-y divide-slate-800/60 my-3 max-h-64 overflow-y-auto space-y-2">
+            <!-- Sample Item -->
+            <div class="flex items-center justify-between pt-2">
+              <div>
+                <h4 class="font-bold text-xs text-white">طاجن أم علي مكسرات</h4>
+                <span class="text-[10px] text-slate-400">110 ج.م × 2</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-amber-400 text-xs">220 ج.م</span>
+                <button class="text-red-400 hover:text-red-300 text-xs">✕</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between pt-2">
+              <div>
+                <h4 class="font-bold text-xs text-white">قشطوطة بستاشيو فاخر</h4>
+                <span class="text-[10px] text-slate-400">90 ج.م × 1</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-amber-400 text-xs">90 ج.م</span>
+                <button class="text-red-400 hover:text-red-300 text-xs">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cart Summary & Offline Payment Buttons -->
+        <div class="space-y-3 pt-3 border-t border-slate-800">
+          <div class="space-y-1.5 text-xs text-slate-400">
+            <div class="flex justify-between">
+              <span>المجموع الفرعي:</span>
+              <span class="font-mono text-slate-200">310.00 ج.م</span>
+            </div>
+            <div class="flex justify-between">
+              <span>ضريبة القيمة المضافة (14%):</span>
+              <span class="font-mono text-slate-200">مشمولة</span>
+            </div>
+            <div class="flex justify-between text-base font-black text-white pt-1 border-t border-slate-800">
+              <span>الإجمالي المستحق:</span>
+              <span class="font-mono text-emerald-400 text-lg">310.00 ج.م</span>
+            </div>
+          </div>
+
+          <!-- Direct Offline Checkout Buttons -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="recordOfflineOrder('cash')" class="bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-xl font-black text-xs flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-900/30 transition">
+              <span class="text-sm">💵 دفع كاش (نقداً)</span>
+              <span class="text-[10px] font-normal text-emerald-200">+ طباعة وفتح الدرج آلياً</span>
+            </button>
+            <button onclick="recordOfflineOrder('card')" class="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-xl font-black text-xs flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-900/30 transition">
+              <span class="text-sm">💳 دفع فيزا / محفظة</span>
+              <span class="text-[10px] font-normal text-blue-200">+ إيصال بون فوري</span>
+            </button>
+          </div>
+
+          <!-- Offline Guarantee Badge -->
+          <div class="text-[10px] text-slate-400 bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
+            <span class="text-emerald-400 text-sm">🔒</span>
+            <span>الطلب يُحفظ فوراً في ذاكرة الجهاز المشفرة ويطبع الإيصال دون انتظار السيرفر.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCREEN 2: SYNC & OUTBOX QUEUE MODAL / DASHBOARD -->
+  <main id="screen-sync" class="hidden flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col gap-4">
+    <!-- Header Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🔄</span>
+          <h2 class="text-lg font-black text-white">مركز مزامنة نقاط البيع والطلبات المعلقة (POS Outbox Manager)</h2>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">
+          إدارة سجل الفواتير المخزنة محلياً بذاكرة الفرع أثناء انقطاع الإنترنت ومراقبة نقلها لسيرفر السلسلة المركزي
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="alert('جاري تصدير الفواتير المعلقة في ملف Excel للطوارئ...')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-700 transition">
+          📊 تصدير نسخة Excel احتياطية
+        </button>
+        <button onclick="simulateSync()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-emerald-900/40 transition flex items-center gap-2">
+          <span>⚡ بدء المزامنة الفورية الآن</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Diagnostic KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div class="text-xs text-slate-400 font-bold mb-1">الفواتير المعلقة محلياً</div>
+        <div class="text-2xl font-black font-mono text-amber-400">14 فاتورة</div>
+        <div class="text-[11px] text-slate-500 mt-1">إجمالي المبلغ: 4,890.00 ج.م</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div class="text-xs text-slate-400 font-bold mb-1">حالة اتصال الخادم المركزي</div>
+        <div class="flex items-center gap-2 text-red-400 font-black text-sm">
+          <span class="size-2.5 rounded-full bg-red-500 animate-pulse"></span>
+          <span>منقطع (سيرفر السحاب)</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-1">آخر فحص تلقائي منذ 12 ثانية</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div class="text-xs text-slate-400 font-bold mb-1">استهلاك التخزين الدائم (IndexedDB)</div>
+        <div class="text-lg font-black font-mono text-emerald-400">4.8 MB <span class="text-xs text-slate-400 font-normal">من 5.0 GB</span></div>
+        <div class="text-[11px] text-slate-500 mt-1">Persistent Storage: مصرح به ✅</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+        <div class="text-xs text-slate-400 font-bold mb-1">آخر مزامنة ناجحة للفرع</div>
+        <div class="text-lg font-black font-mono text-slate-200">17:45:10</div>
+        <div class="text-[11px] text-slate-500 mt-1">تم نقل 45 فاتورة سابقة بنجاح</div>
+      </div>
+    </div>
+
+    <!-- Outbox Orders Ledger Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
+      <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="font-black text-sm text-white">قائمة الفواتير المحلية بانتظار الإرسال (Queue)</h3>
+        <span class="text-xs font-mono text-slate-400">تحديث آلي كل 15 ثانية</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-950 text-slate-400 font-bold">
+            <tr>
+              <th class="p-3">رقم الفاتورة المحلي</th>
+              <th class="p-3">توقيت الإنشاء</th>
+              <th class="p-3">الكاشير</th>
+              <th class="p-3">تفاصيل الأصناف</th>
+              <th class="p-3">القيمة</th>
+              <th class="p-3">طريقة الدفع</th>
+              <th class="p-3">حالة المزامنة</th>
+              <th class="p-3 text-center">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 font-medium">
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="p-3 font-mono font-bold text-amber-400">INV-KB-20261119-014</td>
+              <td class="p-3 font-mono text-slate-400">18:32:10</td>
+              <td class="p-3 text-white">أحمد سالم</td>
+              <td class="p-3 text-slate-300">2 طاجن أم علي + 1 قشطوطة بستاشيو</td>
+              <td class="p-3 font-mono font-bold text-emerald-400">310.00 ج.م</td>
+              <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">كاش</span></td>
+              <td class="p-3"><span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold">معلق (Pending)</span></td>
+              <td class="p-3 text-center">
+                <button onclick="alert('عرض تفاصيل الفاتورة المخزنة محلياً بالباركود')" class="text-blue-400 hover:underline">معاينة</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="p-3 font-mono font-bold text-amber-400">INV-KB-20261119-013</td>
+              <td class="p-3 font-mono text-slate-400">18:28:45</td>
+              <td class="p-3 text-white">أحمد سالم</td>
+              <td class="p-3 text-slate-300">1 كجم مشكل شرقي فاخر وزير الحلو</td>
+              <td class="p-3 font-mono font-bold text-emerald-400">260.00 ج.م</td>
+              <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">كاش</span></td>
+              <td class="p-3"><span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold">معلق (Pending)</span></td>
+              <td class="p-3 text-center">
+                <button onclick="alert('عرض تفاصيل الفاتورة المخزنة محلياً بالباركود')" class="text-blue-400 hover:underline">معاينة</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="p-3 font-mono font-bold text-amber-400">INV-KB-20261119-012</td>
+              <td class="p-3 font-mono text-slate-400">18:15:20</td>
+              <td class="p-3 text-white">أحمد سالم</td>
+              <td class="p-3 text-slate-300">1 صينية كنافة نابلسية سخنة</td>
+              <td class="p-3 font-mono font-bold text-emerald-400">310.00 ج.م</td>
+              <td class="p-3"><span class="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold">فيزا</span></td>
+              <td class="p-3"><span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold">معلق (Pending)</span></td>
+              <td class="p-3 text-center">
+                <button onclick="alert('عرض تفاصيل الفاتورة المخزنة محلياً بالباركود')" class="text-blue-400 hover:underline">معاينة</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCREEN 3: HARDWARE & BRANCH TERMINAL SETUP -->
+  <main id="screen-setup" class="hidden flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col gap-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+      <div class="flex items-center gap-3 pb-4 border-b border-slate-800">
+        <div class="size-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl font-bold">
+          ⚙️
+        </div>
+        <div>
+          <h2 class="text-lg font-black text-white">شاشة إعداد وربط نقطة البيع في الفرع (Terminal Setup)</h2>
+          <p class="text-xs text-slate-400">تجهيز الجهاز، ربط الطابعات ودرج النقدية، وتنزيل نسخة الكتالوج الأولى للعمل بدون إنترنت</p>
+        </div>
+      </div>
+
+      <div class="space-y-5 pt-4 text-xs">
+        <!-- 1. Branch & Terminal Selection -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-300 font-bold mb-1.5">الفرع المخصص للجهاز:</label>
+            <select class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-amber-500">
+              <option value="korba">فرع الكوربة — مصر الجديدة</option>
+              <option value="abbas">فرع عباس العقاد — مدينة نصر</option>
+              <option value="khosoos">فرع الخصوص — القليوبية</option>
+              <option value="helmeya">فرع الحلمية — حلمية الزيتون</option>
+              <option value="wost_elbalad">فرع وسط البلد — طلعت حرب</option>
+              <option value="faisal">فرع فيصل الرئيسي</option>
+              <option value="tenth_ramadan">فرع العاشر من رمضان والمصنع</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 font-bold mb-1.5">معرف الكاونتر (Terminal ID):</label>
+            <input type="text" value="term-01" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono font-bold outline-none" />
+          </div>
+        </div>
+
+        <!-- 2. Printer & Drawer Config -->
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <h4 class="font-bold text-white text-sm flex items-center gap-2">
+            <span>🖨️</span>
+            <span>تعريف طابعة الفواتير ودرج النقدية</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span class="text-slate-400 block mb-1">الطابعة المكتشفة:</span>
+              <div class="font-mono text-emerald-400 font-bold bg-slate-900 p-2 rounded-lg border border-slate-800">
+                POS-Receipt-Printer (80mm Thermal ESC/POS)
+              </div>
+            </div>
+            <div class="flex items-end gap-2">
+              <button onclick="alert('تم إرسال إشارة طباعة بون تجريبي!')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg font-bold border border-slate-700 transition">
+                طباعة بون تجريبي
+              </button>
+              <button onclick="alert('تم إرسال نبضة RJ11 الكهربائية لفتح درج النقدية!')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-2 rounded-lg font-bold transition">
+                اختبار فتح الدرج آلياً
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Offline Data Snapshot Seeding -->
+        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-white text-sm flex items-center gap-2">
+              <span>💾</span>
+              <span>تحميل نسخة الكتالوج المحلية المسبقة (Initial Snapshot)</span>
+            </h4>
+            <span class="text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">100% مكتمل ومحدث</span>
+          </div>
+          <p class="text-slate-400 text-[11px]">
+            تم تخزين 182 صنف حلويات شرقية وغربية، وقوائم الكاشيرين المصرح لهم بفرع الكوربة، وبطاقات الأسعار محلياً في IndexedDB للعمل دون أي إنترنت.
+          </p>
+          <div class="flex items-center gap-3">
+            <button onclick="alert('تم إعادة تنزيل أحدث لقطة من كتالوج أسعار وزير الحلو بنجاح!')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg font-bold border border-slate-700 transition">
+              🔄 إعادة تحديث الكتالوج الآن
+            </button>
+            <span class="text-slate-500 text-[11px]">صلاحية الكاش المحلي: 24 ساعة</span>
+          </div>
+        </div>
+
+        <!-- Submit & Save Device Config -->
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-800">
+          <button onclick="alert('تم حفظ إعدادات الكاشير وتثبيت وضع الـ Kiosk بنجاح!')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-900/40 transition">
+            حفظ وتأكيد تشغيل نقطة البيع ✅
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-900 px-4 py-3 text-center text-xs text-slate-500">
+    سلسلة حلويات وزير الحلو — Hafez ERP · نظام نقاط البيع بدون إنترنت (Offline-First Architecture) · مهندس حافظ رحيم
+  </footer>
+
+  <script>
+    function switchScreen(screenId) {
+      document.getElementById('screen-pos').classList.add('hidden');
+      document.getElementById('screen-sync').classList.add('hidden');
+      document.getElementById('screen-setup').classList.add('hidden');
+
+      document.getElementById(screenId).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950');
+        btn.classList.add('text-slate-400');
+      });
+
+      const activeBtn = document.getElementById('tab-' + screenId);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        activeBtn.classList.add('bg-amber-500', 'text-slate-950');
+      }
+    }
+
+    let isOffline = true;
+    function toggleNetwork() {
+      isOffline = !isOffline;
+      const btn = document.getElementById('network-btn');
+      const banner = document.getElementById('offline-banner');
+
+      if (isOffline) {
+        btn.innerHTML = '<span class="size-2 rounded-full bg-red-500 animate-pulse"></span><span>منقطع (Offline)</span>';
+        btn.className = 'flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30';
+        banner.classList.remove('hidden');
+      } else {
+        btn.innerHTML = '<span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span><span>متصل (Online)</span>';
+        btn.className = 'flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        banner.classList.add('hidden');
+      }
+    }
+
+    let pendingCount = 14;
+    function recordOfflineOrder(method) {
+      pendingCount++;
+      document.getElementById('pending-count-badge').innerText = `${pendingCount} فاتورة (محفوظة محلياً)`;
+      alert(`✅ تم إتمام الفاتورة بنجاح في الوضع المحلي (${method === 'cash' ? 'نقداً + فتح الدرج' : 'بطاقة'})!\n\n🖨️ جاري طباعة البون فوراً على طابعة POS-80.\n💾 تم تخزين الطلب في IndexedDB وسيتم نقله للسيرفر تلقائياً فور عودة الإنترنت.`);
+    }
+
+    function addToCart(name, price) {
+      alert(`تمت إضافة [${name}] بسعر ${price} ج.م للسلة`);
+    }
+
+    function simulateSync() {
+      if (isOffline) {
+        alert('⚠️ لا يمكن إتمام المزامنة الآن: كابل الإنترنت منقطع!\nسيقوم النظام بالمزامنة التلقائية فور عودة الاتصال.');
+      } else {
+        alert('🚀 جاري إرسال كافة الفواتير المعلقة عبر API POST /api/pos/sync/batch...\n\n✅ تم إرسال ومزامنة 14 فاتورة بنجاح مع قاعدة بيانات Supabase المركزية!');
+      }
+    }
+  </script>
+</body>
+</html>
