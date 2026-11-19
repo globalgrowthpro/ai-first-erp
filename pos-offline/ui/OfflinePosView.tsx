@@ -41,6 +41,10 @@ import {
   Bike,
   Lock,
   Settings,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  ArrowRight,
 } from "lucide-react";
 
 interface CartLineItem {
@@ -58,9 +62,10 @@ interface CartLineItem {
 export const OfflinePosView: React.FC = () => {
   // Cashier Authentication State (LOCKED BY DEFAULT FOR SECURITY)
   const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(true);
-  const [enteredPin, setEnteredPin] = useState<string>("");
-  const [pinError, setPinError] = useState<string | null>(null);
-  const [selectedCashierCode, setSelectedCashierCode] = useState<string>("101");
+  const [loginUsername, setLoginUsername] = useState<string>("cashier_korba");
+  const [loginPassword, setLoginPassword] = useState<string>("Korba@2026");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [activeCashierName, setActiveCashierName] = useState<string>("أحمد سالم");
   const [activeCashierRole, setActiveCashierRole] = useState<string>("كاشير رئيسي");
 
@@ -128,60 +133,76 @@ export const OfflinePosView: React.FC = () => {
     return unsub;
   }, [selectedCategory]);
 
-  // Cashier Authentication Handling
-  const handlePinDigit = (digit: string) => {
-    if (enteredPin.length < 4) {
-      const next = enteredPin + digit;
-      setEnteredPin(next);
-      setPinError(null);
-      if (next.length === 3 || next.length === 4) {
-        verifyPinAttempt(next, selectedCashierCode);
-      }
+  // Cashier Authentication Handling (Username & Password)
+  const registeredAccounts = [
+    {
+      username: "cashier_korba",
+      code: "101",
+      aliases: ["101", "ahmed", "ahmed_salem", "كاشير"],
+      passwords: ["Korba@2026", "123456", "101", "1234"],
+      name: "أحمد سالم",
+      role: "كاشير رئيسي",
+    },
+    {
+      username: "cashier_abbas",
+      code: "102",
+      aliases: ["102", "mohamed", "fathy"],
+      passwords: ["Abbas@2026", "123456", "102", "1234"],
+      name: "محمد فتحي",
+      role: "كاشير صالة",
+    },
+    {
+      username: "cashier_zayed",
+      code: "103",
+      aliases: ["103", "khaled", "saeed"],
+      passwords: ["Zayed@2026", "123456", "103", "1234"],
+      name: "خالد سعيد",
+      role: "كاشير تيك أواي",
+    },
+    {
+      username: "admin",
+      code: "999",
+      aliases: ["999", "wazeeradmin", "manager", "مشرف"],
+      passwords: ["Admin@2026", "123456", "999", "0000"],
+      name: "المشرف العام",
+      role: "مشرف الفرع",
+    },
+  ];
+
+  const handleCashierLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const u = loginUsername.trim().toLowerCase();
+    const p = loginPassword.trim();
+
+    if (!u) {
+      setLoginError("يرجى إدخال اسم المستخدم أو كود الكاشير");
+      return;
     }
-  };
-
-  const handlePinDelete = () => {
-    if (enteredPin.length > 0) {
-      setEnteredPin(enteredPin.slice(0, -1));
-      setPinError(null);
+    if (!p) {
+      setLoginError("يرجى إدخال كلمة المرور");
+      return;
     }
-  };
 
-  const handlePinClear = () => {
-    setEnteredPin("");
-    setPinError(null);
-  };
+    const matched = registeredAccounts.find(
+      (acc) =>
+        acc.username.toLowerCase() === u ||
+        acc.code === u ||
+        acc.aliases.some((al) => al.toLowerCase() === u)
+    );
 
-  const verifyPinAttempt = (pin: string, code: string) => {
-    // Valid standard test PINs
-    const validPins: Record<string, string[]> = {
-      "101": ["101", "1234"],
-      "102": ["102", "1234"],
-      "103": ["103", "1234"],
-      "999": ["999", "0000"],
-    };
+    if (!matched) {
+      setLoginError("اسم المستخدم أو كود الكاشير غير مسجل في النظام!");
+      return;
+    }
 
-    const allowed = validPins[code] || ["1234"];
-    if (allowed.includes(pin)) {
+    if (matched.passwords.includes(p)) {
+      setActiveCashierName(matched.name);
+      setActiveCashierRole(matched.role);
       setIsTerminalLocked(false);
-      setPinError(null);
-      setEnteredPin("");
-      if (code === "101") {
-        setActiveCashierName("أحمد سالم");
-        setActiveCashierRole("كاشير رئيسي");
-      } else if (code === "102") {
-        setActiveCashierName("محمد فتحي");
-        setActiveCashierRole("كاشير صالة");
-      } else if (code === "103") {
-        setActiveCashierName("خالد سعيد");
-        setActiveCashierRole("كاشير تيك أواي");
-      } else {
-        setActiveCashierName("المشرف العام");
-        setActiveCashierRole("مشرف الفرع");
-      }
-    } else if (pin.length >= 3) {
-      setPinError("رمز المرور غير صحيح! يرجى المحاولة مرة أخرى.");
-      setEnteredPin("");
+      setLoginError(null);
+      setLoginPassword("");
+    } else {
+      setLoginError("كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.");
     }
   };
 
@@ -343,94 +364,121 @@ export const OfflinePosView: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-6 space-y-4">
+            <form onSubmit={handleCashierLogin} className="p-6 space-y-4">
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              {/* Username Input */}
               <div>
-                <label className="block text-xs font-bold text-foreground mb-1.5">اختر الكاشير المسؤول:</label>
+                <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
+                  <span>اسم المستخدم أو كود الكاشير:</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Username / Code</span>
+                </label>
                 <div className="relative">
-                  <select
-                    value={selectedCashierCode}
+                  <input
+                    type="text"
+                    value={loginUsername}
                     onChange={(e) => {
-                      setSelectedCashierCode(e.target.value);
-                      setEnteredPin("");
-                      setPinError(null);
+                      setLoginUsername(e.target.value);
+                      setLoginError(null);
                     }}
-                    className="w-full text-xs font-bold py-2.5 px-3 pe-8 rounded-xl border border-border bg-muted/40 text-foreground appearance-none focus:outline-none focus:border-primary cursor-pointer"
-                  >
-                    <option value="101">👨‍🍳 أحمد سالم (كود: 101 — كاشير رئيسي)</option>
-                    <option value="102">👨‍🍳 محمد فتحي (كود: 102 — كاشير صالة)</option>
-                    <option value="103">👨‍🍳 خالد سعيد (كود: 103 — كاشير تيك أواي)</option>
-                    <option value="999">👨‍💼 المشرف العام (كود: 999 — مدير فرع)</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+                    placeholder="مثال: cashier_korba أو 101"
+                    className="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 transition"
+                  />
+                  <User className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
 
-              <div className="text-center space-y-2">
-                <label className="block text-xs font-bold text-muted-foreground">أدخل رمز المرور السري (PIN):</label>
-                <div className="flex justify-center items-center gap-3 py-2">
-                  {[0, 1, 2, 3].map((idx) => (
-                    <div
-                      key={idx}
-                      className={`size-4 rounded-full border-2 transition-all ${
-                        idx < enteredPin.length
-                          ? "border-primary bg-primary scale-110 shadow-xs"
-                          : "border-border bg-transparent"
-                      }`}
-                    />
-                  ))}
-                </div>
-                {pinError && <p className="text-rose-600 font-bold text-xs">{pinError}</p>}
-              </div>
-
-              {/* Touch PIN Pad */}
-              <div className="grid grid-cols-3 gap-2 pt-1 max-w-[260px] mx-auto">
-                {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+              {/* Password Input */}
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 flex items-center justify-between">
+                  <span>كلمة المرور:</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Password</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      setLoginError(null);
+                    }}
+                    placeholder="أدخل كلمة المرور..."
+                    className="w-full text-xs font-bold py-2.5 px-3 ps-9 pe-9 rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none focus:border-primary focus:bg-background focus:ring-2 focus:ring-primary/20 transition font-mono"
+                  />
+                  <Lock className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                   <button
-                    key={num}
                     type="button"
-                    onClick={() => handlePinDigit(num)}
-                    className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-base font-mono font-black text-foreground transition shadow-2xs"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="إظهار / إخفاء كلمة المرور"
                   >
-                    {num}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={handlePinClear}
-                  className="h-11 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-xs font-bold text-rose-600 transition shadow-2xs"
-                >
-                  مسح
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePinDigit("0")}
-                  className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-base font-mono font-black text-foreground transition shadow-2xs"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePinDelete}
-                  className="h-11 rounded-xl bg-muted hover:bg-muted/80 active:scale-95 text-xs font-bold text-foreground transition shadow-2xs"
-                >
-                  ⌫
-                </button>
+                </div>
               </div>
 
+              {/* Demo Accounts Quick-fill */}
+              <div className="pt-1">
+                <div className="text-[11px] font-bold text-muted-foreground mb-1.5 flex items-center justify-between">
+                  <span>⚡ تعبئة سريعة للتجربة:</span>
+                  <span className="text-[10px] text-muted-foreground/70">انقر للتعبئة الفورية</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginUsername("cashier_korba");
+                      setLoginPassword("Korba@2026");
+                      setLoginError(null);
+                    }}
+                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
+                  >
+                    أحمد سالم (101)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginUsername("cashier_abbas");
+                      setLoginPassword("Abbas@2026");
+                      setLoginError(null);
+                    }}
+                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
+                  >
+                    محمد فتحي (102)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginUsername("admin");
+                      setLoginPassword("Admin@2026");
+                      setLoginError(null);
+                    }}
+                    className="py-1.5 px-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary border border-border text-[11px] font-bold text-foreground text-center transition cursor-pointer"
+                  >
+                    المشرف العام (999)
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
-                  type="button"
-                  onClick={() => verifyPinAttempt(enteredPin, selectedCashierCode)}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground font-black text-sm shadow-md active:scale-98 transition"
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primary to-[#92003c] text-primary-foreground font-black text-sm shadow-md active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  دخول وفتح نقطة البيع
+                  <span>تسجيل الدخول وفتح نقطة البيع</span>
+                  <ArrowRight className="w-4 h-4 rtl:rotate-180" />
                 </button>
-                <p className="text-[10px] text-center text-muted-foreground mt-2">
-                  💡 رمز المرور الافتراضي: <strong className="font-mono text-primary">101</strong> أو{" "}
-                  <strong className="font-mono text-primary">1234</strong>
+                <p className="text-[10px] text-center text-muted-foreground mt-2 leading-relaxed">
+                  💡 اسم المستخدم: <strong className="font-mono text-primary">cashier_korba</strong> (أو <strong className="font-mono text-primary">101</strong>) • كلمة المرور: <strong className="font-mono text-primary">Korba@2026</strong> (أو <strong className="font-mono text-primary">123456</strong>)
                 </p>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

@@ -99,66 +99,112 @@
       </div>
 
       <!-- Login Body -->
-      <div class="p-6 space-y-4">
+      <form id="cashier-login-form" onsubmit="event.preventDefault(); submitCashierLogin();" class="p-6 space-y-4">
         
-        <!-- Cashier Selector -->
+        <!-- Error Alert -->
+        <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <svg class="w-4 h-4 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="login-error-text">اسم المستخدم أو كلمة المرور غير صحيحة!</span>
+        </div>
+
+        <!-- Username or Code Input -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">اختر الكاشير المسؤول:</label>
+          <label for="login-username-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>اسم المستخدم أو كود الكاشير:</span>
+            <span class="text-[10px] text-slate-400 font-normal">Username / Code</span>
+          </label>
           <div class="relative">
-            <select id="login-cashier-select" onchange="handleCashierSelectChange(this.value)" class="w-full text-xs font-bold py-2.5 px-3 pe-8 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 appearance-none focus:outline-none focus:border-[#D10056] cursor-pointer">
-              <option value="101" data-name="أحمد سالم" data-role="كاشير رئيسي" data-avatar="👨‍🍳">👨‍🍳 أحمد سالم (كود: 101 — كاشير رئيسي)</option>
-              <option value="102" data-name="محمد فتحي" data-role="كاشير" data-avatar="👨‍🍳">👨‍🍳 محمد فتحي (كود: 102 — كاشير صالة)</option>
-              <option value="103" data-name="خالد سعيد" data-role="كاشير" data-avatar="👨‍🍳">👨‍🍳 خالد سعيد (كود: 103 — كاشير تيك أواي)</option>
-              <option value="999" data-name="المشرف العام" data-role="مشرف الفرع" data-avatar="👨‍💼">👨‍💼 المشرف العام (كود: 999 — مدير فرع)</option>
-            </select>
-            <svg class="w-4 h-4 absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <input
+              id="login-username-input"
+              type="text"
+              autocomplete="username"
+              placeholder="مثال: cashier_korba أو 101"
+              value="cashier_korba"
+              class="w-full text-xs font-bold py-2.5 px-3 ps-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition"
+              oninput="hideLoginError()"
+              onkeydown="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('login-password-input').focus(); }"
+            />
+            <svg class="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
         </div>
 
-        <!-- PIN Display Dots -->
-        <div class="text-center space-y-2">
-          <label class="block text-xs font-bold text-slate-600">أدخل رمز المرور السري (PIN):</label>
-          <div id="pin-dots-container" class="flex justify-center items-center gap-3 py-2">
-            <div id="dot-0" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
-            <div id="dot-1" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
-            <div id="dot-2" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
-            <div id="dot-3" class="size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent"></div>
-          </div>
-          <div id="pin-error-msg" class="hidden text-rose-600 font-bold text-xs">
-            ❌ رمز المرور غير صحيح! يرجى المحاولة مرة أخرى.
+        <!-- Password Input -->
+        <div>
+          <label for="login-password-input" class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+            <span>كلمة المرور:</span>
+            <span class="text-[10px] text-slate-400 font-normal">Password</span>
+          </label>
+          <div class="relative">
+            <input
+              id="login-password-input"
+              type="password"
+              autocomplete="current-password"
+              placeholder="أدخل كلمة المرور..."
+              value="Korba@2026"
+              class="w-full text-xs font-bold py-2.5 px-3 ps-9 pe-9 rounded-xl border border-slate-300 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#D10056] focus:bg-white focus:ring-2 focus:ring-[#D10056]/20 transition font-mono"
+              oninput="hideLoginError()"
+              onkeydown="if(event.key === 'Enter') { event.preventDefault(); submitCashierLogin(); }"
+            />
+            <svg class="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <button
+              type="button"
+              onclick="togglePasswordVisibility()"
+              class="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="إظهار / إخفاء كلمة المرور"
+            >
+              <svg id="eye-open-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg id="eye-closed-icon" class="w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
           </div>
         </div>
 
-        <!-- Numeric Touch Keypad -->
-        <div class="grid grid-cols-3 gap-2 pt-1 max-w-[260px] mx-auto">
-          <button type="button" onclick="enterPinDigit('1')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">1</button>
-          <button type="button" onclick="enterPinDigit('2')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">2</button>
-          <button type="button" onclick="enterPinDigit('3')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">3</button>
-          
-          <button type="button" onclick="enterPinDigit('4')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">4</button>
-          <button type="button" onclick="enterPinDigit('5')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">5</button>
-          <button type="button" onclick="enterPinDigit('6')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">6</button>
-          
-          <button type="button" onclick="enterPinDigit('7')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">7</button>
-          <button type="button" onclick="enterPinDigit('8')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">8</button>
-          <button type="button" onclick="enterPinDigit('9')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">9</button>
-          
-          <button type="button" onclick="clearPin()" class="h-11 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-xs font-bold text-rose-600 transition shadow-2xs">مسح</button>
-          <button type="button" onclick="enterPinDigit('0')" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-base font-mono font-black text-slate-800 transition shadow-2xs">0</button>
-          <button type="button" onclick="deletePinDigit()" class="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-xs font-bold text-slate-700 transition shadow-2xs">⌫</button>
+        <!-- Quick Demo Accounts (One-click fill) -->
+        <div class="pt-1">
+          <div class="text-[11px] font-bold text-slate-500 mb-1.5 flex items-center justify-between">
+            <span>⚡ تعبئة سريعة للتجربة:</span>
+            <span class="text-[10px] text-slate-400">انقر للتعبئة الفورية</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onclick="fillCredentials('cashier_korba', 'Korba@2026')"
+              class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
+            >
+              أحمد سالم (101)
+            </button>
+            <button
+              type="button"
+              onclick="fillCredentials('cashier_abbas', 'Abbas@2026')"
+              class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
+            >
+              محمد فتحي (102)
+            </button>
+            <button
+              type="button"
+              onclick="fillCredentials('admin', 'Admin@2026')"
+              class="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-[#D10056]/10 hover:text-[#D10056] border border-slate-200 text-[11px] font-bold text-slate-700 text-center transition cursor-pointer"
+            >
+              المشرف العام (999)
+            </button>
+          </div>
         </div>
 
-        <!-- Submit Button & Quick Helper Hint -->
+        <!-- Submit Button & Helper Hint -->
         <div class="pt-2">
-          <button type="button" onclick="submitCashierPin()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D10056] to-[#92003c] hover:opacity-95 text-white font-black text-sm shadow-md active:scale-98 transition">
-            دخول وفتح نقطة البيع
+          <button
+            type="submit"
+            id="submit-login-btn"
+            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D10056] to-[#92003c] hover:opacity-95 text-white font-black text-sm shadow-md active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>تسجيل الدخول وفتح نقطة البيع</span>
+            <svg class="w-4 h-4 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
-          <p class="text-[10px] text-center text-slate-500 mt-2">
-            💡 رمز المرور الافتراضي للكاشير أحمد سالم هو: <strong class="font-mono text-[#D10056]">101</strong> أو <strong class="font-mono text-[#D10056]">1234</strong>
+          <p class="text-[10px] text-center text-slate-500 mt-2 leading-relaxed">
+            💡 اسم المستخدم: <strong class="font-mono text-[#D10056]">cashier_korba</strong> (أو <strong class="font-mono text-[#D10056]">101</strong>) • كلمة المرور: <strong class="font-mono text-[#D10056]">Korba@2026</strong> (أو <strong class="font-mono text-[#D10056]">123456</strong>)
           </p>
         </div>
 
-      </div>
+      </form>
     </div>
   </div>
 
@@ -1927,17 +1973,52 @@
   }
 ];
 
-    // Cashier Credentials Database (Offline Verified)
-    const REGISTERED_CASHIERS = {
-      "101": { name: "أحمد سالم", code: "101", pins: ["101", "1234"], role: "كاشير رئيسي", avatar: "👨‍🍳" },
-      "102": { name: "محمد فتحي", code: "102", pins: ["102", "1234"], role: "كاشير صالة", avatar: "👨‍🍳" },
-      "103": { name: "خالد سعيد", code: "103", pins: ["103", "1234"], role: "كاشير تيك أواي", avatar: "👨‍🍳" },
-      "999": { name: "المشرف العام", code: "999", pins: ["999", "0000"], role: "مشرف الفرع", avatar: "👨‍💼" }
-    };
+    // Cashier & Staff Credentials Database (Offline Verified)
+    const REGISTERED_ACCOUNTS = [
+      {
+        username: "cashier_korba",
+        code: "101",
+        aliases: ["101", "ahmed", "ahmed_salem", "كاشير"],
+        passwords: ["Korba@2026", "123456", "101", "1234"],
+        name: "أحمد سالم",
+        role: "كاشير رئيسي",
+        avatar: "👨‍🍳",
+        branch: "فرع الكوربة — مصر الجديدة"
+      },
+      {
+        username: "cashier_abbas",
+        code: "102",
+        aliases: ["102", "mohamed", "fathy"],
+        passwords: ["Abbas@2026", "123456", "102", "1234"],
+        name: "محمد فتحي",
+        role: "كاشير صالة",
+        avatar: "👨‍🍳",
+        branch: "فرع عباس العقاد — مدينة نصر"
+      },
+      {
+        username: "cashier_zayed",
+        code: "103",
+        aliases: ["103", "khaled", "saeed"],
+        passwords: ["Zayed@2026", "123456", "103", "1234"],
+        name: "خالد سعيد",
+        role: "كاشير تيك أواي",
+        avatar: "👨‍🍳",
+        branch: "فرع الشيخ زايد — ووك أوف كايرو"
+      },
+      {
+        username: "admin",
+        code: "999",
+        aliases: ["999", "wazeeradmin", "manager", "مشرف"],
+        passwords: ["Admin@2026", "123456", "999", "0000"],
+        name: "المشرف العام",
+        role: "مشرف الفرع",
+        avatar: "👨‍💼",
+        branch: "الإدارة العامة للفروع"
+      }
+    ];
 
     // State
-    let activeCashier = REGISTERED_CASHIERS["101"];
-    let enteredPin = "";
+    let activeCashier = REGISTERED_ACCOUNTS[0];
     let isTerminalLocked = true;
     let isOnline = navigator.onLine;
     let currentCategory = "all";
@@ -2074,61 +2155,91 @@
     }
 
     // =========================================================================
-    // CASHIER PIN AUTHENTICATION GATE & LOCK SCREEN
+    // CASHIER USERNAME & PASSWORD AUTHENTICATION GATE
     // =========================================================================
-    function handleCashierSelectChange(cashierCode) {
-      activeCashier = REGISTERED_CASHIERS[cashierCode] || REGISTERED_CASHIERS["101"];
-      clearPin();
-    }
-
-    function enterPinDigit(digit) {
-      if (enteredPin.length < 4) {
-        enteredPin += digit;
-        updatePinDots();
-        document.getElementById("pin-error-msg")?.classList.add("hidden");
-        if (enteredPin.length === 4 || enteredPin.length === 3) {
-          // Check PIN if matches
-          if (activeCashier.pins.includes(enteredPin)) {
-            setTimeout(submitCashierPin, 150);
-          }
-        }
+    function togglePasswordVisibility() {
+      const input = document.getElementById("login-password-input");
+      const eyeOpen = document.getElementById("eye-open-icon");
+      const eyeClosed = document.getElementById("eye-closed-icon");
+      if (!input) return;
+      if (input.type === "password") {
+        input.type = "text";
+        eyeOpen?.classList.add("hidden");
+        eyeClosed?.classList.remove("hidden");
+      } else {
+        input.type = "password";
+        eyeOpen?.classList.remove("hidden");
+        eyeClosed?.classList.add("hidden");
       }
     }
 
-    function deletePinDigit() {
-      if (enteredPin.length > 0) {
-        enteredPin = enteredPin.slice(0, -1);
-        updatePinDots();
-        document.getElementById("pin-error-msg")?.classList.add("hidden");
+    function fillCredentials(username, password) {
+      const uInput = document.getElementById("login-username-input");
+      const pInput = document.getElementById("login-password-input");
+      if (uInput) uInput.value = username;
+      if (pInput) pInput.value = password;
+      hideLoginError();
+      pInput?.focus();
+    }
+
+    function hideLoginError() {
+      const alert = document.getElementById("login-error-alert");
+      if (alert) alert.classList.add("hidden");
+    }
+
+    function showLoginError(msg) {
+      const alert = document.getElementById("login-error-alert");
+      const text = document.getElementById("login-error-text");
+      if (text) text.textContent = msg;
+      if (alert) alert.classList.remove("hidden");
+
+      // Shake animation on modal card
+      const modalBox = document.querySelector("#cashier-login-modal > div");
+      if (modalBox) {
+        modalBox.classList.add("shake-anim");
+        setTimeout(() => modalBox.classList.remove("shake-anim"), 400);
       }
     }
 
-    function clearPin() {
-      enteredPin = "";
-      updatePinDots();
-      document.getElementById("pin-error-msg")?.classList.add("hidden");
-    }
+    function submitCashierLogin() {
+      const uInput = document.getElementById("login-username-input");
+      const pInput = document.getElementById("login-password-input");
 
-    function updatePinDots() {
-      for (let i = 0; i < 4; i++) {
-        const dot = document.getElementById("dot-" + i);
-        if (!dot) continue;
-        if (i < enteredPin.length) {
-          dot.className = "size-4 rounded-full border-2 border-[#D10056] bg-[#D10056] transition-all scale-110 shadow-xs";
-        } else {
-          dot.className = "size-4 rounded-full border-2 border-slate-300 transition-all bg-transparent";
-        }
+      const rawUsername = (uInput?.value || "").trim().toLowerCase();
+      const rawPassword = (pInput?.value || "").trim();
+
+      if (!rawUsername) {
+        showLoginError("يرجى إدخال اسم المستخدم أو كود الكاشير");
+        uInput?.focus();
+        return;
       }
-    }
 
-    function submitCashierPin() {
-      const selectedCode = document.getElementById("login-cashier-select").value;
-      const cashier = REGISTERED_CASHIERS[selectedCode];
+      if (!rawPassword) {
+        showLoginError("يرجى إدخال كلمة المرور");
+        pInput?.focus();
+        return;
+      }
 
-      if (cashier && cashier.pins.includes(enteredPin)) {
+      // Find matching account by username, code, or alias
+      const account = REGISTERED_ACCOUNTS.find(acc => 
+        acc.username.toLowerCase() === rawUsername ||
+        acc.code === rawUsername ||
+        acc.aliases.some(alias => alias.toLowerCase() === rawUsername)
+      );
+
+      if (!account) {
+        showLoginError("اسم المستخدم أو كود الكاشير غير مسجل في النظام!");
+        return;
+      }
+
+      // Check password
+      const passwordMatches = account.passwords.includes(rawPassword);
+
+      if (passwordMatches) {
         // Authentication SUCCESS
-        activeCashier = cashier;
+        activeCashier = account;
         isTerminalLocked = false;
+        hideLoginError();
         document.getElementById("cashier-login-modal").classList.add("hidden");
 
         // Update toolbar with verified cashier identity
@@ -2137,22 +2248,32 @@
         document.getElementById("toolbar-cashier-avatar").textContent = activeCashier.avatar;
         document.getElementById("rcpt-cashier-label").textContent = `${activeCashier.name} (${activeCashier.code})`;
 
-        clearPin();
+        // Clear password for security
+        if (pInput) pInput.value = "";
       } else {
-        // Authentication FAILURE -> Shake Animation
-        const container = document.getElementById("pin-dots-container");
-        container.classList.add("shake-anim");
-        setTimeout(() => container.classList.remove("shake-anim"), 400);
-
-        document.getElementById("pin-error-msg")?.classList.remove("hidden");
-        clearPin();
+        showLoginError("كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.");
+        if (pInput) {
+          pInput.value = "";
+          pInput.focus();
+        }
       }
     }
 
     function lockTerminal() {
       isTerminalLocked = true;
-      clearPin();
-      document.getElementById("cashier-login-modal").classList.remove("hidden");
+      const modal = document.getElementById("cashier-login-modal");
+      if (modal) modal.classList.remove("hidden");
+      const pInput = document.getElementById("login-password-input");
+      if (pInput) pInput.value = "";
+      hideLoginError();
+      setTimeout(() => {
+        const uInput = document.getElementById("login-username-input");
+        if (uInput && !uInput.value) {
+          uInput.focus();
+        } else if (pInput) {
+          pInput.focus();
+        }
+      }, 150);
     }
 
     // =========================================================================
@@ -2610,16 +2731,14 @@
 
     function setupKeyShortcuts() {
       window.addEventListener("keydown", (e) => {
-        // If locked, allow numeric keyboard input for PIN
+        // If locked, Enter submits form, Escape clears password
         if (isTerminalLocked) {
-          if (e.key >= "0" && e.key <= "9") {
-            enterPinDigit(e.key);
-          } else if (e.key === "Backspace") {
-            deletePinDigit();
-          } else if (e.key === "Enter") {
-            submitCashierPin();
+          if (e.key === "Enter") {
+            submitCashierLogin();
           } else if (e.key === "Escape") {
-            clearPin();
+            const pInput = document.getElementById("login-password-input");
+            if (pInput) pInput.value = "";
+            hideLoginError();
           }
           return;
         }
