@@ -3459,7 +3459,8 @@
 
       setTimeout(() => {
         pendingOrdersCount = 0;
-        document.getElementById("orders-badge-count").textContent = "0";
+        MY_ORDERS.forEach(o => { o.isSynced = true; });
+        document.getElementById("orders-badge-count").textContent = MY_ORDERS.length;
         document.getElementById("header-pending-count").textContent = "0 معلق";
         document.getElementById("bar-pending-orders").textContent = "0 فاتورة (0 ج.م)";
         if (syncBtn) syncBtn.textContent = "تمت المزامنة";

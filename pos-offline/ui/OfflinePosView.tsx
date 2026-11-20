@@ -212,53 +212,95 @@ export const OfflinePosView: React.FC = () => {
   const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
   const [showMyOrdersModal, setShowMyOrdersModal] = useState<boolean>(false);
   const [ordersSearchQuery, setOrdersSearchQuery] = useState<string>("");
-  const [shiftOrders, setShiftOrders] = useState<any[]>([
-    {
-      id: "INV-KB-1058",
-      time: "20:30:15",
-      itemsSummary: "طاجن أم علي مكسرات (2)، قشطوطة بستاشيو فاخر (1)",
-      total: 310,
-      payMethod: "cash",
-      payMethodLabel: "كاش 💵",
-      isSynced: true
-    },
-    {
-      id: "INV-KB-1057",
-      time: "20:18:42",
-      itemsSummary: "أرز بلبن بستاشيو (1)",
-      total: 100,
-      payMethod: "card",
-      payMethodLabel: "فيزا 💳",
-      isSynced: true
-    },
-    {
-      id: "INV-KB-1056",
-      time: "20:05:10",
-      itemsSummary: "كنافة نابلسية بالجبنة (1)",
-      total: 310,
-      payMethod: "cash",
-      payMethodLabel: "كاش 💵",
-      isSynced: true
-    },
-    {
-      id: "INV-KB-1055",
-      time: "19:48:33",
-      itemsSummary: "مشكل شرقي وزير الحلو 1ك (1)",
-      total: 260,
-      payMethod: "cash",
-      payMethodLabel: "كاش 💵",
-      isSynced: true
-    },
-    {
-      id: "INV-KB-1054",
-      time: "19:35:19",
-      itemsSummary: "أرز بلبن خريطة (2)",
-      total: 160,
-      payMethod: "cash",
-      payMethodLabel: "كاش 💵",
-      isSynced: true
-    }
-  ]);
+  const [network, setNetwork] = useState<NetworkHealth>(networkMonitor.getHealth());
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
+
+  const [shiftOrders, setShiftOrders] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("wazeer_offline_shift_orders_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [
+      {
+        id: "INV-KB-1058",
+        time: "20:30:15",
+        itemsSummary: "طاجن أم علي مكسرات (2)، قشطوطة بستاشيو فاخر (1)",
+        total: 310,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1057",
+        time: "20:18:42",
+        itemsSummary: "أرز بلبن بستاشيو (1)",
+        total: 100,
+        payMethod: "card",
+        payMethodLabel: "فيزا 💳",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1056",
+        time: "20:05:10",
+        itemsSummary: "كنافة نابلسية بالجبنة (1)",
+        total: 310,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1055",
+        time: "19:48:33",
+        itemsSummary: "مشكل شرقي وزير الحلو 1ك (1)",
+        total: 260,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        isSynced: true
+      },
+      {
+        id: "INV-KB-1054",
+        time: "19:35:19",
+        itemsSummary: "أرز بلبن خريطة (2)",
+        total: 160,
+        payMethod: "cash",
+        payMethodLabel: "كاش 💵",
+        isSynced: true
+      }
+    ];
+  });
+
+  // Save shift orders to localStorage whenever updated
+  useEffect(() => {
+    try {
+      localStorage.setItem("wazeer_offline_shift_orders_v1", JSON.stringify(shiftOrders));
+    } catch {}
+  }, [shiftOrders]);
+
+  // Subscribe to real-time network health and pending orders count
+  useEffect(() => {
+    networkMonitor.probeConnection();
+    const unsubNet = networkMonitor.subscribe((health) => {
+      setNetwork(health);
+    });
+
+    const updatePending = async () => {
+      try {
+        const count = await offlinePosEngine.getPendingOrdersCount();
+        setPendingOrdersCount(count);
+      } catch {}
+    };
+
+    updatePending();
+    const unsubEngine = offlinePosEngine.subscribe(updatePending);
+
+    return () => {
+      unsubNet();
+      unsubEngine();
+    };
+  }, []);
 
   const [lastReceiptNumber, setLastReceiptNumber] = useState<string>("INV-KB-1059");
   const [isCheckingOut, setIsCheckingOut] = useState<boolean>(false);
@@ -842,10 +884,24 @@ export const OfflinePosView: React.FC = () => {
             className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-border/70 bg-card hover:bg-muted text-foreground text-xs font-bold transition-all shadow-2xs h-10 cursor-pointer"
             title="لوحة المزامنة وقائمة الفواتير المحلية"
           >
-            <span className="size-2 rounded-full bg-emerald-500"></span>
+            <span
+              className={`size-2 rounded-full ${
+                network.isOnline
+                  ? pendingOrdersCount > 0
+                    ? "bg-amber-500 animate-pulse"
+                    : "bg-emerald-500"
+                  : "bg-rose-500"
+              }`}
+            ></span>
             <span className="text-xs hidden sm:inline">المزامنة:</span>
-            <span className="font-mono text-xs font-black text-foreground bg-muted px-1.5 py-0.5 rounded-md">
-              14 فواتير
+            <span
+              className={`font-mono text-xs font-black px-1.5 py-0.5 rounded-md ${
+                pendingOrdersCount > 0
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                  : "bg-muted text-foreground"
+              }`}
+            >
+              {pendingOrdersCount > 0 ? `${pendingOrdersCount} معلق` : "محدث"}
             </span>
           </button>
 
