@@ -783,8 +783,16 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-        <span class="text-[11px] text-slate-500">سجل فواتير الوردية النشطة • الحفظ فوري محلياً وسحابياً</span>
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="exportCashierOrdersToExcel()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95" title="تصدير شيت إكسيل لكافة فواتير الوردية">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+            <span>تصدير إكسيل الوردية (.xlsx)</span>
+          </button>
+          <span class="text-[11px] text-slate-500 hidden sm:inline font-mono" id="excel-export-hint">
+            وردية_الكاشير_اليوم.csv
+          </span>
+        </div>
         <button onclick="closeMyOrdersModal()" class="px-5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer">
           إغلاق
         </button>
@@ -3345,6 +3353,60 @@
       }
 
       document.getElementById("receipt-modal").classList.remove("hidden");
+    }
+
+    function exportCashierOrdersToExcel() {
+      if (!MY_ORDERS || MY_ORDERS.length === 0) {
+        alert("لا توجد فواتير مسجلة في الوردية الحالية للتصدير!");
+        return;
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const cleanCashier = (activeCashier.name || "كاشير").replace(/[\/\\:*?"<>|\s]/g, "_");
+      const filename = `وردية_${cleanCashier}_${todayStr}.csv`;
+
+      // Build CSV with UTF-8 BOM so Microsoft Excel opens Arabic text in perfect alignment
+      let csvContent = "\uFEFF";
+      csvContent += "م,اسم الكاشير,رقم الفاتورة,الوقت,الأصناف المباعة,الكمية,المبلغ (ج.م),طريقة الدفع,حالة السداد والمزامنة\r\n";
+
+      let totalSales = 0;
+      let totalCash = 0;
+      let totalCard = 0;
+      let totalPcs = 0;
+
+      MY_ORDERS.forEach((o, idx) => {
+        const amount = Number(o.total) || 0;
+        totalSales += amount;
+        const isCash = o.payMethod === "cash" || (o.payMethodLabel && o.payMethodLabel.includes("كاش"));
+        if (isCash) totalCash += amount;
+        else totalCard += amount;
+
+        const qty = (o.items && o.items.reduce((s, i) => s + (i.quantity || 1), 0)) || 1;
+        totalPcs += qty;
+
+        const cleanSummary = (o.itemsSummary || "").replace(/"/g, '""');
+        const payLabel = o.payMethodLabel || (isCash ? "نقداً (كاش) 💵" : "فيزا / بطاقة 💳");
+        const syncLabel = o.isSynced ? "مدفوع ومتزامن سحابياً 🟢" : "مدفوع ومحفوظ محلياً 🟠";
+
+        csvContent += `"${idx + 1}","${activeCashier.name}","${o.id}","${o.time}","${cleanSummary}","${qty}","${amount.toFixed(2)}","${payLabel}","${syncLabel}"\r\n`;
+      });
+
+      // Shift Totals row
+      csvContent += `"===","=== إجمالي الوردية ===","${MY_ORDERS.length} فاتورة","-","كاش: ${totalCash.toFixed(2)} ج.م | فيزا: ${totalCard.toFixed(2)} ج.م","${totalPcs}","${totalSales.toFixed(2)}","-","خزينة مطابقة ومغلقة"\r\n`;
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 200);
+
+      alert(`✅ تم تصدير شيت إكسيل الوردية بنجاح!\nاسم الملف: ${filename}\nإجمالي الفواتير: ${MY_ORDERS.length}\nإجمالي المبيعات: ${totalSales.toLocaleString()} ج.م`);
     }
 
     function switchViewTab(tab) {

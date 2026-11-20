@@ -17,6 +17,7 @@ import { OFFLINE_SEED_PRODUCTS } from "../db/seed-offline-data";
 import { OfflinePosBanner } from "./OfflinePosBanner";
 import { OfflineSyncModal } from "./OfflineSyncModal";
 import { OfflineTerminalSetup } from "./OfflineTerminalSetup";
+import { exportCashierShiftToExcel } from "../engine/offline-excel-export";
 import {
   Search,
   ShoppingCart,
@@ -45,6 +46,8 @@ import {
   EyeOff,
   AlertCircle,
   ArrowRight,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 
 interface CartLineItem {
@@ -1592,8 +1595,27 @@ export const OfflinePosView: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-3 bg-muted/30 border-t border-border/50 flex items-center justify-between shrink-0">
-              <span className="text-[11px] text-muted-foreground">سجل فواتير الوردية النشطة • الحفظ فوري محلياً وسحابياً</span>
+            <div className="p-3 bg-muted/30 border-t border-border/50 flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportCashierShiftToExcel(
+                      shiftOrders,
+                      activeCashierName,
+                      termCfg.branchNameAr || "فرع الكوربة — مصر الجديدة"
+                    );
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                  title="تصدير شيت إكسيل لكافة فواتير وردية الكاشير"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>تصدير إكسيل الوردية (.xlsx)</span>
+                </button>
+                <span className="text-[11px] text-muted-foreground hidden sm:inline font-mono">
+                  وردية_{activeCashierName.replace(/\s+/g, '_')}_{new Date().toISOString().slice(0, 10)}.xlsx
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowMyOrdersModal(false)}
