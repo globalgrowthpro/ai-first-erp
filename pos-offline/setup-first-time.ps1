@@ -1,4 +1,4 @@
-# ==============================================================================
+﻿# ==============================================================================
 # سكريبت الإعداد والتهيئة لأول مرة — نقطة بيع سلسلة حلويات وزير الحلو
 # First-Time Setup & Prerequisites Auto-Installer for Wazeer El-Helw Offline POS
 # ==============================================================================
@@ -243,7 +243,7 @@ foreach ($desk in $desktopPaths) {
         $sc = $ws.CreateShortcut($posShortcutFile)
         $sc.TargetPath = $targetBat
         $sc.WorkingDirectory = $scriptDir
-        $sc.Description = "سلسلة حلويات وزير الحلو — تشغيل نقطة البيع POS دون انقطاع"
+        $sc.Description = "Wazeer El-Helw - POS Offline Terminal"
         if (Test-Path $iconPath) {
             $sc.IconLocation = "$iconPath,0"
         }
@@ -258,7 +258,7 @@ foreach ($desk in $desktopPaths) {
         $sc2.TargetPath = "explorer.exe"
         $sc2.Arguments = "`"$excelExportDir`""
         $sc2.WorkingDirectory = $excelExportDir
-        $sc2.Description = "مجلد أرشيف فواتير ورديات الكاشير وتقارير الإكسيل"
+        $sc2.Description = "Wazeer El-Helw - Cashier Shift Excel Reports"
         $sc2.Save()
 
         # 3. Helper script to organize excel files

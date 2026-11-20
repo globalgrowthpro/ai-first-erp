@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $targetBat = Join-Path $scriptDir "START-POS-OFFLINE.bat"
@@ -26,13 +26,25 @@ foreach ($desk in $desktopPaths) {
         $shortcut = $ws.CreateShortcut($shortcutFile)
         $shortcut.TargetPath = $targetBat
         $shortcut.WorkingDirectory = $scriptDir
-        $shortcut.Description = "سلسلة حلويات وزير الحلو — نقطة البيع POS"
+        $shortcut.Description = "Wazeer El-Helw - POS Offline Terminal"
 
         if (Test-Path $iconPath) {
             $shortcut.IconLocation = "$iconPath,0"
         }
 
         $shortcut.Save()
+
+        # Also update Excel folder shortcut description
+        $excelFolder = Join-Path $desk "فواتير ورديات الكاشير - وزير الحلو"
+        $excelShortcutFile = Join-Path $desk "Wazeer-Cashier-Excel-Reports.lnk"
+        if (Test-Path $excelFolder) {
+            $sc2 = $ws.CreateShortcut($excelShortcutFile)
+            $sc2.TargetPath = "explorer.exe"
+            $sc2.Arguments = "`"$excelFolder`""
+            $sc2.WorkingDirectory = $excelFolder
+            $sc2.Description = "Wazeer El-Helw - Cashier Shift Excel Reports"
+            $sc2.Save()
+        }
 
         if (Test-Path $shortcutFile) {
             Write-Host "[SUCCESS] Created POS shortcut at: $shortcutFile" -ForegroundColor Green
