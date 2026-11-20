@@ -467,6 +467,9 @@ export const OfflinePosView: React.FC = () => {
   const addToCart = (prod: OfflineProductRecord) => {
     if (isTerminalLocked || prod.stock <= 0) return;
 
+    const promo = calculateProductDiscount(prod);
+    const effectivePrice = promo.hasDiscount ? promo.discountedPrice : prod.price;
+
     setCart((prev) => {
       const existing = prev.find((i) => i.sku === prod.sku);
       if (existing) {
@@ -484,9 +487,9 @@ export const OfflinePosView: React.FC = () => {
           nameAr: prod.nameAr,
           nameEn: prod.nameEn,
           category: prod.categoryNameAr,
-          unitPrice: prod.price,
+          unitPrice: effectivePrice,
           quantity: 1,
-          totalPrice: prod.price,
+          totalPrice: effectivePrice,
           maxStock: prod.stock,
           image: prod.imageUrl || `/products/${prod.sku.toLowerCase()}.jpg`,
         },
@@ -553,6 +556,18 @@ export const OfflinePosView: React.FC = () => {
 
       setLastReceiptNumber(order.orderNumber);
       setShowReceiptModal(true);
+
+      const newShiftOrder = {
+        id: order.orderNumber,
+        time: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        itemsSummary: cart.map((i) => `${i.nameAr} (${i.quantity})`).join("، "),
+        total: finalTotal,
+        payMethod: paymentMethod,
+        payMethodLabel: paymentMethod === "cash" ? "كاش 💵" : "فيزا 💳",
+        isSynced: false,
+      };
+      setShiftOrders((prev) => [newShiftOrder, ...prev]);
+
       clearCart();
     } catch (err) {
       console.error("[Checkout error]:", err);
