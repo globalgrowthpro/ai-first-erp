@@ -30,11 +30,19 @@ export const BRANCH_OPTIONS = [
 ];
 
 interface OfflineTerminalSetupProps {
+  isOpen?: boolean;
+  onClose?: () => void;
   onSaved?: () => void;
   className?: string;
 }
 
-export const OfflineTerminalSetup: React.FC<OfflineTerminalSetupProps> = ({ onSaved, className = "" }) => {
+export const OfflineTerminalSetup: React.FC<OfflineTerminalSetupProps> = ({
+  isOpen = true,
+  onClose,
+  onSaved,
+  className = "",
+}) => {
+  if (!isOpen) return null;
   const currentCfg = offlinePosEngine.getTerminalConfig();
   const [selectedBranchId, setSelectedBranchId] = useState<string>(currentCfg.branchId);
   const [terminalId, setTerminalId] = useState<string>(currentCfg.terminalId);

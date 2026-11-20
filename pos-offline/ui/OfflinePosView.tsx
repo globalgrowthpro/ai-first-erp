@@ -53,13 +53,13 @@ import {
 interface CartLineItem {
   sku: string;
   nameAr: string;
-  nameEn?: string;
+  nameEn?: string | undefined;
   category: string;
   unitPrice: number;
   quantity: number;
   totalPrice: number;
   maxStock: number;
-  image?: string;
+  image?: string | undefined;
 }
 
 
@@ -126,8 +126,9 @@ function calculateProductDiscount(prod: OfflineProductRecord) {
     if (rule.scope === "all_products") {
       applies = true;
     } else if (rule.scope === "categories") {
+      const catName = prod.categoryNameAr || "";
       applies = (rule.categories || []).some((c: string) =>
-        c === prod.categoryNameAr || prod.categoryNameAr.includes(c) || c.includes(prod.categoryNameAr)
+        catName && (c === catName || catName.includes(c) || c.includes(catName))
       );
     } else if (rule.scope === "products") {
       applies = (rule.skus || []).includes(prod.sku);
@@ -135,10 +136,11 @@ function calculateProductDiscount(prod: OfflineProductRecord) {
 
     if (applies) {
       let saving = 0;
+      const ruleAny = rule as any;
       if (rule.type === "percentage") {
         saving = (prod.price * rule.value) / 100;
-        if (rule.maxDiscountAmount && rule.maxDiscountAmount > 0) {
-          saving = Math.min(saving, rule.maxDiscountAmount);
+        if (ruleAny.maxDiscountAmount && ruleAny.maxDiscountAmount > 0) {
+          saving = Math.min(saving, ruleAny.maxDiscountAmount);
         }
       } else if (rule.type === "fixed_amount") {
         saving = Math.min(rule.value, prod.price);
@@ -530,13 +532,13 @@ export const OfflinePosView: React.FC = () => {
         {
           sku: prod.sku,
           nameAr: prod.nameAr,
-          nameEn: prod.nameEn,
-          category: prod.categoryNameAr,
+          nameEn: prod.nameEn || "",
+          category: prod.categoryNameAr || "حلويات",
           unitPrice: effectivePrice,
           quantity: 1,
           totalPrice: effectivePrice,
           maxStock: prod.stock,
-          image: prod.imageUrl || `/products/${prod.sku.toLowerCase()}.jpg`,
+          image: prod.image || `/products/${prod.sku.toLowerCase()}.jpg`,
         },
       ];
     });
@@ -587,13 +589,13 @@ export const OfflinePosView: React.FC = () => {
         items: cart.map((i) => ({
           sku: i.sku,
           nameAr: i.nameAr,
-          nameEn: i.nameEn,
+          ...(i.nameEn ? { nameEn: i.nameEn } : {}),
           unitPrice: i.unitPrice,
           quantity: i.quantity,
           totalPrice: i.totalPrice,
         })),
         orderType,
-        paymentMethod: paymentMethod as "cash" | "card" | "wallet" | "voucher",
+        paymentMethod: (paymentMethod === "voucher" ? "wallet" : paymentMethod) as "cash" | "card" | "wallet" | "split",
         tenderAmount,
         discountAmount,
         cashierName: activeCashierName,
@@ -1071,7 +1073,7 @@ export const OfflinePosView: React.FC = () => {
                     {/* Photo Container */}
                     <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-muted/50 mb-3 border border-border/40">
                       <img
-                        src={prod.imageUrl || `/products/${prod.sku.toLowerCase()}.jpg`}
+                        src={prod.image || `/products/${prod.sku.toLowerCase()}.jpg`}
                         alt={prod.nameAr}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
